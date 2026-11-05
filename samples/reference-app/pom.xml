@@ -35,5 +35,20 @@
       <artifactId>cozy-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- JUnit과 AssertJ. cozy-test가 테스트 기반을 제공하게 되면(M4) 정리한다. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -15,6 +15,33 @@
   <name>Cozy :: Starter Runtime</name>
   <description>데스크톱형 실행 기반, 보안 최소선, 업데이트, 진단</description>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <!-- 앱의 package-info.java에서 @ApplicationModule을 쓰기 위한 API (ADR-0005) -->
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
   <build>
     <plugins>
       <plugin>

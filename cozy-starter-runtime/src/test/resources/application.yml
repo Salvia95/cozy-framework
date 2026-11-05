@@ -1,0 +1,6 @@
+cozy:
+  app:
+    id: cozy-runtime-test
+    name: 런타임 테스트
+  test:
+    greeting: from-classpath

@@ -4,7 +4,8 @@
 
 | 문서 | 내용 | 마일스톤 |
 | --- | --- | --- |
-| (예정) runtime.md | `cozy.app.*`, `cozy.data-dir`, `cozy.runtime.*`, CozyApplication | M1 |
+| [runtime.md](runtime.md) | CozyApplication, `cozy.app.*`, `cozy.data-dir`, `cozy.runtime.*`, 데이터 경로, 외부 설정, 비밀 값, 보안 최소선 | M1 |
+| [windows-verification.md](windows-verification.md) | Windows에서 직접 확인하는 수용 기준과 기록 | M1~ |
 | (예정) sqlite.md | `cozy.sqlite.*`, 마이그레이션 파일 규칙, TypeHandler | M2 |
 | (예정) ui.md | fragment 매니페스트, htmx 헬퍼, 카탈로그 | M3 |
 | (예정) rules.md, specs.md | R1~R8, 화면 스펙 형식, 테스트 베이스 클래스 | M4 |

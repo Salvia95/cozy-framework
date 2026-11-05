@@ -1,0 +1,2 @@
+io.salvia95.cozy.runtime.autoconfigure.CozyRuntimeAutoConfiguration
+io.salvia95.cozy.runtime.autoconfigure.CozySecurityAutoConfiguration
