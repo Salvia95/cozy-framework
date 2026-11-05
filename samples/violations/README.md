@@ -1,3 +1,36 @@
 # 규칙별 의도적 위반 픽스처
 
-cozy-rules(R1~R8)와 cozy-test 검사마다, 정확히 그 규칙 ID로 실패하는 픽스처를 둔다. M4에서 채운다(PRD §6.2, §6.5).
+PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이나 검사에서 실패해야 한다. `mvn verify`가 둘 다 실행한다.
+
+## rules/ — 템플릿 규칙 R1~R8
+
+| 폴더 | 위반 |
+| --- | --- |
+| `R1-unknown-module` | 모듈이 아닌 최상위 폴더 `templates/vocc/` |
+| `R2-root-template` | `templates/index.html` |
+| `R3-internal-template` | voc 화면이 wiki의 내부 템플릿 `wiki/detail :: body`를 참조 |
+| `R4-layer-direction` | component가 pattern을 참조 |
+| `R5-shared-uses-module` | `fragments/pattern/x`가 `memo/api/y`를 참조 |
+| `R6-missing-fragment` | `~{cozy/component/badge :: badg(x)}` |
+| `R7-dynamic-reference` | `th:replace="~{${view} :: body}"` |
+| `R8-unlisted-fragment` | 매니페스트에 없는 `fragments/component/chip` |
+
+- 폴더 구성: `templates/`, `modules.properties`(모듈 구조: `모듈=허용 의존`), `fragments.yml`(앱 매니페스트, 선택)
+- 프레임워크 템플릿과 매니페스트는 실제 cozy-ui jar의 것을 쓴다.
+- `RuleFixturesTest`가 각 폴더의 위반이 하나 이상이고 모두 폴더 이름의 규칙 ID인지 검사한다.
+
+## checks/ — cozy-test 검사 C1~C7
+
+검사마다 그 검사에서 실패하는 작은 앱이다. maven-invoker-plugin이 각 앱을 실제로 빌드한다. 빌드가 실패해야 성공이고, `verify.groovy`가 실패 이유를 `build.log`에서 확인한다.
+
+| 폴더 | 검사 | 위반 |
+| --- | --- | --- |
+| `C1-modulith` | C1 모듈 검증 | a 모듈이 b 모듈의 internal 클래스를 쓴다 |
+| `C2-rules` | C2 템플릿 규칙 | voc 화면이 wiki 내부 템플릿을 참조한다 (R3) |
+| `C3-spec-type` | C3 스펙 렌더링 | fixture 필드 이름이 화면 DTO와 다르다 |
+| `C3-spec-states` | C3 스펙 형식 | 스펙에 empty 상태가 없다 |
+| `C4-html` | C4 vnu | 렌더링 결과에 같은 id가 두 번 있다 |
+| `C5-missing-spec` | C5 스펙 누락 | 화면 템플릿에 스펙이 없다 |
+| `C7-view-module` | C7 컨트롤러·뷰 모듈 | memo 컨트롤러가 `wiki/list`를 반환한다 |
+
+C6(이벤트 호환)은 M5에서 추가한다.

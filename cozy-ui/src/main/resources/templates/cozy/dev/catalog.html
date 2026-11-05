@@ -1,12 +1,30 @@
 <!DOCTYPE html>
-<!--/* 패턴 카탈로그 (cozy.dev.catalog.enabled=true). 미리보기는 /cozy/dev/catalog/render가 그린다. */-->
+<!--/* 패턴 카탈로그 (cozy.dev.catalog.enabled=true). 미리보기는 /cozy/dev/catalog/render와 /screen이 그린다. */-->
 <html th:replace="~{cozy/layout/base :: base('패턴 카탈로그', ~{::main})}">
 <body>
 <main class="container-xl py-4">
   <div class="page-header mb-4">
     <h2 class="page-title">패턴 카탈로그</h2>
-    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.</div>
+    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면 <span th:text="${screens.size()}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.</div>
   </div>
+  <section class="mb-5" th:if="${!screens.isEmpty()}">
+    <h3 class="mb-3">screen</h3>
+    <div class="card mb-4" th:each="spec : ${screens}" th:id="${'screen-' + spec.screen}">
+      <div class="card-header">
+        <div>
+          <h4 class="card-title"><code th:text="${spec.template}">memo/list</code></h4>
+          <div class="text-secondary" th:text="${spec.source}">specs/memo-list.yml</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="mb-3" th:each="state : ${spec.states.keySet()}">
+          <div class="text-secondary small mb-1" th:text="|상태: ${state}|">상태</div>
+          <iframe class="cozy-catalog-frame cozy-catalog-frame-tall"
+                  th:src="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}" th:title="|${spec.screen} ${state}|"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
   <section class="mb-5" th:each="group : ${groups}">
     <h3 class="mb-3" th:text="${group.key}">layout</h3>
     <div class="card mb-4" th:each="entry : ${group.value}" th:id="${'fragment-' + entry.id.replace('/', '-')}">

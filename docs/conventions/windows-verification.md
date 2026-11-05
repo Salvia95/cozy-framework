@@ -62,6 +62,18 @@ java -jar .\cozy-reference-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev
 - [ ] 랜선과 Wi-Fi를 끊고 브라우저 캐시를 비운 뒤(Ctrl+F5) 다시 열어도 같은 모양이다.
 - [ ] 개발자 도구(F12) 콘솔에 CSP 위반 오류가 없다.
 
+## M4 규칙과 테스트 기반
+
+Windows의 경로 구분자(`\`)와 `file:/C:/...` URL에서도 규칙 검사가 같은 결과를 내는지 확인한다. 레포를 Windows에 받아 오프라인으로 빌드한다(의존성은 한 번 받아 둔 상태).
+
+```powershell
+mvn -o verify
+```
+
+- [ ] `BUILD SUCCESS`. 실패하면 `[R`, `[C`로 시작하는 줄을 기록한다.
+- [ ] `Cozy :: Samples :: Violations`의 invoker 결과가 `Passed: 7`이다.
+- [ ] reference-app의 `ArchitectureTest`(2개)와 `RenderingTest`(3개)가 통과한다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -69,3 +81,4 @@ java -jar .\cozy-reference-app-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev
 | | M1 | | |
 | | M2 | | |
 | | M3 | | |
+| | M4 | | |

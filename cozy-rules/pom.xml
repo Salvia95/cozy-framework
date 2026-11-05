@@ -15,6 +15,11 @@
   <name>Cozy :: Rules</name>
   <description>템플릿 경계·fragment 검사 로직 (Spring 비의존)</description>
 
+  <properties>
+    <!-- Mockito를 쓰지 않는다 -->
+    <cozy.test.argLine/>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.attoparser</groupId>

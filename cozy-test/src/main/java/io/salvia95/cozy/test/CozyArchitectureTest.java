@@ -1,0 +1,82 @@
+package io.salvia95.cozy.test;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
+
+import org.springframework.modulith.core.ApplicationModules;
+
+import io.salvia95.cozy.rules.RulesInput;
+import io.salvia95.cozy.rules.TemplateFile;
+import io.salvia95.cozy.rules.TemplateRules;
+import io.salvia95.cozy.rules.Violation;
+
+/**
+ * 아키텍처 검사 (PRD §6.5 검사 1, 2). 앱은 한 줄만 쓴다.
+ *
+ * <pre>
+ * class ArchitectureTest extends CozyArchitectureTest {
+ * }
+ * </pre>
+ *
+ * <ul>
+ * <li>C1: {@code ApplicationModules.of(앱 클래스).verify()}</li>
+ * <li>C2: 템플릿 경계 규칙 R1~R8. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
+ * </ul>
+ * 문서: docs/conventions/testing.md, docs/conventions/rules.md
+ */
+public abstract class CozyArchitectureTest {
+
+	/** 같은 계층 fragment 참조 허용 (R4). 앱 설정 {@code cozy.rules.allow-same-layer} */
+	public static final String ALLOW_SAME_LAYER = "cozy.rules.allow-same-layer";
+
+	/** 검사할 앱. 기본값은 테스트 패키지에서 위로 찾은 {@code @SpringBootApplication} 클래스 */
+	protected Class<?> applicationClass() {
+		return CozyProject.applicationClass(getClass());
+	}
+
+	/** 앱 템플릿 루트 */
+	protected Path templateRoot() {
+		return CozyProject.TEMPLATES;
+	}
+
+	/** 앱 매니페스트 */
+	protected Path manifestFile() {
+		return CozyProject.MANIFEST;
+	}
+
+	protected boolean allowSameLayer() {
+		return Boolean.parseBoolean(CozyProject.appProperty(ALLOW_SAME_LAYER));
+	}
+
+	@Test
+	public final void modulesAreVerified() {
+		ApplicationModules modules = CozyModules.of(applicationClass());
+		try {
+			modules.verify();
+		}
+		catch (RuntimeException ex) {
+			throw new AssertionFailedError("[C1] 모듈 의존 규칙 위반 (Spring Modulith). 다른 모듈의 internal 패키지를 "
+					+ "쓰지 말고, 필요한 의존은 package-info.java의 allowedDependencies에 선언하세요.\n" + ex.getMessage(), ex);
+		}
+	}
+
+	@Test
+	public final void templatesFollowBoundaryRules() {
+		List<TemplateFile> templates = new ArrayList<>(CozyProject.appTemplates(templateRoot()));
+		templates.addAll(CozyProject.frameworkTemplates());
+		RulesInput input = new RulesInput(templates, CozyModules.model(CozyModules.of(applicationClass())),
+				CozyProject.manifest(manifestFile()), allowSameLayer());
+		List<Violation> violations = TemplateRules.check(input);
+		violations.stream().filter((v) -> !v.isError()).forEach((v) -> System.out.println(v.format()));
+		List<Violation> errors = violations.stream().filter(Violation::isError).toList();
+		if (!errors.isEmpty()) {
+			throw new AssertionFailedError("[C2] 템플릿 규칙 위반 " + errors.size() + "건 (docs/conventions/rules.md)\n"
+					+ errors.stream().map(Violation::format).collect(Collectors.joining("\n")));
+		}
+	}
+}

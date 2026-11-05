@@ -14,12 +14,12 @@
 - **Boot가 관리하는 Maven 플러그인**은 더 새로운 GA가 있으면 cozy-parent에서 덮어쓴다.
 - **Boot BOM 밖의 라이브러리와 자산**은 각자의 최신 GA로 고정한다.
 
-## 2026-11-05 기준 버전
+## 2026-11-06 기준 버전 (M4 시작 때 다시 확인)
 
 | 구성 | 버전 | 관리 |
 | --- | --- | --- |
 | JDK | 25.0.3 (Temurin) | 빌드 PC |
-| Maven | 3.9.16 (4.0.0은 RC) | 빌드 PC |
+| Maven | 3.10.0 (4.0.0은 RC) | 빌드 PC |
 | Spring Boot | 4.1.2 (4.2.0은 RC2) | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
 | Thymeleaf | 3.1.5.RELEASE (thymeleaf-spring6) | Boot BOM |
@@ -28,13 +28,17 @@
 | HikariCP | 7.0.2 | Boot BOM |
 | JUnit | 6.0.3 | Boot BOM |
 | SnakeYAML | 2.6 | Boot BOM |
-| Spring Modulith | 2.1.2 | cozy-parent |
+| Hibernate Validator (spring-boot-starter-validation) | Boot BOM | Boot BOM. cozy-ui, `@Valid` 규약 (M3, 승인 2026-11-06) |
+| log4j-over-slf4j | 2.0.20 | Boot BOM. cozy-test, vnu의 log4j 1.x 대체 (ADR-0022) |
+| Spring Modulith (api, core) | 2.1.2 (core는 ArchUnit 1.4.2를 가져온다) | cozy-parent |
 | mybatis-spring-boot-starter | 4.1.0 | cozy-parent |
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
 | maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
+| maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
+| maven-dependency-plugin | 3.11.0 (Boot 기본 3.10.0) | cozy-parent |
 | maven-archetype-plugin | 3.4.1 | cozy-parent |
 | exec-maven-plugin | 3.6.4 | cozy-parent |
 | Tabler | 1.7.3 | cozy-ui 벤더 자산 |
@@ -50,3 +54,4 @@
 
 - Boot의 마이너 버전(4.2 등)이 GA가 되면 Boot와 그에 맞는 Modulith(2.2)를 함께 올린다. 이벤트 계약 테스트(PRD §8.5)가 인터페이스 변경을 잡아낸다.
 - 버전을 올린 내용은 이 ADR의 표에 반영한다.
+- 2026-11-06(M4): Maven 3.10.0이 2026-09-27에 GA로 나와 있었다(M0 조사에서 놓침). 빌드 PC를 3.10.0으로 올렸다. 3.10은 같은 의존성의 중복 선언을 오류로 본다. 금지 의존성에 `log4j:log4j`를 추가했다(ADR-0022).

@@ -1,0 +1,2 @@
+org.springframework.test.context.ContextCustomizerFactory=\
+io.salvia95.cozy.test.CozyTestContextCustomizerFactory

@@ -30,7 +30,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Boot BOM 밖의 라이브러리 (최신 GA, 2026-11-05 확인) -->
+    <!-- Boot BOM 밖의 라이브러리 (최신 GA, 2026-11-06 M4 시작 때 다시 확인) -->
     <spring-modulith.version>2.1.2</spring-modulith.version>
     <mybatis-spring-boot.version>4.1.0</mybatis-spring-boot.version>
     <sqlite-jdbc.version>3.54.1.0</sqlite-jdbc.version>
@@ -40,9 +40,18 @@
     <!-- Boot가 관리하는 플러그인 중 더 새로운 GA가 있는 것은 덮어쓴다 -->
     <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
     <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
+    <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
     <!-- Boot가 관리하지 않는 플러그인 -->
     <maven-archetype-plugin.version>3.4.1</maven-archetype-plugin.version>
     <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
+
+    <!--
+      테스트 JVM 옵션. Mockito를 실행 중에 붙이지 않고 -javaagent로 올린다 (JDK가 동적 에이전트를 막을 예정).
+      ${org.mockito:mockito-core:jar}는 dependency:properties가 채운다. Mockito가 없는 모듈은 이 값을 비운다.
+    -->
+    <cozy.test.argLine>-javaagent:${org.mockito:mockito-core:jar}</cozy.test.argLine>
   </properties>
 
   <dependencyManagement>
@@ -154,6 +163,13 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <argLine>${cozy.test.argLine}</argLine>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <configuration>
             <archive>
@@ -178,6 +194,19 @@
     </pluginManagement>
 
     <plugins>
+      <!-- ${org.mockito:mockito-core:jar} 등 의존성 jar 경로를 속성으로 만든다 (테스트 -javaagent용) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cozy-dependency-paths</id>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -215,6 +244,7 @@
                     <exclude>org.springframework.modulith:spring-modulith-events-jpa</exclude>
                     <exclude>org.springframework.modulith:spring-modulith-events-mongodb</exclude>
                     <exclude>org.springframework.modulith:spring-modulith-events-neo4j</exclude>
+                    <exclude>log4j:log4j</exclude>
                     <exclude>org.graalvm.sdk:*</exclude>
                     <exclude>org.graalvm.nativeimage:*</exclude>
                   </excludes>

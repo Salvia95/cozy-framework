@@ -32,7 +32,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 ## 명령
 
 ```bash
-source ~/.sdkman/bin/sdkman-init.sh   # JDK 25, Maven 3.9.16
+source ~/.sdkman/bin/sdkman-init.sh   # JDK 25, Maven 3.10.0
 mvn verify                            # 전체 빌드 + invoker 픽스처 + 테스트
 mvn -o verify                         # 오프라인 (의존성을 한 번 받은 뒤)
 mvn -pl cozy-rules -am test           # 모듈 하나만

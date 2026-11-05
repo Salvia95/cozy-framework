@@ -30,20 +30,10 @@
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-ui</artifactId>
     </dependency>
+    <!-- 테스트 기반: 아키텍처·렌더링 검사, JUnit, MockMvc, Security Test (PRD §6.5) -->
     <dependency>
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- MockMvc와 Security 테스트. cozy-test가 테스트 기반을 제공하게 되면(M4) 정리한다. -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webmvc-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-security-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

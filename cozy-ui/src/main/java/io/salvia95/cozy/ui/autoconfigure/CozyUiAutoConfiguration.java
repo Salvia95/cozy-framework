@@ -2,9 +2,9 @@ package io.salvia95.cozy.ui.autoconfigure;
 
 import java.util.List;
 
-import tools.jackson.databind.json.JsonMapper;
-
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -31,9 +32,11 @@ import io.salvia95.cozy.ui.internal.CatalogTemplateResolver;
 import io.salvia95.cozy.ui.internal.CozyLayoutAdvice;
 import io.salvia95.cozy.ui.internal.CozyLayoutAdvice.CozyAppInfo;
 import io.salvia95.cozy.ui.internal.EmptyView;
-import io.salvia95.cozy.ui.internal.FragmentManifest;
+import io.salvia95.cozy.ui.catalog.FragmentManifest;
+import io.salvia95.cozy.ui.catalog.ScreenSpec;
 import io.salvia95.cozy.ui.internal.HtmxRedirectInterceptor;
 import io.salvia95.cozy.ui.internal.HtmxRequestArgumentResolver;
+import io.salvia95.cozy.ui.internal.ViewModuleInterceptor;
 
 /**
  * UI 자동 설정 (PRD §6.4): 레이아웃 모델, 내비, htmx 지원, 패턴 카탈로그.
@@ -56,7 +59,16 @@ public class CozyUiAutoConfiguration {
 	}
 
 	@Bean
-	WebMvcConfigurer cozyHtmxWebMvcConfigurer() {
+	ViewModuleInterceptor cozyViewModuleInterceptor(BeanFactory beanFactory, Environment environment) {
+		List<String> basePackages = AutoConfigurationPackages.has(beanFactory) ? AutoConfigurationPackages.get(beanFactory)
+				: List.of();
+		ViewModuleInterceptor.Mode mode = ViewModuleInterceptor.Mode
+			.valueOf(environment.getProperty(ViewModuleInterceptor.PROPERTY, "warn").strip().toUpperCase());
+		return new ViewModuleInterceptor(basePackages, mode);
+	}
+
+	@Bean
+	WebMvcConfigurer cozyHtmxWebMvcConfigurer(ViewModuleInterceptor viewModuleInterceptor) {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
@@ -65,6 +77,7 @@ public class CozyUiAutoConfiguration {
 
 			@Override
 			public void addInterceptors(InterceptorRegistry registry) {
+				registry.addInterceptor(viewModuleInterceptor);
 				registry.addInterceptor(new HtmxRedirectInterceptor());
 			}
 		};
@@ -93,7 +106,7 @@ public class CozyUiAutoConfiguration {
 		@Bean
 		@Order(Ordered.HIGHEST_PRECEDENCE)
 		SecurityFilterChain cozyCatalogPreviewSecurityFilterChain(HttpSecurity http) throws Exception {
-			http.securityMatcher("/cozy/dev/catalog/render")
+			http.securityMatcher(CatalogController.PATH + "/render", CatalogController.PATH + "/screen")
 				.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll())
 				.headers((headers) -> headers.frameOptions((frame) -> frame.sameOrigin())
 					.contentSecurityPolicy((csp) -> csp.policyDirectives(CozySecurityAutoConfiguration.CONTENT_SECURITY_POLICY
@@ -102,8 +115,8 @@ public class CozyUiAutoConfiguration {
 		}
 
 		@Bean
-		CatalogController cozyCatalogController(FragmentManifest manifest, ObjectProvider<JsonMapper> jsonMapper) {
-			return new CatalogController(manifest, jsonMapper.getIfAvailable(JsonMapper::new));
+		CatalogController cozyCatalogController(FragmentManifest manifest) {
+			return new CatalogController(manifest, ScreenSpec.load(CozyUiAutoConfiguration.class.getClassLoader()));
 		}
 
 	}

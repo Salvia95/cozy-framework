@@ -21,6 +21,7 @@
     <module>cozy-test</module>
     <module>cozy-archetype</module>
     <module>samples/reference-app</module>
+    <module>samples/violations</module>
   </modules>
 
   <properties>

@@ -1,0 +1,9 @@
+screen: memo-list
+template: memo/list
+model:
+  view: it.cozy.app.memo.view.ListView
+states:
+  default:
+    view: { name: 제목 }
+  empty:
+    view: { title: "" }

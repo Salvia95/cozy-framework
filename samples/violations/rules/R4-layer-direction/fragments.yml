@@ -1,0 +1,9 @@
+fragments:
+  - id: component/chip
+    template: fragments/component/chip
+    signature: chip(text)
+    purpose: 짧은 꼬리표
+    params:
+      - { name: text, type: String, required: true, description: 글자 }
+    samples:
+      default: { text: 새 글 }

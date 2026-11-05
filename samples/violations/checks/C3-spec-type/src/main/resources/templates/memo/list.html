@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html th:replace="~{cozy/layout/base :: appShell('목록', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/form-page :: formPage('목록', ~{::#body})}">
+    <div id="body"><p th:text="${view.title}">제목</p></div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,15 @@
+fragments:
+  - id: pattern/x
+    template: fragments/pattern/x
+    signature: x()
+    purpose: 예시
+    params: []
+    samples:
+      default: {}
+  - id: memo/y
+    template: memo/api/y
+    signature: y()
+    purpose: 메모 요약
+    params: []
+    samples:
+      default: {}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>@project.version@</version>
+    <relativePath/>
+  </parent>
+  <groupId>it.cozy.violations</groupId>
+  <artifactId>c7-view-module</artifactId>
+  <version>1.0.0</version>
+  <!-- C7: memo 모듈의 컨트롤러가 wiki/ 뷰를 반환한다 → 앱의 MockMvc 테스트가 실패 -->
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-runtime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

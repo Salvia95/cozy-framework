@@ -10,8 +10,9 @@ import org.thymeleaf.templateresolver.AbstractTemplateResolver;
 import org.thymeleaf.templateresource.ITemplateResource;
 import org.thymeleaf.templateresource.StringTemplateResource;
 
-import io.salvia95.cozy.ui.internal.FragmentManifest.Entry;
-import io.salvia95.cozy.ui.internal.FragmentManifest.Param;
+import io.salvia95.cozy.ui.catalog.FragmentManifest;
+import io.salvia95.cozy.ui.catalog.FragmentManifest.Entry;
+import io.salvia95.cozy.ui.catalog.FragmentManifest.Param;
 
 /**
  * 카탈로그 미리보기용 템플릿을 매니페스트에서 만든다 (PRD §6.4).

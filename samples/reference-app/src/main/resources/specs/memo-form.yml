@@ -1,0 +1,15 @@
+# 새 메모
+screen: memo-form
+template: memo/form
+fragments: [form]
+model:
+  form: io.salvia95.cozy.reference.memo.view.MemoForm
+states:
+  default:
+    form: { title: 회의록 정리, body: "첫 줄\n둘째 줄", pinned: true }
+  empty:
+    form: {}
+  invalid:
+    form: { title: "", body: "" }
+    _errors:
+      form: { title: 제목을 입력하세요 }

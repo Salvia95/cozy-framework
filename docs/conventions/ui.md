@@ -45,7 +45,8 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 }
 ```
 
-- **뷰 이름**: 첫 경로는 자기 모듈 이름이다(`memo/...`).
+- **뷰 이름**: 첫 경로는 자기 모듈 이름이다(`memo/...`). 어기면 테스트에서 C7로 실패한다.
+- **화면 스펙**: 화면 템플릿마다 `specs/{모듈}-{화면}.yml`을 둔다. 형식은 [testing.md](testing.md)에 있다.
 - **입력과 출력**: 입력은 getter와 setter가 있는 폼 클래스로 받고, 출력은 `view/` 패키지의 record로 넘긴다. 도메인 객체를 템플릿에 직접 넘기지 않는다.
 - **리다이렉트**: `CozyViews.redirect`는 `"redirect:" + path`와 같다. htmx 요청이면 인터셉터가 200 빈 응답과 `HX-Redirect`로 바꾸고, 플래시도 전달된다.
 - **htmx 헤더**: `HtmxRequest`를 메서드 인자로 받으면 htmx 헤더를 읽을 수 있다(`htmx()`, `partial()`, `target()`, `trigger()`). boost 요청은 부분 갱신으로 보지 않는다.
@@ -74,7 +75,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 
 ## 매니페스트 `cozy/fragments.yml`
 
-프레임워크는 cozy-ui jar에, 앱은 자기 `resources/cozy/fragments.yml`에 둔다. 앱 매니페스트에는 `templates/fragments/` 아래의 공용 fragment를 같은 형식으로 적는다.
+프레임워크는 cozy-ui jar에, 앱은 자기 `resources/cozy/fragments.yml`에 둔다. 앱 매니페스트에는 `templates/fragments/` 아래의 공용 fragment와 모듈의 공개 fragment(`templates/{모듈}/api/`)를 같은 형식으로 적는다. 템플릿과 매니페스트가 어긋나면 R8([rules.md](rules.md)), 공개 fragment가 빠지면 C5([testing.md](testing.md))로 빌드가 실패한다. 파서는 `io.salvia95.cozy.ui.catalog.FragmentManifest`다.
 
 ```yaml
 fragments:
@@ -100,7 +101,8 @@ fragments:
 
 | 속성 | 기본값 | 설명 |
 | --- | --- | --- |
-| `cozy.dev.catalog.enabled` | dev 프로필이면 `true`, 아니면 `false` | `/cozy/dev/catalog` 등록 |
+| `cozy.dev.catalog.enabled` | dev 프로필이면 `true`, 아니면 `false` | `/cozy/dev/catalog` 등록. 매니페스트 fragment와 화면 스펙(`specs/*.yml`)을 상태별로 미리 본다 |
+| `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
 - **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.3, htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.

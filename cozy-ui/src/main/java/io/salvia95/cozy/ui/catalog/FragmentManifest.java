@@ -1,8 +1,9 @@
-package io.salvia95.cozy.ui.internal;
+package io.salvia95.cozy.ui.catalog;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,6 +16,11 @@ import java.util.regex.Pattern;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.nodes.MappingNode;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.NodeTuple;
+import org.yaml.snakeyaml.nodes.ScalarNode;
+import org.yaml.snakeyaml.nodes.SequenceNode;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -22,7 +28,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 /**
  * fragment 매니페스트 {@code cozy/fragments.yml} (PRD §6.4). 프레임워크(cozy-ui jar)와 앱이 같은 경로에 각자 둔다.
  *
- * <p>형식 오류는 고치는 방법이 담긴 메시지로 즉시 실패한다. 문서: docs/conventions/ui.md
+ * <p>형식 오류는 고치는 방법이 담긴 메시지로 즉시 실패한다. 공개 형식이며 문서는 docs/conventions/ui.md에 있다. cozy-test가
+ * 규칙 R8 검사에 같은 파서를 쓴다.
  */
 public record FragmentManifest(List<Entry> fragments) {
 
@@ -42,9 +49,10 @@ public record FragmentManifest(List<Entry> fragments) {
 	 * @param samples 상태 이름 → 파라미터 값
 	 * @param document 완전한 HTML 문서를 그리는 fragment인가 (레이아웃)
 	 * @param source 이 항목을 읽은 파일
+	 * @param line 이 항목이 시작하는 줄 (1부터)
 	 */
 	public record Entry(String id, String template, String signature, String purpose, List<Param> params,
-			Map<String, Map<String, Object>> samples, boolean document, String source) {
+			Map<String, Map<String, Object>> samples, boolean document, String source, int line) {
 
 		public String fragmentName() {
 			Matcher m = SIGNATURE.matcher(this.signature);
@@ -80,7 +88,7 @@ public record FragmentManifest(List<Entry> fragments) {
 			Resource[] resources = new PathMatchingResourcePatternResolver(classLoader).getResources(LOCATION);
 			for (Resource resource : resources) {
 				try (InputStream in = resource.getInputStream()) {
-					all.addAll(parse(in, resource.getDescription()));
+					all.addAll(parse(in, describe(resource, "cozy/fragments.yml")));
 				}
 			}
 		}
@@ -103,9 +111,22 @@ public record FragmentManifest(List<Entry> fragments) {
 			.orElseThrow(() -> new IllegalArgumentException("[cozy] 매니페스트에 없는 fragment: " + id));
 	}
 
+	/**
+	 * 매니페스트 파일 하나를 읽는다.
+	 * @param in YAML (UTF-8)
+	 * @param source 메시지에 보일 위치
+	 */
 	@SuppressWarnings("unchecked")
-	static List<Entry> parse(InputStream in, String source) {
-		Object root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
+	public static List<Entry> parse(InputStream in, String source) {
+		String text;
+		try {
+			text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+		Object root = new Yaml(new SafeConstructor(new LoaderOptions())).load(text);
+		List<Integer> lines = entryLines(text);
 		if (root == null) {
 			return List.of();
 		}
@@ -113,7 +134,9 @@ public record FragmentManifest(List<Entry> fragments) {
 			throw invalid(source, "최상위에 'fragments:' 목록이 있어야 합니다");
 		}
 		List<Entry> entries = new ArrayList<>();
-		for (Object item : list) {
+		for (int index = 0; index < list.size(); index++) {
+			Object item = list.get(index);
+			int line = (index < lines.size()) ? lines.get(index) : 0;
 			if (!(item instanceof Map<?, ?> raw)) {
 				throw invalid(source, "fragments의 각 항목은 맵이어야 합니다");
 			}
@@ -149,9 +172,45 @@ public record FragmentManifest(List<Entry> fragments) {
 				throw invalid(source, id + ": samples에 상태가 하나 이상 있어야 합니다 (예: default)");
 			}
 			entries.add(new Entry(id, template, signature, purpose, List.copyOf(params), samples,
-					Boolean.TRUE.equals(fragment.get("document")), source));
+					Boolean.TRUE.equals(fragment.get("document")), source, line));
 		}
 		return entries;
+	}
+
+	/**
+	 * 메시지용 위치: jar 안이면 {@code [cozy-ui] cozy/fragments.yml}, 디렉터리면 {@code cozy/fragments.yml}.
+	 */
+	static String describe(Resource resource, String path) {
+		try {
+			String url = resource.getURL().toString();
+			int bang = url.indexOf("!/");
+			if (bang < 0) {
+				return path;
+			}
+			String jar = url.substring(0, bang);
+			jar = jar.substring(jar.lastIndexOf('/') + 1).replaceAll("-\\d.*\\.jar$", "").replace(".jar", "");
+			return "[" + jar + "] " + path;
+		}
+		catch (IOException ex) {
+			return path;
+		}
+	}
+
+	/** fragments 목록의 각 항목이 시작하는 줄 */
+	private static List<Integer> entryLines(String text) {
+		List<Integer> lines = new ArrayList<>();
+		Node root = new Yaml(new SafeConstructor(new LoaderOptions())).compose(new java.io.StringReader(text));
+		if (root instanceof MappingNode mapping) {
+			for (NodeTuple tuple : mapping.getValue()) {
+				if (tuple.getKeyNode() instanceof ScalarNode key && key.getValue().equals("fragments")
+						&& tuple.getValueNode() instanceof SequenceNode sequence) {
+					for (Node item : sequence.getValue()) {
+						lines.add(item.getStartMark().getLine() + 1);
+					}
+				}
+			}
+		}
+		return lines;
 	}
 
 	private static String text(Map<String, Object> map, String key, String source, String id) {

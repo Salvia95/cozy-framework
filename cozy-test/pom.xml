@@ -20,15 +20,54 @@
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-rules</artifactId>
     </dependency>
+    <!-- 매니페스트·스펙 형식과 카탈로그 (UI가 있는 앱에서만 쓴다) -->
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- 앱 테스트 기반: JUnit, AssertJ, Spring Test, MockMvc, Security Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-test</artifactId>
+    </dependency>
+
+    <!-- 검사 1: ApplicationModules.verify() -->
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-core</artifactId>
+    </dependency>
+
+    <!-- 검사 4: vnu. 내장 검사에 필요 없는 서버·네트워크 부분과 log4j 1.x를 뺀다 (docs/adr/0022) -->
+    <dependency>
+      <groupId>nu.validator</groupId>
+      <artifactId>validator</artifactId>
+      <exclusions>
+        <exclusion><groupId>log4j</groupId><artifactId>log4j</artifactId></exclusion>
+        <exclusion><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId></exclusion>
+        <exclusion><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-core</artifactId></exclusion>
+        <exclusion><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet6</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty</groupId><artifactId>jetty-server</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty</groupId><artifactId>jetty-security</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty</groupId><artifactId>jetty-session</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty.ee10</groupId><artifactId>jetty-ee10-servlets</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty</groupId><artifactId>jetty-alpn-client</artifactId></exclusion>
+        <exclusion><groupId>org.eclipse.jetty.compression</groupId><artifactId>jetty-compression-gzip</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <!-- vnu가 쓰는 log4j 1.x API를 SLF4J(Logback)로 보낸다 -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
     </dependency>
   </dependencies>
   <build>

@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
-import io.salvia95.cozy.ui.internal.FragmentManifest;
+import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.testapp.UiTestApp;
 
 /**
