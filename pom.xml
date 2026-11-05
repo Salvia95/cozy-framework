@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- 루트 aggregator. 모든 cozy-* 모듈은 하나의 버전으로 함께 릴리스한다 (PRD §5). -->
+  <groupId>io.salvia95.cozy</groupId>
+  <artifactId>cozy-build</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Cozy :: Build</name>
+
+  <modules>
+    <module>cozy-parent</module>
+    <module>cozy-rules</module>
+    <module>cozy-starter-runtime</module>
+    <module>cozy-starter-sqlite</module>
+    <module>cozy-starter-events</module>
+    <module>cozy-ui</module>
+    <module>cozy-test</module>
+    <module>cozy-archetype</module>
+    <module>samples/reference-app</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- aggregator 자체는 배포하지 않는다 -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.install.skip>true</maven.install.skip>
+  </properties>
+</project>

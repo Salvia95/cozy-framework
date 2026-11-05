@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath/>
+  </parent>
+
+  <!--
+    앱과 프레임워크 모듈이 함께 상속하는 parent.
+    버전 정책은 docs/adr/0017-version-policy.md: 구현 중에는 최신 GA를 쓴다.
+    Spring 계열, Thymeleaf, Jackson, Flyway 등 Boot BOM이 관리하는 라이브러리는 Boot 버전을 따른다.
+  -->
+  <groupId>io.salvia95.cozy</groupId>
+  <artifactId>cozy-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Cozy :: Parent</name>
+
+  <properties>
+    <!-- 앱이 상속해도 프레임워크 버전을 가리키도록 리터럴로 둔다. project.version과의 일치는 enforcer가 검사한다. -->
+    <cozy.version>1.0.0-SNAPSHOT</cozy.version>
+
+    <java.version>25</java.version>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Boot BOM 밖의 라이브러리 (최신 GA, 2026-11-05 확인) -->
+    <spring-modulith.version>2.1.2</spring-modulith.version>
+    <mybatis-spring-boot.version>4.1.0</mybatis-spring-boot.version>
+    <sqlite-jdbc.version>3.54.1.0</sqlite-jdbc.version>
+    <nu-validator.version>26.11.4</nu-validator.version>
+    <attoparser.version>2.0.10.RELEASE</attoparser.version>
+
+    <!-- Boot가 관리하는 플러그인 중 더 새로운 GA가 있는 것은 덮어쓴다 -->
+    <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
+    <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
+    <!-- Boot가 관리하지 않는 플러그인 -->
+    <maven-archetype-plugin.version>3.4.1</maven-archetype-plugin.version>
+    <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Cozy -->
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-rules</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-starter-runtime</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-starter-sqlite</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-starter-events</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-ui</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-test</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+
+      <!-- Spring Modulith (Boot BOM 밖) -->
+      <dependency>
+        <groupId>org.springframework.modulith</groupId>
+        <artifactId>spring-modulith-bom</artifactId>
+        <version>${spring-modulith.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- MyBatis -->
+      <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>${mybatis-spring-boot.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter-test</artifactId>
+        <version>${mybatis-spring-boot.version}</version>
+      </dependency>
+
+      <!-- SQLite -->
+      <dependency>
+        <groupId>org.xerial</groupId>
+        <artifactId>sqlite-jdbc</artifactId>
+        <version>${sqlite-jdbc.version}</version>
+      </dependency>
+
+      <!-- 템플릿 파서 (cozy-rules). Thymeleaf도 같은 버전을 쓰게 된다. -->
+      <dependency>
+        <groupId>org.attoparser</groupId>
+        <artifactId>attoparser</artifactId>
+        <version>${attoparser.version}</version>
+      </dependency>
+
+      <!-- 렌더링 결과 HTML 검사 (cozy-test, test scope). 서버용 전이 의존성 정리는 M4에서 한다. -->
+      <dependency>
+        <groupId>nu.validator</groupId>
+        <artifactId>validator</artifactId>
+        <version>${nu-validator.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <release>${maven.compiler.release}</release>
+            <parameters>true</parameters>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>build-info</id>
+              <goals>
+                <goal>build-info</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>repackage</id>
+              <goals>
+                <goal>repackage</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-archetype-plugin</artifactId>
+          <version>${maven-archetype-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <!-- 앱과 프레임워크 모듈 모두에 적용되는 규칙 -->
+          <execution>
+            <id>cozy-enforce</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[25,)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9,)</version>
+                </requireMavenVersion>
+                <dependencyConvergence/>
+                <bannedDependencies>
+                  <message>Cozy 금지 의존성입니다 (PRD §4, docs/adr/0002, 0004, 0006). JPA·Hibernate·H2·GraalVM과 Modulith 공식 이벤트 저장소는 쓰지 않습니다. 영속성은 cozy-starter-sqlite, 이벤트 저장은 cozy-starter-events를 쓰세요.</message>
+                  <excludes>
+                    <exclude>org.springframework.boot:spring-boot-starter-data-jpa</exclude>
+                    <exclude>org.springframework.boot:spring-boot-data-jpa</exclude>
+                    <exclude>org.springframework.boot:spring-boot-hibernate</exclude>
+                    <exclude>org.springframework.boot:spring-boot-jpa</exclude>
+                    <exclude>org.hibernate.orm:*</exclude>
+                    <exclude>org.hibernate:hibernate-core</exclude>
+                    <exclude>com.h2database:h2</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-starter-jdbc</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-starter-jpa</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-starter-mongodb</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-starter-neo4j</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-events-jdbc</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-events-jpa</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-events-mongodb</exclude>
+                    <exclude>org.springframework.modulith:spring-modulith-events-neo4j</exclude>
+                    <exclude>org.graalvm.sdk:*</exclude>
+                    <exclude>org.graalvm.nativeimage:*</exclude>
+                  </excludes>
+                </bannedDependencies>
+                <bannedPlugins>
+                  <message>GraalVM 네이티브 이미지는 쓰지 않습니다 (docs/adr/0002). 배포는 mvn -Pdist package(jpackage)로 합니다.</message>
+                  <excludes>
+                    <exclude>org.graalvm.buildtools:native-maven-plugin</exclude>
+                  </excludes>
+                </bannedPlugins>
+              </rules>
+            </configuration>
+          </execution>
+          <!-- 프레임워크 자신만: cozy.version 리터럴이 실제 버전과 같은지 -->
+          <execution>
+            <id>cozy-version-consistency</id>
+            <inherited>false</inherited>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireProperty>
+                  <property>cozy.version</property>
+                  <regex>\Q${project.version}\E</regex>
+                  <regexMessage>cozy-parent의 cozy.version(${cozy.version})이 project.version(${project.version})과 다릅니다. 둘을 같이 올리세요.</regexMessage>
+                </requireProperty>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- 금지 의존성 규칙이 실제로 빌드를 실패시키는지 픽스처 앱으로 검증한다 (docs/adr/0019) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+          <streamLogsOnFailures>true</streamLogsOnFailures>
+          <postBuildHookScript>verify</postBuildHookScript>
+          <goals>
+            <goal>validate</goal>
+          </goals>
+        </configuration>
+        <executions>
+          <execution>
+            <id>cozy-parent-it</id>
+            <goals>
+              <goal>install</goal>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

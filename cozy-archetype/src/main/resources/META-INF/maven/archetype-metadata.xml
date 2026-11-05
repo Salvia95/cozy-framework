@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archetype-descriptor xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.2.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.2.0 https://maven.apache.org/xsd/archetype-descriptor-1.2.0.xsd"
+                      name="cozy-app">
+  <!-- M0 뼈대. requiredProperties(appId, appName, persistence, events)와 fileSets는 M7에서 추가한다. -->
+</archetype-descriptor>

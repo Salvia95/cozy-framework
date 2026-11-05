@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../cozy-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>cozy-test</artifactId>
+  <name>Cozy :: Test</name>
+  <description>상속형 아키텍처·렌더링·HTML·이벤트 호환 테스트</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-rules</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <!-- 모듈 의존 규칙 (PRD §5, docs/adr/0019) -->
+          <execution>
+            <id>cozy-module-boundary</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <message>cozy-test는 cozy-rules에만 일반 의존하고, 다른 cozy 모듈은 optional로만 참조합니다 (PRD §5). optional 여부는 PomBoundaryTest가 검사합니다.</message>
+                  <excludes>
+                    <exclude>io.salvia95.cozy:*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.salvia95.cozy:cozy-rules</include>
+                    <include>io.salvia95.cozy:cozy-starter-runtime</include>
+                    <include>io.salvia95.cozy:cozy-starter-sqlite</include>
+                    <include>io.salvia95.cozy:cozy-starter-events</include>
+                    <include>io.salvia95.cozy:cozy-ui</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

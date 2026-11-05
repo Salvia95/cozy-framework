@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../cozy-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>cozy-archetype</artifactId>
+  <packaging>maven-archetype</packaging>
+  <name>Cozy :: Archetype</name>
+  <description>오프라인 이니셜라이저. 옵션과 생성 내용은 M7에서 채운다 (PRD §6.6, §10).</description>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.archetype</groupId>
+        <artifactId>archetype-packaging</artifactId>
+        <version>${maven-archetype-plugin.version}</version>
+      </extension>
+    </extensions>
+  </build>
+</project>
