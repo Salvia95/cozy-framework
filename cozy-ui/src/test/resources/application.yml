@@ -1,0 +1,7 @@
+cozy:
+  app:
+    id: cozy-ui-test
+    name: UI 테스트
+  dev:
+    catalog:
+      enabled: true

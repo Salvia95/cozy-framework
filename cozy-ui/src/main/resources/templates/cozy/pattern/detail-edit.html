@@ -1,0 +1,10 @@
+<!--/* 상세 보기 + 수정 폼. detail: 읽기 화면, form: 수정 <form> */-->
+<section class="container-xl py-3" th:fragment="detailEdit(cozyHeading, cozyDetail, cozyForm)">
+  <div class="page-header d-print-none mb-3"><h2 class="page-title" th:text="${cozyHeading}">상세</h2></div>
+  <div class="row row-cards">
+    <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title">내용</h3></div>
+      <div class="card-body"><th:block th:replace="${cozyDetail}"></th:block></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header"><h3 class="card-title">수정</h3></div>
+      <div class="card-body"><th:block th:replace="${cozyForm}"></th:block></div></div></div>
+  </div>
+</section>

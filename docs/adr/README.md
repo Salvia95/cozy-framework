@@ -24,3 +24,4 @@
 | [0018](0018-s4-verification.md) | §4 확인 항목 조사 결과 | PRD §4 |
 | [0019](0019-build-verification.md) | 빌드 규칙의 검증 방식 | PRD §5, §6.1 |
 | [0020](0020-sqlite-immediate-write-transactions.md) | 쓰기 트랜잭션은 BEGIN IMMEDIATE | PRD §13 |
+| [0021](0021-ui-composition.md) | UI 구성 규칙: 레이아웃 조합, 예약 이름, 카탈로그, htmx 리다이렉트 | M3 |

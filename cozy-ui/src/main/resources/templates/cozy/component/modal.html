@@ -1,0 +1,12 @@
+<!--/* 모달. 여는 버튼: <button data-bs-toggle="modal" data-bs-target="#{id}"> */-->
+<div class="modal" tabindex="-1" th:fragment="modal(cozyId, cozyTitle, cozyBody)" th:id="${cozyId}">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" th:text="${cozyTitle}">제목</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body"><th:block th:replace="${cozyBody}"></th:block></div>
+    </div>
+  </div>
+</div>

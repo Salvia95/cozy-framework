@@ -1,0 +1,177 @@
+# Cozy 프레임워크 fragment 매니페스트 (PRD §6.4). 형식: docs/conventions/ui.md
+# 앱은 자기 resources/cozy/fragments.yml에 templates/fragments/ 아래 fragment를 같은 형식으로 적는다.
+fragments:
+  # ── layout ───────────────────────────────────────────────
+  - id: layout/base
+    template: cozy/layout/base
+    signature: base(cozyTitle, cozyContent)
+    purpose: 내비 없는 완전한 HTML 문서. 오류 화면, 카탈로그처럼 앱 껍데기가 필요 없는 화면에 쓴다.
+    document: true
+    params:
+      - { name: cozyTitle, type: String, required: true, description: 브라우저 제목 앞부분 }
+      - { name: cozyContent, type: fragment, required: true, description: 본문 (화면의 <main>) }
+    samples:
+      default: { cozyTitle: 샘플 화면 }
+  - id: layout/app-shell
+    template: cozy/layout/base
+    signature: appShell(cozyTitle, cozyContent)
+    purpose: 앱 화면의 기본 레이아웃. 사이드 내비(CozyNavItem)와 플래시 알림을 포함한다.
+    document: true
+    params:
+      - { name: cozyTitle, type: String, required: true, description: 브라우저 제목 앞부분 }
+      - { name: cozyContent, type: fragment, required: true, description: 본문 (화면의 <main>) }
+    samples:
+      default: { cozyTitle: 샘플 화면 }
+  - id: layout/shell-body
+    template: cozy/layout/base
+    signature: shellBody(cozyShellContent)
+    purpose: appShell 내부 구성. 화면에서 직접 쓰지 않는다.
+    params:
+      - { name: cozyShellContent, type: fragment, required: true, description: 본문 }
+    samples:
+      default: {}
+
+  # ── pattern ──────────────────────────────────────────────
+  - id: pattern/list-with-filter
+    template: cozy/pattern/list-with-filter
+    signature: listWithFilter(cozyHeading, cozyActions, cozyFilter, cozyResult)
+    purpose: 필터 폼 + 결과 목록. 필터가 hx-get으로 result fragment만 바꾼다.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyFilter, type: fragment, required: true, description: 필터 <form> }
+      - { name: cozyResult, type: fragment, required: true, description: '결과 영역 (th:fragment="result", id 있음)' }
+    samples:
+      default: { cozyHeading: 메모, cozyActions: sampleAction, cozyFilter: sampleFilter }
+  - id: pattern/form-page
+    template: cozy/pattern/form-page
+    signature: formPage(cozyHeading, cozyForm)
+    purpose: 입력 폼 한 장 (등록 화면).
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyForm, type: fragment, required: true, description: th:object가 있는 <form> }
+    samples:
+      default: { cozyHeading: 새 메모 }
+  - id: pattern/detail-edit
+    template: cozy/pattern/detail-edit
+    signature: detailEdit(cozyHeading, cozyDetail, cozyForm)
+    purpose: 상세 보기와 수정 폼을 나란히 둔다.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyDetail, type: fragment, required: true, description: 읽기 화면 }
+      - { name: cozyForm, type: fragment, required: true, description: 수정 <form> }
+    samples:
+      default: { cozyHeading: 메모 상세 }
+  - id: pattern/master-detail
+    template: cozy/pattern/master-detail
+    signature: masterDetail(cozyHeading, cozyMaster, cozyDetail)
+    purpose: 왼쪽 목록 + 오른쪽 상세. 목록 링크가 hx-get으로 #detail을 바꾼다.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyMaster, type: fragment, required: true, description: 목록 }
+      - { name: cozyDetail, type: fragment, required: true, description: 처음 보일 상세 }
+    samples:
+      default: { cozyHeading: 목록 }
+  - id: pattern/polling-panel
+    template: cozy/pattern/polling-panel
+    signature: pollingPanel(cozyHeading, cozyUrl, cozySeconds, cozyBody)
+    purpose: 주기적으로 본문을 다시 받아 오는 패널.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 패널 제목 }
+      - { name: cozyUrl, type: String, required: true, description: 본문 fragment를 돌려주는 주소 }
+      - { name: cozySeconds, type: int, required: true, description: 갱신 간격(초) }
+      - { name: cozyBody, type: fragment, required: true, description: 처음 보일 본문 }
+    samples:
+      default: { cozyHeading: 최근 활동, cozyUrl: /cozy/dev/catalog, cozySeconds: 3600 }
+
+  # ── component ────────────────────────────────────────────
+  - id: component/field
+    template: cozy/component/field
+    signature: field(name, label, type)
+    purpose: 입력 하나와 검증 오류. <form th:object> 안에서 쓴다.
+    params:
+      - { name: name, type: String, required: true, description: 폼 객체의 속성 이름 }
+      - { name: label, type: String, required: true, description: 표시 이름 }
+      - { name: type, type: String, required: true, description: "text, textarea, checkbox, number, date, email" }
+    samples:
+      default: { name: title, label: 제목, type: text, _form: { title: 회의록 정리 } }
+      error: { name: title, label: 제목, type: text, _form: { title: "" }, _errors: { title: 제목을 입력하세요 } }
+      textarea: { name: body, label: 본문, type: textarea, _form: { body: 여러 줄 본문 } }
+      checkbox: { name: pinned, label: 고정, type: checkbox, _form: { pinned: true } }
+  - id: component/data-table
+    template: cozy/component/data-table
+    signature: dataTable(cozyHead, cozyBody)
+    purpose: Tabler 표. 머리행과 행들을 fragment로 넘긴다.
+    params:
+      - { name: cozyHead, type: fragment, required: true, description: "<tr> 머리행" }
+      - { name: cozyBody, type: fragment, required: true, description: "<tr> 행들 (th:each)" }
+    samples:
+      default: { cozyHead: sampleTableHead, cozyBody: sampleTableRows }
+  - id: component/pagination
+    template: cozy/component/pagination
+    signature: pagination(page, url, target, include)
+    purpose: 이전·다음 페이지 이동과 전체 건수.
+    params:
+      - { name: page, type: io.salvia95.cozy.ui.CozyPage, required: true, description: 현재 페이지 }
+      - { name: url, type: String, required: true, description: 목록 주소 (page 파라미터가 붙는다) }
+      - { name: target, type: String, required: true, description: "바꿀 결과 영역 선택자 (#result)" }
+      - { name: include, type: String, required: true, description: "함께 보낼 필터 폼 선택자 (#filter)" }
+    samples:
+      default: { page: { number: 2, size: 10, totalElements: 45 }, url: /memo, target: "#result", include: "#filter" }
+      first: { page: { number: 1, size: 10, totalElements: 3 }, url: /memo, target: "#result", include: "#filter" }
+  - id: component/badge
+    template: cozy/component/badge
+    signature: badge(text, color)
+    purpose: 상태나 분류를 짧게 표시한다.
+    params:
+      - { name: text, type: String, required: true, description: 표시할 글자 }
+      - { name: color, type: String, required: false, description: "Tabler 색 이름 (blue, green, red, yellow, secondary)" }
+    samples:
+      default: { text: 고정, color: blue }
+      danger: { text: 실패, color: red }
+  - id: component/alert
+    template: cozy/component/alert
+    signature: alert(kind, message)
+    purpose: 화면 위쪽 알림. app-shell이 플래시(CozyFlash)를 이것으로 그린다.
+    params:
+      - { name: kind, type: String, required: true, description: "success, info, warning, danger" }
+      - { name: message, type: String, required: true, description: 알림 문장 }
+    samples:
+      success: { kind: success, message: 저장했습니다 }
+      danger: { kind: danger, message: 저장하지 못했습니다 }
+  - id: component/empty-state
+    template: cozy/component/empty-state
+    signature: emptyState(title, description)
+    purpose: 결과가 없을 때 보여 준다.
+    params:
+      - { name: title, type: String, required: true, description: 한 줄 제목 }
+      - { name: description, type: String, required: false, description: 다음에 할 일 }
+    samples:
+      default: { title: 메모가 없습니다, description: 새 메모를 만들어 보세요. }
+      titleOnly: { title: 결과가 없습니다 }
+  - id: component/modal
+    template: cozy/component/modal
+    signature: modal(cozyId, cozyTitle, cozyBody)
+    purpose: 확인 창. 버튼의 data-bs-target으로 연다.
+    params:
+      - { name: cozyId, type: String, required: true, description: 모달 요소 id }
+      - { name: cozyTitle, type: String, required: true, description: 제목 }
+      - { name: cozyBody, type: fragment, required: true, description: 본문 }
+    samples:
+      default: { cozyId: sample-modal, cozyTitle: "삭제할까요?" }
+  - id: component/toast
+    template: cozy/component/toast
+    signature: toast(kind, message)
+    purpose: 서버가 그리는 토스트. 스크립트에서는 Cozy.toast(message, kind)를 쓴다.
+    params:
+      - { name: kind, type: String, required: true, description: "success, info, warning, danger" }
+      - { name: message, type: String, required: true, description: 알림 문장 }
+    samples:
+      default: { kind: success, message: 저장했습니다 }
+  - id: component/loading
+    template: cozy/component/loading
+    signature: loading()
+    purpose: htmx 요청 중 표시 (htmx-indicator).
+    params: []
+    samples:
+      default: {}

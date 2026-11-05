@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<!--/* 메모 상세: detail-edit 패턴. 왼쪽은 읽기, 오른쪽은 수정 폼. */-->
+<html th:replace="~{cozy/layout/base :: appShell(${memo.title}, ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/detail-edit :: detailEdit(${memo.title}, ~{::#memo-detail}, ~{::#form})}">
+    <div id="memo-detail">
+      <dl class="row">
+        <dt class="col-4">고정</dt><dd class="col-8" th:text="${memo.pinned} ? '예' : '아니오'">아니오</dd>
+        <dt class="col-4">만든 시각</dt><dd class="col-8" th:text="${memo.createdAt}">2026-11-06 10:00</dd>
+        <dt class="col-4">고친 시각</dt><dd class="col-8" th:text="${memo.updatedAt}">2026-11-06 10:00</dd>
+      </dl>
+      <div class="mb-3">
+        <p class="mb-1" th:each="line : ${memo.bodyLines}" th:text="${line}">본문</p>
+      </div>
+      <form th:action="@{/memo/{id}/delete(id=${memo.id})}" method="post"
+            th:hx-post="@{/memo/{id}/delete(id=${memo.id})}" hx-confirm="이 메모를 지울까요?">
+        <button class="btn btn-outline-danger" type="submit">삭제</button>
+      </form>
+    </div>
+
+    <form id="form" th:fragment="form" th:action="@{/memo/{id}(id=${memo.id})}" method="post" th:object="${form}"
+          th:hx-post="@{/memo/{id}(id=${memo.id})}" hx-target="this" hx-swap="outerHTML">
+      <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
+      <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
+      <div th:replace="~{cozy/component/field :: field('pinned', '고정', 'checkbox')}"></div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">저장</button>
+        <a class="btn" th:href="@{/memo}">목록</a>
+      </div>
+    </form>
+  </section>
+</main>
+</body>
+</html>

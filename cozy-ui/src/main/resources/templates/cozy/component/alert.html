@@ -1,0 +1,4 @@
+<!--/* 알림(플래시 포함). kind: success, info, warning, danger */-->
+<div class="alert" role="alert" th:fragment="alert(kind, message)" th:classappend="|alert-${kind ?: 'info'}|">
+  <div class="alert-description" th:text="${message}">알림</div>
+</div>

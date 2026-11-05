@@ -1,0 +1,7 @@
+<!--/* 표. head에는 <tr> 머리행, body에는 <tr> 행들(th:each)을 넘긴다. */-->
+<div class="table-responsive" th:fragment="dataTable(cozyHead, cozyBody)">
+  <table class="table table-vcenter card-table">
+    <thead><th:block th:replace="${cozyHead}"></th:block></thead>
+    <tbody><th:block th:replace="${cozyBody}"></th:block></tbody>
+  </table>
+</div>

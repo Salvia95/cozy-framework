@@ -1,0 +1,4 @@
+<!--/* 서버가 그리는 토스트. 스크립트에서는 Cozy.toast(message, kind) 또는 HX-Trigger의 cozy:toast 이벤트를 쓴다. */-->
+<div class="toast show" role="status" th:fragment="toast(kind, message)" th:classappend="|text-bg-${kind ?: 'info'}|">
+  <div class="toast-body" th:text="${message}">알림</div>
+</div>

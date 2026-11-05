@@ -1,0 +1,10 @@
+<!--/* 주기 갱신 패널. url은 패널 본문 fragment를 돌려주는 주소, seconds는 갱신 간격(초). */-->
+<div class="card" th:fragment="pollingPanel(cozyHeading, cozyUrl, cozySeconds, cozyBody)">
+  <div class="card-header">
+    <h3 class="card-title" th:text="${cozyHeading}">현황</h3>
+    <div class="card-actions"><span th:replace="~{cozy/component/loading :: loading()}"></span></div>
+  </div>
+  <div class="card-body" th:hx-get="@{${cozyUrl}}" th:hx-trigger="|every ${cozySeconds}s|" hx-swap="innerHTML" hx-indicator="closest .card">
+    <th:block th:replace="${cozyBody}"></th:block>
+  </div>
+</div>

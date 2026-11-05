@@ -1,0 +1,5 @@
+<!--/* 결과가 없을 때 */-->
+<div class="empty" th:fragment="emptyState(title, description)">
+  <p class="empty-title" th:text="${title}">결과가 없습니다</p>
+  <p class="empty-subtitle text-secondary" th:if="${description != null}" th:text="${description}">설명</p>
+</div>

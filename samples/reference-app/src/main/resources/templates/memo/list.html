@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--/* 메모 목록: list-with-filter 패턴. 필터와 페이지 이동은 result fragment만 바꾼다. */-->
+<html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#memo-actions}, ~{::#filter}, ~{::#result})}">
+    <a id="memo-actions" class="btn btn-primary" th:href="@{/memo/new}">새 메모</a>
+
+    <form id="filter" class="row g-2 align-items-center" th:action="@{/memo}" method="get" th:object="${filter}"
+          th:hx-get="@{/memo}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true"
+          hx-trigger="submit, input delay:300ms, change">
+      <div class="col">
+        <input class="form-control" type="search" th:field="*{q}" placeholder="제목이나 본문으로 찾기" aria-label="검색">
+      </div>
+      <div class="col-auto">
+        <label class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" th:field="*{pinned}">
+          <span class="form-check-label">고정만</span>
+        </label>
+      </div>
+      <div class="col-auto"><span th:replace="~{cozy/component/loading :: loading()}"></span></div>
+    </form>
+
+    <div id="result" th:fragment="result">
+      <th:block th:if="${result.rows.isEmpty()}">
+        <div th:replace="~{cozy/component/empty-state :: emptyState('메모가 없습니다', '조건을 바꾸거나 새 메모를 만들어 보세요.')}"></div>
+      </th:block>
+      <th:block th:unless="${result.rows.isEmpty()}">
+        <div th:replace="~{cozy/component/data-table :: dataTable(~{::#memo-head}, ~{::.memo-row})}">
+          <table>
+            <thead><tr id="memo-head"><th>제목</th><th>상태</th><th>수정</th></tr></thead>
+            <tbody>
+              <tr class="memo-row" th:each="row : ${result.rows}">
+                <td><a th:href="@{/memo/{id}(id=${row.id})}" th:text="${row.title}">제목</a></td>
+                <td><th:block th:if="${row.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></th:block></td>
+                <td class="text-secondary" th:text="${row.updatedAt}">2026-11-06 10:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div th:replace="~{cozy/component/pagination :: pagination(${result.page}, '/memo', '#result', '#filter')}"></div>
+      </th:block>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+/* Cozy: Tabler 위의 최소 보정 (PRD §6.4). 인라인 style은 CSP로 막혀 있으므로 화면 보정은 여기에 둔다. */
+:root {
+  --tblr-font-sans-serif: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+/* htmx 요청 표시 (htmx의 includeIndicatorStyles는 CSP 때문에 끈다) */
+.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
+/* 요청 중 화면 맨 위 진행 막대 */
+.cozy-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 2000; background: var(--tblr-primary); transition: width 300ms ease; }
+html.cozy-busy .cozy-progress { width: 70%; }
+
+/* 업데이트 배너 */
+.cozy-update-banner { text-align: center; }
+
+/* 패턴 카탈로그 */
+.cozy-catalog-frame { width: 100%; height: 320px; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
+.cozy-catalog-frame-tall { height: 560px; }
+.cozy-catalog-placeholder { padding: 1rem; border: 1px dashed var(--tblr-border-color); border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); text-align: center; }

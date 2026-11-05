@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html th:replace="~{cozy/layout/base :: appShell('항목', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('항목', ~{::#item-actions}, ~{::#filter}, ~{::#result})}">
+    <a id="item-actions" class="btn btn-primary" th:href="@{/uitest/new}">새 항목</a>
+    <form id="filter" th:hx-get="@{/uitest}" hx-target="#result" hx-swap="outerHTML" hx-trigger="submit, input delay:300ms">
+      <input class="form-control" type="search" name="q" th:value="${q}" aria-label="검색">
+    </form>
+    <div id="result" th:fragment="result">
+      <div th:replace="~{cozy/component/data-table :: dataTable(~{::#item-head}, ~{::.item-row})}">
+        <table><thead><tr id="item-head"><th>이름</th></tr></thead>
+          <tbody><tr class="item-row" th:each="item : ${items}"><td th:text="${item}">이름</td></tr></tbody></table>
+      </div>
+      <div th:replace="~{cozy/component/pagination :: pagination(${page}, '/uitest', '#result', '#filter')}"></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!--/*
+  목록 + 필터 (htmx 부분 갱신).
+  filter: hx-get으로 result를 바꾸는 <form>, result: th:fragment="result"이고 id가 있는 결과 영역.
+  컨트롤러는 CozyViews.pageOrFragment("{module}/list", "result")를 반환한다.
+*/-->
+<section class="container-xl py-3" th:fragment="listWithFilter(cozyHeading, cozyActions, cozyFilter, cozyResult)">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title" th:text="${cozyHeading}">목록</h2></div>
+      <div class="col-auto"><th:block th:replace="${cozyActions}"></th:block></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body border-bottom py-3"><th:block th:replace="${cozyFilter}"></th:block></div>
+    <th:block th:replace="${cozyResult}"></th:block>
+  </div>
+</section>

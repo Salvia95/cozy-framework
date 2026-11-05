@@ -18,6 +18,11 @@ public interface MemoMapper {
 
 	List<Memo> findAll();
 
+	List<Memo> search(@Param("like") String like, @Param("pinnedOnly") boolean pinnedOnly, @Param("offset") long offset,
+			@Param("limit") int limit);
+
+	long count(@Param("like") String like, @Param("pinnedOnly") boolean pinnedOnly);
+
 	int update(@Param("id") long id, @Param("title") String title, @Param("body") String body,
 			@Param("pinned") boolean pinned, @Param("updatedAt") Instant updatedAt);
 

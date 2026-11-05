@@ -28,11 +28,16 @@ public class MemoService {
 
 	@Transactional
 	public long create(String title, String body) {
+		return create(title, body, false);
+	}
+
+	@Transactional
+	public long create(String title, String body, boolean pinned) {
 		Instant now = Instant.now(this.clock);
 		MemoRow row = new MemoRow();
 		row.setTitle(title);
 		row.setBody(nullToEmpty(body));
-		row.setPinned(false);
+		row.setPinned(pinned);
 		row.setCreatedAt(now);
 		row.setUpdatedAt(now);
 		this.mapper.insert(row);
@@ -48,6 +53,25 @@ public class MemoService {
 	@Transactional(readOnly = true)
 	public List<Memo> list() {
 		return this.mapper.findAll();
+	}
+
+	/**
+	 * 제목이나 본문에 {@code query}가 들어간 메모. 정렬은 {@link #list()}와 같다.
+	 * @param query 비우면 전체
+	 * @param pinnedOnly 고정한 메모만
+	 */
+	@Transactional(readOnly = true)
+	public MemoSearch search(String query, boolean pinnedOnly, long offset, int limit) {
+		String like = (query == null || query.isBlank()) ? null : "%" + escapeLike(query.trim()) + "%";
+		return new MemoSearch(this.mapper.search(like, pinnedOnly, offset, limit), this.mapper.count(like, pinnedOnly));
+	}
+
+	/** 검색 결과 한 페이지와 전체 건수. */
+	public record MemoSearch(List<Memo> items, long total) {
+	}
+
+	private static String escapeLike(String value) {
+		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
 	}
 
 	/** @return 수정했으면 true, 없는 메모면 false */

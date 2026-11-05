@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--/* 패턴 카탈로그 (cozy.dev.catalog.enabled=true). 미리보기는 /cozy/dev/catalog/render가 그린다. */-->
+<html th:replace="~{cozy/layout/base :: base('패턴 카탈로그', ~{::main})}">
+<body>
+<main class="container-xl py-4">
+  <div class="page-header mb-4">
+    <h2 class="page-title">패턴 카탈로그</h2>
+    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.</div>
+  </div>
+  <section class="mb-5" th:each="group : ${groups}">
+    <h3 class="mb-3" th:text="${group.key}">layout</h3>
+    <div class="card mb-4" th:each="entry : ${group.value}" th:id="${'fragment-' + entry.id.replace('/', '-')}">
+      <div class="card-header">
+        <div>
+          <h4 class="card-title"><code th:text="${entry.template + ' :: ' + entry.signature}">cozy/component/x :: x()</code></h4>
+          <div class="text-secondary" th:text="${entry.purpose}">용도</div>
+        </div>
+        <div class="card-actions">
+          <span class="badge" th:classappend="${entry.framework} ? 'bg-blue-lt' : 'bg-green-lt'" th:text="${entry.framework} ? '프레임워크' : '앱'">구분</span>
+        </div>
+      </div>
+      <div class="table-responsive" th:if="${!entry.params.isEmpty()}">
+        <table class="table table-sm card-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>필수</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr th:each="p : ${entry.params}">
+              <td><code th:text="${p.name}">name</code></td>
+              <td th:text="${p.type}">String</td>
+              <td th:text="${p.required} ? '예' : '아니오'">예</td>
+              <td th:text="${p.description}">설명</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <div class="mb-3" th:each="state : ${entry.samples.keySet()}">
+          <div class="text-secondary small mb-1" th:text="|상태: ${state}|">상태</div>
+          <iframe class="cozy-catalog-frame" th:classappend="${entry.document} ? 'cozy-catalog-frame-tall'"
+                  th:src="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}" th:title="|${entry.id} ${state}|"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
+
+<div class="cozy-catalog-placeholder" th:fragment="placeholder(name)" th:text="|${name} 자리|">자리</div>
+
+<!--/* 매니페스트 샘플이 fragment 파라미터에 쓰는 예시 조각 */-->
+<tr th:fragment="sampleTableHead"><th>제목</th><th>상태</th><th>수정</th></tr>
+<th:block th:fragment="sampleTableRows">
+  <tr><td>회의록 정리</td><td><span class="badge bg-blue-lt">고정</span></td><td>2026-11-06 10:00</td></tr>
+  <tr><td>주간 보고</td><td></td><td>2026-11-05 17:20</td></tr>
+</th:block>
+<form id="filter" class="row g-2" th:fragment="sampleFilter">
+  <div class="col"><input class="form-control" type="search" name="q" placeholder="검색" aria-label="검색"></div>
+  <div class="col-auto"><button class="btn" type="submit">찾기</button></div>
+</form>
+<a class="btn btn-primary" th:fragment="sampleAction" href="#">새로 만들기</a>

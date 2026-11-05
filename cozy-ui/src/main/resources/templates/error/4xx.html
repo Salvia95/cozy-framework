@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<!--/* Boot 오류 화면 (templates/error/는 Boot 오류 화면 전용, R1·R2 예약) */-->
+<html th:replace="~{cozy/layout/base :: base(|${status} 오류|, ~{::main})}">
+<body>
+<main class="page page-center">
+  <div class="container-tight py-4">
+    <div class="empty">
+      <div class="empty-header" th:text="${status}">4xx</div>
+      <p class="empty-title">요청을 처리할 수 없습니다</p>
+      <p class="empty-subtitle text-secondary">주소가 맞는지 확인하세요.</p>
+      <div class="empty-action"><a class="btn btn-primary" th:href="@{/}">처음으로</a></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

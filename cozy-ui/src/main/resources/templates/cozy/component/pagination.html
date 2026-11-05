@@ -1,0 +1,17 @@
+<!--/* 페이지 이동. url에 page 파라미터를 붙여 target을 htmx로 바꾼다. include는 함께 보낼 필터 폼 선택자. */-->
+<div class="card-footer d-flex align-items-center" th:fragment="pagination(page, url, target, include)">
+  <p class="m-0 text-secondary">
+    전체 <span th:text="${page.totalElements}">0</span>건 ·
+    <span th:text="${page.number}">1</span> / <span th:text="${page.totalPages()}">1</span>쪽
+  </p>
+  <ul class="pagination m-0 ms-auto">
+    <li class="page-item" th:classappend="${!page.hasPrevious()} ? 'disabled'">
+      <a class="page-link" th:href="@{${url}(page=${page.previous()})}" th:hx-get="@{${url}(page=${page.previous()})}"
+         th:hx-target="${target}" th:hx-include="${include}" hx-swap="outerHTML" hx-push-url="true">이전</a>
+    </li>
+    <li class="page-item" th:classappend="${!page.hasNext()} ? 'disabled'">
+      <a class="page-link" th:href="@{${url}(page=${page.next()})}" th:hx-get="@{${url}(page=${page.next()})}"
+         th:hx-target="${target}" th:hx-include="${include}" hx-swap="outerHTML" hx-push-url="true">다음</a>
+    </li>
+  </ul>
+</div>

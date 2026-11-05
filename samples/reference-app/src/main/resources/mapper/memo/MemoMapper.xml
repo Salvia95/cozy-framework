@@ -17,6 +17,24 @@
     SELECT <include refid="columns"/> FROM memo ORDER BY pinned DESC, updated_at DESC, id DESC
   </select>
 
+  <sql id="searchCondition">
+    <where>
+      <if test="like != null">(title LIKE #{like} ESCAPE '\' OR body LIKE #{like} ESCAPE '\')</if>
+      <if test="pinnedOnly">AND pinned = 1</if>
+    </where>
+  </sql>
+
+  <select id="search" resultType="io.salvia95.cozy.reference.memo.Memo">
+    SELECT <include refid="columns"/> FROM memo
+    <include refid="searchCondition"/>
+    ORDER BY pinned DESC, updated_at DESC, id DESC
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="count" resultType="long">
+    SELECT count(*) FROM memo <include refid="searchCondition"/>
+  </select>
+
   <update id="update">
     UPDATE memo SET title = #{title}, body = #{body}, pinned = #{pinned}, updated_at = #{updatedAt}
     WHERE id = #{id}

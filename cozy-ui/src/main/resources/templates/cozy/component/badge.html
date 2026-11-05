@@ -1,0 +1,2 @@
+<!--/* 짧은 상태 표시. color: blue, green, red, yellow, secondary 등 Tabler 색 이름 */-->
+<span class="badge" th:fragment="badge(text, color)" th:classappend="|bg-${color ?: 'secondary'}-lt|" th:text="${text}">상태</span>

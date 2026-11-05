@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!--/* 새 메모: form-page 패턴. 검증 오류면 htmx가 form fragment만 바꾸고, 성공하면 상세로 이동한다(PRG). */-->
+<html th:replace="~{cozy/layout/base :: appShell('새 메모', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/form-page :: formPage('새 메모', ~{::#form})}">
+    <form id="form" th:fragment="form" th:action="@{/memo}" method="post" th:object="${form}"
+          th:hx-post="@{/memo}" hx-target="this" hx-swap="outerHTML">
+      <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
+      <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
+      <div th:replace="~{cozy/component/field :: field('pinned', '고정', 'checkbox')}"></div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">저장</button>
+        <a class="btn" th:href="@{/memo}">취소</a>
+      </div>
+    </form>
+  </section>
+</main>
+</body>
+</html>

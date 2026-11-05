@@ -1,0 +1,18 @@
+<!--/* 입력 + 오류. <form th:object="${form}"> 안에서 쓴다. type: text, textarea, checkbox, number, date, email */-->
+<div class="mb-3" th:fragment="field(name, label, type)">
+  <th:block th:if="${type == 'checkbox'}">
+    <label class="form-check">
+      <input type="checkbox" class="form-check-input" th:field="*{__${name}__}"
+             th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'">
+      <span class="form-check-label" th:text="${label}">항목</span>
+    </label>
+  </th:block>
+  <th:block th:unless="${type == 'checkbox'}">
+    <label class="form-label" th:for="${name}" th:text="${label}">항목</label>
+    <textarea th:if="${type == 'textarea'}" class="form-control" rows="6" th:field="*{__${name}__}"
+              th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'"></textarea>
+    <input th:unless="${type == 'textarea'}" th:type="${type}" class="form-control" th:field="*{__${name}__}"
+           th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'">
+  </th:block>
+  <div class="invalid-feedback d-block" th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">오류</div>
+</div>

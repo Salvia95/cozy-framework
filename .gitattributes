@@ -7,3 +7,5 @@
 *.woff2 binary
 *.png binary
 *.ico binary
+# 벤더 자산은 바이트 그대로 둔다. 줄바꿈이 바뀌면 vendor.lock의 SHA-256과 달라진다.
+cozy-ui/src/main/resources/META-INF/resources/cozy/vendor/** -text
