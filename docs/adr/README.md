@@ -26,3 +26,4 @@
 | [0020](0020-sqlite-immediate-write-transactions.md) | 쓰기 트랜잭션은 BEGIN IMMEDIATE | PRD §13 |
 | [0021](0021-ui-composition.md) | UI 구성 규칙: 레이아웃 조합, 예약 이름, 카탈로그, htmx 리다이렉트 | M3 |
 | [0022](0022-rules-and-test-base.md) | 규칙 검사와 테스트 기반: 실패로 닫는 기준, vnu 구성, 검사 픽스처 | M4 |
+| [0023](0023-events-runtime.md) | 이벤트 실행 구성: 인박스 위치, 실행기, 보관, 호환 검사 | M5 |

@@ -26,6 +26,12 @@
       <artifactId>cozy-ui</artifactId>
       <optional>true</optional>
     </dependency>
+    <!-- 이벤트 호환 검사 (이벤트를 쓰는 앱에서만) -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-events</artifactId>
+      <optional>true</optional>
+    </dependency>
 
     <!-- 앱 테스트 기반: JUnit, AssertJ, Spring Test, MockMvc, Security Test -->
     <dependency>

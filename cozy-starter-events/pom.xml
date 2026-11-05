@@ -20,6 +20,17 @@
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-starter-sqlite</artifactId>
     </dependency>
+    <!-- 발행 기록 레지스트리, @ApplicationModuleListener. 저장소는 Cozy가 SQLite로 직접 구현한다 (ADR-0006) -->
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-events-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

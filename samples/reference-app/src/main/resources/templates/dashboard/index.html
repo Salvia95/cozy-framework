@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!--/* 대시보드: memo::api, activity::api fragment 조합 + polling-panel 주기 갱신. */-->
+<html th:replace="~{cozy/layout/base :: appShell('대시보드', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/master-detail :: masterDetail('대시보드', ~{::#memo-summary}, ~{::#activity-panel})}">
+    <div id="memo-summary">
+      <div th:replace="~{memo/api/summary :: memoSummary(${dashboard.memo})}"></div>
+    </div>
+    <div id="activity-panel">
+      <div th:replace="~{cozy/pattern/polling-panel :: pollingPanel('최근 활동', '/dashboard/activity', 10, ~{::#activity})}">
+        <div id="activity" th:fragment="activity">
+          <div th:replace="~{activity/api/recent-activity :: recentActivity(${dashboard.activities})}"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

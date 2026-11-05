@@ -1,0 +1,17 @@
+# 대시보드
+screen: dashboard-index
+template: dashboard/index
+fragments: [activity]
+model:
+  dashboard: io.salvia95.cozy.reference.dashboard.view.DashboardView
+states:
+  default:
+    dashboard:
+      memo: { total: 12, pinned: 3, latestTitle: 회의록 정리 }
+      activities:
+        - { message: "메모를 만들었습니다: 회의록 정리", at: "2026-11-06 10:00" }
+        - { message: "메모를 만들었습니다: 주간 보고", at: "2026-11-05 17:20" }
+  empty:
+    dashboard:
+      memo: { total: 0, pinned: 0, latestTitle: null }
+      activities: []

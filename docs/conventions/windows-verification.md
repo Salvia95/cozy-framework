@@ -74,6 +74,16 @@ mvn -o verify
 - [ ] `Cozy :: Samples :: Violations`의 invoker 결과가 `Passed: 7`이다.
 - [ ] reference-app의 `ArchitectureTest`(2개)와 `RenderingTest`(3개)가 통과한다.
 
+## M5 이벤트
+
+새로 빌드한 jar를 실행한다(`java -jar .\cozy-reference-app-1.0.0-SNAPSHOT.jar`). 브라우저가 대시보드로 열린다.
+
+- [ ] 사이드 내비에 대시보드, 메모 순으로 보인다.
+- [ ] 메모를 하나 만든 뒤 대시보드로 가면, 10초 안에 "최근 활동"에 "메모를 만들었습니다: (제목)"이 나타난다. 새로고침하지 않아도 된다.
+- [ ] 전체 메모 수와 고정한 메모 수가 맞다.
+- [ ] 메모를 만든 직후 작업 관리자에서 java 프로세스를 끝내고 다시 실행해도, 그 메모의 활동이 한 번만 보인다.
+- [ ] `mvn -o verify`에서 cozy-starter-events의 `EventContractTest` 9개가 통과한다. 강제 종료 테스트도 포함된다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -82,3 +92,4 @@ mvn -o verify
 | | M2 | | |
 | | M3 | | |
 | | M4 | | |
+| | M5 | | |

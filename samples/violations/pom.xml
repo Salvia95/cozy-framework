@@ -33,6 +33,16 @@
     </dependency>
     <dependency>
       <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-sqlite</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-events</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -49,7 +59,7 @@
           <cloneProjectsTo>${project.build.directory}/checks</cloneProjectsTo>
           <streamLogsOnFailures>true</streamLogsOnFailures>
           <postBuildHookScript>verify</postBuildHookScript>
-          <parallelThreads>2</parallelThreads>
+          <parallelThreads>4</parallelThreads>
         </configuration>
         <executions>
           <execution>

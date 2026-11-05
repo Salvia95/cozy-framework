@@ -10,5 +10,5 @@
 | [ui.md](ui.md) | 화면 구성, 컨트롤러 규약, fragment 목록, 매니페스트 형식, 카탈로그, 벤더 자산 | M3 |
 | [rules.md](rules.md) | 템플릿 경계 규칙 R1~R8, 실패 메시지, `cozy.rules.*`, cozy-rules API | M4 |
 | [testing.md](testing.md) | CozyArchitectureTest, CozyRenderingTest, 검사 C1~C7, 화면 스펙 형식, 위반 픽스처 | M4 |
-| (예정) events.md | CozyEvent, 스키마 진화 규칙, 외부 호출 리스너 규칙 | M5 |
+| [events.md](events.md) | CozyEvent, 전달 보장, 인박스, 스키마 진화 규칙과 샘플, 외부 호출 리스너 규칙, `cozy.events.*` | M5 |
 | (예정) update.md, performance.md | 업데이트 매니페스트, 성능 측정 | M6 |

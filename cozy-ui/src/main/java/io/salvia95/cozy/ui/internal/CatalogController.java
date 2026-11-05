@@ -54,7 +54,7 @@ public class CatalogController {
 	@GetMapping
 	String catalog(Model model) {
 		Map<String, List<Entry>> groups = new LinkedHashMap<>();
-		for (String group : List.of("layout", "pattern", "component")) {
+		for (String group : List.of("layout", "pattern", "component", "api")) {
 			groups.put(group, this.manifest.fragments().stream().filter((e) -> e.group().equals(group)).toList());
 		}
 		model.addAttribute("groups", groups);

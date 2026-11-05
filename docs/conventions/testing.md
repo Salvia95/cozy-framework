@@ -31,7 +31,7 @@ class RenderingTest extends CozyRenderingTest {
 | C3 | 렌더링 | `CozyRenderingTest.everyScreenStateRendersAsValidHtml`, `everyManifestFragmentRendersAsValidHtml` | 스펙 형식 오류, fixture가 DTO 타입과 맞지 않음, 렌더링 예외, 200이 아닌 응답 |
 | C4 | HTML | 위의 두 테스트 | 렌더링 결과의 vnu 오류. 경고는 출력만 한다 |
 | C5 | 스펙 누락 | `CozyRenderingTest.everyScreenTemplateHasSpec` | 스펙이 없는 화면 템플릿, 매니페스트에 없는 `{모듈}/api/` fragment |
-| C6 | 이벤트 호환 | (M5) | — |
+| C6 | 이벤트 | `CozyArchitectureTest.eventListenersReceiveCozyEvents`, `eventSamplesAreCompatible` | CozyEvent가 아닌 리스너 파라미터, 빠지거나 호환되지 않는 직렬화 샘플([events.md](events.md)). cozy-starter-events를 쓰는 앱만 |
 | C7 | 컨트롤러·뷰 모듈 | 앱의 모든 MockMvc 테스트 | 컨트롤러의 모듈과 반환한 뷰 이름의 첫 경로가 다름 |
 
 ### 검사별 세부
@@ -62,6 +62,7 @@ class RenderingTest extends CozyRenderingTest {
 | `CozyArchitectureTest.applicationClass()` | 테스트 패키지에서 찾은 `@SpringBootApplication` |
 | `CozyArchitectureTest.templateRoot()`, `CozyRenderingTest.templateRoot()` | `src/main/resources/templates` |
 | `CozyArchitectureTest.manifestFile()` | `src/main/resources/cozy/fragments.yml` |
+| `CozyArchitectureTest.eventSamples()` | `src/test/resources/events` |
 | `CozyArchitectureTest.allowSameLayer()` | 앱 설정 `cozy.rules.allow-same-layer` |
 
 ## 화면 스펙 `specs/{모듈}-{화면}.yml`
@@ -101,7 +102,7 @@ states:                               # default와 empty는 필수
 
 ## 위반 픽스처
 
-`samples/violations/`에 규칙(R1~R8)과 검사(C1~C5, C7)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
+`samples/violations/`에 규칙(R1~R8)과 검사(C1~C7)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
 
 ## 테스트 JVM
 

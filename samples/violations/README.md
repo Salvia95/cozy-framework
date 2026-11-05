@@ -31,6 +31,7 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 | `C3-spec-states` | C3 스펙 형식 | 스펙에 empty 상태가 없다 |
 | `C4-html` | C4 vnu | 렌더링 결과에 같은 id가 두 번 있다 |
 | `C5-missing-spec` | C5 스펙 누락 | 화면 템플릿에 스펙이 없다 |
+| `C6-listener-type` | C6 리스너 파라미터 | `@ApplicationModuleListener`의 파라미터가 CozyEvent가 아니다 |
+| `C6-field-removed` | C6 이벤트 호환 | v1 샘플의 필드가 현재 이벤트 클래스에 없다 (필드 삭제) |
+| `C6-missing-sample` | C6 이벤트 샘플 | 이벤트에 직렬화 샘플이 없다 |
 | `C7-view-module` | C7 컨트롤러·뷰 모듈 | memo 컨트롤러가 `wiki/list`를 반환한다 |
-
-C6(이벤트 호환)은 M5에서 추가한다.

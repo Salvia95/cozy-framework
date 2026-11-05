@@ -41,11 +41,6 @@ class MemoScreenTest {
 	MemoService memos;
 
 	@Test
-	void rootGoesToMemoList() throws Exception {
-		this.mvc.perform(get("/")).andExpect(status().isFound()).andExpect(redirectedUrl("/memo"));
-	}
-
-	@Test
 	void createWithValidationErrorThenSuccessWithPrg() throws Exception {
 		String invalid = body(this.mvc.perform(post("/memo").with(csrf()).param("title", " ")).andExpect(status().isOk()).andReturn());
 		assertThat(invalid).contains("<html").contains("is-invalid").contains("제목을 입력하세요");
@@ -134,7 +129,7 @@ class MemoScreenTest {
 	@Test
 	void memoTemplatesAreBuiltFromCozyPatterns() throws Exception {
 		try (Stream<Path> files = Files.list(Path.of("src/main/resources/templates/memo"))) {
-			for (Path template : files.toList()) {
+			for (Path template : files.filter(Files::isRegularFile).toList()) {
 				String html = Files.readString(template);
 				assertThat(html).as(template.toString())
 					.contains("~{cozy/layout/base :: appShell(")

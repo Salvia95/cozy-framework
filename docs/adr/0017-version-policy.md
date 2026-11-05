@@ -30,7 +30,7 @@
 | SnakeYAML | 2.6 | Boot BOM |
 | Hibernate Validator (spring-boot-starter-validation) | Boot BOM | Boot BOM. cozy-ui, `@Valid` 규약 (M3, 승인 2026-11-06) |
 | log4j-over-slf4j | 2.0.20 | Boot BOM. cozy-test, vnu의 log4j 1.x 대체 (ADR-0022) |
-| Spring Modulith (api, core) | 2.1.2 (core는 ArchUnit 1.4.2를 가져온다) | cozy-parent |
+| Spring Modulith (api, core, events-core) | 2.1.2 (core는 ArchUnit 1.4.2를 가져온다) | cozy-parent |
 | mybatis-spring-boot-starter | 4.1.0 | cozy-parent |
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |

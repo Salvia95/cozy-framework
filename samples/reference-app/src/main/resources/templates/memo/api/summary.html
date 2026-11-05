@@ -1,0 +1,19 @@
+<!--/* memo 공개 fragment: 메모 요약. 다른 모듈(dashboard)이 memo::api 의존을 선언하고 쓴다. */-->
+<div class="row g-3" th:fragment="memoSummary(summary)">
+  <div class="col-sm-6">
+    <div class="card card-sm"><div class="card-body">
+      <div class="text-secondary">전체 메모</div>
+      <div class="h2 mb-0" th:text="${summary.total}">0</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card card-sm"><div class="card-body">
+      <div class="text-secondary">고정한 메모</div>
+      <div class="h2 mb-0" th:text="${summary.pinned}">0</div>
+    </div></div>
+  </div>
+  <div class="col-12 text-secondary">
+    <th:block th:if="${summary.latestTitle != null}">최근: <a th:href="@{/memo}" th:text="${summary.latestTitle}">제목</a></th:block>
+    <th:block th:if="${summary.latestTitle == null}">아직 메모가 없습니다. <a th:href="@{/memo/new}">새 메모</a></th:block>
+  </div>
+</div>

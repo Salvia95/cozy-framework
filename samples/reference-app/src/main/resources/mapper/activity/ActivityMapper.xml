@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.salvia95.cozy.reference.activity.internal.ActivityMapper">
+
+  <insert id="insert">
+    INSERT INTO activity (event_id, message, created_at) VALUES (#{eventId}, #{message}, #{createdAt})
+  </insert>
+
+  <select id="findRecent" resultType="io.salvia95.cozy.reference.activity.internal.ActivityRow">
+    SELECT id, message, created_at FROM activity ORDER BY created_at DESC, id DESC LIMIT #{limit}
+  </select>
+</mapper>

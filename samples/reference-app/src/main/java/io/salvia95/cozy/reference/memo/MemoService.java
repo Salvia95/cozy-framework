@@ -5,14 +5,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.salvia95.cozy.reference.memo.api.MemoCreated;
 import io.salvia95.cozy.reference.memo.internal.MemoMapper;
 import io.salvia95.cozy.reference.memo.internal.MemoRow;
 
 /**
- * 메모 CRUD. 쓰기는 {@code @Transactional}, 읽기는 {@code @Transactional(readOnly = true)}로 표시한다
+ * 메모 CRUD. 메모를 만들면 {@link MemoCreated}를 발행한다. 쓰기는 {@code @Transactional}, 읽기는 {@code @Transactional(readOnly = true)}로 표시한다
  * (쓰기 트랜잭션은 BEGIN IMMEDIATE, docs/conventions/sqlite.md).
  */
 @Service
@@ -20,10 +22,13 @@ public class MemoService {
 
 	private final MemoMapper mapper;
 
+	private final ApplicationEventPublisher events;
+
 	private final Clock clock = Clock.systemUTC();
 
-	MemoService(MemoMapper mapper) {
+	MemoService(MemoMapper mapper, ApplicationEventPublisher events) {
 		this.mapper = mapper;
+		this.events = events;
 	}
 
 	@Transactional
@@ -41,6 +46,8 @@ public class MemoService {
 		row.setCreatedAt(now);
 		row.setUpdatedAt(now);
 		this.mapper.insert(row);
+		// 같은 트랜잭션에 발행 기록이 남는다. 커밋되면 다른 모듈의 리스너가 비동기로 받는다 (PRD §8)
+		this.events.publishEvent(MemoCreated.of(row.getId(), title));
 		return row.getId();
 	}
 

@@ -1,0 +1,5 @@
+cozy:
+  app:
+    id: cozy-events-test
+  runtime:
+    open-browser: false
