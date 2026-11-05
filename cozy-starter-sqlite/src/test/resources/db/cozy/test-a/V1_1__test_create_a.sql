@@ -1,0 +1,1 @@
+CREATE TABLE cozy_test_a (id INTEGER PRIMARY KEY);

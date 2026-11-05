@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.salvia95.cozy.sqlite.testapp.SampleMapper">
+
+  <insert id="insert">
+    INSERT INTO sample_item (name, created_at, local_dt, local_d, uid, flag, maybe)
+    VALUES (#{name}, #{createdAt}, #{localDt}, #{localD}, #{uid}, #{flag}, #{maybe})
+  </insert>
+
+  <insert id="insertName">
+    INSERT INTO sample_item (name) VALUES (#{name})
+  </insert>
+
+  <select id="findByName" resultType="io.salvia95.cozy.sqlite.testapp.SampleItem">
+    SELECT id, name, created_at, local_dt, local_d, uid, flag, maybe FROM sample_item WHERE name = #{name}
+  </select>
+
+  <select id="count" resultType="long">
+    SELECT count(*) FROM sample_item
+  </select>
+
+  <insert id="insertUnique">
+    INSERT INTO unique_item (code) VALUES (#{code})
+  </insert>
+</mapper>

@@ -23,3 +23,4 @@
 | [0017](0017-version-policy.md) | 버전 정책: 구현 중에는 최신 GA | 구현 전 확인 |
 | [0018](0018-s4-verification.md) | §4 확인 항목 조사 결과 | PRD §4 |
 | [0019](0019-build-verification.md) | 빌드 규칙의 검증 방식 | PRD §5, §6.1 |
+| [0020](0020-sqlite-immediate-write-transactions.md) | 쓰기 트랜잭션은 BEGIN IMMEDIATE | PRD §13 |

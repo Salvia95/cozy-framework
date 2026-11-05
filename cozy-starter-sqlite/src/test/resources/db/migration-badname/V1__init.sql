@@ -1,0 +1,1 @@
+CREATE TABLE bad_name (id INTEGER PRIMARY KEY);

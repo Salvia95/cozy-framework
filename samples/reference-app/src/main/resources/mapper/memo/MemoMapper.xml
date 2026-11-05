@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.salvia95.cozy.reference.memo.internal.MemoMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO memo (title, body, pinned, created_at, updated_at)
+    VALUES (#{title}, #{body}, #{pinned}, #{createdAt}, #{updatedAt})
+  </insert>
+
+  <sql id="columns">id, title, body, pinned, created_at, updated_at</sql>
+
+  <select id="findById" resultType="io.salvia95.cozy.reference.memo.Memo">
+    SELECT <include refid="columns"/> FROM memo WHERE id = #{id}
+  </select>
+
+  <select id="findAll" resultType="io.salvia95.cozy.reference.memo.Memo">
+    SELECT <include refid="columns"/> FROM memo ORDER BY pinned DESC, updated_at DESC, id DESC
+  </select>
+
+  <update id="update">
+    UPDATE memo SET title = #{title}, body = #{body}, pinned = #{pinned}, updated_at = #{updatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM memo WHERE id = #{id}
+  </delete>
+</mapper>
