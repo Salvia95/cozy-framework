@@ -26,4 +26,12 @@ class CozyPackagerTest {
 				"-Dfile.encoding=UTF-8");
 		assertThat(CozyPackager.splitOptions("")).isEmpty();
 	}
+
+	@Test
+	void sqliteNativeLibraryMatchesPlatform() {
+		assertThat(new CozyPackager.Platform("win", "x64").sqliteNativeEntry())
+			.isEqualTo("org/sqlite/native/Windows/x86_64/sqlitejdbc.dll");
+		assertThat(new CozyPackager.Platform("linux", "arm64").sqliteNativeEntry())
+			.isEqualTo("org/sqlite/native/Linux/aarch64/libsqlitejdbc.so");
+	}
 }

@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- dev 프로필로 실행: 패턴 카탈로그 /cozy/dev/catalog가 켜진다 -->
+  <configuration default="false" name="dev 실행" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="${package}.App" />
+    <module name="${artifactId}" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

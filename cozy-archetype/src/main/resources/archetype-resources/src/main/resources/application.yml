@@ -1,0 +1,5 @@
+# 앱 설정. 환경마다 다른 값(연동 주소 등)은 {데이터 폴더}/config/application.yml에 둔다 (docs/conventions/runtime.md).
+cozy:
+  app:
+    id: ${appId}
+    name: "${appName}"

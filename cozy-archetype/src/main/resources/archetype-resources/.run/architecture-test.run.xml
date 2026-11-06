@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- 모듈 구조·템플릿 경계·이벤트 호환 검사만 빠르게 -->
+  <configuration default="false" name="아키텍처 테스트" type="JUnit" factoryName="JUnit">
+    <module name="${artifactId}" />
+    <option name="PACKAGE_NAME" value="${package}" />
+    <option name="MAIN_CLASS_NAME" value="${package}.ArchitectureTest" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

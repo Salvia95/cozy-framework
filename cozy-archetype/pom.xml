@@ -14,9 +14,60 @@
   <artifactId>cozy-archetype</artifactId>
   <packaging>maven-archetype</packaging>
   <name>Cozy :: Archetype</name>
-  <description>오프라인 이니셜라이저. 옵션과 생성 내용은 M7에서 채운다 (PRD §6.6, §10).</description>
+  <description>오프라인 이니셜라이저: home 샘플 모듈과 규약을 갖춘 앱 (PRD §6.6, §10)</description>
+
+  <!--
+    생성한 앱이 쓰는 모듈. invoker:install이 통합 테스트 전에 로컬 저장소에 설치한다.
+    archetype:integration-test(src/test/resources/projects)는 옵션 3조합을 생성해 verify -Pdist까지 돌리고,
+    invoker(src/it)는 잘못된 옵션 조합이 생성 단계에서 실패하는지 본다.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-events</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <build>
+    <resources>
+      <!-- 아키타입 리소스는 그대로 담는다. Velocity가 생성할 때 채운다 -->
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>archetype-resources/pom.xml</exclude>
+        </excludes>
+      </resource>
+      <!-- 생성 앱의 부모 버전만 빌드할 때 채운다 (@project.version@). Velocity의 ${...}는 건드리지 않는다 -->
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>archetype-resources/pom.xml</include>
+        </includes>
+      </resource>
+      <!-- AGENTS.md의 원본은 docs/AGENTS.md 하나다 -->
+      <resource>
+        <directory>${project.basedir}/../docs</directory>
+        <targetPath>archetype-resources</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>AGENTS.md</include>
+        </includes>
+      </resource>
+    </resources>
+
     <extensions>
       <extension>
         <groupId>org.apache.maven.archetype</groupId>
@@ -24,5 +75,43 @@
         <version>${maven-archetype-plugin.version}</version>
       </extension>
     </extensions>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <useDefaultDelimiters>false</useDefaultDelimiters>
+          <delimiters>
+            <delimiter>@</delimiter>
+          </delimiters>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <version>${maven-archetype-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <configuration>
+          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+          <streamLogsOnFailures>true</streamLogsOnFailures>
+          <postBuildHookScript>verify</postBuildHookScript>
+          <!-- 생성 앱이 쓰는 cozy 모듈과 cozy-parent까지 설치한다 -->
+          <scope>test</scope>
+        </configuration>
+        <executions>
+          <execution>
+            <id>cozy-archetype-it</id>
+            <goals>
+              <goal>install</goal>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>

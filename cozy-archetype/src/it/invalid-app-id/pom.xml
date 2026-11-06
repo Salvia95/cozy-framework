@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 생성 실패를 보기 위한 빈 프로젝트. invoker.properties의 archetype:generate만 돈다 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>archetype-it</artifactId>
+  <version>1</version>
+  <packaging>pom</packaging>
+</project>

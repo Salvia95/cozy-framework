@@ -36,6 +36,7 @@ class RenderingTest extends CozyRenderingTest {
 
 ### 검사별 세부
 
+- **C1·C6 대상 클래스**: 앱의 메인 클래스와 jar만 본다. 테스트 클래스는 경로의 마지막 클래스 폴더가 `target/test-classes`인 것으로 가린다. 그래서 프로젝트가 다른 빌드의 `test-classes` 아래에 있어도(아키타입 통합 테스트) 메인 클래스가 빠지지 않는다(ADR-0025).
 - **실패 보고**: 실패는 모두 모아 한 번에 낸다. 메시지 앞에 검사 ID가 붙는다(`[C3] specs/memo-list.yml 상태 default — ...`).
 - **C3 렌더링 경로**: 렌더링 테스트는 `cozy.dev.catalog.enabled=true`로 앱을 띄우고, 패턴 카탈로그 경로(`/cozy/dev/catalog/render`, `/cozy/dev/catalog/screen`)를 MockMvc로 부른다. 카탈로그 화면에 보이는 것과 같은 결과를 검사한다. 데이터 경로는 `target/cozy-test/rendering`이다.
 - **C3 fixture 변환**: fixture는 엄격한 JSON 매핑으로 바꾼다. 다음은 모두 실패다.

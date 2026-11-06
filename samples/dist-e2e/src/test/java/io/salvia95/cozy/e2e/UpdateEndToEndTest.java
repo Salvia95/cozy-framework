@@ -124,6 +124,11 @@ class UpdateEndToEndTest {
 			.contains("java-options=-Xmx512m");
 		assertThat(cfg.resolveSibling(APP_ID + ".aot")).isNotEmptyFile();
 		assertThat(cfg.resolveSibling(APP_ID + ".aotconf")).doesNotExist();
+		// SQLite 네이티브 라이브러리는 %TEMP%가 아니라 앱 폴더에서 읽는다 (AppLocker)
+		String nativeLib = WINDOWS ? "sqlitejdbc.dll" : "libsqlitejdbc.so";
+		assertThat(cfg.resolveSibling("native").resolve(nativeLib)).isNotEmptyFile();
+		assertThat(Files.readString(cfg)).contains("java-options=-Dorg.sqlite.lib.path=$APPDIR/native")
+			.contains("java-options=-Dorg.sqlite.lib.name=" + nativeLib);
 		String manifest = Files.readString(dist.resolve(APP_ID + "-update.json"));
 		assertThat(manifest).contains("\"appId\" : \"cozy-reference\"").contains("\"version\" : \"1.0.0\"");
 		assertThat(Files.readString(dist.resolve("training.log"))).contains("훈련 요청").contains("/cozy/dev/catalog → 200");

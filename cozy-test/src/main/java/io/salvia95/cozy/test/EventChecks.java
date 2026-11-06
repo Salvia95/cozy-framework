@@ -213,6 +213,6 @@ final class EventChecks {
 	private static boolean isMainClass(Class<?> type) {
 		CodeSource source = type.getProtectionDomain().getCodeSource();
 		URL location = (source != null) ? source.getLocation() : null;
-		return location == null || !location.toString().contains("test-classes");
+		return location == null || !MainClassesOnly.isTestLocation(location.toString());
 	}
 }

@@ -133,6 +133,48 @@ Expand-Archive samples\reference-app\target\dist\cozy-reference-*-win-x64.zip $e
 - [ ] `%LOCALAPPDATA%\Programs\cozy-reference.old`가 남아 있다.
 - [ ] 회사 PC의 PowerShell 실행 정책 때문에 실패하면 "업데이트 스크립트를 실행하지 못했습니다"가 보이고 앱은 그대로다. 이 경우 `Get-ExecutionPolicy -List` 결과를 기록한다.
 
+## M7 아키타입과 오프라인 번들
+
+### 번들 만들기 (인터넷이 되는 Windows PC)
+
+```powershell
+cd C:\cozy-framework
+powershell -ExecutionPolicy Bypass -File distribution\offline-bundle\build-bundle.ps1
+```
+
+- [ ] `build\offline-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT.zip`이 생긴다.
+- [ ] 로그에 옵션 3조합(basic, persistence, events)의 `BUILD SUCCESS`가 각각 두 번 있다(verify, -Pdist package).
+
+WSL이나 Linux에서 만든 번들(`distribution/offline-bundle/build-bundle.sh`)을 써도 된다. 번들 내용은 운영체제와 상관없다.
+
+### 오프라인 PC에서 확인 (M7 완료 기준)
+
+네트워크를 끊는다(랜선을 뽑거나 Wi-Fi를 끈다). JDK 25만 설치된 PC를 쓴다. 기존 `%USERPROFILE%\.m2`가 있으면 이름을 바꿔 둔다.
+
+```powershell
+Expand-Archive cozy-offline-bundle-1.0.0-SNAPSHOT.zip C:\cozy-bundle
+cd C:\cozy-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT
+powershell -ExecutionPolicy Bypass -File .\install-offline.ps1
+$env:Path = "$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
+
+mkdir C:\work; cd C:\work
+powershell -ExecutionPolicy Bypass -File $env:USERPROFILE\cozy\new-app.ps1 "-DgroupId=com.example" "-DartifactId=voc-assistant" `
+  "-Dpackage=com.example.voc" "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=true" "-DinteractiveMode=false"
+cd voc-assistant
+mvn -o verify
+mvn -o -Pdist package
+& .\target\dist\image\voc-assistant\voc-assistant.exe
+```
+
+- [ ] `new-app.ps1`이 `[cozy] VOC 도우미 (voc-assistant) 생성: persistence=true, events=true`를 출력한다.
+- [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다. 테스트 10개가 통과한다.
+- [ ] `mvn -o -Pdist package`가 `target\dist\voc-assistant-1.0.0-SNAPSHOT-win-x64.zip`을 만든다.
+- [ ] 실행하면 브라우저 제목과 사이드바에 "VOC 도우미"가 보인다. 메모를 추가하면 목록과 "최근 활동"에 나타난다.
+- [ ] `target\dist\image\voc-assistant\app\native\sqlitejdbc.dll`이 있다. 실행 중에 `%TEMP%`에 `sqlite-*-sqlitejdbc.dll`이 생기지 않는다.
+- [ ] `"-Devents=true" "-Dpersistence=false"`로 만들면 `[cozy] events=true는 persistence=true가 필요합니다`로 실패하고 폴더가 남지 않는다.
+- [ ] IntelliJ로 `voc-assistant`를 열면 실행 설정 "dev 실행", "아키텍처 테스트", "mvn -o verify"가 보인다. "dev 실행"이 `/cozy/dev/catalog`를 연다.
+- [ ] 실패하면 `mvn -o verify`의 오류 앞부분과 `%USERPROFILE%\cozy\apache-maven-3.10.0\conf\settings.xml`을 기록에 남긴다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -143,3 +185,4 @@ Expand-Archive samples\reference-app\target\dist\cozy-reference-*-win-x64.zip $e
 | | M4 | | |
 | | M5 | | |
 | | M6 | | |
+| | M7 | | |

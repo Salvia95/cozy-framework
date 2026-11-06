@@ -3,8 +3,53 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <!-- Cozy 앱: cozy-parent를 상속하고 스타터에만 의존한다 (docs/conventions/getting-started.md) -->
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>@project.version@</version>
+    <relativePath/>
+  </parent>
+
   <groupId>${groupId}</groupId>
   <artifactId>${artifactId}</artifactId>
   <version>${version}</version>
-  <packaging>pom</packaging>
+  <name>${appName}</name>
+
+  <dependencies>
+    <!-- 화면: Tabler + htmx 레이아웃·패턴, 패턴 카탈로그 (런타임 스타터 포함) -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+    </dependency>
+#if( $events == "true" )
+    <!-- 모듈 사이 이벤트 + SQLite·MyBatis·Flyway -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-events</artifactId>
+    </dependency>
+#elseif( $persistence == "true" )
+    <!-- SQLite + MyBatis + Flyway -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-sqlite</artifactId>
+    </dependency>
+#end
+    <!-- 테스트 기반: 아키텍처·렌더링 검사, JUnit, MockMvc -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>

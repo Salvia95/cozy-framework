@@ -1,6 +1,7 @@
 package io.salvia95.cozy.runtime.internal.dist;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.springframework.boot.env.PropertiesPropertySourceLoader;
@@ -112,6 +114,7 @@ public final class CozyPackager {
 		Path imageRoot = outDir.resolve("image");
 		Path image = jpackage(appId, appName, version, input, mainJar, imageRoot, javaOptions);
 
+		bundleSqliteNative(image, platform);
 		normalizeTimes(image);
 		Path trainingLog = outDir.resolve("training.log");
 		if (training) {
@@ -204,6 +207,39 @@ public final class CozyPackager {
 		}
 		Files.writeString(cfg, withJavaOptions(original, "-XX:AOTCache=" + cache), StandardCharsets.UTF_8);
 		log("   AOT 캐시 " + (Files.size(cacheFile) / (1024 * 1024)) + "MB, 훈련 경로 " + paths);
+	}
+
+	/**
+	 * sqlite-jdbc의 네이티브 라이브러리를 실행 폴더의 {@code native/}에 꺼내 두고 그 경로를 쓰게 한다.
+	 * 기본 동작은 실행할 때마다 %TEMP%에 풀어 읽는 것인데, AppLocker 등이 임시 폴더의 DLL을 막는 PC가 있다.
+	 * 앱 폴더의 DLL은 실행 파일과 같은 위치라 같은 정책을 받는다. sqlite-jdbc가 없는 앱은 건너뛴다.
+	 */
+	void bundleSqliteNative(Path image, Platform platform) throws IOException {
+		Path appDir = platform.cfg(image, image.getFileName().toString()).getParent();
+		Path jar;
+		try (Stream<Path> files = Files.list(appDir.resolve("lib"))) {
+			jar = files.filter((p) -> p.getFileName().toString().matches("sqlite-jdbc-.*\\.jar")).findFirst().orElse(null);
+		}
+		if (jar == null) {
+			return;
+		}
+		String entry = platform.sqliteNativeEntry();
+		Path target = appDir.resolve("native").resolve(entry.substring(entry.lastIndexOf('/') + 1));
+		try (ZipFile zip = new ZipFile(jar.toFile())) {
+			ZipEntry nativeEntry = zip.getEntry(entry);
+			if (nativeEntry == null) {
+				throw new IllegalStateException(jar.getFileName() + "에 " + entry + "가 없습니다");
+			}
+			Files.createDirectories(target.getParent());
+			try (InputStream in = zip.getInputStream(nativeEntry)) {
+				Files.copy(in, target);
+			}
+		}
+		Path cfg = platform.cfg(image, image.getFileName().toString());
+		Files.writeString(cfg, withJavaOptions(Files.readString(cfg, StandardCharsets.UTF_8),
+				"-Dorg.sqlite.lib.path=$APPDIR/native", "-Dorg.sqlite.lib.name=" + target.getFileName()),
+				StandardCharsets.UTF_8);
+		log("   SQLite 네이티브 라이브러리: native/" + target.getFileName());
 	}
 
 	/**
@@ -360,6 +396,16 @@ public final class CozyPackager {
 		Path cfg(Path image, String appId) {
 			return this.os.equals("win") ? image.resolve("app").resolve(appId + ".cfg")
 					: image.resolve("lib").resolve("app").resolve(appId + ".cfg");
+		}
+
+		/** sqlite-jdbc jar 안의 네이티브 라이브러리 위치 */
+		String sqliteNativeEntry() {
+			String arch = this.arch.equals("arm64") ? "aarch64" : "x86_64";
+			return switch (this.os) {
+				case "win" -> "org/sqlite/native/Windows/" + arch + "/sqlitejdbc.dll";
+				case "mac" -> "org/sqlite/native/Mac/" + arch + "/libsqlitejdbc.dylib";
+				default -> "org/sqlite/native/Linux/" + arch + "/libsqlitejdbc.so";
+			};
 		}
 
 		Path launcher(Path image, String appId) {

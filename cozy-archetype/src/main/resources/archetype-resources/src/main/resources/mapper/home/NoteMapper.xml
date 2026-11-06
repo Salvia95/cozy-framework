@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+#set( $h = '#' )
+<!-- 홈 메모 SQL. 파라미터는 ${h}{...}로 바인딩한다(문자열 이어 붙이기 금지). -->
+<mapper namespace="${package}.home.internal.NoteMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO home_note (title, created_at) VALUES (${h}{title}, ${h}{createdAt})
+  </insert>
+
+  <select id="search" resultType="${package}.home.internal.Note">
+    SELECT id, title, created_at FROM home_note
+    <where>
+      <if test="like != null">title LIKE ${h}{like} ESCAPE '\'</if>
+    </where>
+    ORDER BY id DESC
+    LIMIT ${h}{limit}
+  </select>
+
+  <insert id="insertActivity">
+    INSERT INTO home_activity (message, at) VALUES (${h}{message}, ${h}{at})
+  </insert>
+
+  <select id="recentActivity" resultType="${package}.home.internal.NoteActivity">
+    SELECT message, at FROM home_activity ORDER BY id DESC LIMIT ${h}{limit}
+  </select>
+</mapper>

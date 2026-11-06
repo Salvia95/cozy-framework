@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- 작업을 마치면 실행한다: 모든 검사 (오프라인) -->
+  <configuration default="false" name="mvn -o verify" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myGeneralSettings" />
+      <option name="myRunnerSettings" />
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="cmdOptions" value="-o" />
+          <option name="goals">
+            <list>
+              <option value="verify" />
+            </list>
+          </option>
+          <option name="workingDirPath" value="$PROJECT_DIR$" />
+        </MavenRunnerParameters>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>

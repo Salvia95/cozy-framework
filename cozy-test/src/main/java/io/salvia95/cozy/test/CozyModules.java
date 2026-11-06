@@ -24,7 +24,7 @@ public final class CozyModules {
 
 	/** 앱 클래스의 모듈. 같은 JVM 안에서는 한 번만 분석한다 */
 	public static ApplicationModules of(Class<?> applicationClass) {
-		return CACHE.computeIfAbsent(applicationClass, ApplicationModules::of);
+		return CACHE.computeIfAbsent(applicationClass, (type) -> ApplicationModules.of(type, MainClassesOnly.INSTANCE));
 	}
 
 	public static ModuleModel model(ApplicationModules modules) {

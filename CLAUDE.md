@@ -38,10 +38,13 @@ mvn -o verify                         # 오프라인 (의존성을 한 번 받�
 mvn -pl cozy-rules -am test           # 모듈 하나만
 mvn -o -Pe2e install                  # + 배포·업데이트 종단 검증 (몇 분, M6)
 mvn -o -Pdist package -pl samples/reference-app   # 앱 하나를 배포 패키지로 (target/dist)
+mvn -o verify -pl cozy-archetype -am             # 아키타입: 옵션 3조합 생성 → verify -Pdist (몇 분)
+distribution/offline-bundle/build-bundle.sh       # 오프라인 번들 (인터넷 필요, build/offline-bundle)
+distribution/offline-bundle/verify-offline.sh build/offline-bundle/cozy-offline-bundle-*.zip   # 네트워크 없이 번들 검증
 ```
 
 ## 환경
 
 - 개발은 WSL2(Linux)에서 한다.
-- Windows 전용 수용 기준은 사용자가 Windows에서 직접 검증한다. 대상은 `%LOCALAPPDATA%`, 트레이, app-image, 업데이트 교체 스크립트, 오프라인 번들이다. 검증 절차와 스크립트는 이 레포에 함께 둔다.
+- Windows 전용 수용 기준은 사용자가 Windows에서 직접 검증한다. 대상은 `%LOCALAPPDATA%`, 트레이, app-image, 업데이트 교체 스크립트, 오프라인 번들이다. 검증 절차는 `docs/conventions/windows-verification.md`에, 스크립트는 `distribution/`에 둔다.
 - 셸 스크립트는 bash로 작성한다. 대화형 셸은 zsh라서 따옴표 없는 변수가 단어 단위로 나뉘지 않는다.

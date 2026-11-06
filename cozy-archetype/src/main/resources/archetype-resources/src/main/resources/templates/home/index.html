@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--/*
+  홈: list-with-filter 패턴. 필터는 result fragment만 바꾸고(htmx), 등록 폼은 오류면 noteForm fragment만 다시 그린다.
+  새 화면을 만들 때는 먼저 패턴 카탈로그(/cozy/dev/catalog)에서 맞는 패턴을 찾는다.
+*/-->
+<html th:replace="~{cozy/layout/base :: appShell('홈', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#noteForm}, ~{::#filter}, ~{::#result})}">
+    <form id="noteForm" th:fragment="noteForm" class="d-flex gap-2 align-items-start" th:action="@{/notes}" method="post"
+          th:object="${form}" th:hx-post="@{/notes}" hx-target="this" hx-swap="outerHTML">
+      <div th:replace="~{cozy/component/field :: field('title', '새 메모', 'text')}"></div>
+      <button class="btn btn-primary mt-4" type="submit">추가</button>
+    </form>
+
+    <form id="filter" class="row g-2 align-items-center" th:action="@{/}" method="get" th:object="${filter}"
+          th:hx-get="@{/}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true" hx-trigger="submit, input delay:300ms">
+      <div class="col">
+        <input class="form-control" type="search" th:field="*{q}" placeholder="제목으로 찾기" aria-label="검색">
+      </div>
+      <div class="col-auto"><span th:replace="~{cozy/component/loading :: loading()}"></span></div>
+    </form>
+
+    <div id="result" th:fragment="result">
+      <th:block th:if="${result.rows.isEmpty()}">
+        <div th:replace="~{cozy/component/empty-state :: emptyState('메모가 없습니다', '위에서 첫 메모를 추가해 보세요.')}"></div>
+      </th:block>
+      <th:block th:unless="${result.rows.isEmpty()}">
+        <div th:replace="~{cozy/component/data-table :: dataTable(~{::#note-head}, ~{::.note-row})}">
+          <table>
+            <thead><tr id="note-head"><th>제목</th><th>추가한 시각</th></tr></thead>
+            <tbody>
+              <tr class="note-row" th:each="row : ${result.rows}">
+                <td th:text="${row.title}">제목</td>
+                <td class="text-secondary" th:text="${row.createdAt}">2026-11-07 09:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </th:block>
+    </div>
+  </section>
+
+  <section class="container-xl pb-3">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">최근 활동</h3></div>
+      <ul class="list-group list-group-flush" th:unless="${activity.items.isEmpty()}">
+        <li class="list-group-item d-flex justify-content-between" th:each="item : ${activity.items}">
+          <span th:text="${item.message}">메모를 추가했습니다</span>
+          <span class="text-secondary" th:text="${item.at}">2026-11-07 09:00</span>
+        </li>
+      </ul>
+      <div class="card-body text-secondary" th:if="${activity.items.isEmpty()}">아직 활동이 없습니다.</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
