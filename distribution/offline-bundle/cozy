@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Cozy 명령 (오프라인 번들, PRD §9.7). 형식: cozy <동작> [인자...]
+#
+#   ./cozy install [설치 폴더]     번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: ~/cozy)
+#   cozy new [-D이름=값 ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
+#   cozy version                   프레임워크 버전
+#   cozy help                      이 도움말
+#
+# 설치하면 <설치 폴더>/bin/cozy가 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy new를 쓴다.
+# new의 옵션: groupId, artifactId, package, appId(기본 artifactId), appName(한글 가능), persistence(기본 true),
+# events(기본 false, persistence 필요).
+#   cozy new -DgroupId=com.example -DartifactId=voc-assistant -Dpackage=com.example.voc \
+#            -DappName="VOC 도우미" -Dpersistence=true -Devents=false -DinteractiveMode=false
+set -euo pipefail
+
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 번들 폴더는 cozy 옆에 COZY_VERSION이 있고, 설치 폴더는 bin/cozy의 한 단계 위에 있다
+if [ -f "$SELF/COZY_VERSION" ]; then ROOT="$SELF"; else ROOT="$(dirname "$SELF")"; fi
+VERSION="$(cat "$ROOT/COZY_VERSION" 2>/dev/null || true)"
+
+usage() {
+  sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+need_java() {
+  local major
+  major="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.specification.version = //p')"
+  if ! command -v java > /dev/null || [ -z "$major" ] || [ "$major" -lt 25 ]; then
+    echo "[cozy] JDK 25가 필요합니다. JAVA_HOME과 PATH를 확인하세요." >&2
+    exit 1
+  fi
+}
+
+install() {
+  local dest="${1:-$HOME/cozy}" zip maven_dir
+  zip="$(ls "$ROOT"/apache-maven-*-bin.zip 2>/dev/null | head -1 || true)"
+  if [ -z "$zip" ] || [ ! -d "$ROOT/repository" ]; then
+    echo "[cozy] install은 번들 폴더(repository/와 apache-maven-*-bin.zip이 있는 곳)의 ./cozy로 실행합니다." >&2
+    exit 1
+  fi
+  need_java
+  mkdir -p "$dest"
+  dest="$(cd "$dest" && pwd)"
+  maven_dir="$dest/$(basename "$zip" -bin.zip)"
+  rm -rf "$maven_dir"
+  (cd "$dest" && unzip -q "$zip")
+  if [ "$ROOT/repository" != "$dest/repository" ]; then
+    rm -rf "$dest/repository"
+    cp -r "$ROOT/repository" "$dest/repository"
+  fi
+  rm -rf "$dest/docs" "$dest/licenses" "$dest/bin" "$dest/lib"
+  cp -r "$ROOT/docs" "$ROOT/licenses" "$dest/"
+  cp "$ROOT/LICENSE" "$ROOT/NOTICE" "$ROOT/COZY_VERSION" "$dest/"
+  mkdir -p "$dest/bin" "$dest/lib"
+  cp "$ROOT/cozy" "$ROOT/cozy.cmd" "$dest/bin/"
+  cp "$ROOT/cozy.ps1" "$dest/lib/"
+  chmod +x "$dest/bin/cozy"
+
+  cat > "$maven_dir/conf/settings.xml" <<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cozy 오프라인 번들 $VERSION: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+  <localRepository>$dest/repository</localRepository>
+  <offline>true</offline>
+</settings>
+XML
+
+  echo "[cozy] 설치했습니다: $dest"
+  echo "  PATH에 추가: export PATH=\"$dest/bin:$maven_dir/bin:\$PATH\""
+  echo "  새 앱:       cozy new"
+}
+
+new_app() {
+  local mvn
+  mvn="$(ls -d "$ROOT"/apache-maven-*/bin 2>/dev/null | head -1 || true)"
+  if [ -z "$mvn" ] || [ ! -x "$mvn/mvn" ]; then
+    echo "[cozy] 설치한 폴더의 cozy로 실행합니다. 번들 폴더라면 먼저 ./cozy install을 실행하세요." >&2
+    exit 1
+  fi
+  need_java
+  # 설치한 Maven은 conf/settings.xml이 번들 저장소를 가리키고 항상 오프라인이다
+  exec "$mvn/mvn" -o -ntp org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCatalog=local \
+    -DarchetypeGroupId=io.salvia95.cozy -DarchetypeArtifactId=cozy-archetype -DarchetypeVersion="$VERSION" \
+    -Dversion=1.0.0-SNAPSHOT "$@"
+}
+
+ACTION="${1:-help}"
+[ "$#" -gt 0 ] && shift
+case "$ACTION" in
+  install) install "$@" ;;
+  new) new_app "$@" ;;
+  version|--version|-v) echo "${VERSION:-unknown}" ;;
+  help|--help|-h) usage ;;
+  *)
+    echo "[cozy] 알 수 없는 동작: $ACTION" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

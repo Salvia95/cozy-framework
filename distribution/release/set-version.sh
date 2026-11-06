@@ -5,7 +5,7 @@
 #   distribution/release/set-version.sh 1.1.0-SNAPSHOT   # 릴리스 다음 개발 버전
 #
 # 바꾸는 곳: 레포의 pom.xml(아키타입 템플릿 제외. 템플릿은 빌드 때 @project.version@으로 채워진다),
-# 문서의 -DarchetypeVersion= 예시, 오프라인 번들 README의 zip 이름. 생성 앱의 기본 버전(new-app의 -Dversion)은 앱 버전이라 그대로 둔다.
+# 문서의 -DarchetypeVersion= 예시, 오프라인 번들 README의 zip 이름. 생성 앱의 기본 버전(cozy new의 -Dversion)은 앱 버전이라 그대로 둔다.
 set -euo pipefail
 
 NEW="${1:?새 버전이 필요합니다 (예: 1.0.0)}"

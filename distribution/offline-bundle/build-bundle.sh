@@ -73,9 +73,9 @@ if [ "$(sha512sum "$BUNDLE/$MAVEN_FILE" | cut -d' ' -f1)" != "$MAVEN_SHA512" ]; 
   echo "[cozy] $MAVEN_FILE의 SHA-512가 맞지 않습니다 (다른 판이면 MAVEN_SHA512를 주세요)" >&2
   exit 1
 fi
-cp "$ROOT/distribution/offline-bundle/install-offline.sh" "$ROOT/distribution/offline-bundle/install-offline.ps1" \
-   "$ROOT/distribution/offline-bundle/new-app.sh" "$ROOT/distribution/offline-bundle/new-app.ps1" \
-   "$ROOT/distribution/offline-bundle/README.md" "$BUNDLE/"
+cp "$ROOT/distribution/offline-bundle/cozy" "$ROOT/distribution/offline-bundle/cozy.cmd" \
+   "$ROOT/distribution/offline-bundle/cozy.ps1" "$ROOT/distribution/offline-bundle/README.md" "$BUNDLE/"
+chmod +x "$BUNDLE/cozy"
 mkdir -p "$BUNDLE/docs"
 cp -r "$ROOT/docs/conventions" "$ROOT/docs/adr" "$ROOT/docs/AGENTS.md" "$BUNDLE/docs/"
 printf '%s\n' "$VERSION" > "$BUNDLE/COZY_VERSION"

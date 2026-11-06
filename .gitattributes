@@ -3,6 +3,8 @@
 *.bat text eol=crlf
 *.ps1 text eol=crlf
 *.sh  text eol=lf
+# 확장자 없는 bash 명령 (오프라인 번들)
+distribution/offline-bundle/cozy text eol=lf
 *.jar binary
 *.woff2 binary
 *.png binary

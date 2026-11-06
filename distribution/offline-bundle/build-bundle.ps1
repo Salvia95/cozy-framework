@@ -83,7 +83,7 @@ else { Copy-Item $MavenZip $Bundle }
 if ((Get-FileHash -Algorithm SHA512 $mavenTarget).Hash.ToLowerInvariant() -ne $MavenSha512) {
   throw "[cozy] $MavenFile의 SHA-512가 맞지 않습니다 (다른 판이면 -MavenSha512를 주세요)"
 }
-foreach ($file in @('install-offline.sh', 'install-offline.ps1', 'new-app.sh', 'new-app.ps1', 'README.md')) {
+foreach ($file in @('cozy', 'cozy.cmd', 'cozy.ps1', 'README.md')) {
   Copy-Item (Join-Path $PSScriptRoot $file) $Bundle
 }
 $docs = New-Item -ItemType Directory -Force -Path (Join-Path $Bundle 'docs')

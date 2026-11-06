@@ -46,15 +46,17 @@ java -cp "$BUNDLE/repository/io/salvia95/cozy/cozy-starter-runtime/$VERSION/cozy
 diff -u "$BUNDLE/licenses/THIRD-PARTY.txt" "$WORK/THIRD-PARTY.check.txt"
 echo "[cozy] 라이선스 목록 확인: $(grep -c 'sources.jar\]' "$BUNDLE/licenses/THIRD-PARTY.txt")개 jar의 소스 jar 포함"
 
-bash "$BUNDLE/install-offline.sh" "$WORK/cozy"
+"$BUNDLE/cozy" version | grep -qx "$VERSION"
+"$BUNDLE/cozy" install "$WORK/cozy"
 MAVEN_BIN="$(ls -d "$WORK"/cozy/apache-maven-*/bin | head -1)"
-export PATH="$MAVEN_BIN:$PATH"
+export PATH="$WORK/cozy/bin:$MAVEN_BIN:$PATH"
+test "$(cozy version)" = "$VERSION"
 
 mkdir -p "$WORK/apps"
 cd "$WORK/apps"
 for combo in basic:false:false persistence:true:false events:true:true; do
   IFS=: read -r name persistence events <<< "$combo"
-  "$WORK/cozy/new-app.sh" -B -DinteractiveMode=false -DgroupId=com.example -DartifactId="offline-$name" \
+  cozy new -B -DinteractiveMode=false -DgroupId=com.example -DartifactId="offline-$name" \
     -Dpackage="com.example.offline.$name" -DappName="오프라인 확인" -Dpersistence="$persistence" -Devents="$events"
   (cd "offline-$name" && mvn -B -ntp -o verify && mvn -B -ntp -o -Pdist package)
   test -d "offline-$name/target/dist/image/offline-$name"

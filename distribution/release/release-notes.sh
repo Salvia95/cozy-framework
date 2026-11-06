@@ -33,15 +33,15 @@ cat <<MD
 오프라인 번들 하나에 다음이 들어 있습니다.
 
 - Maven 저장소(\`repository/\`): Cozy 모듈 전체와, 앱 빌드·검사·패키징에 필요한 라이브러리와 플러그인
-- Maven 3.10.0 배포판, 설치 스크립트(\`install-offline.ps1\`·\`.sh\`), 새 앱 스크립트(\`new-app.ps1\`·\`.sh\`)
+- Maven 3.10.0 배포판, Cozy 명령(\`cozy.cmd\`·\`cozy\`: \`install\`, \`new\`, \`version\`, \`help\`)
 - 문서(\`docs/\`: 규약, 결정 기록, AGENTS.md)
 - 라이선스: Cozy는 Apache-2.0(\`LICENSE\`, \`NOTICE\`). 저장소의 아티팩트 ${ARTIFACTS}개의 라이선스 목록은 \`licenses/THIRD-PARTY.txt\`에 있습니다. 약한 카피레프트 라이선스만 있는 jar ${SOURCES}개는 소스 jar를 함께 담았습니다.
 
 ## 설치
 
 1. JDK 25(Temurin 등)를 설치합니다. 번들에는 JDK가 없습니다. 앱 사용자 PC에는 JDK가 필요 없습니다.
-2. 번들을 오프라인 PC로 옮겨 풀고 \`install-offline.ps1\`을 실행합니다.
-3. \`new-app.ps1\`로 앱을 만들고 \`mvn -o verify\`, \`mvn -o -Pdist package\`로 빌드합니다.
+2. 번들을 오프라인 PC로 옮겨 풀고 번들 폴더에서 \`.\\cozy.cmd install\`을 실행합니다.
+3. \`cozy new\`로 앱을 만들고 \`mvn -o verify\`, \`mvn -o -Pdist package\`로 빌드합니다.
 
 자세한 절차는 번들의 \`README.md\`와 \`docs/conventions/getting-started.md\`에 있습니다.
 

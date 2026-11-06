@@ -8,8 +8,7 @@
 | --- | --- |
 | `repository/` | Maven 로컬 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인 |
 | `apache-maven-3.10.0-bin.zip` | Maven 배포판 |
-| `install-offline.ps1`, `install-offline.sh` | 오프라인 PC에 설치 |
-| `new-app.ps1`, `new-app.sh` | 새 앱 만들기 (아키타입) |
+| `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy version`, `cozy help` |
 | `docs/` | AGENTS.md, 규약 문서(`conventions/`), 결정 기록(`adr/`) |
 | `COZY_VERSION` | 프레임워크 버전 |
 | `LICENSE`, `NOTICE` | Cozy의 라이선스(Apache-2.0) |
@@ -46,17 +45,18 @@ distribution/offline-bundle/build-bundle.sh
 ```powershell
 Expand-Archive cozy-offline-bundle-1.0.0-SNAPSHOT.zip C:\cozy-bundle
 cd C:\cozy-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT
-powershell -ExecutionPolicy Bypass -File .\install-offline.ps1           # %USERPROFILE%\cozy에 설치
-$env:Path = "$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
+.\cozy.cmd install                      # %USERPROFILE%\cozy에 설치 (다른 곳: .\cozy.cmd install D:\cozy)
+$env:Path = "$env:USERPROFILE\cozy\bin;$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
 
 cd C:\work
-powershell -ExecutionPolicy Bypass -File $env:USERPROFILE\cozy\new-app.ps1   # 값을 물어본다
+cozy new                                 # 값을 물어본다
 cd voc-assistant
 mvn -o verify
 mvn -o -Pdist package
 ```
 
-- **설치 스크립트가 하는 일**: Maven을 풀고, 그 Maven의 `conf\settings.xml`을 다음처럼 설정한다.
+- **명령 형식**: `cozy <동작> [인자...]`. Windows는 `cozy.cmd`가 `cozy.ps1`을 실행 정책과 상관없이 부른다. Linux·WSL은 `cozy`(bash)를 쓴다(`./cozy install` → `~/cozy/bin/cozy new`).
+- **`cozy install`이 하는 일**: Maven을 풀고 `bin\cozy.cmd`를 설치 폴더에 둔다. 그 Maven의 `conf\settings.xml`을 다음처럼 설정한다.
   - 로컬 저장소를 번들 저장소로 둔다.
   - `offline=true`로 둔다.
   - 이 Maven으로는 네트워크에 나가지 않는다.

@@ -156,11 +156,12 @@ WSL이나 Linux에서 만든 번들(`distribution/offline-bundle/build-bundle.sh
 ```powershell
 Expand-Archive cozy-offline-bundle-1.0.0-SNAPSHOT.zip C:\cozy-bundle
 cd C:\cozy-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT
-powershell -ExecutionPolicy Bypass -File .\install-offline.ps1
-$env:Path = "$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
+.\cozy.cmd install
+$env:Path = "$env:USERPROFILE\cozy\bin;$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
 
 mkdir C:\work; cd C:\work
-powershell -ExecutionPolicy Bypass -File $env:USERPROFILE\cozy\new-app.ps1 "-DgroupId=com.example" "-DartifactId=voc-assistant" `
+cozy version
+cozy new "-DgroupId=com.example" "-DartifactId=voc-assistant" `
   "-Dpackage=com.example.voc" "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=true" "-DinteractiveMode=false"
 cd voc-assistant
 mvn -o verify
@@ -168,7 +169,9 @@ mvn -o -Pdist package
 & .\target\dist\image\voc-assistant\voc-assistant.exe
 ```
 
-- [ ] `new-app.ps1`이 `[cozy] VOC 도우미 (voc-assistant) 생성: persistence=true, events=true`를 출력한다.
+- [ ] `cozy version`이 `1.0.0-SNAPSHOT`을 출력한다. `cozy help`가 동작 목록(install, new, version, help)을 한글로 보여 준다. `cozy nope`은 종료 코드 2로 끝난다.
+- [ ] `cozy new`가 `[cozy] VOC 도우미 (voc-assistant) 생성: persistence=true, events=true`를 출력한다(한글 appName이 깨지지 않는다).
+- [ ] 생성된 앱의 `home` 모듈이 `api\`, `spi\`, `internal\app\command`, `internal\app\query`, `internal\domain`, `internal\infra`로 나뉘고, 템플릿이 `templates\home\api\`와 `templates\home\internal\`에 있다(ADR-0029).
 - [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다. 테스트 10개가 통과한다.
 - [ ] `mvn -o -Pdist package`가 `target\dist\voc-assistant-1.0.0-SNAPSHOT-win-x64.zip`을 만든다.
 - [ ] 실행하면 브라우저 제목과 사이드바에 "VOC 도우미"가 보인다. 메모를 추가하면 목록과 "최근 활동"에 나타난다.
