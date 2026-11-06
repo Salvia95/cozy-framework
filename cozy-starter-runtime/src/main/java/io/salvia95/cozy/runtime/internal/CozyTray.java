@@ -1,5 +1,6 @@
 package io.salvia95.cozy.runtime.internal;
 
+import java.awt.AWTError;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -22,13 +23,14 @@ import org.jspecify.annotations.Nullable;
  * 시스템 트레이 아이콘: 열기, 종료 (PRD §9.2).
  *
  * <p>headless이거나 OS가 트레이를 지원하지 않으면 아무것도 하지 않는다. 그때는 화면 메뉴의 종료를 쓴다.
+ * 디스플레이 서버에 연결할 수 없으면 AWT가 {@link AWTError}(Error)를 던진다. 이것도 잡아서 트레이 없이 돈다.
  * 아이콘은 앱 이름의 첫 글자를 그린 이미지다(별도 이미지 파일이 필요 없다).
  */
 final class CozyTray {
 
 	private static final Log logger = LogFactory.getLog(CozyTray.class);
 
-	private @Nullable TrayIcon icon;
+	private volatile @Nullable TrayIcon icon;
 
 	/** @return 트레이에 올렸으면 true */
 	boolean install(String appName, URI uri, CozyShutdown shutdown) {
@@ -57,7 +59,7 @@ final class CozyTray {
 			this.icon = trayIcon;
 			return true;
 		}
-		catch (Exception | LinkageError ex) {
+		catch (Exception | LinkageError | AWTError ex) {
 			logger.warn("[cozy] 트레이 아이콘을 올릴 수 없습니다. 종료는 화면 메뉴에서 하세요: " + ex);
 			return false;
 		}
@@ -70,7 +72,7 @@ final class CozyTray {
 			try {
 				SystemTray.getSystemTray().remove(trayIcon);
 			}
-			catch (Exception | LinkageError ex) {
+			catch (Exception | LinkageError | AWTError ex) {
 				logger.debug("트레이 아이콘을 내릴 수 없습니다", ex);
 			}
 		}

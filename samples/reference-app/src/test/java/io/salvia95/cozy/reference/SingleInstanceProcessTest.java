@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
  * <li>reference-app이 127.0.0.1의 빈 포트로 뜬다. {@code --server.address=0.0.0.0}을 줘도 바뀌지 않는다.</li>
  * <li>두 번째 실행은 기존 인스턴스 주소를 알리고 종료 코드 0으로 끝난다.</li>
  * <li>다른 Host 헤더 요청은 403이다.</li>
+ * <li>Linux에서는 연결할 수 없는 디스플레이로 띄운다. 트레이를 올릴 수 없어도 앱은 계속 돈다
+ * (디스플레이 서버가 없는 PC나 CI. AWT가 {@code AWTError}를 던지는 경로).</li>
  * </ul>
  * 브라우저가 실제로 열리는지는 Windows에서 수동으로 확인한다(docs/conventions/windows-verification.md).
  */
@@ -72,8 +74,10 @@ class SingleInstanceProcessTest {
 		assertThat(secondLog).contains("이미 실행 중인 인스턴스가 있어 그 화면을 엽니다: http://127.0.0.1:" + port + "/")
 			.doesNotContain("Tomcat started");
 		assertThat(first.isAlive()).isTrue();
-
 		if (!isWindows()) {
+			assertThat(Files.readString(this.dataDir.resolveSibling(this.dataDir.getFileName() + "-first.log")))
+				.contains("트레이 아이콘을 올릴 수 없습니다");
+
 			// Windows의 destroy()는 종료 훅 없이 프로세스를 끊는다. 정상 종료 경로(M6 종료 메뉴)는 Windows에서 따로 검증한다.
 			first.destroy();
 			assertThat(first.waitFor(30, TimeUnit.SECONDS)).isTrue();
@@ -88,6 +92,13 @@ class SingleInstanceProcessTest {
 				"--server.address=0.0.0.0")
 			.redirectErrorStream(true)
 			.redirectOutput(this.dataDir.resolveSibling(this.dataDir.getFileName() + "-" + logName).toFile());
+		if (!isWindows()) {
+			// 연결할 수 없는 디스플레이: headless가 아니라서 AWT가 디스플레이에 연결하려다 AWTError를 던진다.
+			// ":987"처럼 형식이 맞는 값은 환경에 따라 연결 시도가 오래 멈추므로, 바로 실패하는 값을 쓴다
+			builder.environment().put("DISPLAY", "cozy-no-display");
+			builder.environment().remove("WAYLAND_DISPLAY");
+			builder.command().add(1, "-Djava.awt.headless=false");
+		}
 		Files.createDirectories(this.dataDir.getParent());
 		Process process = builder.start();
 		this.processes.add(process);

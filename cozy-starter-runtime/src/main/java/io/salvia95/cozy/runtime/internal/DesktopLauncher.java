@@ -117,13 +117,19 @@ public class DesktopLauncher implements ApplicationListener<ApplicationEvent>, O
 		}
 		context.getBeanProvider(UpdateService.class).ifAvailable(UpdateService::signalReady);
 		LogFactory.getLog(DesktopLauncher.class).info("[cozy] 실행 중: " + uri);
-		if (openBrowser(environment)) {
-			BrowserOpener.open(uri);
-		}
-		if (environment.getProperty("cozy.runtime.tray", Boolean.class, true)) {
-			String name = environment.getProperty("cozy.app.name", environment.getProperty("cozy.app.id", "Cozy"));
-			this.tray.install(name, uri, shutdown);
-		}
+		boolean browser = openBrowser(environment);
+		boolean tray = environment.getProperty("cozy.runtime.tray", Boolean.class, true);
+		String name = environment.getProperty("cozy.app.name", environment.getProperty("cozy.app.id", "Cozy"));
+		// 브라우저 열기와 트레이는 AWT를 쓴다. 디스플레이 서버에 연결하는 동안 멈출 수 있으므로(연결할 수 없는 DISPLAY 등)
+		// 기동 스레드가 아닌 데몬 스레드에서 한다. 멈춰도 앱과 종료 경로는 영향을 받지 않는다
+		Thread.ofPlatform().daemon().name("cozy-desktop").start(() -> {
+			if (browser) {
+				BrowserOpener.open(uri);
+			}
+			if (tray) {
+				this.tray.install(name, uri, shutdown);
+			}
+		});
 	}
 
 	private void release() {

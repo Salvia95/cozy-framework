@@ -1,5 +1,6 @@
 package io.salvia95.cozy.runtime.internal;
 
+import java.awt.AWTError;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
@@ -50,7 +51,7 @@ public final class BrowserOpener {
 				return true;
 			}
 		}
-		catch (Exception | LinkageError ex) {
+		catch (Exception | LinkageError | AWTError ex) {
 			logger.debug("Desktop.open을 쓸 수 없습니다", ex);
 		}
 		if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows")) {
@@ -73,7 +74,7 @@ public final class BrowserOpener {
 				return true;
 			}
 		}
-		catch (Exception | LinkageError ex) {
+		catch (Exception | LinkageError | AWTError ex) {
 			logger.debug("Desktop.browse를 쓸 수 없습니다", ex);
 		}
 		return false;
