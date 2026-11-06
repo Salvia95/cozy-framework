@@ -16,6 +16,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 - 공개 API(설정 속성, CozyApplication, CozyEvent, 테스트 베이스 클래스, 매니페스트와 스펙 형식)를 만들면 그때마다 `docs/conventions/`에 문서화한다.
 - 테스트에서 외부 URL을 호출하지 않는다.
 - 화면에 보이는 것(cozy-ui 템플릿·cozy.css·cozy.js, 앱 템플릿)을 바꾸면 보고 전에 `runtime-verifier` 서브 에이전트로 실제 화면을 확인하고, 보고에 스크린샷을 붙인다(ADR-0030). 마크업은 Tabler 구조를 따른다.
+- 화면은 `docs/conventions/design.md`의 원칙(흐름, 화면 유형과 폭, 색 tone과 대비, 문구)을 따른다(ADR-0031). 원칙을 바꾸려면 ADR 개정을 먼저 제안한다.
 
 ## 버전 (ADR-0017)
 

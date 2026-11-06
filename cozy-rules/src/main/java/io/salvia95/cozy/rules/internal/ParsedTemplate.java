@@ -37,6 +37,12 @@ final class ParsedTemplate {
 	/** 지역 범위(파라미터, th:each, th:with, th:object) 밖을 읽는 표현식 (R10은 spi·internal에만 적용) */
 	final List<ModelRead> modelReads = new ArrayList<>();
 
+	/** 색을 직접 고르는 class (R14). text: 클래스 이름 */
+	final List<Problem> colorClasses = new ArrayList<>();
+
+	/** 버튼 묶음(btn-list)의 순서 문제 (R15). why: "last" 또는 "many" */
+	final List<Problem> actionOrder = new ArrayList<>();
+
 	/** 같은 요소의 th:each + th:replace/th:insert (R11) */
 	final List<Problem> eachWithInsertion = new ArrayList<>();
 

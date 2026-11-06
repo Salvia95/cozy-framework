@@ -30,6 +30,8 @@
 | R11 | 한 요소에 `th:each`와 `th:replace`(`th:insert`)를 같이 쓰지 않는다 | `<tr th:each="m : ${memos}" th:replace="~{memo/internal/row :: row(${m})}">` |
 | R12 | fragment 이름은 같은 파일에 있는 요소 이름과 겹치지 않는다. Thymeleaf가 `~{t :: form}`으로 `th:fragment="form"`과 `<form>` 요소를 모두 고르기 때문이다 | 삭제 `<form>`이 있는 파일의 `th:fragment="form"` |
 | R13 | `cozy/icon/tabler :: icon('이름')`, `iconFilled('이름')`에 글자로 쓴 이름은 Tabler Icons에 있어야 한다 | `icon('pluss')` |
+| R14 | 앱 템플릿은 색 클래스를 직접 쓰지 않는다. 색은 tone을 받는 컴포넌트가 고른다. 글자로 쓴 tone은 neutral, info, success, warning, critical 중 하나다 ([design.md](design.md) §4) | `class="badge bg-blue-lt"`, `badge('고정', 'blue')` |
+| R15 | 버튼 묶음(`btn-list`)에 주 버튼(`btn-primary`, `btn-danger`, 확인 창의 삭제)은 하나만, 맨 오른쪽(마지막)에 둔다 ([design.md](design.md) §1) | `[저장] [취소]` |
 
 ### 세부 기준
 
@@ -53,6 +55,17 @@
   - `@빈` 참조와 `param`(요청 파라미터)은 금지다. `*{...}`는 fragment 안의 `th:object` 아래에서만 쓴다
 - **R10과 R11**: 같은 요소의 th:each + th:replace는 R11 하나로 보고한다. 반복 변수를 R10으로 한 번 더 보고하지 않는다.
 - **R12 범위**: 그 요소가 fragment 자신뿐이어서 지금은 해롭지 않아도 실패로 닫는다. 같은 요소가 하나 더 생기는 순간 선택이 깨지기 때문이다. 이름은 `memoForm`, `memoTable`처럼 짓는다.
+- **R14 범위**:
+  - 앱 템플릿(`origin APP`)의 `class`와, `th:classappend`·`th:class` 식 안의 글자 그대로인 클래스를 본다.
+  - 대상은 `bg|text|border|link|badge|alert|avatar|btn|btn-outline|btn-ghost|status|ribbon`에 색 이름(primary, secondary, success, info, warning, danger, light, dark, muted, white, black, blue, azure, indigo, purple, pink, red, orange, yellow, lime, green, teal, cyan, gray)이 붙은 것이다.
+  - 허용: `text-secondary`, `text-muted`, `btn-primary`.
+  - 식으로 이어 붙인 색 클래스(`|bg-${color}-lt|`)는 확인할 수 없으므로 실패로 닫는다.
+  - 프레임워크 템플릿은 tone을 구현하므로 대상이 아니다.
+  - tone 확인은 `badge`의 둘째 인자, `alert`·`toast`의 첫째 인자를 글자로 쓴 경우만 본다.
+- **R15 범위**:
+  - `btn-list` 요소 안의 동작을 문서 순서로 센다. 동작은 `btn` 클래스가 있는 요소나 `th:replace`·`th:insert`로 바꿔 끼우는 요소다(무엇이 들어올지 모르므로 보조 동작 하나로 센다).
+  - 동작 안쪽은 세지 않는다.
+  - 주 버튼이 없는 묶음은 통과한다.
 - **R13 범위**: 글자로 쓴 이름만 본다. 변수로 넘긴 이름(`icon(${link.icon})`)은 Java 쪽이 확인한다(`CozyIcons.requireOutline`, `CozyNavItem`). 아이콘 목록이 없으면(cozy-ui가 클래스패스에 없으면) 글자로 쓴 아이콘은 모두 실패한다.
 - **속성 순서**: 검사는 Thymeleaf의 속성 우선순위(th:insert/replace → th:each → th:if·th:unless·th:switch·th:case → th:object·th:with → 나머지)대로 지역 변수가 생기는 시점을 따른다.
 
@@ -66,6 +79,8 @@
 [R10] templates/memo/spi/card.html:2 → ${memos.size()} → memos — 'memos'는 card(summary)의 파라미터나 지역 변수가 아닙니다. spi·internal fragment는 부르는 화면의 모델을 읽지 않습니다. card(summary)에 파라미터를 더하고 부르는 쪽이 값을 넘기게 하세요.
 [R12] templates/memo/api/detail.html:3 → th:fragment="form" — 같은 파일에 <form> 요소가 있습니다. Thymeleaf는 'form'를 고를 때 그 이름의 fragment와 요소를 모두 가져옵니다. HTML 요소 이름과 다른 이름으로 바꾸세요 (예: form → memoForm, table → memoTable).
 [R13] templates/memo/api/list.html:2 → cozy/icon/tabler :: icon(1개 인자) — 아이콘 'pluss'가 Tabler Icons에 없습니다. 비슷한 이름: plus, …
+[R14] templates/memo/api/list.html:2 → class="bg-blue-lt" — 앱 화면은 색을 직접 고르지 않습니다. 색은 의미(tone: neutral, info, success, warning, critical)를 받는 cozy 컴포넌트가 고릅니다 (예: badge('고정', 'neutral'), alert('critical', …), deleteConfirm(…)). 허용: text-secondary, btn-primary.
+[R15] templates/memo/internal/fields.html:2 → class="btn-list" — 주 버튼(btn-primary, btn-danger)은 버튼 묶음의 맨 오른쪽(마지막)에 둡니다. 예: [취소] [저장], [삭제] [수정].
 [R11] templates/memo/internal/table.html:2 → th:each + th:replace — 같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 실행되어 반복 변수가 아직 없습니다. <th:block th:each="..."> 안쪽 요소에 th:replace를 두세요.
 [R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
 [R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.

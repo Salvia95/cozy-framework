@@ -1,65 +1,106 @@
 <!DOCTYPE html>
-<!--/* 패턴 카탈로그 (cozy.dev.catalog.enabled=true). 미리보기는 /cozy/dev/catalog/render와 /screen이 그린다. */-->
+<!--/*
+  패턴 카탈로그 (cozy.dev.catalog.enabled=true). 미리보기는 /cozy/dev/catalog/render와 /screen이 그린다.
+  구성: 왼쪽 목차(찾는 순서: 패턴 → 컴포넌트 → 아이콘 → 레이아웃 → 앱 공개 fragment → 화면), 오른쪽 항목.
+  항목마다 같은 틀: 이름 · 시그니처 · 구분 / 용도 / 파라미터 / 상태별 미리보기(내용 높이에 맞춤, 새 창에서 보기).
+*/-->
 <html th:replace="~{cozy/layout/base :: base('패턴 카탈로그', ~{::main})}">
 <body>
 <main class="container-xl py-4">
-  <div class="page-header mb-4">
+  <div class="page-header mt-0 mb-4">
     <h2 class="page-title">패턴 카탈로그</h2>
-    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면 <span th:text="${screens.size()}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.
-      아이콘 이름은 <a th:href="@{/cozy/dev/catalog/icons}">아이콘 목록</a>에서 찾습니다.</div>
+    <p class="text-secondary mt-1 mb-0">
+      화면은 여기 있는 패턴과 컴포넌트를 조합해 만들고, 없을 때만 새로 만듭니다. 화면 유형·버튼 순서·색 tone은 docs/conventions/design.md를 따릅니다.
+      fragment <span th:text="${total}">0</span>개 · 화면 <span th:text="${screens.size()}">0</span>개 · <a th:href="@{/cozy/dev/catalog/icons}">아이콘 목록</a>
+    </p>
   </div>
-  <section class="mb-5" th:if="${!screens.isEmpty()}">
-    <h3 class="mb-3">screen</h3>
-    <div class="card mb-4" th:each="spec : ${screens}" th:id="${'screen-' + spec.screen}">
-      <div class="card-header">
-        <div>
-          <h4 class="card-title"><code th:text="${spec.template}">memo/api/list</code></h4>
-          <div class="text-secondary" th:text="${spec.source}">specs/memo-list.yml</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="mb-3" th:each="state : ${spec.states.keySet()}">
-          <div class="text-secondary small mb-1" th:text="|상태: ${state}|">상태</div>
-          <iframe class="cozy-catalog-frame cozy-catalog-frame-tall"
-                  th:src="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}" th:title="|${spec.screen} ${state}|"></iframe>
-        </div>
-      </div>
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <nav class="cozy-catalog-toc" aria-label="목차">
+        <th:block th:each="group : ${groups}">
+          <a class="subheader d-block mb-2" th:href="|#group-${group.key}|" th:text="${group.label}">패턴</a>
+          <ul class="list-unstyled mb-4">
+            <li th:each="entry : ${group.entries}">
+              <a class="cozy-catalog-toc-link" th:href="|#fragment-${entry.id.replace('/', '-')}|"
+                 th:text="${entry.id.substring(entry.id.indexOf('/') + 1)}">list-with-filter</a>
+            </li>
+          </ul>
+        </th:block>
+        <th:block th:if="${!screens.isEmpty()}">
+          <a class="subheader d-block mb-2" href="#group-screen">화면</a>
+          <ul class="list-unstyled mb-4">
+            <li th:each="spec : ${screens}"><a class="cozy-catalog-toc-link" th:href="|#screen-${spec.screen}|" th:text="${spec.screen}">memo-list</a></li>
+          </ul>
+        </th:block>
+      </nav>
     </div>
-  </section>
-  <section class="mb-5" th:each="group : ${groups}">
-    <h3 class="mb-3" th:text="${group.key}">layout</h3>
-    <div class="card mb-4" th:each="entry : ${group.value}" th:id="${'fragment-' + entry.id.replace('/', '-')}">
-      <div class="card-header">
-        <div>
-          <h4 class="card-title"><code th:text="${entry.template + ' :: ' + entry.signature}">cozy/component/x :: x()</code></h4>
-          <div class="text-secondary" th:text="${entry.purpose}">용도</div>
-        </div>
-        <div class="card-actions">
-          <span class="badge" th:classappend="${entry.framework} ? 'bg-blue-lt' : 'bg-green-lt'" th:text="${entry.framework} ? '프레임워크' : '앱'">구분</span>
-        </div>
-      </div>
-      <div class="table-responsive" th:if="${!entry.params.isEmpty()}">
-        <table class="table table-sm card-table">
-          <thead><tr><th>파라미터</th><th>타입</th><th>필수</th><th>설명</th></tr></thead>
-          <tbody>
-            <tr th:each="p : ${entry.params}">
-              <td><code th:text="${p.name}">name</code></td>
-              <td th:text="${p.type}">String</td>
-              <td th:text="${p.required} ? '예' : '아니오'">예</td>
-              <td th:text="${p.description}">설명</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-body">
-        <div class="mb-3" th:each="state : ${entry.samples.keySet()}">
-          <div class="text-secondary small mb-1" th:text="|상태: ${state}|">상태</div>
-          <iframe class="cozy-catalog-frame" th:classappend="${entry.document} ? 'cozy-catalog-frame-tall'"
-                  th:src="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}" th:title="|${entry.id} ${state}|"></iframe>
-        </div>
-      </div>
+    <div class="col-lg-9">
+      <section class="mb-5" th:each="group : ${groups}" th:id="|group-${group.key}|">
+        <h3 class="mb-1" th:text="${group.label}">패턴</h3>
+        <p class="text-secondary mb-3" th:text="${group.description}">설명</p>
+        <article class="card mb-4" th:each="entry : ${group.entries}" th:id="${'fragment-' + entry.id.replace('/', '-')}">
+          <div class="card-header">
+            <div>
+              <h4 class="card-title" th:text="${entry.id.substring(entry.id.indexOf('/') + 1)}">list-with-filter</h4>
+              <code class="small" th:text="${entry.template + ' :: ' + entry.signature}">cozy/component/x :: x()</code>
+            </div>
+            <div class="card-actions">
+              <span class="badge cozy-tone-neutral" th:text="${entry.framework} ? '프레임워크' : '앱'">구분</span>
+            </div>
+          </div>
+          <div class="card-body"><p class="mb-0" th:text="${entry.purpose}">용도</p></div>
+          <div class="table-responsive" th:if="${!entry.params.isEmpty()}">
+            <table class="table table-sm card-table cozy-catalog-params">
+              <thead><tr><th>파라미터</th><th>타입</th><th>필수</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr th:each="p : ${entry.params}">
+                  <td><code th:text="${p.name}">name</code></td>
+                  <td th:text="${p.type}">String</td>
+                  <td th:text="${p.required} ? '예' : '아니오'">예</td>
+                  <td th:text="${p.description}">설명</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body border-top">
+            <div class="cozy-catalog-preview" th:each="state : ${entry.samples.keySet()}">
+              <div class="d-flex align-items-center mb-1">
+                <span class="text-secondary small" th:text="|상태: ${state}|">상태</span>
+                <a class="ms-auto small" target="_blank" rel="noopener"
+                   th:href="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}">새 창에서 보기</a>
+              </div>
+              <iframe class="cozy-catalog-frame" data-cozy-autosize
+                      th:src="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}" th:title="|${entry.id} ${state}|"></iframe>
+            </div>
+          </div>
+        </article>
+      </section>
+      <section class="mb-5" id="group-screen" th:if="${!screens.isEmpty()}">
+        <h3 class="mb-1">화면</h3>
+        <p class="text-secondary mb-3">앱 화면 스펙(specs/*.yml)의 상태별 미리보기. 실제 폭으로 보려면 새 창에서 엽니다.</p>
+        <article class="card mb-4" th:each="spec : ${screens}" th:id="${'screen-' + spec.screen}">
+          <div class="card-header">
+            <div>
+              <h4 class="card-title" th:text="${spec.screen}">memo-list</h4>
+              <code class="small" th:text="${spec.template}">memo/api/list</code>
+            </div>
+            <div class="card-actions"><span class="text-secondary small" th:text="${spec.source}">specs/memo-list.yml</span></div>
+          </div>
+          <div class="card-body">
+            <div class="cozy-catalog-preview" th:each="state : ${spec.states.keySet()}">
+              <div class="d-flex align-items-center mb-1">
+                <span class="text-secondary small" th:text="|상태: ${state}|">상태</span>
+                <a class="ms-auto small" target="_blank" rel="noopener"
+                   th:href="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}">새 창에서 보기</a>
+              </div>
+              <iframe class="cozy-catalog-frame" data-cozy-autosize
+                      th:src="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}" th:title="|${spec.screen} ${state}|"></iframe>
+            </div>
+          </div>
+        </article>
+      </section>
     </div>
-  </section>
+  </div>
 </main>
 </body>
 </html>
@@ -72,25 +113,45 @@
 <!--/* 매니페스트 샘플이 fragment 파라미터에 쓰는 예시 조각 */-->
 <tr th:fragment="sampleTableHead"><th>제목</th><th>상태</th><th>수정</th></tr>
 <th:block th:fragment="sampleTableRows">
-  <tr><td>회의록 정리</td><td><span class="badge bg-blue-lt">고정</span></td><td>2026-11-06 10:00</td></tr>
+  <tr><td>회의록 정리</td><td><span class="badge cozy-tone-neutral">고정</span></td><td>2026-11-06 10:00</td></tr>
   <tr><td>주간 보고</td><td></td><td>2026-11-05 17:20</td></tr>
 </th:block>
 <form id="filter" class="row g-2" th:fragment="sampleFilter">
   <div class="col"><input class="form-control" type="search" name="q" placeholder="검색" aria-label="검색"></div>
   <div class="col-auto"><button class="btn" type="submit">찾기</button></div>
 </form>
-<a class="btn btn-primary" th:fragment="sampleAction" href="#"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새로 만들기</a>
+<a class="btn btn-primary" th:fragment="sampleAction" href="#"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>메모 만들기</a>
 <div class="datagrid" th:fragment="sampleDetail">
-  <div class="datagrid-item"><div class="datagrid-title">상태</div><div class="datagrid-content"><span class="badge bg-blue-lt">고정</span></div></div>
+  <div class="datagrid-item"><div class="datagrid-title">상태</div><div class="datagrid-content"><span class="badge cozy-tone-neutral">고정</span></div></div>
   <div class="datagrid-item"><div class="datagrid-title">만든 시각</div><div class="datagrid-content">2026-11-06 10:00</div></div>
 </div>
 <div class="row row-deck row-cards" th:fragment="sampleStats">
-  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('notes', 'primary', '12개', '전체 메모')}"></div></div>
-  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('pin', 'azure', '3개', '고정한 메모')}"></div></div>
+  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('notes', '12개', '전체 메모')}"></div></div>
+  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('pin', '3개', '고정한 메모')}"></div></div>
 </div>
 <div class="card" th:fragment="sampleCard"><div class="card-body text-secondary">본문 카드</div></div>
 <div class="list-group list-group-flush" th:fragment="sampleList">
   <div class="list-group-item">메모를 만들었습니다: 회의록 정리</div>
   <div class="list-group-item">메모를 만들었습니다: 주간 보고</div>
+</div>
+<form class="card" th:fragment="sampleForm" action="#" method="post">
+  <div class="card-body">
+    <div class="mb-3"><label class="form-label" for="sample-title">제목</label><input class="form-control" id="sample-title" name="title" value="회의록 정리"></div>
+    <div><label class="form-label" for="sample-body">본문</label><textarea class="form-control" id="sample-body" name="body" rows="3">첫 줄</textarea></div>
+  </div>
+  <div th:replace="~{cozy/component/form-actions :: formActions('/memo', 'plus', '메모 만들기')}"></div>
+</form>
+<div class="btn-list" th:fragment="sampleDetailActions">
+  <th:block th:replace="~{cozy/component/delete-confirm :: deleteConfirm('sample-delete', '메모', '회의록 정리', '/memo/1/delete')}"></th:block>
+  <a class="btn btn-primary" href="#"><svg th:replace="~{cozy/icon/tabler :: icon('pencil')}"></svg>수정</a>
+</div>
+<div class="row row-cards" th:fragment="sampleDetailBody">
+  <div class="col-lg-8"><div class="card"><div class="card-header"><h3 class="card-title">본문</h3></div><div class="card-body"><p class="mb-0">첫 줄</p></div></div></div>
+  <div class="col-lg-4"><div class="card"><div class="card-header"><h3 class="card-title">정보</h3></div><div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item"><div class="datagrid-title">상태</div><div class="datagrid-content"><span class="badge cozy-tone-neutral">고정</span></div></div>
+      <div class="datagrid-item"><div class="datagrid-title">수정한 시각</div><div class="datagrid-content">2026-11-06 10:30</div></div>
+    </div>
+  </div></div></div>
 </div>
 </th:block>

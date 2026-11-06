@@ -48,6 +48,17 @@ public final class MemoViews {
 		return form;
 	}
 
+	/** 수정 폼이 지금 값과 같은가 (바뀐 게 없으면 저장하지 않고 알린다). 본문의 null과 빈 글자는 같다 */
+	public static boolean unchanged(MemoItem memo, MemoForm form) {
+		return java.util.Objects.equals(memo.title(), form.getTitle())
+				&& java.util.Objects.equals(nullToEmpty(memo.body()), nullToEmpty(form.getBody()))
+				&& memo.pinned() == form.isPinned();
+	}
+
+	private static String nullToEmpty(String text) {
+		return (text != null) ? text : "";
+	}
+
 	static String format(Instant instant) {
 		return TIME.format(instant);
 	}

@@ -180,7 +180,7 @@ class RuntimeContextTest {
 			.andExpect(status().isFound())
 			.andExpect(redirectedUrl("/"))
 			.andExpect(flash().attribute("cozyFlash",
-					hasToString(containsString("kind=danger, message=설치할 업데이트가 없습니다. 화면을 새로 고치세요."))));
+					hasToString(containsString("kind=critical, message=설치할 업데이트가 없습니다. 화면을 새로 고치세요."))));
 	}
 
 	@Test

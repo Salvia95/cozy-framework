@@ -1,4 +1,6 @@
-<!--/* 서버가 그리는 토스트. 스크립트에서는 Cozy.toast(message, kind) 또는 HX-Trigger의 cozy:toast 이벤트를 쓴다. */-->
-<div class="toast show" role="status" th:fragment="toast(kind, message)" th:classappend="|text-bg-${kind ?: 'info'}|">
+<!--/* 서버가 그리는 토스트. 짧은 확인(복사함 등)에만 쓴다. 만들기·수정·삭제 결과는 플래시(alert)로 알린다(design.md).
+     kind: info, success, warning, critical. 바탕은 중립(어두운 회색)이고 critical만 빨강이다.
+     스크립트에서는 Cozy.toast(message, kind) 또는 HX-Trigger의 cozy:toast 이벤트를 쓴다. */-->
+<div class="toast show cozy-toast" role="status" th:fragment="toast(kind, message)" th:classappend="${kind == 'critical'} ? 'cozy-toast-critical'">
   <div class="toast-body" th:text="${message}">알림</div>
 </div>

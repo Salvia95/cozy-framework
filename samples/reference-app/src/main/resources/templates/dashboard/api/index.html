@@ -4,7 +4,7 @@
 <body>
 <main>
   <section th:replace="~{cozy/pattern/overview :: overview('대시보드', ~{::#dashboard-actions}, ~{::#memo-summary}, ~{::#activity-panel})}">
-    <a id="dashboard-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
+    <a id="dashboard-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>메모 만들기</a>
     <div id="memo-summary">
       <div th:replace="~{memo/spi/summary :: memoSummary(${dashboard.memo})}"></div>
     </div>

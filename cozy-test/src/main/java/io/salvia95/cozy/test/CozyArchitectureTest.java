@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.Violation;
  *
  * <ul>
  * <li>C1: {@code ApplicationModules.of(앱 클래스).verify()}</li>
- * <li>C2: 템플릿 경계 규칙 R1~R11. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
+ * <li>C2: 템플릿 규칙 R1~R15. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
  * <li>C6: 이벤트 리스너 파라미터는 CozyEvent, 이벤트마다 버전별 직렬화 샘플과 호환 (cozy-starter-events를 쓰는 앱)</li>
  * <li>C8: 모듈 안의 패키지(api, spi, internal/app·domain·infra·config)와 레이어 방향, 인터페이스 + Impl (ADR-0029)</li>
  * </ul>

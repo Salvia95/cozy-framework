@@ -1,0 +1,10 @@
+<!--/*
+  폼 아래 버튼 줄 (<form class="card">의 마지막 자식). 시선이 끝나는 오른쪽 아래에 [취소] [주 버튼] 순서로 둔다.
+  cancelUrl: 저장하지 않고 돌아갈 주소. submitIcon: Tabler Icons 이름. submitLabel: "대상 + 동사" (예: 메모 만들기) 또는 저장.
+*/-->
+<div class="card-footer" th:fragment="formActions(cozyCancelUrl, cozySubmitIcon, cozySubmitLabel)">
+  <div class="btn-list justify-content-end">
+    <a class="btn" th:href="@{${cozyCancelUrl}}">취소</a>
+    <button class="btn btn-primary" type="submit"><svg th:replace="~{cozy/icon/tabler :: icon(${cozySubmitIcon})}"></svg><span th:text="${cozySubmitLabel}">저장</span></button>
+  </div>
+</div>

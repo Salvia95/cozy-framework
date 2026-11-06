@@ -2,7 +2,7 @@
 
 PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이나 검사에서 실패해야 한다. `mvn verify`가 둘 다 실행한다.
 
-## rules/ — 템플릿 규칙 R1~R13
+## rules/ — 템플릿 규칙 R1~R15
 
 | 폴더 | 위반 |
 | --- | --- |
@@ -19,6 +19,8 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 | `R11-each-with-replace` | 한 요소에 `th:each`와 `th:replace` |
 | `R12-fragment-element-name` | fragment 이름 `form`이 같은 파일의 `<form>` 요소 이름과 같다 |
 | `R13-unknown-icon` | Tabler Icons에 없는 아이콘 이름 `icon('pluss')` |
+| `R14-raw-color` | 앱 화면이 색 클래스 `bg-blue-lt`를 직접 쓴다 |
+| `R15-action-order` | 주 버튼(저장)이 버튼 묶음의 맨 오른쪽이 아니다 |
 
 - 폴더 구성: `templates/`, `modules.properties`(모듈 구조: `모듈=허용 의존`), `fragments.yml`(앱 매니페스트, 선택)
 - 프레임워크 템플릿과 매니페스트는 실제 cozy-ui jar의 것을 쓴다.

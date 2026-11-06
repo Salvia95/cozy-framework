@@ -4,7 +4,7 @@
   컨트롤러는 CozyViews.pageOrFragment("{모듈}/api/list", "result")를 반환한다. 동작 버튼이 없으면 ~{}를 넘긴다.
 */-->
 <th:block th:fragment="listWithFilter(cozyHeading, cozyActions, cozyFilter, cozyResult)">
-  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyActions})}"></div>
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, null, null, ${cozyActions})}"></div>
   <div class="page-body">
     <div class="container-xl">
       <div th:replace="~{cozy/component/alert :: flash()}"></div>

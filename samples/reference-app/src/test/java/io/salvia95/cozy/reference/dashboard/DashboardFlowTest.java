@@ -36,6 +36,9 @@ class DashboardFlowTest {
 	@Autowired
 	ActivityFinder activities;
 
+	@Autowired
+	io.salvia95.cozy.reference.memo.spi.MemoFinder finder;
+
 	@Test
 	void rootGoesToDashboard() throws Exception {
 		this.mvc.perform(get("/")).andExpect(status().isFound()).andExpect(redirectedUrl("/dashboard"));
@@ -62,6 +65,15 @@ class DashboardFlowTest {
 			.andReturn());
 		assertThat(panel).doesNotContain("<html").startsWith("<div id=\"activity\"")
 			.contains("메모를 만들었습니다: 이벤트 메모");
+	}
+
+	/** "가장 최근에 만든 메모"는 만든 시각 기준이다. 고정이나 나중에 고친 것이 앞서지 않는다 */
+	@Test
+	void latestCardShowsTheMostRecentlyCreatedMemo() throws Exception {
+		long first = this.memos.create("먼저 만든 고정 메모", "", true);
+		this.memos.create("나중에 만든 메모", "", false);
+		this.memos.update(first, "먼저 만든 고정 메모 (수정)", "", true);
+		assertThat(this.finder.summary().latestTitle()).isEqualTo("나중에 만든 메모");
 	}
 
 	static String body(MvcResult result) throws Exception {

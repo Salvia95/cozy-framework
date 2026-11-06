@@ -1,8 +1,20 @@
-<!--/* 화면 머리: 제목과 오른쪽 동작 버튼. 패턴이 쓴다. actions가 없으면 ~{}를 넘긴다. */-->
-<div class="page-header d-print-none" th:fragment="pageHeader(cozyHeading, cozyActions)">
+<!--/*
+  화면 머리 (패턴이 쓴다). 왼쪽 위에 제목, 오른쪽 위에 동작 버튼(주 버튼은 맨 오른쪽, R15).
+  backLabel·backUrl: 상위 화면(예: '메모', '/memo'). 있으면 제목 위에 경로(상위 › 제목)를 보인다. 없으면 null.
+  actions: 오른쪽 버튼 묶음(없으면 ~{}).
+*/-->
+<div class="page-header d-print-none" th:fragment="pageHeader(cozyHeading, cozyBackLabel, cozyBackUrl, cozyActions)">
   <div class="container-xl">
     <div class="row g-2 align-items-center">
-      <div class="col"><h2 class="page-title" th:text="${cozyHeading}">제목</h2></div>
+      <div class="col">
+        <nav aria-label="경로" th:if="${cozyBackUrl != null}">
+          <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a th:href="@{${cozyBackUrl}}" th:text="${cozyBackLabel}">상위</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${cozyHeading}">제목</li>
+          </ol>
+        </nav>
+        <h2 class="page-title" th:text="${cozyHeading}">제목</h2>
+      </div>
       <div class="col-auto ms-auto d-print-none"><div class="btn-list"><th:block th:replace="${cozyActions}"></th:block></div></div>
     </div>
   </div>

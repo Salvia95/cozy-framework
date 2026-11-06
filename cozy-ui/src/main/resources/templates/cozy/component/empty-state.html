@@ -1,4 +1,8 @@
-<!--/* 결과가 없을 때. icon: Tabler Icons 이름. 다음 행동을 안내할 버튼이 있으면 emptyStateAction을 쓴다. */-->
+<!--/*
+  비어 있을 때 두 가지를 구분한다 (design.md).
+  - 아직 아무것도 없다: emptyState / emptyStateAction(만들기 버튼)
+  - 조건에 맞는 것이 없다: noResults(조건 지우기 버튼). cozyClearUrl은 조건 없는 목록 주소
+*/-->
 <div class="empty" th:fragment="emptyState(icon, title, description)">
   <div class="empty-icon"><svg th:replace="~{cozy/icon/tabler :: icon(${icon})}"></svg></div>
   <p class="empty-title" th:text="${title}">결과가 없습니다</p>
@@ -10,4 +14,11 @@
   <p class="empty-title" th:text="${cozyTitle}">결과가 없습니다</p>
   <p class="empty-subtitle text-secondary" th:if="${cozyDescription != null}" th:text="${cozyDescription}">설명</p>
   <div class="empty-action"><th:block th:replace="${cozyAction}"></th:block></div>
+</div>
+
+<div class="empty" th:fragment="noResults(cozyClearUrl)">
+  <div class="empty-icon"><svg th:replace="~{cozy/icon/tabler :: icon('search-off')}"></svg></div>
+  <p class="empty-title">조건에 맞는 결과가 없습니다</p>
+  <p class="empty-subtitle text-secondary">검색어나 조건을 바꿔 보세요.</p>
+  <div class="empty-action"><a class="btn" th:href="@{${cozyClearUrl}}"><svg th:replace="~{cozy/icon/tabler :: icon('filter-off')}"></svg>조건 지우기</a></div>
 </div>

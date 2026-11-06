@@ -1,49 +1,52 @@
 <!DOCTYPE html>
 <!--/*
-  메모 상세 화면(api): detail-edit 패턴. 머리 오른쪽에 목록·삭제, 왼쪽은 읽기(datagrid), 오른쪽은 수정 폼(memo/internal/fields 조각).
-  수정 폼 fragment 이름은 memoForm이다. 'form'으로 지으면 삭제 <form>까지 함께 골라진다(R12).
+  메모 상세 화면(api): details 패턴(읽기 전용). 경로 메모 › 제목, 머리 오른쪽에 [삭제(확인 창)] [수정(주 버튼)].
+  본문은 넓은 칸, 상태와 시각은 옆 칸(datagrid). 수정은 /memo/{id}/edit 화면에서 한다.
 */-->
 <html th:replace="~{cozy/layout/base :: appShell(${memo.title}, ~{::main})}">
 <body>
 <main>
-  <section th:replace="~{cozy/pattern/detail-edit :: detailEdit(${memo.title}, ~{::#memo-actions}, ~{::#memo-detail}, ~{::#memoForm})}">
+  <section th:replace="~{cozy/pattern/details :: details(${memo.title}, '메모', '/memo', ~{::#memo-actions}, ~{::#memo-body})}">
     <div id="memo-actions" class="btn-list">
-      <a class="btn" th:href="@{/memo}"><svg th:replace="~{cozy/icon/tabler :: icon('arrow-left')}"></svg>목록</a>
-      <form class="m-0" th:action="@{/memo/{id}/delete(id=${memo.id})}" method="post"
-            th:hx-post="@{/memo/{id}/delete(id=${memo.id})}" hx-confirm="이 메모를 지울까요?">
-        <button class="btn btn-outline-danger" type="submit"><svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>삭제</button>
-      </form>
+      <th:block th:replace="~{cozy/component/delete-confirm :: deleteConfirm('memo-delete', '메모', ${memo.title}, '/memo/' + ${memo.id} + '/delete')}"></th:block>
+      <a class="btn btn-primary" th:href="@{/memo/{id}/edit(id=${memo.id})}"><svg th:replace="~{cozy/icon/tabler :: icon('pencil')}"></svg>수정</a>
     </div>
 
-    <div id="memo-detail">
-      <div class="datagrid">
-        <div class="datagrid-item">
-          <div class="datagrid-title">상태</div>
-          <div class="datagrid-content">
-            <th:block th:if="${memo.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></th:block>
-            <span class="text-secondary" th:unless="${memo.pinned}">고정 안 함</span>
+    <div id="memo-body" class="row row-cards">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">본문</h3></div>
+          <div class="card-body">
+            <th:block th:if="${memo.bodyLines.isEmpty()}"><p class="text-secondary mb-0">본문이 없습니다.</p></th:block>
+            <p class="mb-2" th:each="line : ${memo.bodyLines}" th:text="${line}">본문</p>
           </div>
         </div>
-        <div class="datagrid-item">
-          <div class="datagrid-title">만든 시각</div>
-          <div class="datagrid-content" th:text="${memo.createdAt}">2026-11-06 10:00</div>
-        </div>
-        <div class="datagrid-item">
-          <div class="datagrid-title">고친 시각</div>
-          <div class="datagrid-content" th:text="${memo.updatedAt}">2026-11-06 10:00</div>
-        </div>
       </div>
-      <div class="mt-4">
-        <div class="datagrid-title mb-2">본문</div>
-        <th:block th:if="${memo.bodyLines.isEmpty()}"><p class="text-secondary mb-0">본문이 없습니다.</p></th:block>
-        <p class="mb-1" th:each="line : ${memo.bodyLines}" th:text="${line}">본문</p>
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">정보</h3></div>
+          <div class="card-body">
+            <div class="datagrid">
+              <div class="datagrid-item">
+                <div class="datagrid-title">상태</div>
+                <div class="datagrid-content">
+                  <th:block th:if="${memo.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'neutral')}"></span></th:block>
+                  <span class="text-secondary" th:unless="${memo.pinned}">고정 안 함</span>
+                </div>
+              </div>
+              <div class="datagrid-item">
+                <div class="datagrid-title">만든 시각</div>
+                <div class="datagrid-content" th:text="${memo.createdAt}">2026-11-06 10:00</div>
+              </div>
+              <div class="datagrid-item">
+                <div class="datagrid-title">수정한 시각</div>
+                <div class="datagrid-content" th:text="${memo.updatedAt}">2026-11-06 10:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <form id="memoForm" th:fragment="memoForm" th:action="@{/memo/{id}(id=${memo.id})}" method="post" th:object="${form}"
-          th:hx-post="@{/memo/{id}(id=${memo.id})}" hx-target="this" hx-swap="outerHTML">
-      <th:block th:replace="~{memo/internal/fields :: memoFields('되돌리기')}"></th:block>
-    </form>
   </section>
 </main>
 </body>

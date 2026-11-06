@@ -64,7 +64,7 @@ class MemoScreenTest {
 			.andExpect(redirectedUrlPattern("/memo/*"))
 			.andReturn();
 		String detail = body(this.mvc.perform(get(created.getResponse().getRedirectedUrl()).session(session)).andReturn());
-		assertThat(detail).contains("메모를 저장했습니다").contains("화면 메모").contains(">첫 줄<").contains(">둘째 줄<")
+		assertThat(detail).contains("메모를 만들었습니다").contains("화면 메모").contains(">첫 줄<").contains(">둘째 줄<")
 			.contains(">고정<");
 	}
 
@@ -96,36 +96,69 @@ class MemoScreenTest {
 		String percent = body(this.mvc.perform(get("/memo").param("q", "100%").header("HX-Request", "true")).andReturn());
 		assertThat(percent).contains("다른 100% 메모").doesNotContain("페이지 메모");
 
+		// 조건에 맞는 것이 없으면 "조건 지우기", 아직 아무것도 없을 때(메모가 없습니다)와 구분한다
 		String nothing = body(this.mvc.perform(get("/memo").param("q", "없는 단어").header("HX-Request", "true")).andReturn());
-		assertThat(nothing).contains("메모가 없습니다");
+		assertThat(nothing).contains("조건에 맞는 결과가 없습니다").contains(">조건 지우기<").doesNotContain("메모가 없습니다");
 	}
 
 	@Test
-	void updateAndDelete() throws Exception {
+	void detailIsReadOnlyWithDeleteThenEditInTheHeader() throws Exception {
+		long id = this.memos.create("읽기 메모", "본문", false);
+		String detail = body(this.mvc.perform(get("/memo/" + id)).andExpect(status().isOk()).andReturn());
+		assertThat(detail).doesNotContain("name=\"title\"").contains("aria-current=\"page\">읽기 메모<")
+			.contains(">메모 삭제<").contains("<strong>읽기 메모</strong>");
+		// 머리 오른쪽: [삭제] [수정(주 버튼)]
+		assertThat(detail.indexOf("cozy-btn-critical\"")).isPositive()
+			.isLessThan(detail.indexOf("href=\"/memo/" + id + "/edit\""));
+	}
+
+	@Test
+	void editOnItsOwnPageThenSaveOrNoChange() throws Exception {
 		long id = this.memos.create("고칠 메모", "", false);
+		String edit = body(this.mvc.perform(get("/memo/" + id + "/edit")).andExpect(status().isOk()).andReturn());
+		assertThat(edit).contains("cozy-width-form").contains("value=\"고칠 메모\"").contains(">메모 수정<")
+			.contains("href=\"/memo/" + id + "\"");
+
 		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "")).andExpect(status().isOk());
-		// htmx 검증 오류: 수정 폼만 돌아온다 (삭제 폼이 끼어들지 않는다, R12)
+		// htmx 검증 오류: 수정 폼만 돌아온다
 		String invalidHtmx = body(this.mvc.perform(post("/memo/" + id).with(csrf()).header("HX-Request", "true").param("title", ""))
 			.andExpect(status().isOk())
 			.andReturn());
 		assertThat(invalidHtmx).startsWith("<form").contains("제목을 입력하세요").doesNotContain("/delete");
 		assertThat(invalidHtmx.split("<form", -1)).hasSize(2);
-		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "고친 메모").param("body", "새 본문"))
+
+		MockHttpSession session = new MockHttpSession();
+		this.mvc.perform(post("/memo/" + id).with(csrf()).session(session).param("title", "고칠 메모").param("body", ""))
+			.andExpect(redirectedUrl("/memo/" + id));
+		assertThat(body(this.mvc.perform(get("/memo/" + id).session(session)).andReturn())).contains("바뀐 내용이 없습니다");
+
+		this.mvc.perform(post("/memo/" + id).with(csrf()).session(session).param("title", "고친 메모").param("body", "새 본문"))
 			.andExpect(status().isFound())
 			.andExpect(redirectedUrl("/memo/" + id));
+		assertThat(body(this.mvc.perform(get("/memo/" + id).session(session)).andReturn())).contains("메모를 수정했습니다");
 		assertThat(this.finder.find(id).orElseThrow().title()).isEqualTo("고친 메모");
+	}
 
+	@Test
+	void deleteReturnsToTheListWithAFlash() throws Exception {
+		long id = this.memos.create("지울 메모", "", false);
 		this.mvc.perform(post("/memo/" + id + "/delete").with(csrf()).header("HX-Request", "true"))
 			.andExpect(status().isOk())
 			.andExpect(header().string("HX-Redirect", "/memo"));
 		assertThat(this.finder.find(id)).isEmpty();
 		this.mvc.perform(get("/memo/" + id)).andExpect(status().isNotFound());
+		this.mvc.perform(get("/memo/" + id + "/edit")).andExpect(status().isNotFound());
+
+		long other = this.memos.create("남길 메모", "", false);
+		MockHttpSession session = new MockHttpSession();
+		this.mvc.perform(post("/memo/" + other + "/delete").with(csrf()).session(session)).andExpect(redirectedUrl("/memo"));
+		assertThat(body(this.mvc.perform(get("/memo").session(session)).andReturn())).contains("메모를 삭제했습니다");
 	}
 
 	@Test
 	void pagesUseOnlyLocalAssetsThatExist() throws Exception {
 		long id = this.memos.create("자산 확인", "", false);
-		for (String path : List.of("/memo", "/memo/new", "/memo/" + id)) {
+		for (String path : List.of("/memo", "/memo/new", "/memo/" + id, "/memo/" + id + "/edit")) {
 			String html = body(this.mvc.perform(get(path)).andExpect(status().isOk()).andReturn());
 			assertThat(html).doesNotContainPattern("(?:href|src|action)=\"(?:https?:)?//");
 			Matcher assets = Pattern.compile("(?:href|src)=\"(/cozy/[^\"#]+)(?:#[^\"]*)?\"").matcher(html);

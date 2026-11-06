@@ -4,6 +4,46 @@
     "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 
+/* ── 디자인 토큰 (docs/conventions/design.md, ADR-0031) ──────────────────────────────
+   색은 의미로만 쓴다. 조작(파랑 primary)과 상태 tone 다섯 가지. 글자 대비는 모두 4.5:1 이상이다.
+   앱 화면은 이 클래스를 직접 쓰지 않고 tone을 받는 컴포넌트(badge, alert, deleteConfirm)를 쓴다(R14). */
+:root {
+  --cozy-neutral-fg: #3f3f46;  --cozy-neutral-bg: #f0f0f2;   /* 9.2:1 분류, 보조 정보 */
+  --cozy-info-fg: #0a4f94;     --cozy-info-bg: #e6f0fa;      /* 7.1:1 알림, 진행 중 */
+  --cozy-success-fg: #1d6b30;  --cozy-success-bg: #e7f5ea;   /* 5.8:1 완료, 정상 */
+  --cozy-warning-fg: #7a4300;  --cozy-warning-bg: #fdf1dc;   /* 7.1:1 주의, 미완료 */
+  --cozy-critical-fg: #a51d1d; --cozy-critical-bg: #fbe9e9;  /* 6.4:1 오류, 불가, 되돌릴 수 없는 동작 */
+  /* Tabler의 보조 회색(#737373, 4.5:1 경계)을 한 단계 진하게: 5.5:1 */
+  --tblr-secondary: #666666;
+}
+/* 숫자·날짜는 자릿수를 맞춘다 */
+body { font-variant-numeric: tabular-nums; }
+
+.badge.cozy-tone-neutral { color: var(--cozy-neutral-fg); background: var(--cozy-neutral-bg); }
+.badge.cozy-tone-info { color: var(--cozy-info-fg); background: var(--cozy-info-bg); }
+.badge.cozy-tone-success { color: var(--cozy-success-fg); background: var(--cozy-success-bg); }
+.badge.cozy-tone-warning { color: var(--cozy-warning-fg); background: var(--cozy-warning-bg); }
+.badge.cozy-tone-critical { color: var(--cozy-critical-fg); background: var(--cozy-critical-bg); }
+/* 알림 글자와 아이콘은 진한 tone 색 (Tabler 기본은 상태색 그대로라 4.5:1에 못 미친다) */
+.alert.alert-info { --tblr-alert-color: var(--cozy-info-fg); }
+.alert.alert-success { --tblr-alert-color: var(--cozy-success-fg); }
+.alert.alert-warning { --tblr-alert-color: var(--cozy-warning-fg); }
+.alert.alert-danger { --tblr-alert-color: var(--cozy-critical-fg); }
+.alert .alert-icon { color: var(--tblr-alert-color); }
+/* 칸 오류 글자: Tabler 기본 빨강은 회색 바탕에서 4.47:1이라 진한 critical로 (6.3:1) */
+.invalid-feedback { color: var(--cozy-critical-fg); }
+/* 되돌릴 수 없는 동작: 보조 버튼은 critical 글자, 확인 창의 주 버튼은 critical 바탕(흰 글자 6.4:1) */
+.btn.cozy-btn-critical { --tblr-btn-color: var(--cozy-critical-fg); --tblr-btn-hover-color: var(--cozy-critical-fg); }
+.btn.cozy-btn-critical-fill { --tblr-btn-color: #fff; --tblr-btn-bg: var(--cozy-critical-fg); --tblr-btn-border-color: var(--cozy-critical-fg);
+  --tblr-btn-hover-color: #fff; --tblr-btn-hover-bg: #8a1818; --tblr-btn-hover-border-color: #8a1818;
+  --tblr-btn-active-color: #fff; --tblr-btn-active-bg: #8a1818; --tblr-btn-active-border-color: #8a1818; }
+/* 토스트: 중립 어두운 바탕, critical만 빨강 */
+.toast.cozy-toast { color: #fff; background: #262626; border: 0; }
+.toast.cozy-toast-critical { background: var(--cozy-critical-fg); }
+
+/* ── 화면 폭: 목록·상세·개요는 container-xl, 만들기·수정 폼은 가운데 좁게 ── */
+.cozy-width-form .container-xl { max-width: 48rem; }
+
 /* htmx 요청 표시 (htmx의 includeIndicatorStyles는 CSP 때문에 끈다) */
 .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
 .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
@@ -25,9 +65,15 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-overview-body { margin-top: var(--tblr-page-padding-y, 1.5rem); }
 .page-body > .container-xl > .cozy-overview-body:first-child { margin-top: 0; }
 
-/* 패턴 카탈로그 */
-.cozy-catalog-frame { width: 100%; height: 320px; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
-.cozy-catalog-frame-tall { height: 560px; }
+/* 패턴 카탈로그: 왼쪽 목차(따라 내려온다), 항목마다 같은 틀, 미리보기는 내용 높이(cozy.js가 맞춘다) */
+.cozy-catalog-toc { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+.cozy-catalog-toc-link { display: block; padding: .125rem 0; color: var(--tblr-body-color); }
+.cozy-catalog-toc-link:hover { color: var(--tblr-primary); }
+.cozy-catalog-params th:first-child, .cozy-catalog-params td:first-child { width: 12rem; }
+.cozy-catalog-params th:nth-child(2), .cozy-catalog-params td:nth-child(2) { width: 7rem; }
+.cozy-catalog-params th:nth-child(3), .cozy-catalog-params td:nth-child(3) { width: 4rem; }
+.cozy-catalog-preview + .cozy-catalog-preview { margin-top: 1rem; }
+.cozy-catalog-frame { display: block; width: 100%; height: 120px; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
 .cozy-catalog-placeholder { padding: 1rem; border: 1px dashed var(--tblr-border-color); border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); text-align: center; }
 
 /* 아이콘 목록 (/cozy/dev/catalog/icons) */

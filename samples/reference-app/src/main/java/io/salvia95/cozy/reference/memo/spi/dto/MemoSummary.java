@@ -5,7 +5,7 @@ package io.salvia95.cozy.reference.memo.spi.dto;
  *
  * @param total 전체 메모 수
  * @param pinned 고정한 메모 수
- * @param latestTitle 가장 최근에 고친 메모의 제목. 메모가 없으면 null
+ * @param latestTitle 가장 최근에 만든 메모의 제목. 메모가 없으면 null
  */
 public record MemoSummary(long total, long pinned, String latestTitle) {
 }

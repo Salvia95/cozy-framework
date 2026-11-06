@@ -2,12 +2,12 @@
      값은 파라미터(summary: spi.dto.MemoSummary)로만 받는다. overview 패턴의 stats 자리에 맞는다. */-->
 <div class="row row-deck row-cards" th:fragment="memoSummary(summary)">
   <div class="col-sm-6 col-lg-3">
-    <div th:replace="~{cozy/component/stat :: stat('notes', 'primary', ${summary.total} + '개', '전체 메모')}"></div>
+    <div th:replace="~{cozy/component/stat :: stat('notes', ${summary.total} + '개', '전체 메모')}"></div>
   </div>
   <div class="col-sm-6 col-lg-3">
-    <div th:replace="~{cozy/component/stat :: stat('pin', 'azure', ${summary.pinned} + '개', '고정한 메모')}"></div>
+    <div th:replace="~{cozy/component/stat :: stat('pin', ${summary.pinned} + '개', '고정한 메모')}"></div>
   </div>
   <div class="col-lg-6">
-    <div th:replace="~{cozy/component/stat :: stat('clock', 'green', ${summary.latestTitle} ?: '아직 없습니다', '가장 최근에 만든 메모')}"></div>
+    <div th:replace="~{cozy/component/stat :: stat('clock', ${summary.latestTitle} ?: '아직 없습니다', '가장 최근에 만든 메모')}"></div>
   </div>
 </div>

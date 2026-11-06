@@ -93,7 +93,12 @@ final class TemplateScanner {
 		 * @param locals 이 요소가 더한 지역 이름 (fragment 파라미터 포함)
 		 * @param object 이 요소가 th:object를 두었는가
 		 */
-		record Frame(String element, List<String> params, String fragment, Set<String> locals, boolean[] object) {
+		record Frame(String element, List<String> params, String fragment, Set<String> locals, boolean[] object,
+				ActionGroup group, boolean action) {
+		}
+
+		/** btn-list 하나. items: 동작마다 주 버튼(btn-primary, btn-danger, cozy-btn-critical-fill)인가 */
+		record ActionGroup(int line, List<Boolean> items) {
 		}
 
 		/** 지금 위치의 지역 범위 */
@@ -210,7 +215,77 @@ final class TemplateScanner {
 					}
 				}
 			}
-			return new Frame(this.elementName, params, declaration, new HashSet<>(params), new boolean[1]);
+			Set<String> tokens = classTokens(cls);
+			colorClasses(cls);
+			boolean action = actionItem(tokens);
+			if (action) {
+				ActionGroup group = enclosingGroup();
+				if (group != null) {
+					group.items().add(tokens.contains("btn-primary") || tokens.contains("btn-danger")
+							|| tokens.contains("cozy-btn-critical-fill"));
+				}
+			}
+			ActionGroup group = tokens.contains("btn-list") ? new ActionGroup(line(cls), new ArrayList<>()) : null;
+			return new Frame(this.elementName, params, declaration, new HashSet<>(params), new boolean[1], group, action);
+		}
+
+		private static Set<String> classTokens(Attribute cls) {
+			Set<String> tokens = new HashSet<>();
+			if (cls != null) {
+				for (String token : cls.value().strip().split("\\s+")) {
+					if (!token.isEmpty()) {
+						tokens.add(token);
+					}
+				}
+			}
+			return tokens;
+		}
+
+		private int line(Attribute cls) {
+			if (cls != null) {
+				return cls.line();
+			}
+			return this.attributes.values().stream().mapToInt(Attribute::line).min().orElse(0);
+		}
+
+		/** R15: 버튼이거나, 내용을 바꿔 끼우는 요소(무엇이 들어올지 모르므로 동작 하나로 센다) */
+		private boolean actionItem(Set<String> tokens) {
+			return tokens.contains("btn") || thAttribute("replace") != null || thAttribute("insert") != null;
+		}
+
+		/** 가장 가까운 btn-list. 그 사이에 이미 동작으로 센 요소가 있으면(버튼 안, 바꿔 끼울 요소 안) 세지 않는다 */
+		private ActionGroup enclosingGroup() {
+			for (Frame frame : this.stack) {
+				if (frame.action()) {
+					return null;
+				}
+				if (frame.group() != null) {
+					return frame.group();
+				}
+			}
+			return null;
+		}
+
+		/** R14: class와 th:classappend·th:class의 글자 그대로인 클래스, 식으로 만든 색 클래스 */
+		private void colorClasses(Attribute cls) {
+			if (cls != null) {
+				for (String token : cls.value().strip().split("\\s+")) {
+					if (ColorClasses.forbidden(token)) {
+						this.parsed.colorClasses.add(new Problem(token, "class", cls.line()));
+					}
+				}
+			}
+			for (String name : List.of("classappend", "class")) {
+				Attribute expression = thAttribute(name);
+				if (expression == null) {
+					continue;
+				}
+				for (String token : ColorClasses.tokens(expression.value())) {
+					if (ColorClasses.forbidden(token)) {
+						this.parsed.colorClasses.add(new Problem(token, "th:" + name, expression.line()));
+					}
+				}
+			}
 		}
 
 		private void processAttributes() {
@@ -378,9 +453,33 @@ final class TemplateScanner {
 				return;
 			}
 			while (!this.stack.isEmpty()) {
-				if (this.stack.pop().element().equals(lower)) {
+				Frame frame = this.stack.pop();
+				finish(frame);
+				if (frame.element().equals(lower)) {
 					return;
 				}
+			}
+		}
+
+		@Override
+		public void handleDocumentEnd(long endTimeNanos, long totalTimeNanos, int line, int col) {
+			while (!this.stack.isEmpty()) {
+				finish(this.stack.pop());
+			}
+		}
+
+		/** R15: 주 버튼은 묶음에 하나, 맨 오른쪽(마지막) */
+		private void finish(Frame frame) {
+			ActionGroup group = frame.group();
+			if (group == null) {
+				return;
+			}
+			long primaries = group.items().stream().filter(Boolean::booleanValue).count();
+			if (primaries > 1) {
+				this.parsed.actionOrder.add(new Problem("class=\"btn-list\"", "many", group.line()));
+			}
+			else if (primaries == 1 && !group.items().get(group.items().size() - 1)) {
+				this.parsed.actionOrder.add(new Problem("class=\"btn-list\"", "last", group.line()));
 			}
 		}
 

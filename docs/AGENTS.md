@@ -40,7 +40,17 @@
 ## 화면
 
 - 먼저 패턴 카탈로그(`/cozy/dev/catalog`, IntelliJ "dev 실행")와 `cozy/fragments.yml`에서 맞는 패턴·컴포넌트를 찾아 쓴다. 없을 때만 새로 만든다.
-- 화면은 패턴(`list-with-filter`, `form-page`, `detail-edit`, `master-detail`, `overview`)으로 감싼다. 패턴이 제목줄(`page-header`), 본문(`page-body`), 플래시를 그린다. `container-xl` 같은 틀을 직접 만들지 않는다.
+- 화면은 패턴으로 감싼다. 패턴이 제목줄(`page-header`), 본문(`page-body`), 플래시를 그린다. `container-xl` 같은 틀을 직접 만들지 않는다.
+  - 목록: `list-with-filter`
+  - 만들기·수정: `form-page`. `<form class="card">` + `formActions`
+  - 상세: `details`. 읽기 전용, 머리에 [deleteConfirm] [수정]
+  - 개요: `overview`
+  - 목록 + 상세: `master-detail`
+- 디자인 원칙은 `docs/conventions/design.md`를 따른다.
+  - 주 버튼은 묶음마다 하나, 맨 오른쪽에 둔다(R15). 폼 버튼은 오른쪽 아래 [취소] [주 버튼]이다.
+  - 색 클래스(`bg-*`, `text-red`, `btn-outline-danger`)를 직접 쓰지 않는다(R14). `badge('고정', 'neutral')`처럼 tone을 넘긴다. 분류는 neutral이다.
+  - 버튼은 "대상 + 동사"(메모 만들기), 결과 알림은 `CozyFlash.success("메모를 만들었습니다")`로 쓴다.
+  - 비어 있을 때는 `emptyStateAction`(만들기)과 `noResults`(조건 지우기)를 구분한다.
 - 아이콘은 `<svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>`로 쓴다. 이름은 `/cozy/dev/catalog/icons`에서 찾는다. 버튼 글자 앞, 빈 상태, 내비(`CozyNavItem`의 네 번째 인자)에 둔다.
 - 마크업은 Tabler 클래스를 따른다: 카드 안의 목록은 `list-group list-group-flush`, 상세는 `datagrid`, 숫자는 `stat`, 결과 없음은 `emptyState`.
 - fragment 이름은 HTML 요소 이름(`form`, `table`)과 겹치지 않게 짓는다(예: `memoForm`).
@@ -64,7 +74,7 @@
 
 - 작업을 마치면 `mvn -o verify`를 실행한다.
 - 실패 메시지 앞의 ID대로 고친다.
-  - `[R1]`~`[R13]`: 템플릿 규칙
+  - `[R1]`~`[R15]`: 템플릿·디자인 규칙
   - `[C1]`~`[C8]`: 검사 (C8은 모듈 안 구조)
 - 메시지 형식은 `[ID] 위치 → 대상 — 고치는 법`이다. `—` 뒤의 고치는 법을 따른다.
 - 규칙 설명은 Cozy 문서 `docs/conventions/structure.md`, `rules.md`, `testing.md`에 있다.

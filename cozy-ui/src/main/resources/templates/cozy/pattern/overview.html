@@ -3,7 +3,7 @@
   stats: <div class="row row-deck row-cards"> 안에 col과 component/stat을 둔 영역(없으면 ~{}), body: 그 아래 카드들.
 */-->
 <th:block th:fragment="overview(cozyHeading, cozyActions, cozyStats, cozyBody)">
-  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyActions})}"></div>
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, null, null, ${cozyActions})}"></div>
   <div class="page-body">
     <div class="container-xl">
       <div th:replace="~{cozy/component/alert :: flash()}"></div>

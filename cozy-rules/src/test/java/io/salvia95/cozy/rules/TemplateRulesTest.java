@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class TemplateRulesTest {
 
 	static final String BADGE = """
-			<span th:fragment="badge(text, color)" class="badge" th:text="${text}">x</span>""";
+			<span th:fragment="badge(text, tone)" class="badge" th:text="${text}">x</span>""";
 
 	static final String FORM_PAGE = """
 			<section th:fragment="formPage(cozyHeading, cozyForm)">
@@ -41,7 +41,7 @@ class TemplateRulesTest {
 		f.manifest("layout/app-shell", "cozy/layout/base", "appShell(cozyTitle, cozyContent)");
 		f.manifest("layout/shell-body", "cozy/layout/base", "shellBody(cozyShellContent)");
 		f.manifest("pattern/form-page", "cozy/pattern/form-page", "formPage(cozyHeading, cozyForm)");
-		f.manifest("component/badge", "cozy/component/badge", "badge(text, color)");
+		f.manifest("component/badge", "cozy/component/badge", "badge(text, tone)");
 		f.modules = ModuleModel.of(new ModuleModel.Module("memo", List.of(), Set.of()),
 				new ModuleModel.Module("wiki", List.of(), Set.of("spi")),
 				new ModuleModel.Module("voc", List.of("wiki :: spi"), Set.of()),
@@ -54,7 +54,7 @@ class TemplateRulesTest {
 			<html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}">
 			<body><main>
 			  <section th:replace="~{cozy/pattern/form-page :: formPage('새 메모', ~{::#form})}">
-			    <form id="form"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></form>
+			    <form id="form"><span th:replace="~{cozy/component/badge :: badge('고정', 'neutral')}"></span></form>
 			  </section>
 			  <div class="row" th:replace="~{this :: .row}"></div>
 			</main></body>
@@ -75,7 +75,7 @@ class TemplateRulesTest {
 			.extracting(Violation::format)
 			.asString()
 			.startsWith("[R6] templates/memo/api/list.html:2 → cozy/component/badge :: badg(1개 인자) — ")
-			.contains("있는 fragment: badge(text, color)");
+			.contains("있는 fragment: badge(text, tone)");
 	}
 
 	@Nested
@@ -185,7 +185,7 @@ class TemplateRulesTest {
 		@Test
 		void patternMayUseComponent() {
 			Fixture f = fixture();
-			f.app("fragments/pattern/card.html", "<div th:fragment=\"card()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'b')}\"></span></div>");
+			f.app("fragments/pattern/card.html", "<div th:fragment=\"card()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'neutral')}\"></span></div>");
 			f.manifest("pattern/card", "fragments/pattern/card", "card()");
 			assertThat(f.check()).isEmpty();
 		}
@@ -201,7 +201,7 @@ class TemplateRulesTest {
 		@Test
 		void sameLayerIsForbiddenUnlessAllowed() {
 			Fixture f = fixture();
-			f.app("fragments/component/chip.html", "<div th:fragment=\"chip()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'b')}\"></span></div>");
+			f.app("fragments/component/chip.html", "<div th:fragment=\"chip()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'neutral')}\"></span></div>");
 			f.manifest("component/chip", "fragments/component/chip", "chip()");
 			assertThat(f.rules()).containsExactly("R4");
 			f.allowSameLayer = true;
@@ -279,7 +279,7 @@ class TemplateRulesTest {
 		@Test
 		void includeIsWarningOnly() {
 			Fixture f = fixture();
-			f.app("memo/api/list.html", "<div th:include=\"~{cozy/component/badge :: badge('a', 'b')}\"></div>");
+			f.app("memo/api/list.html", "<div th:include=\"~{cozy/component/badge :: badge('a', 'neutral')}\"></div>");
 			assertThat(f.check()).singleElement()
 				.satisfies((v) -> assertThat(v.severity()).isEqualTo(Severity.WARNING))
 				.satisfies((v) -> assertThat(v.ruleId()).isEqualTo("R7"));
@@ -288,7 +288,7 @@ class TemplateRulesTest {
 		@Test
 		void unwrappedFragmentExpressionIsChecked() {
 			Fixture f = fixture();
-			f.app("memo/api/list.html", "<div th:replace=\"cozy/component/badge :: badge('a', 'b')\"></div><div th:replace=\"cozy/component/badge :: badge\"></div>");
+			f.app("memo/api/list.html", "<div th:replace=\"cozy/component/badge :: badge('a', 'neutral')\"></div><div th:replace=\"cozy/component/badge :: badge\"></div>");
 			assertThat(f.rules()).containsExactly("R6");
 		}
 	}
@@ -462,6 +462,99 @@ class TemplateRulesTest {
 	}
 
 	@Nested
+	class R14 {
+
+		@Test
+		void appTemplateMustNotPickColorsDirectly() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", """
+					<div><span class="badge bg-blue-lt">고정</span>
+					<span class="avatar text-white" th:classappend="${ok} ? 'bg-green'">A</span>
+					<a class="btn btn-outline-danger" href="/x">삭제</a></div>""");
+			assertThat(f.rules()).containsExactly("R14", "R14", "R14", "R14");
+			assertThat(f.check().get(0).format()).contains("bg-blue-lt").contains("tone");
+		}
+
+		@Test
+		void unknownToneLiteralFails() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", "<p><span th:replace=\"~{cozy/component/badge :: badge('고정', 'blue')}\"></span>"
+					+ "<span th:replace=\"~{cozy/component/badge :: badge('고정', 'neutral')}\"></span></p>");
+			assertThat(f.rules()).containsExactly("R14");
+			assertThat(f.check().get(0).format()).contains("'blue'").contains("neutral, info, success, warning, critical");
+		}
+
+		@Test
+		void colorBuiltFromAnExpressionFailsClosed() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", "<span class=\"badge\" th:classappend=\"|bg-${color}-lt|\">x</span>");
+			assertThat(f.rules()).containsExactly("R14");
+		}
+
+		@Test
+		void neutralAndPrimaryClassesPass() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", """
+					<div class="card"><p class="text-secondary">설명</p><a class="text-reset" href="/m">메모</a>
+					<a class="btn btn-primary" href="/memo/new">메모 만들기</a><a class="btn" href="/memo">목록</a>
+					<input class="form-control" th:classappend="${bad} ? 'is-invalid'"></div>""");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void frameworkTemplatesImplementTonesAndAreExempt() {
+			Fixture f = fixture();
+			f.framework("cozy/component/tone.html", "<span class=\"badge bg-green-lt\" th:fragment=\"tone(text, tone)\">x</span>");
+			f.manifest("component/tone", "cozy/component/tone", "tone(text, tone)");
+			assertThat(f.check()).isEmpty();
+		}
+	}
+
+	@Nested
+	class R15 {
+
+		@Test
+		void primaryActionMustBeLastInItsGroup() {
+			Fixture f = fixture();
+			f.app("memo/internal/fields.html", """
+					<div class="btn-list"><button class="btn btn-primary" type="submit">저장</button>
+					<a class="btn" href="/memo">취소</a></div>""");
+			assertThat(f.rules()).containsExactly("R15");
+			assertThat(f.check().get(0).format()).contains("오른쪽");
+		}
+
+		@Test
+		void onlyOnePrimaryActionPerGroup() {
+			Fixture f = fixture();
+			f.app("memo/api/detail.html", """
+					<div class="btn-list"><a class="btn btn-primary" href="/a">하나</a>
+					<form class="m-0" method="post" action="/b"><button class="btn btn-primary">둘</button></form></div>""");
+			assertThat(f.rules()).containsExactly("R15");
+			assertThat(f.check().get(0).format()).contains("하나만");
+		}
+
+		@Test
+		void insertedActionAfterThePrimaryCountsAsAnAction() {
+			Fixture f = fixture();
+			f.framework("cozy/component/x.html", "<a class=\"btn\" th:fragment=\"x()\">x</a>");
+			f.manifest("component/x", "cozy/component/x", "x()");
+			f.app("memo/api/detail.html", """
+					<div class="btn-list"><a class="btn btn-primary" href="/a">수정</a><a th:replace="~{cozy/component/x :: x()}">x</a></div>""");
+			assertThat(f.rules()).containsExactly("R15");
+		}
+
+		@Test
+		void primaryLastAndNestedFormsPass() {
+			Fixture f = fixture();
+			f.app("memo/api/detail.html", """
+					<div class="btn-list justify-content-end"><a class="btn" href="/memo">취소</a>
+					<form class="m-0" method="post" action="/x"><button class="btn">보관</button></form>
+					<button class="btn btn-primary" type="submit">저장</button></div>""");
+			assertThat(f.check()).isEmpty();
+		}
+	}
+
+	@Nested
 	class IconLayer {
 
 		static final String ICON = """
@@ -492,7 +585,7 @@ class TemplateRulesTest {
 		@Test
 		void iconMustNotUseComponent() {
 			Fixture f = withIcons();
-			f.app("fragments/icon/dot.html", "<span th:fragment=\"dot()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'b')}\"></span></span>");
+			f.app("fragments/icon/dot.html", "<span th:fragment=\"dot()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'neutral')}\"></span></span>");
 			f.manifest("icon/dot", "fragments/icon/dot", "dot()");
 			assertThat(f.rules()).containsExactly("R4");
 		}

@@ -1,6 +1,8 @@
-<!--/* 알림. kind: success, info, warning, danger. 종류에 맞는 아이콘이 붙는다. flash()는 컨트롤러의 CozyFlash를 그린다(패턴이 쓴다). */-->
-<div class="alert" role="alert" th:fragment="alert(kind, message)" th:classappend="|alert-${kind ?: 'info'}|"
-     th:with="cozyAlertIcon=${kind == 'success'} ? 'circle-check' : (${kind == 'danger'} ? 'alert-circle' : (${kind == 'warning'} ? 'alert-triangle' : 'info-circle'))">
+<!--/* 알림. kind: info, success, warning, critical. 종류에 맞는 아이콘이 붙는다(색만으로 뜻을 전하지 않는다).
+     flash()는 컨트롤러의 CozyFlash를 그린다(패턴이 page-body 맨 위에 둔다). 만들기·수정·삭제 결과는 이것으로 알린다. */-->
+<div class="alert" role="alert" th:fragment="alert(kind, message)"
+     th:classappend="${kind == 'critical'} ? 'alert-danger' : |alert-${kind}|"
+     th:with="cozyAlertIcon=${kind == 'success'} ? 'circle-check' : (${kind == 'critical'} ? 'alert-circle' : (${kind == 'warning'} ? 'alert-triangle' : 'info-circle'))">
   <div class="alert-icon"><svg th:replace="~{cozy/icon/tabler :: icon(${cozyAlertIcon})}"></svg></div>
   <div class="alert-description" th:text="${message}">알림</div>
 </div>

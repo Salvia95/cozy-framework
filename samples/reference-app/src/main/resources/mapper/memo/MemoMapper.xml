@@ -31,6 +31,10 @@
     LIMIT #{limit} OFFSET #{offset}
   </select>
 
+  <select id="findLatestCreated" resultType="io.salvia95.cozy.reference.memo.internal.domain.Memo">
+    SELECT <include refid="columns"/> FROM memo ORDER BY created_at DESC, id DESC LIMIT 1
+  </select>
+
   <select id="count" resultType="long">
     SELECT count(*) FROM memo <include refid="searchCondition"/>
   </select>

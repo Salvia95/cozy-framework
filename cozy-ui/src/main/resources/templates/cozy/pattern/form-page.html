@@ -1,12 +1,16 @@
-<!--/* 입력 폼 한 장. form: th:object가 있는 <form>. 검증 오류가 있으면 컨트롤러가 같은 화면(또는 form fragment)을 돌려준다. */-->
-<th:block th:fragment="formPage(cozyHeading, cozyForm)">
-  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ~{})}"></div>
-  <div class="page-body">
-    <div class="container-xl">
-      <div th:replace="~{cozy/component/alert :: flash()}"></div>
-      <div class="row row-cards"><div class="col-lg-8">
-        <div class="card"><div class="card-body"><th:block th:replace="${cozyForm}"></th:block></div></div>
-      </div></div>
+<!--/*
+  만들기·수정 폼 화면. 폭은 가운데 좁게(48rem), 머리와 폼의 왼쪽 끝이 맞는다.
+  form: <form class="card" th:object> — 안에 card-body(입력 칸)와 component/form-actions(오른쪽 아래 [취소] [주 버튼]).
+  backLabel·backUrl: 돌아갈 상위 화면(경로 표시). 검증 오류면 컨트롤러가 같은 화면이나 폼 fragment를 돌려준다.
+*/-->
+<th:block th:fragment="formPage(cozyHeading, cozyBackLabel, cozyBackUrl, cozyForm)">
+  <div class="cozy-width-form">
+    <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyBackLabel}, ${cozyBackUrl}, ~{})}"></div>
+    <div class="page-body">
+      <div class="container-xl">
+        <div th:replace="~{cozy/component/alert :: flash()}"></div>
+        <th:block th:replace="${cozyForm}"></th:block>
+      </div>
     </div>
   </div>
 </th:block>

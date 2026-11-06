@@ -1,0 +1,30 @@
+<!--/*
+  삭제 버튼 + 확인 창. 상세 화면 머리의 버튼 묶음에 [삭제] [수정] 순서로 둔다(주 버튼은 맨 오른쪽, R15).
+  확인 창: 제목 "{resource} 삭제", 지울 대상 이름을 굵게, "되돌릴 수 없습니다", 버튼 [취소] [삭제].
+  id: 확인 창 요소 id, resource: 대상 종류(예: 메모), name: 지울 대상 이름, url: 삭제 POST 주소(성공하면 목록으로 PRG/HX-Redirect).
+*/-->
+<th:block th:fragment="deleteConfirm(cozyId, cozyResource, cozyName, cozyUrl)">
+  <button type="button" class="btn cozy-btn-critical" data-bs-toggle="modal" th:attr="data-bs-target=${'#' + cozyId}">
+    <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>삭제
+  </button>
+  <div class="modal" tabindex="-1" role="dialog" th:id="${cozyId}" th:attr="aria-labelledby=${cozyId + '-title'}">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" method="post" th:action="@{${cozyUrl}}" th:hx-post="@{${cozyUrl}}">
+        <div class="modal-header">
+          <h3 class="modal-title" th:id="${cozyId + '-title'}" th:text="|${cozyResource} 삭제|">삭제</h3>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2"><span th:text="|지울 ${cozyResource}:|">지울 대상:</span> <strong th:text="${cozyName}">이름</strong></p>
+          <p class="text-secondary mb-0">지우면 되돌릴 수 없습니다.</p>
+        </div>
+        <div class="modal-footer">
+          <div class="btn-list justify-content-end">
+            <button type="button" class="btn" data-bs-dismiss="modal">취소</button>
+            <button type="submit" class="btn cozy-btn-critical-fill"><svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>삭제</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</th:block>

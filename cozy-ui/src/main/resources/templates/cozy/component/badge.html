@@ -1,2 +1,2 @@
-<!--/* 짧은 상태 표시. color: blue, green, red, yellow, secondary 등 Tabler 색 이름 */-->
-<span class="badge" th:fragment="badge(text, color)" th:classappend="|bg-${color ?: 'secondary'}-lt|" th:text="${text}">상태</span>
+<!--/* 짧은 상태·분류 표시. tone: neutral(분류, 보조), info, success, warning, critical (design.md). 분류는 색으로 나누지 않고 neutral을 쓴다 */-->
+<span class="badge" th:fragment="badge(text, tone)" th:classappend="|cozy-tone-${tone}|" th:text="${text}">상태</span>

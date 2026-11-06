@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
 /**
- * R1~R11 검사 (PRD §7, ADR-0029). 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
+ * R1~R15 검사 (PRD §7, ADR-0029, ADR-0031). 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
  *
  * <p>모듈 템플릿은 {@code {모듈}/api/}(컨트롤러가 렌더링하는 화면), {@code {모듈}/spi/}(다른 모듈이 부르는 fragment),
  * {@code {모듈}/internal/}(모듈 안의 재료 조각)로 나눈다. api는 같은 모듈의 spi·internal과 허용된 모듈의 spi를, spi는
@@ -41,6 +41,13 @@ public final class RuleChecker {
 	private static final String ICON_TEMPLATE = "cozy/icon/tabler";
 
 	private static final java.util.regex.Pattern STRING_LITERAL = java.util.regex.Pattern.compile("'([a-z0-9-]+)'");
+
+	/** R14: 색의 의미 다섯 가지. badge는 neutral도, alert·toast는 알림이라 neutral이 없다 */
+	private static final List<String> TONES = List.of("neutral", "info", "success", "warning", "critical");
+
+	/** tone을 받는 컴포넌트와 그 인자 위치 */
+	private static final Map<String, Integer> TONE_ARGUMENTS = Map.of("cozy/component/badge :: badge", 1,
+			"cozy/component/alert :: alert", 0, "cozy/component/toast :: toast", 0);
 
 	/** 모듈 템플릿 폴더: 화면, 다른 모듈용, 모듈 전용 */
 	private static final List<String> MODULE_LAYERS = List.of("api", "spi", "internal");
@@ -89,6 +96,7 @@ public final class RuleChecker {
 				checkReference(template, reference);
 			}
 			checkModelReads(template);
+			checkDesign(template);
 		}
 		checkManifest();
 	}
@@ -297,11 +305,25 @@ public final class RuleChecker {
 				if (targetName.equals(ICON_TEMPLATE) && given == 1) {
 					checkIcon(file, line, display, ref);
 				}
+				checkTone(file, line, display, targetName, ref);
 			}
 		}
 	}
 
 	/** R13: 글자로 쓴 아이콘 이름이 스프라이트에 있어야 한다. 변수로 넘긴 이름은 Java 쪽(CozyNavItem 등)이 검사한다 */
+	/** R14: 글자로 쓴 tone이 정해진 다섯 가지인가 (badge 둘째, alert·toast 첫째 인자). 변수로 넘긴 값은 확인하지 않는다 */
+	private void checkTone(TemplateFile file, int line, String display, String targetName, Ref ref) {
+		Integer index = TONE_ARGUMENTS.get(targetName + " :: " + ref.selector());
+		if (index == null || ref.args().size() <= index) {
+			return;
+		}
+		Matcher literal = STRING_LITERAL.matcher(ref.args().get(index).strip());
+		if (literal.matches() && !TONES.contains(literal.group(1))) {
+			error(file, line, "R14", display, "tone '" + literal.group(1) + "'는 없습니다. " + String.join(", ", TONES)
+					+ " 중에서 의미에 맞는 것을 고르세요 (docs/conventions/design.md).");
+		}
+	}
+
 	private void checkIcon(TemplateFile file, int line, String display, Ref ref) {
 		Matcher literal = STRING_LITERAL.matcher(ref.args().get(0));
 		if (!literal.matches()) {
@@ -403,6 +425,24 @@ public final class RuleChecker {
 							+ "template, signature, purpose, params, samples를 적어 추가하세요 (docs/conventions/ui.md).");
 				}
 			}
+		}
+	}
+
+	// ── R14, R15: 디자인 원칙 (docs/conventions/design.md) ─────────
+
+	private void checkDesign(ParsedTemplate template) {
+		if (template.file.origin() == Origin.APP) {
+			for (Problem color : template.colorClasses) {
+				error(template.file, color.line(), "R14", color.why() + "=\"" + color.text() + "\"", "앱 화면은 색을 직접 고르지 않습니다. "
+						+ "색은 의미(tone: neutral, info, success, warning, critical)를 받는 cozy 컴포넌트가 고릅니다 "
+						+ "(예: badge('고정', 'neutral'), alert('critical', …), deleteConfirm(…)). 허용: text-secondary, btn-primary.");
+			}
+		}
+		for (Problem order : template.actionOrder) {
+			String message = order.why().equals("many")
+					? "버튼 묶음 하나에 주 버튼(btn-primary, btn-danger)은 하나만 둡니다. 나머지는 btn으로 낮추세요."
+					: "주 버튼(btn-primary, btn-danger)은 버튼 묶음의 맨 오른쪽(마지막)에 둡니다. 예: [취소] [저장], [삭제] [수정].";
+			error(template.file, order.line(), "R15", order.text(), message);
 		}
 	}
 

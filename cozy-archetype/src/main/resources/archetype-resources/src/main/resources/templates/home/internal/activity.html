@@ -9,7 +9,7 @@
   <div class="list-group list-group-flush" th:unless="${items.isEmpty()}">
     <div class="list-group-item" th:each="item : ${items}">
       <div class="row align-items-center">
-        <div class="col-auto"><span class="avatar avatar-sm bg-primary-lt"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
+        <div class="col-auto"><span class="avatar avatar-sm" aria-hidden="true"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
         <div class="col text-truncate">
           <div class="text-truncate" th:text="${item.message}">메모를 추가했습니다</div>
           <div class="text-secondary small" th:text="${item.at}">2026-11-07 09:00</div>

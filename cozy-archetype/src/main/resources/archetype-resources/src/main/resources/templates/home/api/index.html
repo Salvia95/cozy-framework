@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--/*
-  홈 화면(api): overview 패턴. 머리 오른쪽에 메모 추가 폼, 본문은 목록 카드(필터·결과)와 최근 활동 카드.
+  홈 화면(api): overview 패턴. 머리 오른쪽에 메모 추가 폼(주 버튼 하나), 본문은 목록 카드(필터·결과)와 최근 활동 카드.
+  비었을 때는 두 가지를 구분한다: 검색어가 있으면 noResults(조건 지우기), 없으면 emptyState. 디자인 원칙: docs/conventions/design.md
   필터는 result fragment만 바꾸고(htmx), 추가 폼은 오류면 noteForm fragment만 다시 그린다. 최근 활동은 home/internal/activity 조각이다.
   - api/: 컨트롤러가 렌더링하는 화면. 모델을 읽는 곳은 여기뿐이다.
   - internal/: 화면과 spi가 조합하는 조각. 값은 파라미터로만 받는다.
@@ -39,7 +40,10 @@
           </div>
           <div id="result" th:fragment="result">
             <th:block th:if="${result.rows.isEmpty()}">
-              <div class="card-body">
+              <div class="card-body" th:if="${!#strings.isEmpty(filter.q)}">
+                <div th:replace="~{cozy/component/empty-state :: noResults('/')}"></div>
+              </div>
+              <div class="card-body" th:unless="${!#strings.isEmpty(filter.q)}">
                 <div th:replace="~{cozy/component/empty-state :: emptyState('notes', '메모가 없습니다', '위에서 첫 메모를 추가해 보세요.')}"></div>
               </div>
             </th:block>

@@ -1,6 +1,6 @@
 # 화면 (cozy-ui)
 
-Tabler, Tabler Icons, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든다(PRD §6.4, §10, ADR-0021, ADR-0030). 새 화면은 먼저 패턴 카탈로그(`/cozy/dev/catalog`, dev 프로필)에서 쓸 패턴을 찾는다. 없을 때만 새로 만든다. 아이콘 이름은 `/cozy/dev/catalog/icons`에서 찾는다.
+Tabler, Tabler Icons, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든다(PRD §6.4, §10, ADR-0021, ADR-0030, ADR-0031). 화면 유형, 버튼 순서, 색 tone, 문구 원칙은 [design.md](design.md)에 있다. 새 화면은 먼저 패턴 카탈로그(`/cozy/dev/catalog`, dev 프로필)에서 쓸 패턴을 찾는다. 없을 때만 새로 만든다. 아이콘 이름은 `/cozy/dev/catalog/icons`에서 찾는다.
 
 ## 화면 한 장의 모양
 
@@ -10,7 +10,7 @@ Tabler, Tabler Icons, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든
 <body>
 <main>
   <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#memo-actions}, ~{::#filter}, ~{::#result})}">
-    <a id="memo-actions" class="btn btn-primary" ...><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
+    <a id="memo-actions" class="btn btn-primary" ...><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>메모 만들기</a>
     <form id="filter" th:hx-get="@{/memo}" hx-target="#result" hx-swap="outerHTML" ...> ... </form>
     <div id="result" th:fragment="result"> ... </div>
   </section>
@@ -21,7 +21,10 @@ Tabler, Tabler Icons, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든
 
 - **최상위**: `<html>`은 `appShell` 레이아웃으로 바꾼다. 본문은 `<main>` 하나다.
 - **화면 틀(Tabler 세로 레이아웃)**: `appShell`은 왼쪽 내비(아이콘 + 이름, 아래쪽 앱 메뉴)와 `.page-wrapper`를 그리고, `<main>`과 푸터를 `.page-wrapper` 안에 둔다. 패턴은 `page-header`(제목 + 오른쪽 동작 버튼)와 `page-body`(플래시 + 본문)를 그린다. 화면은 패턴을 쓰고, `section.container-xl` 같은 틀을 직접 만들지 않는다.
-- **플래시**: `CozyFlash`는 패턴이 `page-body` 맨 위에 그린다(`cozy/component/alert :: flash()`). 패턴을 쓰지 않는 화면은 flash()를 직접 둔다.
+- **플래시**: `CozyFlash`는 패턴이 `page-body` 맨 위에 그린다(`cozy/component/alert :: flash()`). 패턴을 쓰지 않는 화면은 flash()를 직접 둔다. 종류는 tone(`success`, `info`, `warning`, `critical`)이다.
+- **화면 유형**: 목록(`list-with-filter`), 만들기·수정(`form-page`, 가운데 좁게), 상세(`details`, 읽기 전용), 개요(`overview`). 상세에서 고치지 않고 수정 화면으로 간다. 삭제는 `deleteConfirm`으로 확인 창을 거친다([design.md](design.md) §3).
+- **색**: 색 클래스(`bg-*`, `text-red`, `btn-outline-danger` 등)를 직접 쓰지 않는다(R14). tone을 받는 컴포넌트를 쓴다.
+- **버튼 순서**: 버튼 묶음(`btn-list`)마다 주 버튼은 하나, 맨 오른쪽이다(R15). 폼은 `formActions`로 오른쪽 아래 [취소] [주 버튼]을 붙인다.
 - **아이콘**: `<svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>`. 버튼 글자 앞에 두면 Tabler가 간격을 맞춘다. 채운 아이콘은 `iconFilled('star')`. 없는 이름은 R13으로 빌드가 실패한다. 아이콘만 있는 버튼에는 `aria-label`을 단다.
 - **패턴 인자**: 패턴에 넘기는 조각은 같은 파일 안의 id(`~{::#id}`)나 class(`~{::.row}`)로 고른다.
 - **htmx로 바꿀 영역**: `th:fragment`와 `id`를 함께 둔다. 컨트롤러는 `CozyViews.pageOrFragment("memo/api/list", "result")`를 반환한다. fragment 이름은 HTML 요소 이름(`form`, `table` 등)과 겹치지 않게 짓는다. Thymeleaf가 같은 이름의 요소까지 함께 고르기 때문이다(R12, 예: `memoForm`).
@@ -43,7 +46,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
     if (errors.hasErrors()) {
         return CozyViews.pageOrFragment("memo/api/form", "memoForm");   // htmx면 폼만 다시 그린다
     }
-    flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("저장했습니다"));
+    flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 만들었습니다"));
     return CozyViews.redirect("/memo/" + id);                   // htmx면 HX-Redirect
 }
 ```
@@ -64,22 +67,24 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 | --- | --- | --- |
 | `layout/base` | `cozy/layout/base :: base(제목, ~{::main})` | 내비 없는 문서 |
 | `layout/app-shell` | `cozy/layout/base :: appShell(제목, ~{::main})` | 앱 화면 기본 (Tabler 세로 내비) |
-| `pattern/list-with-filter` | `listWithFilter(제목, 버튼, 필터폼, 결과)` | 결과는 `th:fragment` + `id` |
-| `pattern/form-page` | `formPage(제목, 폼)` | 등록 |
-| `pattern/detail-edit` | `detailEdit(제목, 버튼, 상세, 폼)` | 상세 + 수정. 삭제·목록 버튼은 머리 오른쪽, 상세는 `datagrid` |
+| `pattern/list-with-filter` | `listWithFilter(제목, 버튼, 필터폼, 결과)` | 결과는 `th:fragment` + `id`. 비면 `emptyStateAction`, 조건 때문이면 `noResults` |
+| `pattern/form-page` | `formPage(제목, 상위이름, 상위주소, 폼)` | 만들기·수정. 가운데 48rem, 폼은 `<form class="card">` + `formActions`. 상위가 없으면 `null` |
+| `pattern/details` | `details(제목, 상위이름, 상위주소, 버튼, 본문)` | 상세(읽기 전용). 버튼은 `<div class="btn-list">` [deleteConfirm] [수정] |
 | `pattern/master-detail` | `masterDetail(제목, 목록, 상세)` | 목록은 `list-group list-group-flush`, 상세 영역 id는 `detail` |
 | `pattern/overview` | `overview(제목, 버튼, 숫자카드, 본문)` | 대시보드. 숫자 카드는 `row row-deck row-cards` + `stat`, 없으면 `~{}` |
 | `pattern/polling-panel` | `pollingPanel(제목, url, 초, 본문)` | `every N s` 갱신. 본문은 `list-group-flush`나 `card-body` |
-| `component/page-header` | `pageHeader(제목, 버튼)` | 패턴이 쓴다 |
+| `component/page-header` | `pageHeader(제목, 상위이름, 상위주소, 버튼)` | 패턴이 쓴다. 상위가 있으면 제목 위 경로 |
+| `component/form-actions` | `formActions('/memo', 'plus', '메모 만들기')` | 폼 카드 아래 오른쪽 [취소] [주 버튼] |
+| `component/delete-confirm` | `deleteConfirm('memo-delete', '메모', ${memo.title}, '/memo/1/delete')` | 삭제 버튼 + 확인 창 [취소] [삭제] |
 | `component/field` | `field('title', '제목', 'text')` | `<form th:object>` 안. text, textarea, checkbox, switch, number, date, email |
 | `component/data-table` | `dataTable(~{::#head}, ~{::.row})` | `<tr>` 머리행과 행들 |
 | `component/pagination` | `pagination(${page}, '/memo', '#result', '#filter')` | `CozyPage`. 이전·다음과 번호 5개(`CozyPage.window()`) |
-| `component/badge` | `badge('고정', 'blue')` | |
-| `component/alert` | `alert('success', '저장했습니다')` | 종류별 아이콘. 같은 파일의 `flash()`가 플래시를 그린다 |
-| `component/stat` | `stat('notes', 'primary', '12개', '전체 메모')` | 숫자 카드 |
-| `component/empty-state` | `emptyState('notes', '없습니다', '설명')` | 버튼까지: `emptyStateAction('notes', '없습니다', '설명', ~{::#action})` |
-| `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다 |
-| `component/toast` | `toast('success', '저장했습니다')` | 스크립트는 `Cozy.toast(message, kind)` |
+| `component/badge` | `badge('고정', 'neutral')` | tone: neutral, info, success, warning, critical. 분류는 neutral |
+| `component/alert` | `alert('success', '메모를 만들었습니다')` | kind: info, success, warning, critical. 종류별 아이콘. 같은 파일의 `flash()`가 플래시를 그린다 |
+| `component/stat` | `stat('notes', '12개', '전체 메모')` | 숫자 카드. 색 없음 |
+| `component/empty-state` | `emptyState('notes', '없습니다', '설명')` | 만들기 버튼까지: `emptyStateAction(…, ~{::#action})`. 조건에 맞는 것이 없으면 `noResults('/memo')` |
+| `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm` |
+| `component/toast` | `toast('success', '복사했습니다')` | 사소한 확인만. 중립 바탕, critical만 빨강. 스크립트는 `Cozy.toast(message, kind)` |
 | `component/loading` | `loading()` | `htmx-indicator` |
 | `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.50.0 전체 (외곽선 5,203개, 채운 1,054개) |
 
@@ -91,14 +96,14 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 fragments:
   - id: component/badge                 # 고유 이름
     template: cozy/component/badge      # 템플릿 경로
-    signature: badge(text, color)       # th:fragment와 같게
+    signature: badge(text, tone)        # th:fragment와 같게
     purpose: 상태나 분류를 짧게 표시한다   # 용도 한 줄
     document: false                     # 완전한 HTML 문서를 그리면 true (레이아웃)
     params:                             # signature와 같은 순서
       - { name: text, type: String, required: true, description: 표시할 글자 }
-      - { name: color, type: String, required: false, description: Tabler 색 이름 }
+      - { name: tone, type: String, required: true, description: "neutral, info, success, warning, critical" }
     samples:                            # 상태 이름 → 값. 카탈로그와 렌더링 테스트가 쓴다
-      default: { text: 고정, color: blue }
+      default: { text: 고정, tone: neutral }
 ```
 
 - **type**: `String`, `boolean`, `int`, `long`, `fragment` 또는 클래스 FQN이다. FQN이면 샘플 맵을 그 타입으로 변환한다.
@@ -120,4 +125,9 @@ fragments:
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
 - **app-shell의 앱 메뉴**: 사이드 내비 아래에 "진단 내보내기"와 "종료"가 내비 항목 모양으로 있다. 런타임의 `POST /cozy/diagnostics`, `POST /cozy/shutdown`을 부른다([runtime.md](runtime.md)).
 - **업데이트 배너**: 새 버전이 있으면 layout 맨 위에 배너가 뜬다. 필수 업데이트면 빨간색이다. 설치할 수 있으면 "지금 업데이트" 버튼이 있고, 없으면 이유가 보인다. 직전 업데이트의 결과(성공, 롤백)도 같은 자리에 한 번 보인다([distribution.md](distribution.md)).
-- **cozy.js**: 변경 요청에 CSRF 헤더를 넣는다. `data-cozy-confirm="문장"`이 있는 폼은 제출 전에 확인을 받는다. 4xx·5xx 응답과 연결 실패는 토스트로 알리고, 요청 중에는 맨 위 진행 막대를 보인다. 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.
+- **cozy.js**:
+  - 변경 요청에 CSRF 헤더를 넣는다.
+  - `data-cozy-confirm="문장"`이 있는 폼은 제출 전에 확인을 받는다.
+  - 4xx·5xx 응답과 연결 실패는 토스트로 알리고, 요청 중에는 맨 위 진행 막대를 보인다.
+  - 검증 오류(`.is-invalid`)가 있으면 첫 칸으로 포커스를 옮긴다.
+  - `form-page` 안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.

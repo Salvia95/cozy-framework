@@ -82,6 +82,9 @@ Take positions from `getBoundingClientRect()` via `agent-browser eval`, never fr
 | V6 | States: empty, validation error, success flash, and populated each render as designed | presence of `.empty`, `.invalid-feedback`, `.alert`, rows |
 | V7 | No page errors or console errors; no failed requests | counts, first messages |
 | V8 | htmx swaps replace only their target (e.g. an invalid save returns one `<form>`) | element counts before/after |
+| V9 | Contrast (WCAG 2.2 AA): every visible text node ≥ 4.5:1 (≥ 3:1 if ≥ 24px or ≥ 18.66px bold) against its composited background; icons and focus/border cues ≥ 3:1 | failing count; worst pairs (fg, bg, ratio, element) |
+| V10 | Actions (docs/conventions/design.md §1): at most one primary (`btn-primary`, `cozy-btn-critical-fill`) per `.btn-list`/card/modal, and it is the rightmost; form actions sit bottom-right (`[취소] [주 버튼]`); delete opens a confirm dialog | primary count and x-order per group |
+| V11 | Width and alignment: list/details/overview content uses the `container-xl` width and is centered in `.page-wrapper` (left gap = right gap ± 2px at 1920); form pages are centered at ≤ 48rem; page-title left edge = first card left edge | gaps and left edges (px) |
 
 Known artifact: screenshot tools may leave `style=""` on inputs; htmx then copies it and CSP logs a
 `style-src-attr` violation. Report such a CSP error only if it reproduces in a run without

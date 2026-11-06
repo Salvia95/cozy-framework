@@ -20,6 +20,11 @@ states:
       items:
         - { message: "메모를 추가했습니다: 주간 보고 정리", at: "2026-11-07 10:00" }
   empty:
+    filter: { q: "" }
+    form: {}
+    result: { rows: [] }
+    activity: { items: [] }
+  noResults:
     filter: { q: 없는 단어 }
     form: {}
     result: { rows: [] }

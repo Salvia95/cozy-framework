@@ -4,7 +4,7 @@
 
 - 스택: JDK 25, Spring Boot 4.1 (Spring MVC), Thymeleaf, htmx, Tabler, MyBatis, SQLite, Spring Modulith
 - 배포: 런타임이 들어 있는 app-image, AOT 캐시, 공유 폴더 자체 업데이트와 자동 롤백
-- 규칙: 모듈 경계와 모듈 안 구조(api · spi · internal), 템플릿 경계(R1~R13), 렌더링·HTML 검사(C1~C8)를 `mvn verify`가 검사한다
+- 규칙: 모듈 경계와 모듈 안 구조(api · spi · internal), 템플릿 경계·디자인 규칙(R1~R15), 렌더링·HTML 검사(C1~C8)를 `mvn verify`가 검사한다
 - 오프라인: 인터넷 없는 PC에서 앱을 만들고 빌드·패키징하는 번들
 
 ## 모듈

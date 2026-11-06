@@ -76,7 +76,7 @@ public class CozyControlController {
 		}
 		catch (IOException | RuntimeException ex) {
 			logger.error("[cozy] 진단 파일을 만들 수 없습니다", ex);
-			redirect.addFlashAttribute(FLASH_ATTRIBUTE, new Notice("danger", "진단 파일을 만들 수 없습니다: " + ex.getMessage()));
+			redirect.addFlashAttribute(FLASH_ATTRIBUTE, new Notice("critical", "진단 파일을 만들 수 없습니다: " + ex.getMessage()));
 		}
 		return "redirect:" + backTo(request);
 	}
@@ -88,7 +88,7 @@ public class CozyControlController {
 		}
 		catch (UpdateException ex) {
 			logger.warn("[cozy] 업데이트를 설치하지 않았습니다: " + ex.getMessage(), ex.getCause());
-			redirect.addFlashAttribute(FLASH_ATTRIBUTE, new Notice("danger", ex.getMessage()));
+			redirect.addFlashAttribute(FLASH_ATTRIBUTE, new Notice("critical", ex.getMessage()));
 			return "redirect:" + backTo(request);
 		}
 		this.shutdown.request("업데이트 " + version + " 설치", 0);
@@ -132,7 +132,7 @@ public class CozyControlController {
 
 	/**
 	 * 플래시 알림. cozy-ui의 {@code CozyFlash}와 같은 모양이라 app-shell이 그대로 그린다.
-	 * @param kind success, info, warning, danger
+	 * @param kind info, success, warning, critical (cozy-ui의 component/alert)
 	 * @param message 문장
 	 */
 	public record Notice(String kind, @Nullable String message) {

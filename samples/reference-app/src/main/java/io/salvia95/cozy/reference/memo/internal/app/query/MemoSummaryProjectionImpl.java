@@ -1,7 +1,5 @@
 package io.salvia95.cozy.reference.memo.internal.app.query;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 import io.salvia95.cozy.reference.memo.internal.domain.Memo;
@@ -20,8 +18,8 @@ class MemoSummaryProjectionImpl implements MemoSummaryProjection {
 
 	@Override
 	public MemoSummary summary() {
-		List<Memo> latest = this.mapper.search(null, false, 0, 1);
+		Memo latest = this.mapper.findLatestCreated();
 		return new MemoSummary(this.mapper.count(null, false), this.mapper.count(null, true),
-				latest.isEmpty() ? null : latest.get(0).title());
+				(latest != null) ? latest.title() : null);
 	}
 }

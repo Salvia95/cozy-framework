@@ -1,0 +1,13 @@
+<!--/*
+  상세(읽기 전용). 머리 오른쪽에 [삭제(component/delete-confirm)] [수정(주 버튼)]. 수정은 별도 화면(form-page)이다.
+  body: 카드들. 본문은 넓은 칸(col-lg-8), 속성(datagrid)은 옆 칸(col-lg-4)에 두는 것을 권장한다.
+*/-->
+<th:block th:fragment="details(cozyHeading, cozyBackLabel, cozyBackUrl, cozyActions, cozyBody)">
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyBackLabel}, ${cozyBackUrl}, ${cozyActions})}"></div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div th:replace="~{cozy/component/alert :: flash()}"></div>
+      <th:block th:replace="${cozyBody}"></th:block>
+    </div>
+  </div>
+</th:block>

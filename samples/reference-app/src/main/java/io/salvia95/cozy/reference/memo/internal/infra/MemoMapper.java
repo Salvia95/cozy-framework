@@ -23,6 +23,9 @@ public interface MemoMapper {
 
 	long count(@Param("like") String like, @Param("pinnedOnly") boolean pinnedOnly);
 
+	/** 가장 최근에 만든 메모 (없으면 null) */
+	Memo findLatestCreated();
+
 	int update(@Param("id") long id, @Param("title") String title, @Param("body") String body,
 			@Param("pinned") boolean pinned, @Param("updatedAt") Instant updatedAt);
 

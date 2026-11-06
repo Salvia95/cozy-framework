@@ -1,6 +1,7 @@
 # ADR-0030 화면 품질: Tabler 레이아웃 구조, Tabler Icons 전체, 화면 확인(runtime-verifier)
 
-- 상태: 승인 (2026-11-06, 사용자 결정: 아이콘 "전체 세트 추가", 범위 "전체 개편", 확인 방식 "runtime-verifier 서브 에이전트 + agent-browser")
+- 상태: 승인, 일부 개정 (ADR-0031이 `detailEdit`을 없애고 `details` + 수정 화면으로 나눴다. `badge`·`stat`·`pageHeader`·`formPage` 시그니처도 바뀌었다)
+- 결정: 2026-11-06 (사용자 결정: 아이콘 "전체 세트 추가", 범위 "전체 개편", 확인 방식 "runtime-verifier 서브 에이전트 + agent-browser")
 - 출처: 사용자 지적 "Tabler가 적용된 거 맞아? 컴포넌트가 불완전해 보이고 품질이 떨어진다". ADR-0014(Tabler·htmx), ADR-0017(버전), ADR-0021(UI 구성)을 잇는다.
 
 ## 배경

@@ -9,7 +9,7 @@
   <div class="list-group list-group-flush" th:unless="${items.isEmpty()}">
     <div class="list-group-item" th:each="item : ${items}">
       <div class="row align-items-center">
-        <div class="col-auto"><span class="avatar avatar-sm bg-primary-lt"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
+        <div class="col-auto"><span class="avatar avatar-sm" aria-hidden="true"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
         <div class="col text-truncate" th:text="${item.message}">메모를 만들었습니다: 회의록 정리</div>
         <div class="col-auto text-secondary small text-nowrap" th:text="${item.at}">2026-11-06 10:00</div>
       </div>

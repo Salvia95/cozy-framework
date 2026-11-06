@@ -1,4 +1,4 @@
-# 새 메모
+# 메모 만들기 (form-page 패턴)
 screen: memo-form
 template: memo/api/form
 fragments: [memoForm]

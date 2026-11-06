@@ -53,11 +53,26 @@ public class CatalogController {
 		this.specs = List.copyOf(specs);
 	}
 
+	/** 찾는 순서: 화면 틀(패턴) → 부품 → 아이콘 → 문서 틀 → 앱 공개 fragment (docs/conventions/design.md) */
+	private static final List<Group> GROUPS = List.of(
+			new Group("pattern", "패턴", "화면 한 장의 틀. 화면은 패턴 하나로 감싼다.", List.of()),
+			new Group("component", "컴포넌트", "패턴과 화면이 조합하는 부품. 색은 tone 인자로 고른다.", List.of()),
+			new Group("icon", "아이콘", "Tabler Icons. 이름은 아이콘 목록에서 찾는다.", List.of()),
+			new Group("layout", "레이아웃", "문서 틀. 앱 화면은 appShell을 쓴다.", List.of()),
+			new Group("spi", "앱 공개 fragment", "앱 모듈이 공개한 fragment (앱의 cozy/fragments.yml).", List.of()));
+
+	/** 카탈로그의 묶음 하나 */
+	public record Group(String key, String label, String description, List<Entry> entries) {
+	}
+
 	@GetMapping
 	String catalog(Model model) {
-		Map<String, List<Entry>> groups = new LinkedHashMap<>();
-		for (String group : List.of("layout", "pattern", "component", "icon", "spi")) {
-			groups.put(group, this.manifest.fragments().stream().filter((e) -> e.group().equals(group)).toList());
+		List<Group> groups = new java.util.ArrayList<>();
+		for (Group group : GROUPS) {
+			List<Entry> entries = this.manifest.fragments().stream().filter((e) -> e.group().equals(group.key())).toList();
+			if (!entries.isEmpty()) {
+				groups.add(new Group(group.key(), group.label(), group.description(), entries));
+			}
 		}
 		model.addAttribute("groups", groups);
 		model.addAttribute("total", this.manifest.fragments().size());

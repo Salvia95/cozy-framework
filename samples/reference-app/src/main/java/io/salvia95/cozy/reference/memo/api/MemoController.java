@@ -67,16 +67,23 @@ class MemoController {
 			return CozyViews.pageOrFragment("memo/api/form", "memoForm");
 		}
 		long id = this.memos.create(form.getTitle(), form.getBody(), form.isPinned());
-		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 저장했습니다"));
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 만들었습니다"));
 		return CozyViews.redirect("/memo/" + id);
 	}
 
+	/** 상세(읽기 전용). 수정은 /edit 화면, 삭제는 확인 창을 거친다 */
 	@GetMapping("/{id}")
 	String detail(@PathVariable long id, Model model) {
+		model.addAttribute("memo", MemoViews.Detail.of(find(id)));
+		return "memo/api/detail";
+	}
+
+	@GetMapping("/{id}/edit")
+	String edit(@PathVariable long id, Model model) {
 		MemoItem memo = find(id);
 		model.addAttribute("memo", MemoViews.Detail.of(memo));
 		model.addAttribute("form", MemoViews.formOf(memo));
-		return "memo/api/detail";
+		return "memo/api/edit";
 	}
 
 	@PostMapping("/{id}")
@@ -85,10 +92,14 @@ class MemoController {
 		MemoItem memo = find(id);
 		if (errors.hasErrors()) {
 			model.addAttribute("memo", MemoViews.Detail.of(memo));
-			return CozyViews.pageOrFragment("memo/api/detail", "memoForm");
+			return CozyViews.pageOrFragment("memo/api/edit", "memoForm");
+		}
+		if (MemoViews.unchanged(memo, form)) {
+			flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.info("바뀐 내용이 없습니다"));
+			return CozyViews.redirect("/memo/" + id);
 		}
 		this.memos.update(id, form.getTitle(), form.getBody(), form.isPinned());
-		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 고쳤습니다"));
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 수정했습니다"));
 		return CozyViews.redirect("/memo/" + id);
 	}
 
@@ -97,7 +108,7 @@ class MemoController {
 		if (!this.memos.delete(id)) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		}
-		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.info("메모를 지웠습니다"));
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 삭제했습니다"));
 		return CozyViews.redirect("/memo");
 	}
 

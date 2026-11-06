@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<!--/* 메모 목록 화면(api): list-with-filter 패턴. 필터와 페이지 이동은 result fragment만 바꾼다. */-->
+<!--/* 메모 목록 화면(api): list-with-filter 패턴. 필터와 페이지 이동은 result fragment만 바꾼다.
+     비었을 때: 조건이 있으면 noResults(조건 지우기), 없으면 emptyStateAction(메모 만들기). */-->
 <html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}">
 <body>
 <main>
   <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#memo-actions}, ~{::#filter}, ~{::#result})}">
-    <a id="memo-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
+    <a id="memo-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>메모 만들기</a>
 
     <form id="filter" class="row g-2 align-items-center" th:action="@{/memo}" method="get" th:object="${filter}"
           th:hx-get="@{/memo}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true"
@@ -26,9 +27,12 @@
 
     <div id="result" th:fragment="result">
       <th:block th:if="${result.rows.isEmpty()}">
-        <div class="card-body">
-          <div th:replace="~{cozy/component/empty-state :: emptyStateAction('notes', '메모가 없습니다', '조건을 바꾸거나 새 메모를 만들어 보세요.', ~{::#empty-action})}">
-            <a id="empty-action" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
+        <div class="card-body" th:if="${!#strings.isEmpty(filter.q) or filter.pinned}">
+          <div th:replace="~{cozy/component/empty-state :: noResults('/memo')}"></div>
+        </div>
+        <div class="card-body" th:unless="${!#strings.isEmpty(filter.q) or filter.pinned}">
+          <div th:replace="~{cozy/component/empty-state :: emptyStateAction('notes', '메모가 없습니다', '첫 메모를 만들어 보세요.', ~{::#empty-action})}">
+            <a id="empty-action" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>메모 만들기</a>
           </div>
         </div>
       </th:block>
@@ -40,7 +44,7 @@
               <tr class="memo-row" th:each="row : ${result.rows}">
                 <td><a class="text-reset fw-medium" th:href="@{/memo/{id}(id=${row.id})}" th:text="${row.title}">제목</a></td>
                 <td class="text-nowrap">
-                  <th:block th:if="${row.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></th:block>
+                  <th:block th:if="${row.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'neutral')}"></span></th:block>
                   <span class="text-secondary" th:unless="${row.pinned}">—</span>
                 </td>
                 <td class="text-secondary text-nowrap" th:text="${row.updatedAt}">2026-11-06 10:00</td>

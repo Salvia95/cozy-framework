@@ -14,6 +14,11 @@ states:
         - { id: 2, title: 주간 보고, pinned: false, updatedAt: "2026-11-05 17:20" }
       page: { number: 1, size: 10, totalElements: 2 }
   empty:
+    filter: { q: "", pinned: false }
+    result:
+      rows: []
+      page: { number: 1, size: 10, totalElements: 0 }
+  noResults:
     filter: { q: 없는 단어, pinned: false }
     result:
       rows: []

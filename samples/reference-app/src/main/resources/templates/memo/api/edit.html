@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<!--/* 메모 수정 화면(api): form-page 패턴. 만들기와 같은 칸(memo/internal/fields), 버튼은 [취소] [저장].
+     경로는 메모 이름 › 메모 수정. 바뀐 게 없으면 저장하지 않고 상세에 "바뀐 내용이 없습니다"를 알린다. */-->
+<html th:replace="~{cozy/layout/base :: appShell('메모 수정', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/form-page :: formPage('메모 수정', ${memo.title}, '/memo/' + ${memo.id}, ~{::#memoForm})}">
+    <form id="memoForm" class="card" th:fragment="memoForm" th:action="@{/memo/{id}(id=${memo.id})}" method="post" th:object="${form}"
+          th:hx-post="@{/memo/{id}(id=${memo.id})}" hx-target="this" hx-swap="outerHTML">
+      <div th:replace="~{memo/internal/fields :: memoFields()}"></div>
+      <div th:replace="~{cozy/component/form-actions :: formActions('/memo/' + ${memo.id}, 'device-floppy', '저장')}"></div>
+    </form>
+  </section>
+</main>
+</body>
+</html>

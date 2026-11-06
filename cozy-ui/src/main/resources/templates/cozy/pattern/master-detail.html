@@ -3,7 +3,7 @@
   master의 링크가 hx-get으로 #detail을 바꾼다.
 */-->
 <th:block th:fragment="masterDetail(cozyHeading, cozyMaster, cozyDetail)">
-  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ~{})}"></div>
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, null, null, ~{})}"></div>
   <div class="page-body">
     <div class="container-xl">
       <div th:replace="~{cozy/component/alert :: flash()}"></div>

@@ -35,7 +35,7 @@ class CatalogTest {
 	@Test
 	void manifestCoversV1FragmentList() {
 		assertThat(this.manifest.fragments()).extracting(FragmentManifest.Entry::id)
-			.contains("layout/base", "layout/app-shell", "pattern/list-with-filter", "pattern/detail-edit",
+			.contains("layout/base", "layout/app-shell", "pattern/list-with-filter", "pattern/details",
 					"pattern/master-detail", "pattern/form-page", "pattern/polling-panel", "component/field",
 					"component/data-table", "component/pagination", "component/badge", "component/alert",
 					"component/empty-state", "component/modal", "component/toast", "component/loading");
