@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* 메모 상세: detail-edit 패턴. 왼쪽은 읽기, 오른쪽은 수정 폼. */-->
+<!--/* 메모 상세 화면(api): detail-edit 패턴. 왼쪽은 읽기, 오른쪽은 수정 폼(memo/internal/fields 조각). */-->
 <html th:replace="~{cozy/layout/base :: appShell(${memo.title}, ~{::main})}">
 <body>
 <main>
@@ -21,13 +21,7 @@
 
     <form id="form" th:fragment="form" th:action="@{/memo/{id}(id=${memo.id})}" method="post" th:object="${form}"
           th:hx-post="@{/memo/{id}(id=${memo.id})}" hx-target="this" hx-swap="outerHTML">
-      <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
-      <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
-      <div th:replace="~{cozy/component/field :: field('pinned', '고정', 'checkbox')}"></div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" type="submit">저장</button>
-        <a class="btn" th:href="@{/memo}">목록</a>
-      </div>
+      <th:block th:replace="~{memo/internal/fields :: memoFields('목록')}"></th:block>
     </form>
   </section>
 </main>

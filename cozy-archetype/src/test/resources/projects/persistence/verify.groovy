@@ -4,6 +4,14 @@ def app = new File(basedir, "project/demo-persistence").isDirectory() ? new File
 println "[cozy] 생성된 앱: " + app
 def file = { String path -> new File(app, path) }
 def pkg = "src/main/java/com/example/demo/persistence/home"
+// 모듈 구조 (ADR-0029): api(화면), spi(계약), internal(구현), 템플릿 api/internal
+["api/HomeController.java", "spi/HomeFacade.java", "spi/HomeFinder.java", "spi/dto/package-info.java",
+ "internal/app/command/HomeFacadeImpl.java", "internal/app/query/HomeFinderImpl.java", "internal/domain/Note.java",
+ "internal/infra/NoteStore.java", "internal/config/HomeConfiguration.java"].each {
+  assert file("$pkg/" + it).isFile() : "모듈 구조 파일이 없습니다: " + it
+}
+assert file("src/main/resources/templates/home/api/index.html").isFile() : "화면 템플릿(home/api)이 없습니다"
+assert file("src/main/resources/templates/home/internal/activity.html").isFile() : "조각 템플릿(home/internal)이 없습니다"
 assert file(".gitignore").isFile() : ".gitignore가 없습니다"
 assert file("AGENTS.md").text.contains("mvn -o verify") : "AGENTS.md가 없습니다"
 assert file("src/main/resources/application.yml").getText("UTF-8").contains('name: "데모 업무 도구"') : "appName이 들어가지 않았습니다"
@@ -14,10 +22,10 @@ assert thirdParty.isFile() : "제3자 라이선스 목록이 없습니다"
 assert thirdParty.getText("UTF-8").contains("org.springframework:spring-webmvc:")
 assert thirdParty.getText("UTF-8").contains("(Apache-2.0) Cozy :: UI (io.salvia95.cozy:cozy-ui:") : "Cozy 모듈이 목록에 없습니다"
 assert thirdParty.getText("UTF-8").contains("org.xerial:sqlite-jdbc:") == true
-assert file("$pkg/internal/MemoryNoteStore.java").exists() == !true
-assert file("$pkg/internal/SqliteNoteStore.java").exists() == true
+assert file("$pkg/internal/infra/MemoryNoteStore.java").exists() == !true
+assert file("$pkg/internal/infra/SqliteNoteStore.java").exists() == true
 assert file("src/main/resources/db/migration").exists() == true
-assert file("$pkg/api/NoteAdded.java").exists() == false
+assert file("$pkg/spi/event/NoteAdded.java").exists() == false
 assert file("src/test/resources/events/NoteAdded/v1.json").exists() == false
 def pom = file("pom.xml").text
 assert pom.contains("cozy-starter-events") == false

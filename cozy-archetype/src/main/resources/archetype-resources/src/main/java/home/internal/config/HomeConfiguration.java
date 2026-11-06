@@ -1,4 +1,4 @@
-package ${package}.home;
+package ${package}.home.internal.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,0 +1,11 @@
+<!--/* 최근 활동 카드 (home 안에서만 쓰는 조각). items: 화면 DTO HomeViews.ActivityRow 목록 */-->
+<div class="card" th:fragment="recentActivity(items)">
+  <div class="card-header"><h3 class="card-title">최근 활동</h3></div>
+  <ul class="list-group list-group-flush" th:unless="${items.isEmpty()}">
+    <li class="list-group-item d-flex justify-content-between" th:each="item : ${items}">
+      <span th:text="${item.message}">메모를 추가했습니다</span>
+      <span class="text-secondary" th:text="${item.at}">2026-11-07 09:00</span>
+    </li>
+  </ul>
+  <div class="card-body text-secondary" th:if="${items.isEmpty()}">아직 활동이 없습니다.</div>
+</div>

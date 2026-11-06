@@ -63,7 +63,7 @@ public record FragmentManifest(List<Entry> fragments) {
 			return this.template.startsWith("cozy/");
 		}
 
-		/** 카탈로그 묶음: layout, pattern, component, 모듈 공개 fragment는 api */
+		/** 카탈로그 묶음: layout, pattern, component, 모듈 공개 fragment는 spi */
 		public String group() {
 			String[] parts = this.template.split("/");
 			return (parts.length >= 2) ? parts[1] : "";

@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.internal;
+package io.salvia95.cozy.reference.memo.internal.infra;
 
 import java.time.Instant;
 

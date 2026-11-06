@@ -1,4 +1,4 @@
-package ${package}.home.internal;
+package ${package}.home.internal.domain;
 
 import java.time.Instant;
 

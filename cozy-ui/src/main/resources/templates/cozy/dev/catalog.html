@@ -12,7 +12,7 @@
     <div class="card mb-4" th:each="spec : ${screens}" th:id="${'screen-' + spec.screen}">
       <div class="card-header">
         <div>
-          <h4 class="card-title"><code th:text="${spec.template}">memo/list</code></h4>
+          <h4 class="card-title"><code th:text="${spec.template}">memo/api/list</code></h4>
           <div class="text-secondary" th:text="${spec.source}">specs/memo-list.yml</div>
         </div>
       </div>

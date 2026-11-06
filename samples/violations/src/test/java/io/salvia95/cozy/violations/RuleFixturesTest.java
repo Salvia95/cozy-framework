@@ -41,10 +41,10 @@ class RuleFixturesTest {
 		try (Stream<Path> dirs = Files.list(RULES)) {
 			fixtures = dirs.filter(Files::isDirectory).sorted().toList();
 		}
-		assertThat(fixtures).extracting((p) -> p.getFileName().toString().substring(0, 2))
-			.containsExactly("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8");
+		assertThat(fixtures).extracting(RuleFixturesTest::rule)
+			.containsExactlyInAnyOrder("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11");
 		return fixtures.stream().map((fixture) -> DynamicTest.dynamicTest(fixture.getFileName().toString(), () -> {
-			String rule = fixture.getFileName().toString().substring(0, 2);
+			String rule = rule(fixture);
 			List<Violation> violations = check(fixture);
 			violations.forEach(System.out::println);
 			assertThat(violations).as(fixture + "는 위반이 있어야 합니다").isNotEmpty();
@@ -54,6 +54,12 @@ class RuleFixturesTest {
 					assertThat(v.isError()).isTrue();
 				});
 		}));
+	}
+
+	/** 픽스처 폴더 이름 {@code R{n}-설명}의 규칙 ID */
+	static String rule(Path fixture) {
+		String name = fixture.getFileName().toString();
+		return name.substring(0, name.indexOf('-'));
 	}
 
 	static List<Violation> check(Path fixture) throws IOException {

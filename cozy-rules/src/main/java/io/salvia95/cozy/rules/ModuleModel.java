@@ -32,7 +32,7 @@ public record ModuleModel(Map<String, Module> modules) {
 	/**
 	 * @param name 모듈 이름 (Modulith 기본 규칙 또는 {@code @ApplicationModule(id)})
 	 * @param allowedDependencies {@code @ApplicationModule(allowedDependencies)}의 값 그대로 ({@code memo},
-	 * {@code memo::api}). 선언하지 않았으면 {@code null}
+	 * {@code memo :: spi}). 선언하지 않았으면 {@code null}
 	 * @param namedInterfaces 모듈의 Named Interface 이름
 	 */
 	public record Module(String name, List<String> allowedDependencies, Set<String> namedInterfaces) {
@@ -47,14 +47,14 @@ public record ModuleModel(Map<String, Module> modules) {
 			return this.allowedDependencies != null;
 		}
 
-		/** 이 모듈의 템플릿이 {@code target} 모듈의 {@code api/} 템플릿을 참조해도 되는가 */
+		/** 이 모듈의 템플릿이 {@code target} 모듈의 {@code spi/} 템플릿을 참조해도 되는가 */
 		public boolean mayUseTemplatesOf(String target) {
 			if (this.allowedDependencies == null) {
 				return false;
 			}
 			return this.allowedDependencies.stream()
 				.map((d) -> d.replaceAll("\\s+", ""))
-				.anyMatch((d) -> d.equals(target) || d.equals(target + "::api"));
+				.anyMatch((d) -> d.equals(target) || d.equals(target + "::spi"));
 		}
 	}
 }

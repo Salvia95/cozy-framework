@@ -21,9 +21,9 @@ Tabler, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든다(PRD §6.4,
 
 - **최상위**: `<html>`은 `appShell` 레이아웃으로 바꾼다. 본문은 `<main>` 하나다.
 - **패턴 인자**: 패턴에 넘기는 조각은 같은 파일 안의 id(`~{::#id}`)나 class(`~{::.row}`)로 고른다.
-- **htmx로 바꿀 영역**: `th:fragment`와 `id`를 함께 둔다. 컨트롤러는 `CozyViews.pageOrFragment("memo/list", "result")`를 반환한다.
+- **htmx로 바꿀 영역**: `th:fragment`와 `id`를 함께 둔다. 컨트롤러는 `CozyViews.pageOrFragment("memo/api/list", "result")`를 반환한다.
 - **쓰지 않는 것**: `<link>`, `<script>`, `style=`. 자산은 레이아웃이 모두 넣고, CSP가 인라인 스크립트와 인라인 style을 막는다.
-- **`th:replace`와 `th:if`**: `th:replace`가 `th:if`보다 먼저 실행된다. 조건부로 넣으려면 `<th:block th:if="…">`로 감싼다.
+- **`th:replace`와 `th:if`·`th:each`**: `th:replace`가 `th:if`·`th:each`보다 먼저 실행된다. 조건부나 반복으로 넣으려면 `<th:block th:if="…">`, `<th:block th:each="…">`로 감싼다. 같은 요소의 th:each + th:replace는 R11이다.
 - **예약 이름**: `cozy`로 시작하는 모델 속성 이름은 쓰지 않는다. 프레임워크가 쓰는 이름이다.
 
 ## 컨트롤러 규약 (PRD §10)
@@ -32,22 +32,23 @@ Tabler, htmx, Pretendard와 Thymeleaf fragment로 화면을 만든다(PRD §6.4,
 @GetMapping
 String list(@ModelAttribute("filter") MemoFilter filter, Model model) {
     model.addAttribute("result", new ListResult(rows, CozyPage.of(page, 10, total)));
-    return CozyViews.pageOrFragment("memo/list", "result");
+    return CozyViews.pageOrFragment("memo/api/list", "result");
 }
 
 @PostMapping
 String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors, RedirectAttributes flash) {
     if (errors.hasErrors()) {
-        return CozyViews.pageOrFragment("memo/form", "form");   // htmx면 폼만 다시 그린다
+        return CozyViews.pageOrFragment("memo/api/form", "form");   // htmx면 폼만 다시 그린다
     }
     flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("저장했습니다"));
     return CozyViews.redirect("/memo/" + id);                   // htmx면 HX-Redirect
 }
 ```
 
-- **뷰 이름**: 첫 경로는 자기 모듈 이름이다(`memo/...`). 어기면 테스트에서 C7로 실패한다.
+- **뷰 이름**: 자기 모듈의 화면 `{모듈}/api/{화면}`(또는 htmx로 다른 모듈에 줄 fragment `{모듈}/spi/…`)이다. 어기면 테스트에서 C7로 실패한다.
+- **템플릿 폴더**: 화면은 `api/`, 다른 모듈용 fragment는 `spi/`, 화면과 spi가 같이 쓰는 조각은 `internal/`에 둔다. spi·internal 조각은 값을 파라미터로만 받는다(R10). 예시는 [structure.md](structure.md)에 있다.
 - **화면 스펙**: 화면 템플릿마다 `specs/{모듈}-{화면}.yml`을 둔다. 형식은 [testing.md](testing.md)에 있다.
-- **입력과 출력**: 입력은 getter와 setter가 있는 폼 클래스로 받고, 출력은 `view/` 패키지의 record로 넘긴다. 도메인 객체를 템플릿에 직접 넘기지 않는다.
+- **입력과 출력**: 입력은 getter와 setter가 있는 폼 클래스로 받고, 출력은 `api/dto` 패키지의 record로 넘긴다. 컨트롤러는 spi(`*Facade`, `*Finder`)만 부르고 spi DTO를 화면 DTO로 바꾼다. 도메인 객체를 템플릿에 직접 넘기지 않는다.
 - **리다이렉트**: `CozyViews.redirect`는 `"redirect:" + path`와 같다. htmx 요청이면 인터셉터가 200 빈 응답과 `HX-Redirect`로 바꾸고, 플래시도 전달된다.
 - **htmx 헤더**: `HtmxRequest`를 메서드 인자로 받으면 htmx 헤더를 읽을 수 있다(`htmx()`, `partial()`, `target()`, `trigger()`). boost 요청은 부분 갱신으로 보지 않는다.
 - **내비 등록**: `CozyNavItem("메모", "/memo", 10)` 빈을 등록한다. 요청 경로가 그 경로로 시작하면 활성으로 표시한다.
@@ -75,7 +76,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 
 ## 매니페스트 `cozy/fragments.yml`
 
-프레임워크는 cozy-ui jar에, 앱은 자기 `resources/cozy/fragments.yml`에 둔다. 앱 매니페스트에는 `templates/fragments/` 아래의 공용 fragment와 모듈의 공개 fragment(`templates/{모듈}/api/`)를 같은 형식으로 적는다. 패턴 카탈로그에는 `api` 묶음으로 보인다. 템플릿과 매니페스트가 어긋나면 R8([rules.md](rules.md)), 공개 fragment가 빠지면 C5([testing.md](testing.md))로 빌드가 실패한다. 파서는 `io.salvia95.cozy.ui.catalog.FragmentManifest`다.
+프레임워크는 cozy-ui jar에, 앱은 자기 `resources/cozy/fragments.yml`에 둔다. 앱 매니페스트에는 `templates/fragments/` 아래의 공용 fragment와 모듈의 공개 fragment(`templates/{모듈}/spi/`)를 같은 형식으로 적는다. 패턴 카탈로그에는 `spi` 묶음으로 보인다. 파라미터 타입은 원시 값이나 spi DTO(`{모듈}.spi.dto.*`)다. 템플릿과 매니페스트가 어긋나면 R8([rules.md](rules.md)), 공개 fragment가 빠지면 C5([testing.md](testing.md))로 빌드가 실패한다. 파서는 `io.salvia95.cozy.ui.catalog.FragmentManifest`다.
 
 ```yaml
 fragments:

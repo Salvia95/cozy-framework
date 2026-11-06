@@ -50,7 +50,7 @@
 
   <build>
     <plugins>
-      <!-- checks/*: cozy-test 검사(C1~C7)마다 그 검사에서 실패하는 작은 앱. 실패해야 성공이고, verify.groovy가 실패 이유를 확인한다 -->
+      <!-- checks/*: cozy-test 검사(C1~C8)마다 그 검사에서 실패하는 작은 앱. 실패해야 성공이고, verify.groovy가 실패 이유를 확인한다 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>

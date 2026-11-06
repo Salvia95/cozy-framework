@@ -1,4 +1,5 @@
-<!--/* memo 공개 fragment: 메모 요약. 다른 모듈(dashboard)이 memo::api 의존을 선언하고 쓴다. */-->
+<!--/* memo 공개 fragment(spi): 메모 요약. 다른 모듈(dashboard)이 "memo :: spi" 의존을 선언하고 쓴다.
+     값은 파라미터(summary: spi.dto.MemoSummary)로만 받는다. */-->
 <div class="row g-3" th:fragment="memoSummary(summary)">
   <div class="col-sm-6">
     <div class="card card-sm"><div class="card-body">

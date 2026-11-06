@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.view;
+package io.salvia95.cozy.reference.memo.api.dto;
 
 /** 목록 필터 (GET 쿼리 파라미터). */
 public class MemoFilter {

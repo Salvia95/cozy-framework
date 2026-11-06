@@ -1,4 +1,4 @@
-package it.cozy.app.memo;
+package it.cozy.app.memo.api;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,6 +8,6 @@ class MemoController {
 
 	@GetMapping("/memo")
 	String list() {
-		return "wiki/list";
+		return "wiki/api/list";
 	}
 }

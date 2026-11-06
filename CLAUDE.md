@@ -28,6 +28,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 - 루트 `pom.xml`은 aggregator(`cozy-build`)다.
 - 모듈 의존 방향: events → sqlite → runtime, ui → runtime, test → rules (나머지 cozy 모듈은 optional로만). rules는 JDK와 AttoParser에만 의존한다.
 - 이 규칙은 각 모듈의 enforcer(`cozy-module-boundary`)와 `PomBoundaryTest`가 검사한다.
+- 앱 모듈 안의 구조(api · spi · internal, Java와 템플릿)는 ADR-0029와 `docs/conventions/structure.md`를 따른다. reference-app과 아키타입 `home`이 기준 예시다.
 
 ## 명령
 
@@ -41,6 +42,7 @@ mvn -o -Pdist package -pl samples/reference-app   # 앱 하나를 배포 패키�
 mvn -o verify -pl cozy-archetype -am             # 아키타입: 옵션 3조합 생성 → verify -Pdist (몇 분)
 distribution/offline-bundle/build-bundle.sh       # 오프라인 번들 (인터넷 필요, build/offline-bundle)
 distribution/offline-bundle/verify-offline.sh build/offline-bundle/cozy-offline-bundle-*.zip   # 네트워크 없이 번들 검증
+distribution/offline-bundle/cozy help                # 번들 사용자 명령: cozy install | new | version | help
 distribution/release/set-version.sh 1.0.0         # 모든 cozy 모듈 버전 바꾸기 (릴리스 절차: docs/conventions/release.md)
 gh workflow run release.yml                       # CI에서 번들 빌드·검증만 (태그 v* push면 릴리스 초안까지)
 ```

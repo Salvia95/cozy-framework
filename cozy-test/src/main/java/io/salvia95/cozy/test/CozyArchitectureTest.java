@@ -25,10 +25,11 @@ import io.salvia95.cozy.rules.Violation;
  *
  * <ul>
  * <li>C1: {@code ApplicationModules.of(앱 클래스).verify()}</li>
- * <li>C2: 템플릿 경계 규칙 R1~R8. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
+ * <li>C2: 템플릿 경계 규칙 R1~R11. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
  * <li>C6: 이벤트 리스너 파라미터는 CozyEvent, 이벤트마다 버전별 직렬화 샘플과 호환 (cozy-starter-events를 쓰는 앱)</li>
+ * <li>C8: 모듈 안의 패키지(api, spi, internal/app·domain·infra·config)와 레이어 방향, 인터페이스 + Impl (ADR-0029)</li>
  * </ul>
- * 문서: docs/conventions/testing.md, docs/conventions/rules.md
+ * 문서: docs/conventions/structure.md, docs/conventions/testing.md, docs/conventions/rules.md
  */
 public abstract class CozyArchitectureTest {
 
@@ -63,6 +64,16 @@ public abstract class CozyArchitectureTest {
 		catch (RuntimeException ex) {
 			throw new AssertionFailedError("[C1] 모듈 의존 규칙 위반 (Spring Modulith). 다른 모듈의 internal 패키지를 "
 					+ "쓰지 말고, 필요한 의존은 package-info.java의 allowedDependencies에 선언하세요.\n" + ex.getMessage(), ex);
+		}
+	}
+
+	@Test
+	public final void modulesFollowLayerRules() {
+		Class<?> app = applicationClass();
+		List<String> problems = LayerChecks.problems(CozyModules.of(app), app.getPackageName());
+		if (!problems.isEmpty()) {
+			throw new AssertionFailedError("[C8] 모듈 구조 규칙 위반 " + problems.size() + "건 (docs/conventions/structure.md)\n"
+					+ String.join("\n", problems));
 		}
 	}
 

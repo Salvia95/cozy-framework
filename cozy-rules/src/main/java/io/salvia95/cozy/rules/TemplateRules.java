@@ -5,7 +5,7 @@ import java.util.List;
 import io.salvia95.cozy.rules.internal.RuleChecker;
 
 /**
- * 템플릿 경계 규칙 R1~R8을 검사한다 (PRD §6.2, §7).
+ * 템플릿 경계 규칙 R1~R11을 검사한다 (PRD §6.2, §7).
  *
  * <pre>
  * List&lt;Violation&gt; violations = TemplateRules.check(new RulesInput(templates, modules, manifest, false));

@@ -1,4 +1,4 @@
-package it.cozy.app.b.internal;
+package it.cozy.app.b.internal.infra;
 
 public class BHelper {
 

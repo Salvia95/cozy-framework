@@ -24,12 +24,21 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.FragmentDef;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
-/** R1~R8 검사 (PRD §7). 참조 하나에는 처음 걸린 규칙 하나만 보고한다. */
+/**
+ * R1~R11 검사 (PRD §7, ADR-0029). 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
+ *
+ * <p>모듈 템플릿은 {@code {모듈}/api/}(컨트롤러가 렌더링하는 화면), {@code {모듈}/spi/}(다른 모듈이 부르는 fragment),
+ * {@code {모듈}/internal/}(모듈 안의 재료 조각)로 나눈다. api는 같은 모듈의 spi·internal과 허용된 모듈의 spi를, spi는
+ * 같은 모듈의 internal과 허용된 모듈의 spi를, internal은 같은 모듈의 internal만 조합한다.
+ */
 public final class RuleChecker {
 
 	private static final Set<String> RESERVED = Set.of("cozy", "fragments", "error");
 
 	private static final List<String> LAYERS = List.of("layout", "pattern", "component");
+
+	/** 모듈 템플릿 폴더: 화면, 다른 모듈용, 모듈 전용 */
+	private static final List<String> MODULE_LAYERS = List.of("api", "spi", "internal");
 
 	private static final Pattern SIGNATURE = Pattern.compile("\\s*([A-Za-z_][A-Za-z0-9_\\-]*)\\s*\\(([^)]*)\\)\\s*");
 
@@ -74,6 +83,7 @@ public final class RuleChecker {
 			for (Reference reference : template.references) {
 				checkReference(template, reference);
 			}
+			checkModelReads(template);
 		}
 		checkManifest();
 	}
@@ -99,6 +109,12 @@ public final class RuleChecker {
 						+ moduleNames() + ") 또는 예약어(fragments, error) 폴더로 옮기세요.");
 				return;
 			}
+			if (!RESERVED.contains(place.top()) && (place.second() == null || !MODULE_LAYERS.contains(place.second()))) {
+				String m = place.top();
+				error(file, 1, "R1", file.path(), "모듈 템플릿은 " + m + "/api/(컨트롤러가 렌더링하는 화면), " + m
+						+ "/spi/(다른 모듈이 부르는 fragment), " + m + "/internal/(" + m + " 안에서 조합하는 조각) 아래에 둡니다.");
+				return;
+			}
 		}
 		else if (!place.top().equals("cozy") && !place.top().equals("error")) {
 			error(file, 1, "R1", place.top() + "/", "프레임워크 템플릿은 cozy/ 또는 error/ 아래에만 둡니다.");
@@ -119,10 +135,14 @@ public final class RuleChecker {
 	private void checkSyntax(ParsedTemplate template) {
 		for (Problem problem : template.problems) {
 			error(template.file, problem.line(), "R7", problem.text(), problem.why()
-					+ ". 템플릿 경로와 fragment 이름을 글자 그대로 쓰세요 (예: ~{memo/api/card :: card(${memo})}).");
+					+ ". 템플릿 경로와 fragment 이름을 글자 그대로 쓰세요 (예: ~{memo/spi/card :: card(${memo})}).");
 		}
 		for (Problem include : template.includes) {
 			add(template.file, include.line(), "R7", Severity.WARNING, include.text(), include.why() + ".");
+		}
+		for (Problem each : template.eachWithInsertion) {
+			error(template.file, each.line(), "R11", each.text(), "같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 "
+					+ "실행되어 반복 변수가 아직 없습니다. <th:block th:each=\"...\"> 안쪽 요소에 th:replace를 두세요.");
 		}
 		for (FragmentDef duplicate : template.duplicateFragments) {
 			error(template.file, duplicate.line(), "R6", duplicate.signature(), "같은 파일에 fragment '" + duplicate.name()
@@ -170,16 +190,22 @@ public final class RuleChecker {
 					+ "fragment에 값을 넘기도록 바꾸세요.");
 			return true;
 		}
-		// R3
+		// R3, R9: 다른 모듈
 		if (!RESERVED.contains(to.top()) && !to.top().equals(from.top())) {
 			String a = from.top();
 			String b = to.top();
 			if (!this.input.modules().contains(b) && !this.byName.containsKey(targetName)) {
 				return false;
 			}
-			if (!"api".equals(to.second())) {
-				error(file, line, "R3", display, b + "의 내부 템플릿입니다. " + b + "/api/ 아래 fragment를 쓰거나 " + b
-						+ "에 공개 fragment를 추가하세요.");
+			if (!RESERVED.contains(a) && "internal".equals(from.second())) {
+				error(file, line, "R9", display, "internal은 다른 모듈의 템플릿을 쓰지 않습니다. 다른 모듈의 spi fragment는 " + a
+						+ "/api/나 " + a + "/spi/에서 조합하세요.");
+				return true;
+			}
+			if (!"spi".equals(to.second())) {
+				String folder = (to.second() != null) ? b + "/" + to.second() + "/" : b + "/";
+				error(file, line, "R3", display, folder + "는 " + b + " 안에서만 씁니다. 다른 모듈에는 " + b
+						+ "/spi/ 아래 fragment만 공개됩니다. " + b + "/spi/에 공개 fragment를 추가하세요.");
 				return true;
 			}
 			ModuleModel.Module module = this.input.modules().modules().get(a);
@@ -188,10 +214,24 @@ public final class RuleChecker {
 						? a + "는 allowedDependencies를 선언하지 않았습니다. "
 						: a + "의 allowedDependencies에 " + b + "가 없습니다. ";
 				error(file, line, "R3", display, how + a + "/package-info.java의 @ApplicationModule(allowedDependencies = "
-						+ "\"" + b + "::api\")에 추가하세요.");
+						+ "\"" + b + " :: spi\")에 추가하세요.");
 				return true;
 			}
 			return false;
+		}
+		// R9: 같은 모듈 안의 방향 (internal → spi → api 쪽으로만 조합한다)
+		if (!RESERVED.contains(from.top()) && from.top().equals(to.top())) {
+			String a = from.top();
+			if ("spi".equals(from.second()) && "api".equals(to.second())) {
+				error(file, line, "R9", display, "spi는 같은 모듈의 api를 참조하지 않습니다. 화면과 같이 쓰는 조각은 " + a
+						+ "/internal/로 옮기고 api와 spi가 둘 다 그것을 조합하게 하세요.");
+				return true;
+			}
+			if ("internal".equals(from.second()) && ("api".equals(to.second()) || "spi".equals(to.second()))) {
+				error(file, line, "R9", display, "internal은 같은 모듈의 " + to.second() + "를 참조하지 않습니다. internal은 "
+						+ "internal 조각만 조합하고, api와 spi가 internal을 조합합니다.");
+				return true;
+			}
 		}
 		// R4
 		int fromRank = from.layerRank();
@@ -260,10 +300,10 @@ public final class RuleChecker {
 			}
 			Place place = Place.of(declaration.template() + ".html");
 			boolean inScope = place.layerRank() >= 0 && (place.top().equals("cozy") || place.top().equals("fragments"));
-			boolean moduleApi = place.top() != null && !RESERVED.contains(place.top()) && "api".equals(place.second());
-			if (!inScope && !moduleApi) {
+			boolean moduleSpi = place.top() != null && !RESERVED.contains(place.top()) && "spi".equals(place.second());
+			if (!inScope && !moduleSpi) {
 				manifestError(declaration, reference, "매니페스트에는 cozy/·fragments/의 layout, pattern, component와 "
-						+ "모듈 api/의 fragment만 적습니다.");
+						+ "모듈 spi/의 fragment만 적습니다.");
 				continue;
 			}
 			ParsedTemplate template = this.byName.get(declaration.template());
@@ -301,6 +341,42 @@ public final class RuleChecker {
 							+ "template, signature, purpose, params, samples를 적어 추가하세요 (docs/conventions/ui.md).");
 				}
 			}
+		}
+	}
+
+	// ── R10: spi·internal은 파라미터만 ─────────────────────────────
+
+	private void checkModelReads(ParsedTemplate template) {
+		Place place = Place.of(template.file.path());
+		if (template.file.origin() != Origin.APP || place.top() == null || RESERVED.contains(place.top())
+				|| !("spi".equals(place.second()) || "internal".equals(place.second()))) {
+			return;
+		}
+		for (ParsedTemplate.ModelRead read : template.modelReads) {
+			String reference = (read.name() != null) ? read.expression() + " → " + read.name() : read.expression();
+			String message;
+			if (read.fragment() == null) {
+				message = "th:fragment 밖의 표현식입니다. spi·internal 템플릿의 내용은 th:fragment 안에 두고 값은 파라미터로 "
+						+ "받으세요.";
+			}
+			else if (read.name() == null) {
+				message = "*{...}가 부르는 쪽의 th:object에 기댑니다. 폼 객체를 " + read.fragment() + "의 파라미터로 받아 fragment "
+						+ "안에서 th:object로 지정하세요(파라미터 이름은 컨트롤러의 모델 이름과 같게).";
+			}
+			else if (read.name().startsWith("@")) {
+				message = "'" + read.name() + "'는 템플릿에서 스프링 빈을 부릅니다. 값은 컨트롤러가 spi로 구해 " + read.fragment()
+						+ "의 파라미터로 넘기세요.";
+			}
+			else if (read.name().startsWith("#")) {
+				message = "'" + read.name() + "'는 모델이나 요청 전체를 읽습니다. 필요한 값을 " + read.fragment()
+						+ "의 파라미터로 받으세요.";
+			}
+			else {
+				message = "'" + read.name() + "'는 " + read.fragment() + "의 파라미터나 지역 변수가 아닙니다. spi·internal "
+						+ "fragment는 부르는 화면의 모델을 읽지 않습니다. " + read.fragment() + "에 파라미터를 더하고 부르는 쪽이 "
+						+ "값을 넘기게 하세요.";
+			}
+			error(template.file, read.line(), "R10", reference, message);
 		}
 	}
 

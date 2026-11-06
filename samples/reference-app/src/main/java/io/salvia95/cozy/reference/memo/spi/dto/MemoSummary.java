@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.api;
+package io.salvia95.cozy.reference.memo.spi.dto;
 
 /**
  * 메모 요약 (대시보드용).

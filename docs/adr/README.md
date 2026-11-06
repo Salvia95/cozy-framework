@@ -11,8 +11,8 @@
 | [0005](0005-modulith-always.md) | Spring Modulith 상시 포함, 이벤트는 옵션 | D5 |
 | [0006](0006-sqlite-event-publication.md) | 이벤트 발행 기록을 SQLite에 직접 구현 | D6 (+0018) |
 | [0007](0007-inbox-idempotency.md) | 수신 측 인박스로 멱등성 보장 | D7 |
-| [0008](0008-feature-packages.md) | 기능형 패키지 | D8 |
-| [0009](0009-template-module-ownership.md) | 템플릿 디렉터리 = 모듈 소속 | D9 |
+| [0008](0008-feature-packages.md) | 기능형 패키지 | D8 (+0029) |
+| [0009](0009-template-module-ownership.md) | 템플릿 디렉터리 = 모듈 소속 | D9 (+0029) |
 | [0010](0010-user-data-outside-app.md) | 사용자 데이터는 앱 폴더 밖 | D10 |
 | [0011](0011-separate-flyway-history.md) | 프레임워크 테이블은 별도 Flyway 이력 | D11 (+0018) |
 | [0012](0012-self-update.md) | v1부터 자체 업데이트 장치 포함 | D12 |
@@ -32,3 +32,4 @@
 | [0026](0026-third-party-licenses.md) | 제3자 라이선스 목록과 허용 목록 | PRD §11 |
 | [0027](0027-framework-license.md) | 프레임워크 라이선스: Apache-2.0 | 레포 공개 |
 | [0028](0028-release.md) | 릴리스: GitHub Release의 오프라인 번들, 버전 고정, 번들 라이선스 | 배포 방식 |
+| [0029](0029-module-layers.md) | 모듈 안의 구조: api · spi · internal, 템플릿도 같은 3분할 (0008, 0009 개정) | 사용자 지시 |

@@ -17,13 +17,21 @@ class ViewModuleInterceptorTest {
 
 	@Test
 	void viewInOwnModulePasses() {
-		assertThat(this.interceptor.check(MemoHandler.class, "memo/list")).isNull();
-		assertThat(this.interceptor.check(MemoHandler.class, "memo/list :: result")).isNull();
+		assertThat(this.interceptor.check(MemoHandler.class, "memo/api/list")).isNull();
+		assertThat(this.interceptor.check(MemoHandler.class, "memo/api/list :: result")).isNull();
+		assertThat(this.interceptor.check(MemoHandler.class, "memo/spi/summary :: memoSummary")).isNull();
+	}
+
+	@Test
+	void viewMustBeScreenOrSpiFragment() {
+		assertThat(this.interceptor.check(MemoHandler.class, "memo/list"))
+			.startsWith("컨트롤러는 memo/api/(화면)나 memo/spi/(공개 fragment) 템플릿을 반환합니다");
+		assertThat(this.interceptor.check(MemoHandler.class, "memo/internal/row :: row")).isNotNull();
 	}
 
 	@Test
 	void viewOfOtherModuleFails() {
-		assertThat(this.interceptor.check(MemoHandler.class, "wiki/list"))
+		assertThat(this.interceptor.check(MemoHandler.class, "wiki/api/list"))
 			.startsWith("memo 모듈의 컨트롤러는 memo/로 시작하는 뷰를 반환합니다")
 			.contains("컨트롤러를 wiki 모듈로");
 		assertThat(this.interceptor.check(MemoHandler.class, "list")).isNotNull();
@@ -31,8 +39,8 @@ class ViewModuleInterceptorTest {
 
 	@Test
 	void renamedModuleUsesApplicationModuleId() {
-		assertThat(this.interceptor.check(RenamedHandler.class, "board/list")).isNull();
-		assertThat(this.interceptor.check(RenamedHandler.class, "renamed/list")).isNotNull();
+		assertThat(this.interceptor.check(RenamedHandler.class, "board/api/list")).isNull();
+		assertThat(this.interceptor.check(RenamedHandler.class, "renamed/api/list")).isNotNull();
 	}
 
 	@Test

@@ -1,9 +1,9 @@
 # 새 메모
 screen: memo-form
-template: memo/form
+template: memo/api/form
 fragments: [form]
 model:
-  form: io.salvia95.cozy.reference.memo.view.MemoForm
+  form: io.salvia95.cozy.reference.memo.api.dto.MemoForm
 states:
   default:
     form: { title: 회의록 정리, body: "첫 줄\n둘째 줄", pinned: true }

@@ -1,9 +1,9 @@
 # 대시보드
 screen: dashboard-index
-template: dashboard/index
+template: dashboard/api/index
 fragments: [activity]
 model:
-  dashboard: io.salvia95.cozy.reference.dashboard.view.DashboardView
+  dashboard: io.salvia95.cozy.reference.dashboard.api.dto.DashboardView
 states:
   default:
     dashboard:

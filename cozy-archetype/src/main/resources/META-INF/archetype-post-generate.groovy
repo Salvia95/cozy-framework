@@ -48,16 +48,16 @@ def remove = { Path path ->
 }
 
 if (persistence) {
-    remove(home.resolve("internal/MemoryNoteStore.java"))
+    remove(home.resolve("internal/infra/MemoryNoteStore.java"))
 }
 else {
-    ["NoteMapper.java", "NoteRow.java", "SqliteNoteStore.java"].each { remove(home.resolve("internal").resolve(it)) }
+    ["NoteMapper.java", "NoteRow.java", "SqliteNoteStore.java"].each { remove(home.resolve("internal/infra").resolve(it)) }
     remove(resources.resolve("mapper"))
     remove(resources.resolve("db"))
 }
 if (!events) {
-    remove(home.resolve("api"))
-    remove(home.resolve("internal/NoteAddedListener.java"))
+    remove(home.resolve("spi/event"))
+    remove(home.resolve("internal/app/command/NoteAddedListener.java"))
     remove(root.resolve("src/test/resources/events"))
 }
 

@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.activity.internal;
+package io.salvia95.cozy.reference.activity.internal.infra;
 
 import java.time.Instant;
 import java.util.List;

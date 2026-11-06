@@ -1,7 +1,5 @@
-/**
- * 홈의 공개 영역: 이벤트. 다른 모듈은 package-info에 allowedDependencies = "home::api"를 적고 쓴다.
- */
-@NamedInterface("api")
-package ${package}.home.api;
+/** 홈의 이벤트 (spi에 속한다). 다른 모듈은 allowedDependencies = "home :: spi"를 적고 받는다. */
+@NamedInterface("spi")
+package ${package}.home.spi.event;
 
 import org.springframework.modulith.NamedInterface;

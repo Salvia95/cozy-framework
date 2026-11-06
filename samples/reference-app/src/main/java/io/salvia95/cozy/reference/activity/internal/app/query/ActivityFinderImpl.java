@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.activity.api;
+package io.salvia95.cozy.reference.activity.internal.app.query;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -8,22 +8,25 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.salvia95.cozy.reference.activity.internal.ActivityMapper;
+import io.salvia95.cozy.reference.activity.internal.infra.ActivityMapper;
+import io.salvia95.cozy.reference.activity.spi.ActivityFinder;
+import io.salvia95.cozy.reference.activity.spi.dto.ActivityItem;
 
-/** 다른 모듈이 쓰는 최근 활동 조회. */
+/** 최근 활동 읽기. */
 @Service
-public class RecentActivities {
+@Transactional(readOnly = true)
+class ActivityFinderImpl implements ActivityFinder {
 
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
 		.withZone(ZoneId.systemDefault());
 
 	private final ActivityMapper mapper;
 
-	RecentActivities(ActivityMapper mapper) {
+	ActivityFinderImpl(ActivityMapper mapper) {
 		this.mapper = mapper;
 	}
 
-	@Transactional(readOnly = true)
+	@Override
 	public List<ActivityItem> recent(int limit) {
 		return this.mapper.findRecent(limit)
 			.stream()

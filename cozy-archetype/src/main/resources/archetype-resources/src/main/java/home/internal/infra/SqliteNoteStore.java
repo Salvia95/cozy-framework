@@ -1,9 +1,12 @@
-package ${package}.home.internal;
+package ${package}.home.internal.infra;
 
 import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Repository;
+
+import ${package}.home.internal.domain.Note;
+import ${package}.home.internal.domain.NoteActivity;
 
 /** SQLite 저장소. 트랜잭션은 호출하는 서비스가 연다. */
 @Repository

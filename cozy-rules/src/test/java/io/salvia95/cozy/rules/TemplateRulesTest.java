@@ -43,8 +43,8 @@ class TemplateRulesTest {
 		f.manifest("pattern/form-page", "cozy/pattern/form-page", "formPage(cozyHeading, cozyForm)");
 		f.manifest("component/badge", "cozy/component/badge", "badge(text, color)");
 		f.modules = ModuleModel.of(new ModuleModel.Module("memo", List.of(), Set.of()),
-				new ModuleModel.Module("wiki", List.of(), Set.of("api")),
-				new ModuleModel.Module("voc", List.of("wiki::api"), Set.of()),
+				new ModuleModel.Module("wiki", List.of(), Set.of("spi")),
+				new ModuleModel.Module("voc", List.of("wiki :: spi"), Set.of()),
 				new ModuleModel.Module("open", null, Set.of()));
 		return f;
 	}
@@ -63,18 +63,18 @@ class TemplateRulesTest {
 	@Test
 	void frameworkAndScreenPass() {
 		Fixture f = fixture();
-		f.app("memo/list.html", SCREEN);
+		f.app("memo/api/list.html", SCREEN);
 		assertThat(f.check()).isEmpty();
 	}
 
 	@Test
 	void messageHasRuleLocationReferenceAndFix() {
 		Fixture f = fixture();
-		f.app("memo/list.html", "<p>\n<span th:replace=\"~{cozy/component/badge :: badg(x)}\"></span></p>");
+		f.app("memo/api/list.html", "<p>\n<span th:replace=\"~{cozy/component/badge :: badg(x)}\"></span></p>");
 		assertThat(f.check()).singleElement()
 			.extracting(Violation::format)
 			.asString()
-			.startsWith("[R6] templates/memo/list.html:2 → cozy/component/badge :: badg(1개 인자) — ")
+			.startsWith("[R6] templates/memo/api/list.html:2 → cozy/component/badge :: badg(1개 인자) — ")
 			.contains("있는 fragment: badge(text, color)");
 	}
 
@@ -84,9 +84,20 @@ class TemplateRulesTest {
 		@Test
 		void moduleAndReservedDirectoriesPass() {
 			Fixture f = fixture();
-			f.app("memo/list.html", "<p>x</p>");
+			f.app("memo/api/list.html", "<p>x</p>");
+			f.app("memo/api/sub/detail.html", "<p>x</p>");
+			f.app("memo/internal/row.html", "<tr th:fragment=\"row()\"><td>x</td></tr>");
 			f.app("error/404.html", "<p>x</p>");
 			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void moduleTemplatesLiveInApiSpiOrInternal() {
+			Fixture f = fixture();
+			f.app("memo/list.html", "<p>x</p>");
+			f.app("memo/views/detail.html", "<p>x</p>");
+			assertThat(f.rules()).containsExactly("R1", "R1");
+			assertThat(f.check().get(0).message()).contains("memo/api/").contains("memo/spi/").contains("memo/internal/");
 		}
 
 		@Test
@@ -127,32 +138,44 @@ class TemplateRulesTest {
 	class R3 {
 
 		@Test
-		void allowedApiReferencePasses() {
+		void allowedSpiReferencePasses() {
 			Fixture f = fixture();
-			f.app("wiki/api/card.html", "<div th:fragment=\"card(title)\" th:text=\"${title}\">c</div>");
-			f.app("voc/list.html", "<div th:replace=\"~{wiki/api/card :: card('x')}\"></div>");
+			f.app("wiki/spi/card.html", "<div th:fragment=\"card(title)\" th:text=\"${title}\">c</div>");
+			f.app("voc/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>");
+			f.app("voc/spi/panel.html", "<div th:fragment=\"panel()\"><div th:replace=\"~{wiki/spi/card :: card('x')}\"></div></div>");
 			assertThat(f.check()).isEmpty();
 		}
 
 		@Test
-		void internalTemplateOfOtherModule() {
+		void apiAndInternalTemplatesOfOtherModule() {
 			Fixture f = fixture();
-			f.app("wiki/detail.html", "<div th:fragment=\"body\">b</div>");
-			f.app("voc/list.html", "<div th:replace=\"~{wiki/detail :: body}\"></div>");
-			assertThat(f.rules()).containsExactly("R3");
-			assertThat(f.check().get(0).message()).startsWith("wiki의 내부 템플릿입니다. wiki/api/ 아래 fragment를 쓰거나");
+			f.app("wiki/api/detail.html", "<div th:fragment=\"body\">b</div>");
+			f.app("wiki/internal/row.html", "<div th:fragment=\"row()\">b</div>");
+			f.app("voc/api/list.html", "<div th:replace=\"~{wiki/api/detail :: body}\"></div><div th:replace=\"~{wiki/internal/row :: row()}\"></div>");
+			assertThat(f.rules()).containsExactly("R3", "R3");
+			assertThat(f.check().get(0).message()).startsWith("wiki/api/는 wiki 안에서만 씁니다. 다른 모듈에는 wiki/spi/ 아래 fragment만 공개됩니다");
 		}
 
 		@Test
-		void apiWithoutAllowedDependency() {
+		void spiWithoutAllowedDependency() {
 			Fixture f = fixture();
-			f.app("wiki/api/card.html", "<div th:fragment=\"card(title)\">c</div>");
-			f.app("memo/list.html", "<div th:replace=\"~{wiki/api/card :: card('x')}\"></div>");
-			f.app("open/list.html", "<div th:replace=\"~{wiki/api/card :: card('x')}\"></div>");
+			f.app("wiki/spi/card.html", "<div th:fragment=\"card(title)\">c</div>");
+			f.app("memo/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>");
+			f.app("open/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>");
 			assertThat(f.rules()).containsExactly("R3", "R3");
 			assertThat(f.check()).extracting(Violation::message)
 				.anyMatch((m) -> m.startsWith("open는 allowedDependencies를 선언하지 않았습니다"))
-				.anyMatch((m) -> m.contains("\"wiki::api\""));
+				.anyMatch((m) -> m.contains("\"wiki :: spi\""));
+		}
+
+		@Test
+		void oldApiDependencyDoesNotOpenSpi() {
+			Fixture f = fixture();
+			f.modules = ModuleModel.of(new ModuleModel.Module("wiki", List.of(), Set.of("spi")),
+					new ModuleModel.Module("voc", List.of("wiki::api"), Set.of()));
+			f.app("wiki/spi/card.html", "<div th:fragment=\"card(title)\">c</div>");
+			f.app("voc/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>");
+			assertThat(f.rules()).containsExactly("R3");
 		}
 	}
 
@@ -192,10 +215,10 @@ class TemplateRulesTest {
 		@Test
 		void fragmentsMustNotUseModuleTemplates() {
 			Fixture f = fixture();
-			f.app("memo/api/y.html", "<div th:fragment=\"y()\">y</div>");
-			f.app("fragments/pattern/x.html", "<div th:fragment=\"x()\"><div th:replace=\"~{memo/api/y :: y()}\"></div></div>");
+			f.app("memo/spi/y.html", "<div th:fragment=\"y()\">y</div>");
+			f.app("fragments/pattern/x.html", "<div th:fragment=\"x()\"><div th:replace=\"~{memo/spi/y :: y()}\"></div></div>");
 			f.manifest("pattern/x", "fragments/pattern/x", "x()");
-			f.manifest("memo/y", "memo/api/y", "y()");
+			f.manifest("memo/y", "memo/spi/y", "y()");
 			assertThat(f.rules()).containsExactly("R5");
 		}
 
@@ -214,7 +237,7 @@ class TemplateRulesTest {
 		@Test
 		void missingTemplateFragmentAndWrongArgCount() {
 			Fixture f = fixture();
-			f.app("memo/list.html", """
+			f.app("memo/api/list.html", """
 					<div th:replace="~{cozy/component/nope :: x()}"></div>
 					<div th:replace="~{cozy/component/badge :: badg('a', 'b')}"></div>
 					<div th:replace="~{cozy/component/badge :: badge('a')}"></div>
@@ -225,7 +248,7 @@ class TemplateRulesTest {
 		@Test
 		void elementSelectorsResolve() {
 			Fixture f = fixture();
-			f.app("memo/list.html", "<main id=\"m\" class=\"c\"><i th:replace=\"~{:: main}\"></i><i th:replace=\"~{:: #m}\"></i><i th:replace=\"~{:: .c}\"></i></main>");
+			f.app("memo/api/list.html", "<main id=\"m\" class=\"c\"><i th:replace=\"~{:: main}\"></i><i th:replace=\"~{:: #m}\"></i><i th:replace=\"~{:: .c}\"></i></main>");
 			assertThat(f.check()).isEmpty();
 		}
 	}
@@ -236,7 +259,7 @@ class TemplateRulesTest {
 		@Test
 		void dynamicReferences() {
 			Fixture f = fixture();
-			f.app("memo/list.html", """
+			f.app("memo/api/list.html", """
 					<div th:replace="~{${view} :: body}"></div>
 					<div th:replace="~{cozy/component/badge :: ${name}}"></div>
 					<div th:replace="${view}"></div>
@@ -249,14 +272,14 @@ class TemplateRulesTest {
 		@Test
 		void slotParameterIsNotDynamic() {
 			Fixture f = fixture();
-			f.app("memo/list.html", "<section th:fragment=\"part(body)\"><div><th:block th:replace=\"${body}\"></th:block></div></section>");
+			f.app("memo/api/list.html", "<section th:fragment=\"part(body)\"><div><th:block th:replace=\"${body}\"></th:block></div></section>");
 			assertThat(f.check()).isEmpty();
 		}
 
 		@Test
 		void includeIsWarningOnly() {
 			Fixture f = fixture();
-			f.app("memo/list.html", "<div th:include=\"~{cozy/component/badge :: badge('a', 'b')}\"></div>");
+			f.app("memo/api/list.html", "<div th:include=\"~{cozy/component/badge :: badge('a', 'b')}\"></div>");
 			assertThat(f.check()).singleElement()
 				.satisfies((v) -> assertThat(v.severity()).isEqualTo(Severity.WARNING))
 				.satisfies((v) -> assertThat(v.ruleId()).isEqualTo("R7"));
@@ -265,7 +288,7 @@ class TemplateRulesTest {
 		@Test
 		void unwrappedFragmentExpressionIsChecked() {
 			Fixture f = fixture();
-			f.app("memo/list.html", "<div th:replace=\"cozy/component/badge :: badge('a', 'b')\"></div><div th:replace=\"cozy/component/badge :: badge\"></div>");
+			f.app("memo/api/list.html", "<div th:replace=\"cozy/component/badge :: badge('a', 'b')\"></div><div th:replace=\"cozy/component/badge :: badge\"></div>");
 			assertThat(f.rules()).containsExactly("R6");
 		}
 	}
@@ -287,8 +310,133 @@ class TemplateRulesTest {
 			f.manifest("component/chip", "fragments/component/chip", "chip(label)");
 			f.manifest("component/gone", "fragments/component/gone", "gone()");
 			f.manifest("component/nope", "fragments/component/chip", "nope()");
-			f.manifest("screen", "memo/list", "list()");
+			f.manifest("screen", "memo/api/list", "list()");
 			assertThat(f.rules()).containsExactly("R8", "R8", "R8", "R8");
+		}
+	}
+
+	@Nested
+	class R8Spi {
+
+		@Test
+		void moduleSpiFragmentsMayBeListedButScreensMayNot() {
+			Fixture f = fixture();
+			f.app("memo/spi/card.html", "<div th:fragment=\"card(memo)\">c</div>");
+			f.app("memo/internal/row.html", "<div th:fragment=\"row()\">r</div>");
+			f.manifest("memo/card", "memo/spi/card", "card(memo)");
+			assertThat(f.check()).isEmpty();
+			f.manifest("memo/row", "memo/internal/row", "row()");
+			assertThat(f.rules()).containsExactly("R8");
+		}
+	}
+
+	@Nested
+	class R9 {
+
+		static final String ROW = "<tr th:fragment=\"row(m)\"><td th:text=\"${m}\">x</td></tr>";
+
+		@Test
+		void apiComposesOwnSpiAndInternalAndSpiComposesInternal() {
+			Fixture f = fixture();
+			f.app("memo/internal/row.html", ROW);
+			f.app("memo/internal/table.html", """
+					<table th:fragment="table(items)"><th:block th:each="i : ${items}"><tr th:replace="~{memo/internal/row :: row(${i})}"></tr></th:block></table>""");
+			f.app("memo/spi/board.html", """
+					<section th:fragment="board(items)"><table th:replace="~{memo/internal/table :: table(${items})}"></table></section>""");
+			f.app("memo/api/list.html", """
+					<main><section th:replace="~{memo/spi/board :: board(${memos})}"></section>
+					<table th:replace="~{memo/internal/table :: table(${memos})}"></table>
+					<div th:replace="~{memo/api/detail :: body}"></div></main>""");
+			f.app("memo/api/detail.html", "<div th:fragment=\"body\">d</div>");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void spiMustNotUseApi() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", "<div th:fragment=\"result\">r</div>");
+			f.app("memo/spi/board.html", "<section th:fragment=\"board()\"><div th:replace=\"~{memo/api/list :: result}\"></div></section>");
+			assertThat(f.rules()).containsExactly("R9");
+			assertThat(f.check().get(0).message()).contains("spi는 같은 모듈의 api를 참조하지 않습니다");
+		}
+
+		@Test
+		void internalMustNotUseSpiApiOrOtherModules() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", "<div th:fragment=\"result\">r</div>");
+			f.app("memo/spi/card.html", "<div th:fragment=\"card()\">c</div>");
+			f.app("wiki/spi/card.html", "<div th:fragment=\"card(title)\">c</div>");
+			f.app("voc/internal/row.html", "<div th:fragment=\"row()\"><div th:replace=\"~{wiki/spi/card :: card('x')}\"></div></div>");
+			f.app("memo/internal/row.html", """
+					<div th:fragment="row()"><div th:replace="~{memo/spi/card :: card()}"></div><div th:replace="~{memo/api/list :: result}"></div></div>""");
+			assertThat(f.rules()).containsExactly("R9", "R9", "R9");
+			assertThat(f.check()).extracting(Violation::message)
+				.anyMatch((m) -> m.startsWith("internal은 다른 모듈의 템플릿을 쓰지 않습니다"));
+		}
+	}
+
+	@Nested
+	class R10 {
+
+		@Test
+		void paramsLocalsAndUtilitiesPass() {
+			Fixture f = fixture();
+			f.app("memo/spi/card.html", """
+					<div th:fragment="card(memos, form, cozyActions)" th:object="${form}">
+					  <p th:text="${#lists.size(memos)} + ' / ' + ${memos.?[pinned].size()}">n</p>
+					  <a th:href="@{/memo/{id}(id=${memos[0].id})}" th:text="${'제목: ' + memos[0].title}">t</a>
+					  <th:block th:each="m, st : ${memos}"><span th:text="${m.title} + ${st.index}">x</span></th:block>
+					  <th:block th:each="m : ${memos}"><span th:text="${mStat.count}">x</span></th:block>
+					  <p th:with="first=${memos[0]}, title=${first.title}" th:text="${title}">x</p>
+					  <input th:field="*{title}">
+					  <p th:text="${T(java.lang.Math).max(1, #lists.size(memos))} ?: ${cozyApp}">x</p>
+					  <p>[[${memos.size()}]] [(${form.title})]</p>
+					  <th:block th:replace="${cozyActions}"></th:block>
+					  <p th:text="${memos.size() > 0 ? 'yes' : 'no'}">x</p>
+					</div>""");
+			f.manifest("memo/card", "memo/spi/card", "card(memos, form, cozyActions)");
+			f.app("memo/api/list.html", "<main th:text=\"${anything.from.model}\">x</main>");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void modelReadsInSpiAndInternalFail() {
+			Fixture f = fixture();
+			f.app("memo/spi/card.html", """
+					<div th:fragment="card(summary)">
+					  <p th:text="${summary.total} + ${memos.size()}">x</p>
+					  <input th:field="*{title}">
+					  <p th:text="${#vars.memos}">x</p>
+					  <p th:text="${@memoService.count()}">x</p>
+					  <p th:text="${param.q}">x</p>
+					</div>""");
+			f.app("memo/internal/row.html", """
+					<p th:text="${outside}">x</p>
+					<div th:each="x : ${list}"><span th:fragment="row()">[[${x}]]</span></div>""");
+			List<Violation> violations = f.check();
+			violations.forEach(System.out::println);
+			assertThat(violations).extracting(Violation::ruleId).containsOnly("R10");
+			assertThat(violations).extracting(Violation::reference)
+				.containsExactlyInAnyOrder("${memos.size()} → memos", "*{title}", "${#vars.memos} → #vars",
+						"${@memoService.count()} → @memoService", "${param.q} → param", "${outside} → outside",
+						"${list} → list", "${x} → x");
+			assertThat(violations).extracting(Violation::message)
+				.anyMatch((m) -> m.startsWith("'memos'는 card(summary)의 파라미터나 지역 변수가 아닙니다"));
+		}
+	}
+
+	@Nested
+	class R11 {
+
+		@Test
+		void eachWithInsertionOnSameElementFails() {
+			Fixture f = fixture();
+			f.app("memo/internal/row.html", "<tr th:fragment=\"row(m)\"><td th:text=\"${m}\">x</td></tr>");
+			f.app("memo/api/list.html", """
+					<table><tr th:each="m : ${memos}" th:replace="~{memo/internal/row :: row(${m})}"></tr>
+					<th:block th:each="m : ${memos}"><tr th:replace="~{memo/internal/row :: row(${m})}"></tr></th:block></table>""");
+			assertThat(f.rules()).containsExactly("R11");
+			assertThat(f.check().get(0).message()).contains("th:block th:each");
 		}
 	}
 

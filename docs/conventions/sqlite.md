@@ -56,7 +56,7 @@ public List<Memo> list() { ... }
 
 ## MyBatis
 
-- **Mapper 인터페이스**: `{module}/internal/`에 `@Mapper`로 둔다.
+- **Mapper 인터페이스**: `{module}/internal/infra/`에 `@Mapper`로 둔다. app.command는 Mapper를 infra의 저장소나 Mapper로만 쓰고 JDBC·SqlSession을 직접 쓰지 않는다(C8). 결과로 받는 도메인 모델은 `internal/domain/`, 행 클래스는 `internal/infra/`에 둔다.
 - **SQL**: `resources/mapper/{module}/{Mapper}.xml`에 둔다. namespace는 인터페이스 FQN이다.
 - **결과 매핑**: record로 받는다. 컬럼 `created_at`은 컴포넌트 `createdAt`으로 매핑된다(컴파일 옵션 `-parameters`는 cozy-parent가 켠다).
 - **생성 키 받기**: getter와 setter가 있는 행 클래스를 쓰고 `useGeneratedKeys="true" keyProperty="id"`를 지정한다.

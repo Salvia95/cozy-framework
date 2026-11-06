@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo;
+package io.salvia95.cozy.reference.memo.internal.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

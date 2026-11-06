@@ -3,6 +3,7 @@ package io.salvia95.cozy.rules.internal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,9 @@ import org.attoparser.config.ParseConfiguration;
 
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.internal.FragmentExpressions.Ref;
+import io.salvia95.cozy.rules.internal.ExpressionReads.Expression;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.FragmentDef;
+import io.salvia95.cozy.rules.internal.ParsedTemplate.ModelRead;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
@@ -30,11 +33,24 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
  * <li>{@code th:replace="${p}"}는 감싸는 {@code th:fragment}의 파라미터 {@code p}일 때만 허용한다(슬롯). 그 밖의 변수는
  * 동적 참조다.</li>
  * <li>본문 텍스트의 {@code ~{}}와 프로토타입 전용 주석({@code <!--/*}{@code /-->})은 검사할 수 없으므로 실패로 닫는다.</li>
+ * <li>표현식이 읽는 이름을 지역 범위와 비교한다(R10). 지역 범위는 가장 가까운 {@code th:fragment}부터 안쪽으로
+ * fragment 파라미터, {@code th:each}(반복 변수와 상태 변수), {@code th:with}, {@code th:object}다. 한 요소 안에서는
+ * Thymeleaf의 속성 실행 순서(삽입 → th:each → th:if 등 → th:object·th:with → 나머지)를 따른다. fragment 위쪽 요소의
+ * 지역 변수는 selector로 fragment만 부를 때 없으므로 범위에 넣지 않는다.</li>
  * </ul>
  */
 final class TemplateScanner {
 
 	private static final Set<String> INSERTION = Set.of("replace", "insert", "include", "substituteby");
+
+	private static final Set<String> CONDITIONS = Set.of("if", "unless", "switch", "case");
+
+	/** 모델이나 요청 전체를 읽는 표현식 유틸리티 (R10) */
+	private static final Set<String> FORBIDDEN_UTILITIES = Set.of("#vars", "#ctx", "#root", "#request", "#session",
+			"#response", "#servletContext", "#application");
+
+	private static final Pattern EACH = Pattern
+		.compile("\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(?:,\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*)?:(.*)", Pattern.DOTALL);
 
 	private static final Pattern SLOT = Pattern.compile("\\$\\{\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*}");
 
@@ -72,7 +88,16 @@ final class TemplateScanner {
 			this.parsed = parsed;
 		}
 
-		record Frame(String element, List<String> params) {
+		/**
+		 * @param fragment 이 요소가 th:fragment를 선언했으면 그 선언 ({@code card(summary)}), 아니면 null
+		 * @param locals 이 요소가 더한 지역 이름 (fragment 파라미터 포함)
+		 * @param object 이 요소가 th:object를 두었는가
+		 */
+		record Frame(String element, List<String> params, String fragment, Set<String> locals, boolean[] object) {
+		}
+
+		/** 지금 위치의 지역 범위 */
+		record Scope(String fragment, Set<String> names, boolean object) {
 		}
 
 		record Attribute(String name, String value, int line) {
@@ -127,6 +152,9 @@ final class TemplateScanner {
 		@Override
 		public void handleText(char[] buffer, int offset, int len, int line, int col) {
 			String text = new String(buffer, offset, len);
+			if (text.contains("[[") || text.contains("[(")) {
+				reads(text, scope(), line);
+			}
 			if (text.contains("~{")) {
 				this.parsed.problems.add(new Problem(text.strip(), "본문 텍스트 안의 fragment 표현식은 검사할 수 없습니다",
 						line + leadingLines(text, text.indexOf("~{"))));
@@ -152,6 +180,7 @@ final class TemplateScanner {
 		/** 이 요소의 th:fragment를 읽어 프레임을 만든다 */
 		private Frame endElement() {
 			List<String> params = List.of();
+			String declaration = null;
 			Attribute fragment = thAttribute("fragment");
 			if (fragment != null) {
 				Matcher m = SIGNATURE.matcher(fragment.value());
@@ -159,6 +188,7 @@ final class TemplateScanner {
 					params = (m.group(2) == null || m.group(2).isBlank()) ? List.of()
 							: List.of(m.group(2).split(",")).stream().map(String::strip).toList();
 					FragmentDef def = new FragmentDef(m.group(1), params, fragment.line());
+					declaration = def.signature();
 					if (this.parsed.fragments.putIfAbsent(def.name(), def) != null) {
 						this.parsed.duplicateFragments.add(def);
 					}
@@ -180,10 +210,11 @@ final class TemplateScanner {
 					}
 				}
 			}
-			return new Frame(this.elementName, params);
+			return new Frame(this.elementName, params, declaration, new HashSet<>(params), new boolean[1]);
 		}
 
 		private void processAttributes() {
+			checkScope();
 			for (Attribute attribute : this.attributes.values()) {
 				String thName = thName(attribute.name());
 				if (thName != null && INSERTION.contains(thName)) {
@@ -192,6 +223,101 @@ final class TemplateScanner {
 				else {
 					for (Ref ref : FragmentExpressions.findAll(attribute.value())) {
 						add(ref, attribute.line());
+					}
+				}
+			}
+		}
+
+		/** 속성 실행 순서대로 표현식을 지역 범위와 비교하고, 이 요소가 더하는 지역 이름을 프레임에 넣는다 (R10, R11) */
+		private void checkScope() {
+			Frame frame = this.stack.peek();
+			Attribute each = thAttribute("each");
+			List<Attribute> insertions = new ArrayList<>();
+			List<Attribute> conditions = new ArrayList<>();
+			List<Attribute> rest = new ArrayList<>();
+			for (Attribute attribute : this.attributes.values()) {
+				String thName = thName(attribute.name());
+				if (thName == null || thName.equals("fragment") || thName.equals("each") || thName.equals("with")
+						|| thName.equals("object")) {
+					continue;
+				}
+				if (INSERTION.contains(thName)) {
+					insertions.add(attribute);
+				}
+				else if (CONDITIONS.contains(thName)) {
+					conditions.add(attribute);
+				}
+				else {
+					rest.add(attribute);
+				}
+			}
+			boolean eachWithInsertion = each != null && !insertions.isEmpty();
+			if (eachWithInsertion) {
+				// R11로 보고한다. 같은 실수를 R10(반복 변수가 범위 밖)으로 한 번 더 보고하지 않도록 반복 변수를 먼저 넣는다
+				this.parsed.eachWithInsertion.add(new Problem(each.name() + " + " + insertions.get(0).name(),
+						"같은 요소의 th:each와 th:replace", each.line()));
+			}
+			else {
+				insertions.forEach((a) -> reads(a.value(), scope(), a.line()));
+			}
+			if (each != null) {
+				Matcher m = EACH.matcher(each.value());
+				if (m.matches()) {
+					reads(m.group(3), scope(), each.line());
+					frame.locals().add(m.group(1));
+					frame.locals().add((m.group(2) != null) ? m.group(2) : m.group(1) + "Stat");
+				}
+				else {
+					reads(each.value(), scope(), each.line());
+				}
+			}
+			if (eachWithInsertion) {
+				insertions.forEach((a) -> reads(a.value(), scope(), a.line()));
+			}
+			conditions.forEach((a) -> reads(a.value(), scope(), a.line()));
+			Attribute object = thAttribute("object");
+			if (object != null) {
+				reads(object.value(), scope(), object.line());
+				frame.object()[0] = true;
+			}
+			Attribute with = thAttribute("with");
+			if (with != null) {
+				for (String[] assignment : ExpressionReads.assignments(with.value())) {
+					reads(assignment[1], scope(), with.line());
+					frame.locals().add(assignment[0]);
+				}
+			}
+			rest.forEach((a) -> reads(a.value(), scope(), a.line()));
+		}
+
+		/** 가장 가까운 th:fragment까지의 지역 이름 */
+		private Scope scope() {
+			Set<String> names = new HashSet<>();
+			boolean object = false;
+			for (Frame frame : this.stack) {
+				names.addAll(frame.locals());
+				object |= frame.object()[0];
+				if (frame.fragment() != null) {
+					return new Scope(frame.fragment(), names, object);
+				}
+			}
+			return new Scope(null, names, object);
+		}
+
+		private void reads(String value, Scope scope, int line) {
+			for (Expression expression : ExpressionReads.find(value)) {
+				if (expression.selection()) {
+					if (!scope.object()) {
+						this.parsed.modelReads.add(new ModelRead(expression.text(), null, scope.fragment(), line));
+					}
+					continue;
+				}
+				for (String name : ExpressionReads.roots(expression.body())) {
+					boolean allowed = name.startsWith("#") ? !FORBIDDEN_UTILITIES.contains(name)
+							: !name.startsWith("@") && (scope.names().contains(name) || name.startsWith("cozy")
+									|| name.equals("_csrf"));
+					if (!allowed) {
+						this.parsed.modelReads.add(new ModelRead(expression.text(), name, scope.fragment(), line));
 					}
 				}
 			}

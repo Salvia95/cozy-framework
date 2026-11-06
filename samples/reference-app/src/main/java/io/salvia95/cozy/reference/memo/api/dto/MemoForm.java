@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.view;
+package io.salvia95.cozy.reference.memo.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

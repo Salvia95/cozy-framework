@@ -1,4 +1,4 @@
-package ${package}.home.view;
+package ${package}.home.api.dto;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -6,10 +6,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
-import ${package}.home.internal.Note;
-import ${package}.home.internal.NoteActivity;
+import ${package}.home.spi.dto.NoteActivityItem;
+import ${package}.home.spi.dto.NoteItem;
 
-/** 홈 화면 DTO. 템플릿에는 도메인 객체나 Mapper 결과 대신 이 record들을 넘긴다. */
+/** 홈 화면 DTO. 템플릿에는 spi DTO를 화면에 맞게 바꾼 이 record들을 넘긴다. */
 public final class HomeViews {
 
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)
@@ -21,7 +21,7 @@ public final class HomeViews {
 	/** 목록 한 행 */
 	public record Row(long id, String title, String createdAt) {
 
-		public static Row of(Note note) {
+		public static Row of(NoteItem note) {
 			return new Row(note.id(), note.title(), format(note.createdAt()));
 		}
 	}
@@ -37,7 +37,7 @@ public final class HomeViews {
 	/** 최근 활동 한 줄 */
 	public record ActivityRow(String message, String at) {
 
-		public static ActivityRow of(NoteActivity activity) {
+		public static ActivityRow of(NoteActivityItem activity) {
 			return new ActivityRow(activity.message(), format(activity.at()));
 		}
 	}

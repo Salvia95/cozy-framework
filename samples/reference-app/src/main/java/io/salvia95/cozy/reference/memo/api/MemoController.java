@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo;
+package io.salvia95.cozy.reference.memo.api;
 
 import jakarta.validation.Valid;
 
@@ -14,16 +14,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import io.salvia95.cozy.reference.memo.MemoService.MemoSearch;
-import io.salvia95.cozy.reference.memo.view.MemoFilter;
-import io.salvia95.cozy.reference.memo.view.MemoForm;
-import io.salvia95.cozy.reference.memo.view.MemoViews;
+import io.salvia95.cozy.reference.memo.api.dto.MemoFilter;
+import io.salvia95.cozy.reference.memo.api.dto.MemoForm;
+import io.salvia95.cozy.reference.memo.api.dto.MemoViews;
+import io.salvia95.cozy.reference.memo.spi.MemoFacade;
+import io.salvia95.cozy.reference.memo.spi.MemoFinder;
+import io.salvia95.cozy.reference.memo.spi.dto.MemoItem;
+import io.salvia95.cozy.reference.memo.spi.dto.MemoPage;
 import io.salvia95.cozy.ui.CozyFlash;
 import io.salvia95.cozy.ui.CozyPage;
 import io.salvia95.cozy.ui.CozyViews;
 
 /**
- * 메모 화면 (PRD §6.7). 뷰 이름은 모듈 이름(memo/)으로 시작한다.
+ * 메모 화면 (PRD §6.7). 쓰기는 MemoFacade, 읽기는 MemoFinder(spi)로 하고 spi DTO를 화면 DTO(api.dto)로 바꾼다.
+ * 뷰는 templates/memo/api/의 화면이다.
  */
 @Controller
 @RequestMapping("/memo")
@@ -31,33 +35,36 @@ class MemoController {
 
 	static final int PAGE_SIZE = 10;
 
-	private final MemoService memos;
+	private final MemoFacade memos;
 
-	MemoController(MemoService memos) {
+	private final MemoFinder finder;
+
+	MemoController(MemoFacade memos, MemoFinder finder) {
 		this.memos = memos;
+		this.finder = finder;
 	}
 
 	/** 전체 페이지, 또는 htmx 필터·페이지 이동이면 결과 fragment만 */
 	@GetMapping
 	String list(@ModelAttribute("filter") MemoFilter filter, Model model) {
 		int number = (filter.getPage() == null || filter.getPage() < 1) ? 1 : filter.getPage();
-		MemoSearch found = this.memos.search(filter.getQ(), filter.isPinned(), (long) (number - 1) * PAGE_SIZE, PAGE_SIZE);
+		MemoPage found = this.finder.search(filter.getQ(), filter.isPinned(), (long) (number - 1) * PAGE_SIZE, PAGE_SIZE);
 		CozyPage page = CozyPage.of(number, PAGE_SIZE, found.total());
 		model.addAttribute("result",
 				new MemoViews.ListResult(found.items().stream().map(MemoViews.Row::of).toList(), page));
-		return CozyViews.pageOrFragment("memo/list", "result");
+		return CozyViews.pageOrFragment("memo/api/list", "result");
 	}
 
 	@GetMapping("/new")
 	String newForm(Model model) {
 		model.addAttribute("form", new MemoForm());
-		return "memo/form";
+		return "memo/api/form";
 	}
 
 	@PostMapping
 	String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors, RedirectAttributes flash) {
 		if (errors.hasErrors()) {
-			return CozyViews.pageOrFragment("memo/form", "form");
+			return CozyViews.pageOrFragment("memo/api/form", "form");
 		}
 		long id = this.memos.create(form.getTitle(), form.getBody(), form.isPinned());
 		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 저장했습니다"));
@@ -66,19 +73,19 @@ class MemoController {
 
 	@GetMapping("/{id}")
 	String detail(@PathVariable long id, Model model) {
-		Memo memo = find(id);
+		MemoItem memo = find(id);
 		model.addAttribute("memo", MemoViews.Detail.of(memo));
 		model.addAttribute("form", MemoViews.formOf(memo));
-		return "memo/detail";
+		return "memo/api/detail";
 	}
 
 	@PostMapping("/{id}")
 	String update(@PathVariable long id, @Valid @ModelAttribute("form") MemoForm form, BindingResult errors,
 			Model model, RedirectAttributes flash) {
-		Memo memo = find(id);
+		MemoItem memo = find(id);
 		if (errors.hasErrors()) {
 			model.addAttribute("memo", MemoViews.Detail.of(memo));
-			return CozyViews.pageOrFragment("memo/detail", "form");
+			return CozyViews.pageOrFragment("memo/api/detail", "form");
 		}
 		this.memos.update(id, form.getTitle(), form.getBody(), form.isPinned());
 		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 고쳤습니다"));
@@ -94,7 +101,7 @@ class MemoController {
 		return CozyViews.redirect("/memo");
 	}
 
-	private Memo find(long id) {
-		return this.memos.find(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+	private MemoItem find(long id) {
+		return this.finder.find(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 	}
 }

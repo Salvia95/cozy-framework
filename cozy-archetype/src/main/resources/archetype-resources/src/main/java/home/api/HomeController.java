@@ -1,4 +1,4 @@
-package ${package}.home;
+package ${package}.home.api;
 
 import jakarta.validation.Valid;
 
@@ -10,14 +10,17 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import ${package}.home.view.HomeViews;
-import ${package}.home.view.NoteFilter;
-import ${package}.home.view.NoteForm;
+import ${package}.home.api.dto.HomeViews;
+import ${package}.home.api.dto.NoteFilter;
+import ${package}.home.api.dto.NoteForm;
+import ${package}.home.spi.HomeFacade;
+import ${package}.home.spi.HomeFinder;
 import io.salvia95.cozy.ui.CozyFlash;
 import io.salvia95.cozy.ui.CozyViews;
 
 /**
- * 홈 화면. 뷰 이름은 모듈 이름(home/)으로 시작한다.
+ * 홈 화면. 쓰기는 HomeFacade, 읽기는 HomeFinder(spi)로 하고 spi DTO를 화면 DTO(api.dto)로 바꾼다. 뷰는
+ * templates/home/api/의 화면이다.
  *
  * <ul>
  * <li>목록: 전체 페이지와 htmx 필터 갱신을 같은 엔드포인트에서 pageOrFragment로 나눈다.</li>
@@ -27,17 +30,20 @@ import io.salvia95.cozy.ui.CozyViews;
 @Controller
 class HomeController {
 
-	private final HomeService home;
+	private final HomeFacade home;
 
-	HomeController(HomeService home) {
+	private final HomeFinder finder;
+
+	HomeController(HomeFacade home, HomeFinder finder) {
 		this.home = home;
+		this.finder = finder;
 	}
 
 	@GetMapping("/")
 	String index(@ModelAttribute("filter") NoteFilter filter, Model model) {
 		model.addAttribute("form", new NoteForm());
 		addLists(filter, model);
-		return CozyViews.pageOrFragment("home/index", "result");
+		return CozyViews.pageOrFragment("home/api/index", "result");
 	}
 
 	@PostMapping("/notes")
@@ -46,7 +52,7 @@ class HomeController {
 		if (errors.hasErrors()) {
 			addLists(new NoteFilter(), model);
 			model.addAttribute("filter", new NoteFilter());
-			return CozyViews.pageOrFragment("home/index", "noteForm");
+			return CozyViews.pageOrFragment("home/api/index", "noteForm");
 		}
 		this.home.add(form.getTitle());
 		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 추가했습니다"));
@@ -55,8 +61,8 @@ class HomeController {
 
 	private void addLists(NoteFilter filter, Model model) {
 		model.addAttribute("result", new HomeViews.ListResult(
-				this.home.search(filter.getQ()).stream().map(HomeViews.Row::of).toList()));
+				this.finder.search(filter.getQ()).stream().map(HomeViews.Row::of).toList()));
 		model.addAttribute("activity",
-				new HomeViews.Activity(this.home.recentActivity().stream().map(HomeViews.ActivityRow::of).toList()));
+				new HomeViews.Activity(this.finder.recentActivity().stream().map(HomeViews.ActivityRow::of).toList()));
 	}
 }

@@ -27,12 +27,13 @@ class RenderingTest extends CozyRenderingTest {
 | ID | 검사 | 어디서 | 실패 조건 |
 | --- | --- | --- | --- |
 | C1 | 모듈 구조 | `CozyArchitectureTest.modulesAreVerified` | `ApplicationModules.of(앱).verify()` 위반 |
-| C2 | 템플릿 경계 | `CozyArchitectureTest.templatesFollowBoundaryRules` | R1~R8 오류([rules.md](rules.md)). 경고는 출력만 한다 |
+| C2 | 템플릿 경계 | `CozyArchitectureTest.templatesFollowBoundaryRules` | R1~R11 오류([rules.md](rules.md)). 경고는 출력만 한다 |
 | C3 | 렌더링 | `CozyRenderingTest.everyScreenStateRendersAsValidHtml`, `everyManifestFragmentRendersAsValidHtml` | 스펙 형식 오류, fixture가 DTO 타입과 맞지 않음, 렌더링 예외, 200이 아닌 응답 |
 | C4 | HTML | 위의 두 테스트 | 렌더링 결과의 vnu 오류. 경고는 출력만 한다 |
-| C5 | 스펙 누락 | `CozyRenderingTest.everyScreenTemplateHasSpec` | 스펙이 없는 화면 템플릿, 매니페스트에 없는 `{모듈}/api/` fragment |
+| C5 | 스펙 누락 | `CozyRenderingTest.everyScreenTemplateHasSpec` | 스펙이 없는 화면 템플릿(`{모듈}/api/`), 매니페스트에 없는 `{모듈}/spi/` fragment, 파라미터 타입이 앱의 api·internal 타입인 spi fragment |
 | C6 | 이벤트 | `CozyArchitectureTest.eventListenersReceiveCozyEvents`, `eventSamplesAreCompatible` | CozyEvent가 아닌 리스너 파라미터, 빠지거나 호환되지 않는 직렬화 샘플([events.md](events.md)). cozy-starter-events를 쓰는 앱만 |
-| C7 | 컨트롤러·뷰 모듈 | 앱의 모든 MockMvc 테스트 | 컨트롤러의 모듈과 반환한 뷰 이름의 첫 경로가 다름 |
+| C7 | 컨트롤러·뷰 모듈 | 앱의 모든 MockMvc 테스트 | 컨트롤러의 모듈과 반환한 뷰 이름의 첫 경로가 다름. 뷰가 `{모듈}/api/`나 `{모듈}/spi/` 아래가 아님 |
+| C8 | 모듈 안 구조 | `CozyArchitectureTest.modulesFollowLayerRules` | api·spi·internal 배치, 이름(`*Facade`·`*Finder`·`*Impl`…), 레이어 방향 위반([structure.md](structure.md)) |
 
 ### 검사별 세부
 
@@ -47,7 +48,8 @@ class RenderingTest extends CozyRenderingTest {
   - htmx 속성은 HTML 표준 밖이라 vnu가 오류로 본다. Cozy가 쓰는 이름만 허용 목록(`CozyHtmlValidator.HTMX_ATTRIBUTES`)으로 걸러 낸다.
   - 목록에 없는 `hx-*`는 오류로 남는다. 오타와 인라인 스크립트인 `hx-on`이 여기에 해당한다.
 - **C4 fragment 감싸기**: htmx 부분 갱신 fragment(스펙의 `fragments`)는 최소 문서로 감싼 뒤 검사한다. `<tr>`, `<li>`처럼 부모 요소가 필요한 fragment는 알맞은 부모로 감싼다.
-- **C5 화면 템플릿**: `templates/{모듈}/` 아래의 템플릿 중 `api/` 밖에 있는 것이 화면 템플릿이다. `cozy/`, `fragments/`, `error/`는 대상이 아니다. `fragments/`의 fragment는 매니페스트(R8)가 대신한다.
+- **C5 화면 템플릿**: `templates/{모듈}/api/` 아래의 템플릿이 화면 템플릿이다. 스펙 이름은 `api/`를 뺀 경로의 `/`를 `-`로 바꾼 것이다(`memo/api/list` → `memo-list`). `{모듈}/spi/`의 fragment는 매니페스트에 있어야 하고, `{모듈}/internal/`은 대상이 아니다(그것을 쓰는 화면과 fragment로 검사된다). `cozy/`, `fragments/`, `error/`도 대상이 아니다. `fragments/`의 fragment는 매니페스트(R8)가 대신한다.
+- **C8 대상**: 앱 메인 클래스 중 모듈에 속한 것. 어긴 곳마다 `[C8] 클래스 — 고치는 법` 또는 `[C8] 클래스 → 대상 — 고치는 법` 한 줄을 내고, 모두 모아 한 번에 실패한다. 예외 목록은 없다.
 - **C7 판정 방식**: 컨트롤러의 모듈은 메인 패키지 바로 아래 패키지의 이름이다. `@ApplicationModule(id)`가 있으면 그 이름을 쓴다. 다음 뷰 이름은 검사하지 않는다.
   - `redirect:`와 `forward:`로 시작하는 뷰 이름
   - htmx 리다이렉트의 빈 뷰
@@ -71,12 +73,12 @@ class RenderingTest extends CozyRenderingTest {
 화면 템플릿마다 스펙 하나를 둔다. 패턴 카탈로그의 화면 미리보기와 렌더링 검사(C3~C5)가 같이 쓴다.
 
 ```yaml
-screen: memo-list                     # 템플릿 경로의 '/'를 '-'로. 파일 이름도 memo-list.yml
-template: memo/list                   # 뷰 이름
+screen: memo-list                     # 템플릿 경로에서 api/를 빼고 '/'를 '-'로. 파일 이름도 memo-list.yml
+template: memo/api/list               # 뷰 이름 (화면은 {모듈}/api/ 아래)
 fragments: [result]                   # htmx로 따로 렌더링하는 fragment (pageOrFragment의 두 번째 인자)
 model:                                # 모델 이름 → 화면 DTO 타입. 중첩 클래스는 Outer.Inner
-  filter: io.salvia95.cozy.reference.memo.view.MemoFilter
-  result: io.salvia95.cozy.reference.memo.view.MemoViews.ListResult
+  filter: io.salvia95.cozy.reference.memo.api.dto.MemoFilter
+  result: io.salvia95.cozy.reference.memo.api.dto.MemoViews.ListResult
 states:                               # default와 empty는 필수
   default:
     filter: { q: "", pinned: false }
@@ -103,7 +105,7 @@ states:                               # default와 empty는 필수
 
 ## 위반 픽스처
 
-`samples/violations/`에 규칙(R1~R8)과 검사(C1~C7)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
+`samples/violations/`에 규칙(R1~R11)과 검사(C1~C8)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
 
 ## 배포 종단 검증
 

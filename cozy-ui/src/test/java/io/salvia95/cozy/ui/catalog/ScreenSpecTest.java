@@ -17,7 +17,7 @@ class ScreenSpecTest {
 
 	static final String VALID = """
 			screen: memo-list
-			template: memo/list
+			template: memo/api/list
 			fragments: [result]
 			model:
 			  result: x.Result
@@ -49,6 +49,18 @@ class ScreenSpecTest {
 			.withMessageContaining("'memo-list'여야 합니다");
 		assertThatIllegalStateException().isThrownBy(() -> parse(VALID, "list.yml"))
 			.withMessageContaining("memo-list.yml이어야 합니다");
+	}
+
+	@Test
+	void screenNameDropsApiFolderAndScreensLiveInApi() {
+		ScreenSpec nested = parse(VALID.replace("screen: memo-list", "screen: memo-admin-list")
+			.replace("template: memo/api/list", "template: memo/api/admin/list"), "memo-admin-list.yml");
+		assertThat(nested.template()).isEqualTo("memo/api/admin/list");
+		assertThat(ScreenSpec.screenName("memo/api/list")).isEqualTo("memo-list");
+		assertThatIllegalStateException().isThrownBy(() -> parse(VALID.replace("template: memo/api/list", "template: memo/list"), "memo-list.yml"))
+			.withMessageContaining("화면 템플릿은 {모듈}/api/ 아래에 있어야 합니다");
+		assertThatIllegalStateException().isThrownBy(() -> parse(VALID.replace("template: memo/api/list", "template: memo/spi/list"), "memo-list.yml"))
+			.withMessageContaining("화면 템플릿은 {모듈}/api/ 아래에 있어야 합니다");
 	}
 
 	@Test

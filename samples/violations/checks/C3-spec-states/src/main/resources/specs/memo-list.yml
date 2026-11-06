@@ -1,7 +1,7 @@
 screen: memo-list
-template: memo/list
+template: memo/api/list
 model:
-  view: it.cozy.app.memo.view.ListView
+  view: it.cozy.app.memo.api.dto.ListView
 states:
   default:
     view: { title: 제목 }

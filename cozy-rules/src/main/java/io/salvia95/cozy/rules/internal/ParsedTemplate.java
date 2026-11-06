@@ -34,6 +34,12 @@ final class ParsedTemplate {
 
 	final Set<String> elements = new LinkedHashSet<>();
 
+	/** 지역 범위(파라미터, th:each, th:with, th:object) 밖을 읽는 표현식 (R10은 spi·internal에만 적용) */
+	final List<ModelRead> modelReads = new ArrayList<>();
+
+	/** 같은 요소의 th:each + th:replace/th:insert (R11) */
+	final List<Problem> eachWithInsertion = new ArrayList<>();
+
 	ParsedTemplate(TemplateFile file) {
 		this.file = file;
 	}
@@ -51,6 +57,14 @@ final class ParsedTemplate {
 	}
 
 	record Reference(Ref ref, int line) {
+	}
+
+	/**
+	 * @param expression 표현식 원문
+	 * @param name 읽은 이름 ({@code memos}, {@code #vars}, {@code @bean}). 선택 표현식이면 null
+	 * @param fragment 감싸는 fragment의 선언 ({@code card(summary)}). fragment 밖이면 null
+	 */
+	record ModelRead(String expression, String name, String fragment, int line) {
 	}
 
 	record Problem(String text, String why, int line) {

@@ -1,9 +1,12 @@
-package ${package}.home.internal;
+package ${package}.home.internal.infra;
 
 import java.time.Instant;
 import java.util.List;
 
-/** 메모 저장소. 구현은 하나만 있다(메모리 또는 SQLite). */
+import ${package}.home.internal.domain.Note;
+import ${package}.home.internal.domain.NoteActivity;
+
+/** 메모 저장소 (infra). 구현은 하나만 있다(메모리 또는 SQLite). 트랜잭션은 부르는 app이 연다. */
 public interface NoteStore {
 
 	long add(String title, Instant createdAt);

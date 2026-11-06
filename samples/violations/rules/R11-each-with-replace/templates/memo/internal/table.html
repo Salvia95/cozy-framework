@@ -1,0 +1,2 @@
+<!-- R11: th:each와 th:replace를 같은 요소에 쓰면 th:replace가 먼저 실행되어 m이 없다 -->
+<table th:fragment="table(memos)"><tr th:each="m : ${memos}" th:replace="~{memo/internal/row :: row(${m})}"></tr></table>

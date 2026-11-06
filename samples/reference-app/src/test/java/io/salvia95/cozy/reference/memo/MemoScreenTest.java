@@ -26,6 +26,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import io.salvia95.cozy.reference.memo.spi.MemoFacade;
+import io.salvia95.cozy.reference.memo.spi.MemoFinder;
+
 /**
  * M3 완료 기준: memo 화면이 패턴만으로 구성되고, 외부 자원 없이 그대로 그려진다.
  */
@@ -38,7 +41,10 @@ class MemoScreenTest {
 	MockMvc mvc;
 
 	@Autowired
-	MemoService memos;
+	MemoFacade memos;
+
+	@Autowired
+	MemoFinder finder;
 
 	@Test
 	void createWithValidationErrorThenSuccessWithPrg() throws Exception {
@@ -75,9 +81,9 @@ class MemoScreenTest {
 	@Test
 	void filterAndPaginationUpdateOnlyTheResult() throws Exception {
 		for (int i = 1; i <= 12; i++) {
-			this.memos.create("페이지 메모 " + i, "본문 " + i);
+			this.memos.create("페이지 메모 " + i, "본문 " + i, false);
 		}
-		this.memos.create("다른 100% 메모", "");
+		this.memos.create("다른 100% 메모", "", false);
 
 		String page2 = body(this.mvc.perform(get("/memo").param("q", "페이지 메모").param("page", "2").header("HX-Request", "true"))
 			.andExpect(status().isOk())
@@ -96,23 +102,23 @@ class MemoScreenTest {
 
 	@Test
 	void updateAndDelete() throws Exception {
-		long id = this.memos.create("고칠 메모", "");
+		long id = this.memos.create("고칠 메모", "", false);
 		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "")).andExpect(status().isOk());
 		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "고친 메모").param("body", "새 본문"))
 			.andExpect(status().isFound())
 			.andExpect(redirectedUrl("/memo/" + id));
-		assertThat(this.memos.find(id).orElseThrow().title()).isEqualTo("고친 메모");
+		assertThat(this.finder.find(id).orElseThrow().title()).isEqualTo("고친 메모");
 
 		this.mvc.perform(post("/memo/" + id + "/delete").with(csrf()).header("HX-Request", "true"))
 			.andExpect(status().isOk())
 			.andExpect(header().string("HX-Redirect", "/memo"));
-		assertThat(this.memos.find(id)).isEmpty();
+		assertThat(this.finder.find(id)).isEmpty();
 		this.mvc.perform(get("/memo/" + id)).andExpect(status().isNotFound());
 	}
 
 	@Test
 	void pagesUseOnlyLocalAssetsThatExist() throws Exception {
-		long id = this.memos.create("자산 확인", "");
+		long id = this.memos.create("자산 확인", "", false);
 		for (String path : List.of("/memo", "/memo/new", "/memo/" + id)) {
 			String html = body(this.mvc.perform(get(path)).andExpect(status().isOk()).andReturn());
 			assertThat(html).doesNotContainPattern("(?:href|src|action)=\"(?:https?:)?//");
@@ -128,7 +134,7 @@ class MemoScreenTest {
 
 	@Test
 	void memoTemplatesAreBuiltFromCozyPatterns() throws Exception {
-		try (Stream<Path> files = Files.list(Path.of("src/main/resources/templates/memo"))) {
+		try (Stream<Path> files = Files.list(Path.of("src/main/resources/templates/memo/api"))) {
 			for (Path template : files.filter(Files::isRegularFile).toList()) {
 				String html = Files.readString(template);
 				assertThat(html).as(template.toString())

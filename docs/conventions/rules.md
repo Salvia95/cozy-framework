@@ -1,6 +1,6 @@
 # 템플릿 경계 규칙 (cozy-rules)
 
-템플릿이 어느 폴더에 있는지가 곧 그 템플릿의 소속이다(PRD §7). 허용 의존은 Java 모듈의 `@ApplicationModule(allowedDependencies = ...)`에서만 읽고, `resources`에는 경계 정보를 두지 않는다. `CozyArchitectureTest`(검사 C2)가 빌드 때마다 이 규칙을 검사한다.
+템플릿이 어느 폴더에 있는지가 곧 그 템플릿의 소속이다(PRD §7, ADR-0029). 모듈 템플릿은 Java 패키지와 같이 `api/`(화면), `spi/`(다른 모듈용 fragment), `internal/`(조각)로 나눈다. 배치 예시는 [structure.md](structure.md)에 있다. 허용 의존은 Java 모듈의 `@ApplicationModule(allowedDependencies = ...)`에서만 읽고, `resources`에는 경계 정보를 두지 않는다. `CozyArchitectureTest`(검사 C2)가 빌드 때마다 이 규칙을 검사한다.
 
 ## 폴더와 참조 가능한 대상
 
@@ -8,22 +8,26 @@
 | --- | --- | --- |
 | `templates/cozy/{layout,pattern,component}/` | 프레임워크(cozy-ui jar). 앱은 쓰지 않는다 | `cozy/` 안의 아래 계층 |
 | `templates/fragments/{layout,pattern,component}/` | 앱 공용 | `cozy/`와 `fragments/`의 아래 계층 |
-| `templates/{모듈}/` | 그 모듈의 내부 | 자기 모듈, `cozy/`, `fragments/`, 허용된 모듈의 `api/` |
-| `templates/{모듈}/api/` | 그 모듈의 공개 영역 | 위와 같다 |
+| `templates/{모듈}/api/` | 컨트롤러가 렌더링하는 화면. 모델을 읽는다 | 자기 모듈 전체, 선언한 모듈의 `spi/`, `cozy/`, `fragments/` |
+| `templates/{모듈}/spi/` | 다른 모듈이 부르는 fragment. 파라미터로만 받는다 | 자기 `internal/`·`spi/`, 선언한 모듈의 `spi/`, `cozy/`, `fragments/` |
+| `templates/{모듈}/internal/` | 같은 모듈의 api·spi가 조합하는 조각. 파라미터로만 받는다 | 자기 `internal/`, `cozy/`, `fragments/` |
 | `templates/error/` | Boot 오류 화면 | `cozy/`, `fragments/` |
 
 ## 규칙
 
 | ID | 규칙 | 위반 예 |
 | --- | --- | --- |
-| R1 | 최상위 폴더는 Java 모듈 이름이거나 예약어(`fragments`, `error`)여야 한다. 앱은 `cozy/`에 쓰지 않는다. `cozy/`와 `fragments/` 바로 아래에는 `layout`, `pattern`, `component` 폴더만 둔다 | `templates/vocc/` |
+| R1 | 최상위 폴더는 Java 모듈 이름이거나 예약어(`fragments`, `error`)여야 한다. 앱은 `cozy/`에 쓰지 않는다. `cozy/`와 `fragments/` 바로 아래에는 `layout`, `pattern`, `component` 폴더만 둔다. 모듈 템플릿은 `api/`, `spi/`, `internal/` 아래에 둔다 | `templates/vocc/`, `templates/memo/list.html` |
 | R2 | `templates/` 바로 아래에 `.html`을 두지 않는다 | `templates/index.html` |
-| R3 | 다른 모듈의 템플릿은 `api/` 아래 것만 참조한다. 이때 내 모듈의 allowedDependencies에 `{모듈}::api` 또는 `{모듈}`이 있어야 한다 | voc/list가 `wiki/detail :: body`를 참조 |
+| R3 | 다른 모듈의 템플릿은 `spi/` 아래 것만 참조한다. 이때 내 모듈의 allowedDependencies에 `"{모듈} :: spi"` 또는 `"{모듈}"`이 있어야 한다 | voc/api/list가 `wiki/api/detail :: body`를 참조 |
 | R4 | `cozy/`와 `fragments/` 안에서는 layout → pattern → component 방향으로만 참조한다. 같은 계층끼리는 기본으로 금지다 | component가 pattern을 참조 |
-| R5 | `cozy/`는 `cozy/` 밖을 참조하지 않는다. `fragments/`는 모듈 템플릿을 참조하지 않는다 | `fragments/pattern/x`가 `memo/api/y`를 참조 |
+| R5 | `cozy/`는 `cozy/` 밖을 참조하지 않는다. `fragments/`는 모듈 템플릿을 참조하지 않는다 | `fragments/pattern/x`가 `memo/spi/y`를 참조 |
 | R6 | 참조한 템플릿과 fragment가 실제로 있고, 넘긴 인자 개수가 선언과 같아야 한다 | `~{cozy/component/badge :: badg(x)}` |
 | R7 | 동적 참조는 금지한다. 검사할 수 없는 것은 실패로 닫는다 | `th:replace="~{${view} :: body}"` |
 | R8 | `cozy/`와 `fragments/` 계층 폴더의 모든 fragment는 매니페스트에 있어야 한다. 매니페스트의 모든 항목은 실제 fragment와 맞아야 한다 | 매니페스트에 없는 `fragments/component/chip` |
+| R9 | 같은 모듈 안에서는 api → spi → internal 방향으로만 참조한다. spi는 자기 api를, internal은 자기 spi·api를 참조하지 않는다. internal은 다른 모듈의 템플릿을 참조하지 않는다 | `memo/spi/board`가 `memo/api/list :: result`를 참조 |
+| R10 | 앱 모듈의 `spi/`·`internal/` fragment는 파라미터와 지역 변수만 읽는다. 부르는 화면의 모델을 읽지 않는다 | `card(summary)`가 `${memos.size()}`를 읽음 |
+| R11 | 한 요소에 `th:each`와 `th:replace`(`th:insert`)를 같이 쓰지 않는다 | `<tr th:each="m : ${memos}" th:replace="~{memo/internal/row :: row(${m})}">` |
 
 ### 세부 기준
 
@@ -39,16 +43,26 @@
 - **`th:include` 사용**: R7 **경고**다. 빌드는 실패하지 않고 보고만 한다. `th:replace`나 `th:insert`를 쓴다.
 - **선언하지 않은 의존**: `allowedDependencies`를 선언하지 않은 모듈(open)은 다른 모듈의 템플릿을 참조할 수 없다. Modulith는 선언이 없으면 모두 허용하지만, 템플릿 경계는 실패로 닫는다(ADR-0022).
 - **같은 경로의 템플릿**: 앱과 프레임워크에 같은 경로의 템플릿이 있으면 참조는 앱 파일로 해석한다(예: `error/4xx.html`). 둘 다 검사한다.
-- **매니페스트(R8)에 적을 수 있는 것**: `cozy/`와 `fragments/`의 계층 폴더에 있는 fragment, 그리고 모듈 `api/`의 fragment. 모듈 공개 fragment가 매니페스트에 있는지는 검사 C5가 본다.
+- **매니페스트(R8)에 적을 수 있는 것**: `cozy/`와 `fragments/`의 계층 폴더에 있는 fragment, 그리고 모듈 `spi/`의 fragment. 모듈 공개 fragment가 매니페스트에 있는지는 검사 C5가 본다.
+- **R10 범위**: fragment 선언(`th:fragment`)부터 그 요소가 끝날 때까지의 모든 `${...}`, `*{...}`, `[[...]]`, `[(...)]`를 본다. 읽을 수 있는 이름은 다음과 같다.
+  - fragment 파라미터, 그 안의 `th:each`(반복 변수와 상태 변수 `이름Stat` 또는 지정한 이름), `th:with`로 만든 지역 변수
+  - 유틸리티 `#strings`, `#lists`, `#temporals` 등. 단 `#vars`, `#ctx`, `#root`, `#request`, `#session`, `#response`, `#servletContext`, `#application`은 모델이나 요청을 직접 읽으므로 금지다
+  - 이름이 `cozy`로 시작하는 프레임워크 전역, `_csrf`
+  - `@빈` 참조와 `param`(요청 파라미터)은 금지다. `*{...}`는 fragment 안의 `th:object` 아래에서만 쓴다
+- **R10과 R11**: 같은 요소의 th:each + th:replace는 R11 하나로 보고한다. 반복 변수를 R10으로 한 번 더 보고하지 않는다.
+- **속성 순서**: 검사는 Thymeleaf의 속성 우선순위(th:insert/replace → th:each → th:if·th:unless·th:switch·th:case → th:object·th:with → 나머지)대로 지역 변수가 생기는 시점을 따른다.
 
 ## 실패 메시지
 
 규칙 ID, 위치, 참조, 고치는 방법을 한 줄에 담는다. 작은 LLM이 메시지만 보고도 고칠 수 있어야 하기 때문이다.
 
 ```text
-[R3] templates/voc/list.html:2 → wiki/detail :: body — wiki의 내부 템플릿입니다. wiki/api/ 아래 fragment를 쓰거나 wiki에 공개 fragment를 추가하세요.
-[R6] templates/memo/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
-[R7 경고] templates/memo/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.
+[R3] templates/voc/api/list.html:2 → wiki/api/detail :: body — wiki/api/는 wiki 안에서만 씁니다. 다른 모듈에는 wiki/spi/ 아래 fragment만 공개됩니다. wiki/spi/에 공개 fragment를 추가하세요.
+[R9] templates/memo/spi/board.html:2 → memo/api/list :: result — spi는 같은 모듈의 api를 참조하지 않습니다. 화면과 같이 쓰는 조각은 memo/internal/로 옮기고 api와 spi가 둘 다 그것을 조합하게 하세요.
+[R10] templates/memo/spi/card.html:2 → ${memos.size()} → memos — 'memos'는 card(summary)의 파라미터나 지역 변수가 아닙니다. spi·internal fragment는 부르는 화면의 모델을 읽지 않습니다. card(summary)에 파라미터를 더하고 부르는 쪽이 값을 넘기게 하세요.
+[R11] templates/memo/internal/table.html:2 → th:each + th:replace — 같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 실행되어 반복 변수가 아직 없습니다. <th:block th:each="..."> 안쪽 요소에 th:replace를 두세요.
+[R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
+[R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.
 ```
 
 ## 설정

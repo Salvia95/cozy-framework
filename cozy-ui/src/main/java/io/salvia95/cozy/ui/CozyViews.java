@@ -9,12 +9,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * <pre>{@code
  * @GetMapping
  * String list(...) {
- *     return CozyViews.pageOrFragment("memo/list", "result");   // htmx면 "memo/list :: result"
+ *     return CozyViews.pageOrFragment("memo/api/list", "result");   // htmx면 "memo/api/list :: result"
  * }
  *
  * @PostMapping
  * String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors, RedirectAttributes flash) {
- *     if (errors.hasErrors()) return CozyViews.pageOrFragment("memo/form", "form");
+ *     if (errors.hasErrors()) return CozyViews.pageOrFragment("memo/api/form", "form");
  *     flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("저장했습니다"));
  *     return CozyViews.redirect("/memo/" + id);                   // htmx면 HX-Redirect
  * }

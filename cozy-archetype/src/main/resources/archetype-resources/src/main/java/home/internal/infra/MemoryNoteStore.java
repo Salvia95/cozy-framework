@@ -1,4 +1,4 @@
-package ${package}.home.internal;
+package ${package}.home.internal.infra;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Component;
+
+import ${package}.home.internal.domain.Note;
+import ${package}.home.internal.domain.NoteActivity;
 
 /**
  * 메모리 저장소 (persistence=false). 앱을 다시 시작하면 사라진다. DB가 필요해지면 cozy-starter-sqlite를 추가하고

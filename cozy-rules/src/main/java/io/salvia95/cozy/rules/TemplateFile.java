@@ -12,9 +12,9 @@ import java.util.stream.Stream;
 /**
  * 검사할 템플릿 파일 하나.
  *
- * @param path {@code templates/} 기준 상대 경로, 구분자는 {@code /} ({@code memo/list.html})
+ * @param path {@code templates/} 기준 상대 경로, 구분자는 {@code /} ({@code memo/api/list.html})
  * @param origin 앱 또는 프레임워크
- * @param location 위반 메시지에 보일 위치 ({@code templates/memo/list.html})
+ * @param location 위반 메시지에 보일 위치 ({@code templates/memo/api/list.html})
  * @param content 파일 내용
  */
 public record TemplateFile(String path, Origin origin, String location, String content) {
@@ -29,7 +29,7 @@ public record TemplateFile(String path, Origin origin, String location, String c
 		}
 	}
 
-	/** 템플릿 이름 (확장자를 뺀 경로, {@code memo/list}) */
+	/** 템플릿 이름 (확장자를 뺀 경로, {@code memo/api/list}) */
 	public String templateName() {
 		return this.path.endsWith(".html") ? this.path.substring(0, this.path.length() - 5) : this.path;
 	}

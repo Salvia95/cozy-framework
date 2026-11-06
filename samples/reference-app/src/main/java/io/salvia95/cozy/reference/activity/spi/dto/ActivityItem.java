@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.activity.api;
+package io.salvia95.cozy.reference.activity.spi.dto;
 
 /**
  * 최근 활동 한 줄 (화면용).

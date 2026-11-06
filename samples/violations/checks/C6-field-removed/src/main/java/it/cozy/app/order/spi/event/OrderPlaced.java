@@ -1,4 +1,4 @@
-package it.cozy.app.order;
+package it.cozy.app.order.spi.event;
 
 import java.util.UUID;
 

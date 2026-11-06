@@ -23,10 +23,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  *
  * <pre>
  * screen: memo-list
- * template: memo/list            # 뷰 이름
+ * template: memo/api/list        # 뷰 이름 (화면은 {모듈}/api/ 아래)
  * fragments: [result]            # htmx로 따로 렌더링하는 fragment
  * model:
- *   result: io.salvia95.cozy.reference.memo.view.MemoViews.ListResult
+ *   result: io.salvia95.cozy.reference.memo.api.dto.MemoViews.ListResult
  * states:                        # default, empty는 필수
  *   default:
  *     result: { rows: [ ... ], page: { number: 1, size: 10, totalElements: 1 } }
@@ -37,7 +37,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  * <p>각 상태는 model의 모든 이름에 값을 준다. {@code _errors}({@code 모델 이름 → 필드 → 메시지})로 검증 오류 상태를 만들
  * 수 있다. 문서: docs/conventions/testing.md
  *
- * @param screen 스펙 이름 ({@code memo-list}). 템플릿 경로의 {@code /}를 {@code -}로 바꾼 것과 같다
+ * @param screen 스펙 이름 ({@code memo-list}). 템플릿 경로에서 {@code api/}를 빼고 {@code /}를 {@code -}로 바꾼 것과 같다
  * @param template 뷰 이름
  * @param fragments htmx 부분 갱신으로 따로 렌더링하는 fragment 이름
  * @param model 모델 이름 → 화면 DTO 타입(FQN, 중첩 클래스는 {@code Outer.Inner})
@@ -82,6 +82,15 @@ public record ScreenSpec(String screen, String template, List<String> fragments,
 	 * @param source 메시지에 보일 위치
 	 */
 	@SuppressWarnings("unchecked")
+	/** 화면 템플릿의 스펙 이름: {@code memo/api/list} → {@code memo-list}, {@code memo/api/admin/list} → {@code memo-admin-list} */
+	public static String screenName(String template) {
+		String[] parts = template.split("/");
+		if (parts.length >= 3 && parts[1].equals("api")) {
+			return parts[0] + "-" + String.join("-", java.util.Arrays.asList(parts).subList(2, parts.length));
+		}
+		return template.replace('/', '-');
+	}
+
 	public static ScreenSpec parse(InputStream in, String fileName, String source) {
 		Object root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
 		if (!(root instanceof Map<?, ?> raw)) {
@@ -90,9 +99,14 @@ public record ScreenSpec(String screen, String template, List<String> fragments,
 		Map<String, Object> map = (Map<String, Object>) raw;
 		String screen = text(map, "screen", source);
 		String template = text(map, "template", source);
-		String expected = template.replace('/', '-');
+		String[] parts = template.split("/");
+		if (parts.length < 3 || !parts[1].equals("api")) {
+			throw invalid(source, "화면 템플릿은 {모듈}/api/ 아래에 있어야 합니다 (지금: " + template + ", ADR-0029)");
+		}
+		String expected = screenName(template);
 		if (!screen.equals(expected)) {
-			throw invalid(source, "screen은 템플릿 경로의 '/'를 '-'로 바꾼 '" + expected + "'여야 합니다 (지금: " + screen + ")");
+			throw invalid(source, "screen은 템플릿 경로에서 api/를 빼고 '/'를 '-'로 바꾼 '" + expected + "'여야 합니다 (지금: "
+					+ screen + ")");
 		}
 		if (fileName != null && !fileName.equals(screen + ".yml")) {
 			throw invalid(source, "파일 이름은 " + screen + ".yml이어야 합니다");

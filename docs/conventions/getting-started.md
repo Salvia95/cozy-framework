@@ -1,6 +1,6 @@
 # 새 앱 만들기 (cozy-archetype)
 
-아키타입으로 Cozy 앱을 만든다(PRD §6.6, §10). 인터넷이 없는 PC에서는 오프라인 번들의 `new-app` 스크립트를 쓴다([distribution/offline-bundle/README.md](../../distribution/offline-bundle/README.md)).
+아키타입으로 Cozy 앱을 만든다(PRD §6.6, §10). 인터넷이 없는 PC에서는 오프라인 번들의 `cozy new` 명령을 쓴다([distribution/offline-bundle/README.md](../../distribution/offline-bundle/README.md)).
 
 ```bash
 mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCatalog=local \
@@ -42,22 +42,26 @@ voc-assistant/
 │  ├─ App.java                  # CozyApplication.run(App.class, args)
 │  └─ home/
 │     ├─ package-info.java      # @ApplicationModule(allowedDependencies = {})
-│     ├─ HomeController.java    # 목록(pageOrFragment) + 등록(@Valid, PRG)
-│     ├─ HomeService.java
-│     ├─ HomeConfiguration.java # 사이드 내비 항목
-│     ├─ view/                  # 화면 DTO(record), 폼(class)
-│     ├─ internal/              # 저장소(메모리 또는 MyBatis), 리스너
-│     └─ api/                   # (events) 공개 이벤트 NoteAdded
+│     ├─ api/HomeController.java      # 목록(pageOrFragment) + 등록(@Valid, PRG). HomeFacade·HomeFinder를 부른다
+│     ├─ api/dto/               # 화면 DTO(record), 폼(class)
+│     ├─ spi/                   # 모듈 사이 계약: HomeFacade(쓰기), HomeFinder(읽기), dto/, (events) event/NoteAdded
+│     └─ internal/
+│        ├─ app/command/        # HomeFacadeImpl, (events) NoteAddedListener
+│        ├─ app/query/          # HomeFinderImpl
+│        ├─ domain/             # Note, NoteActivity
+│        ├─ infra/              # NoteStore + 메모리 또는 SQLite 구현, (persistence) NoteMapper·NoteRow
+│        └─ config/             # HomeConfiguration: 사이드 내비 항목
 ├─ src/main/resources/
 │  ├─ application.yml, application-dev.yml
-│  ├─ templates/home/index.html # list-with-filter 패턴 + 등록 폼 + 최근 활동
+│  ├─ templates/home/api/index.html        # 화면: list-with-filter 패턴 + 등록 폼
+│  ├─ templates/home/internal/activity.html # 조각: 최근 활동 카드 (화면이 조합한다)
 │  ├─ templates/fragments/      # 앱 공용 fragment (비어 있음)
 │  ├─ cozy/fragments.yml        # 앱 공용 fragment 매니페스트 (비어 있음)
 │  ├─ specs/home-index.yml      # 화면 스펙: default, empty, invalid
 │  ├─ mapper/home/              # (persistence) MyBatis XML
 │  └─ db/migration/             # (persistence) Flyway
 └─ src/test/
-   ├─ java/{패키지}/ArchitectureTest.java, RenderingTest.java   # 검사 C1~C7
+   ├─ java/{패키지}/ArchitectureTest.java, RenderingTest.java   # 검사 C1~C8
    ├─ java/{패키지}/home/HomeFlowTest.java                      # 등록·검증 오류·htmx 흐름
    └─ resources/events/NoteAdded/v1.json                        # (events) 이벤트 샘플
 ```
@@ -66,14 +70,16 @@ voc-assistant/
 
 | 옵션 | 저장소 | 최근 활동 기록 |
 | --- | --- | --- |
-| 없음 | `MemoryNoteStore`. 앱을 다시 시작하면 사라진다 | 서비스가 직접 남긴다 |
-| persistence | `SqliteNoteStore` + `NoteMapper.xml` + 마이그레이션 | 서비스가 직접 남긴다 |
-| persistence + events | 위와 같다 | 서비스는 `NoteAdded`를 발행하고, `NoteAddedListener`가 비동기로 남긴다 |
+| 없음 | `MemoryNoteStore`. 앱을 다시 시작하면 사라진다 | `HomeFacadeImpl`이 직접 남긴다 |
+| persistence | `SqliteNoteStore` + `NoteMapper.xml` + 마이그레이션 | `HomeFacadeImpl`이 직접 남긴다 |
+| persistence + events | 위와 같다 | `HomeFacadeImpl`은 `NoteAdded`를 발행하고, `NoteAddedListener`가 비동기로 남긴다 |
+
+모듈 구조(api · spi · internal)와 레이어 방향은 [structure.md](structure.md)에 있다.
 
 ## 개발
 
 - **dev 실행**: IntelliJ에서 "dev 실행"(`-Dspring.profiles.active=dev`)을 실행한다. 브라우저가 열리고 패턴 카탈로그 `/cozy/dev/catalog`가 켜진다.
-- **새 모듈**: `home`을 복제한다. 순서는 AGENTS.md에 있다. package-info → 컨트롤러 → view DTO → 템플릿 → 스펙 순이다.
+- **새 모듈**: `home`을 복제한다. 순서는 AGENTS.md에 있다. package-info → spi(Facade·Finder·dto) → internal(app·domain·infra) → 컨트롤러·api.dto → 템플릿 → 스펙 순이다.
 - **검사**: 작업을 마치면 `mvn -o verify`(IntelliJ "mvn -o verify")를 돌린다. 실패 메시지의 ID(`[R3]`, `[C5]` 등)로 [rules.md](rules.md)와 [testing.md](testing.md)를 찾는다.
 
 ## 아키타입 검증
@@ -81,7 +87,7 @@ voc-assistant/
 cozy-archetype 빌드가 다음을 한다.
 
 - **옵션 3조합**: `archetype:integration-test`가 없음 / persistence / persistence+events 앱을 생성하고 `verify -Pdist`까지 돌린다.
-  - 생성된 앱의 테스트(검사 C1~C7, 흐름 테스트)가 모두 돈다.
+  - 생성된 앱의 테스트(검사 C1~C8, 흐름 테스트)가 모두 돈다.
   - app-image가 만들어진다.
   - `verify.groovy`가 옵션별 파일과 의존성을 확인한다.
 - **잘못된 옵션**: `src/it`(invoker)가 잘못된 옵션(events만 켬, 잘못된 appId, 특수 문자가 든 appName)에서 생성이 실패하고 폴더가 남지 않는지 확인한다.

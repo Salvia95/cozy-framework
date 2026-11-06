@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!--/*
-  홈: list-with-filter 패턴. 필터는 result fragment만 바꾸고(htmx), 등록 폼은 오류면 noteForm fragment만 다시 그린다.
+  홈 화면(api): list-with-filter 패턴. 필터는 result fragment만 바꾸고(htmx), 등록 폼은 오류면 noteForm fragment만 다시
+  그린다. 최근 활동 카드는 home/internal/activity 조각을 조합한다.
+  - api/: 컨트롤러가 렌더링하는 화면. 모델을 읽는 곳은 여기뿐이다.
+  - internal/: 화면과 spi가 조합하는 조각. 값은 파라미터로만 받는다.
+  - spi/: 다른 모듈이 부르는 fragment(공개하면 cozy/fragments.yml에 적는다). 값은 파라미터로만 받는다.
   새 화면을 만들 때는 먼저 패턴 카탈로그(/cozy/dev/catalog)에서 맞는 패턴을 찾는다.
 */-->
 <html th:replace="~{cozy/layout/base :: appShell('홈', ~{::main})}">
@@ -42,16 +46,7 @@
   </section>
 
   <section class="container-xl pb-3">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">최근 활동</h3></div>
-      <ul class="list-group list-group-flush" th:unless="${activity.items.isEmpty()}">
-        <li class="list-group-item d-flex justify-content-between" th:each="item : ${activity.items}">
-          <span th:text="${item.message}">메모를 추가했습니다</span>
-          <span class="text-secondary" th:text="${item.at}">2026-11-07 09:00</span>
-        </li>
-      </ul>
-      <div class="card-body text-secondary" th:if="${activity.items.isEmpty()}">아직 활동이 없습니다.</div>
-    </div>
+    <div th:replace="~{home/internal/activity :: recentActivity(${activity.items})}"></div>
   </section>
 </main>
 </body>

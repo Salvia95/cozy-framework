@@ -1,4 +1,4 @@
-<!--/* activity 공개 fragment: 최근 활동 목록. */-->
+<!--/* activity 공개 fragment(spi): 최근 활동 목록. 값은 파라미터(items: spi.dto.ActivityItem 목록)로만 받는다. */-->
 <div th:fragment="recentActivity(items)">
   <th:block th:if="${items.isEmpty()}">
     <div th:replace="~{cozy/component/empty-state :: emptyState('활동이 없습니다', '메모를 만들면 여기에 기록됩니다.')}"></div>

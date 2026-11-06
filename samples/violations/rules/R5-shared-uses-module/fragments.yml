@@ -7,7 +7,7 @@ fragments:
     samples:
       default: {}
   - id: memo/y
-    template: memo/api/y
+    template: memo/spi/y
     signature: y()
     purpose: 메모 요약
     params: []

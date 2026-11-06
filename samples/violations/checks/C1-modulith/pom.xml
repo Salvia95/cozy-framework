@@ -12,7 +12,7 @@
   <groupId>it.cozy.violations</groupId>
   <artifactId>c1-modulith</artifactId>
   <version>1.0.0</version>
-  <!-- C1: a 모듈이 b 모듈의 internal 클래스를 쓴다 → ApplicationModules.verify() 실패 -->
+  <!-- C1: a 모듈의 쓰기 구현이 b 모듈의 internal 클래스를 쓴다 → ApplicationModules.verify() 실패 -->
   <dependencies>
     <dependency>
       <groupId>io.salvia95.cozy</groupId>

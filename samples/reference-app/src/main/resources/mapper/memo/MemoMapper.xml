@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="io.salvia95.cozy.reference.memo.internal.MemoMapper">
+<mapper namespace="io.salvia95.cozy.reference.memo.internal.infra.MemoMapper">
 
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO memo (title, body, pinned, created_at, updated_at)
@@ -9,11 +9,11 @@
 
   <sql id="columns">id, title, body, pinned, created_at, updated_at</sql>
 
-  <select id="findById" resultType="io.salvia95.cozy.reference.memo.Memo">
+  <select id="findById" resultType="io.salvia95.cozy.reference.memo.internal.domain.Memo">
     SELECT <include refid="columns"/> FROM memo WHERE id = #{id}
   </select>
 
-  <select id="findAll" resultType="io.salvia95.cozy.reference.memo.Memo">
+  <select id="findAll" resultType="io.salvia95.cozy.reference.memo.internal.domain.Memo">
     SELECT <include refid="columns"/> FROM memo ORDER BY pinned DESC, updated_at DESC, id DESC
   </select>
 
@@ -24,7 +24,7 @@
     </where>
   </sql>
 
-  <select id="search" resultType="io.salvia95.cozy.reference.memo.Memo">
+  <select id="search" resultType="io.salvia95.cozy.reference.memo.internal.domain.Memo">
     SELECT <include refid="columns"/> FROM memo
     <include refid="searchCondition"/>
     ORDER BY pinned DESC, updated_at DESC, id DESC

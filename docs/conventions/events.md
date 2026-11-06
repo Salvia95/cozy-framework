@@ -12,7 +12,7 @@
 ## 이벤트 만들기
 
 ```java
-// memo/api/MemoCreated.java — 받는 모듈이 쓰므로 공개 영역(Named Interface api)에 둔다
+// memo/spi/event/MemoCreated.java — 받는 모듈이 쓰므로 모듈 사이 계약(Named Interface spi)에 둔다
 public record MemoCreated(UUID eventId, int schemaVersion, long memoId, String title) implements CozyEvent {
     public static MemoCreated of(long memoId, String title) {
         return new MemoCreated(UUID.randomUUID(), 1, memoId, title);
@@ -21,9 +21,9 @@ public record MemoCreated(UUID eventId, int schemaVersion, long memoId, String t
 ```
 
 ```java
-// 보내는 쪽: 업무 트랜잭션 안에서 발행한다
+// 보내는 쪽(memo/internal/app/command/MemoFacadeImpl): 업무 트랜잭션 안에서 발행한다
 @Transactional
-public long create(String title, String body) {
+public long create(String title, String body, boolean pinned) {
     ...
     this.mapper.insert(row);
     this.events.publishEvent(MemoCreated.of(row.getId(), title));   // ApplicationEventPublisher
@@ -32,15 +32,15 @@ public long create(String title, String body) {
 ```
 
 ```java
-// 받는 쪽: package-info.java에 @ApplicationModule(allowedDependencies = "memo::api")
+// 받는 쪽(activity/internal/app/command/): package-info.java에 @ApplicationModule(allowedDependencies = "memo :: spi")
 @Component
-class ActivityRecorder {
+class MemoCreatedListener {
     @ApplicationModuleListener
     void on(MemoCreated event) { ... }
 }
 ```
 
-- **CozyEvent 구현**: 모듈 사이의 이벤트는 반드시 `CozyEvent`를 구현한다. 필드는 `eventId`(멱등성 키, 발행할 때 만든다)와 `schemaVersion`(1부터)이다.
+- **CozyEvent 구현**: 모듈 사이의 이벤트는 반드시 `CozyEvent`를 구현하고 `{모듈}/spi/event/`에 둔다(C8). `spi/event/package-info.java`에 `@NamedInterface("spi")`를 둔다. 필드는 `eventId`(멱등성 키, 발행할 때 만든다)와 `schemaVersion`(1부터)이다.
 - **리스너 파라미터**: `@ApplicationModuleListener`의 파라미터는 CozyEvent 하나다. 어기면 검사 C6이 빌드를 실패시킨다.
 - **리스너 실행 방식**: 리스너는 발행한 트랜잭션이 커밋된 뒤, 별도 트랜잭션에서 비동기로 실행된다.
   - 업무 트랜잭션이 롤백되면 이벤트도 발행 기록도 남지 않는다.

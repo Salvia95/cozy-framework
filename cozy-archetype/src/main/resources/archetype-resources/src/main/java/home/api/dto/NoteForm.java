@@ -1,4 +1,4 @@
-package ${package}.home.view;
+package ${package}.home.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

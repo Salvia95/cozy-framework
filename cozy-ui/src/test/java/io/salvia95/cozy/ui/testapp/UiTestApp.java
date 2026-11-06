@@ -40,7 +40,7 @@ public class UiTestApp {
 			model.addAttribute("q", q);
 			model.addAttribute("items", items);
 			model.addAttribute("page", CozyPage.of(1, 10, items.size()));
-			return CozyViews.pageOrFragment("uitest/list", "result");
+			return CozyViews.pageOrFragment("uitest/api/list", "result");
 		}
 
 		@PostMapping("/uitest")

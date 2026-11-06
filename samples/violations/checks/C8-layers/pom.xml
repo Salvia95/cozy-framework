@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>@project.version@</version>
+    <relativePath/>
+  </parent>
+  <groupId>it.cozy.violations</groupId>
+  <artifactId>c8-layers</artifactId>
+  <version>1.0.0</version>
+  <!-- C8: memo 모듈 안의 배치와 레이어 방향을 어긴다 (모듈 사이 경계는 지킨다) → 모듈 구조 검사 실패 -->
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-runtime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

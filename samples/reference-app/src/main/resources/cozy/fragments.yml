@@ -1,20 +1,20 @@
-# reference-app 매니페스트 (docs/conventions/ui.md). 모듈 공개 fragment(templates/{모듈}/api/)와 앱 공용 fragment를 적는다.
+# reference-app 매니페스트 (docs/conventions/ui.md). 모듈 공개 fragment(templates/{모듈}/spi/)와 앱 공용 fragment를 적는다.
 fragments:
   - id: memo/summary
-    template: memo/api/summary
+    template: memo/spi/summary
     signature: memoSummary(summary)
     purpose: 메모 수와 최근 메모. dashboard가 쓴다.
     params:
-      - { name: summary, type: io.salvia95.cozy.reference.memo.api.MemoSummary, required: true, description: 메모 요약 }
+      - { name: summary, type: io.salvia95.cozy.reference.memo.spi.dto.MemoSummary, required: true, description: 메모 요약 }
     samples:
       default: { summary: { total: 12, pinned: 3, latestTitle: 회의록 정리 } }
       empty: { summary: { total: 0, pinned: 0, latestTitle: null } }
   - id: activity/recent-activity
-    template: activity/api/recent-activity
+    template: activity/spi/recent-activity
     signature: recentActivity(items)
     purpose: 최근 활동 목록. dashboard가 polling-panel 안에서 쓴다.
     params:
-      - { name: items, type: List, required: true, description: "ActivityItem 목록 (message, at)" }
+      - { name: items, type: List, required: true, description: "spi.dto.ActivityItem 목록 (message, at)" }
     samples:
       default:
         items:

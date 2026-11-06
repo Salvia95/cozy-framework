@@ -16,11 +16,11 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import io.salvia95.cozy.reference.activity.api.RecentActivities;
-import io.salvia95.cozy.reference.memo.MemoService;
+import io.salvia95.cozy.reference.activity.spi.ActivityFinder;
+import io.salvia95.cozy.reference.memo.spi.MemoFacade;
 
 /**
- * M5 흐름: memo가 MemoCreated를 발행 → activity가 받아 기록 → dashboard가 memo::api, activity::api fragment로 보여 준다.
+ * M5 흐름: memo가 MemoCreated를 발행 → activity가 받아 기록 → dashboard가 memo·activity의 spi fragment로 보여 준다.
  */
 @SpringBootTest(properties = "cozy.data-dir=target/test-data/dashboard-${random.uuid}")
 @AutoConfigureMockMvc
@@ -31,10 +31,10 @@ class DashboardFlowTest {
 	MockMvc mvc;
 
 	@Autowired
-	MemoService memos;
+	MemoFacade memos;
 
 	@Autowired
-	RecentActivities activities;
+	ActivityFinder activities;
 
 	@Test
 	void rootGoesToDashboard() throws Exception {

@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.api;
+package io.salvia95.cozy.reference.memo.spi.event;
 
 import java.util.UUID;
 

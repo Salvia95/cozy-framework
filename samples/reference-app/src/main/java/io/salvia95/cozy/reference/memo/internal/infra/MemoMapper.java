@@ -1,4 +1,4 @@
-package io.salvia95.cozy.reference.memo.internal;
+package io.salvia95.cozy.reference.memo.internal.infra;
 
 import java.time.Instant;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import io.salvia95.cozy.reference.memo.Memo;
+import io.salvia95.cozy.reference.memo.internal.domain.Memo;
 
 /** SQL은 resources/mapper/memo/MemoMapper.xml에 있다. */
 @Mapper

@@ -1,13 +1,13 @@
 # 홈 화면 스펙 (docs/conventions/testing.md). 패턴 카탈로그 미리보기와 렌더링 검사(mvn verify)가 같이 쓴다.
 # default와 empty 상태는 꼭 있어야 한다. 화면 DTO를 바꾸면 여기 fixture도 함께 고친다.
 screen: home-index
-template: home/index
+template: home/api/index
 fragments: [result, noteForm]
 model:
-  filter: ${package}.home.view.NoteFilter
-  form: ${package}.home.view.NoteForm
-  result: ${package}.home.view.HomeViews.ListResult
-  activity: ${package}.home.view.HomeViews.Activity
+  filter: ${package}.home.api.dto.NoteFilter
+  form: ${package}.home.api.dto.NoteForm
+  result: ${package}.home.api.dto.HomeViews.ListResult
+  activity: ${package}.home.api.dto.HomeViews.Activity
 states:
   default:
     filter: { q: "" }
