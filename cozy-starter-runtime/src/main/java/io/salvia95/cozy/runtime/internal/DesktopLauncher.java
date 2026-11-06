@@ -3,12 +3,15 @@ package io.salvia95.cozy.runtime.internal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -16,11 +19,13 @@ import org.springframework.boot.web.server.context.WebServerApplicationContext;
 import org.springframework.boot.web.server.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 
 import io.salvia95.cozy.runtime.CozyDataDirectory;
+import io.salvia95.cozy.runtime.internal.update.UpdateService;
 
 /**
  * {@code CozyApplication.run}으로 띄운 앱의 데스크톱 동작 (PRD §9.2).
@@ -28,8 +33,10 @@ import io.salvia95.cozy.runtime.CozyDataDirectory;
  * <ul>
  * <li>환경이 준비되면, 컨텍스트를 만들기 전에 {@code app.lock}을 잡는다. 못 잡으면 기존 인스턴스 주소를 브라우저로 열고 조용히 끝낸다.</li>
  * <li>웹 서버가 뜨면 실제 포트를 {@code app.port}에 쓴다.</li>
- * <li>기동이 끝나면 브라우저를 연다({@code cozy.runtime.open-browser}).</li>
- * <li>종료하면 포트 파일을 지우고 잠금을 푼다.</li>
+ * <li>기동이 끝나면 업데이트 준비 신호({@code update/ready})를 쓰고, 브라우저를 열고({@code cozy.runtime.open-browser}),
+ * 트레이 아이콘을 올린다({@code cozy.runtime.tray}).</li>
+ * <li>훈련 실행({@code cozy.runtime.training})이면 위 대신 정해진 경로를 요청하고 종료한다(PRD §9.6).</li>
+ * <li>종료하면 트레이 아이콘을 내리고, 포트 파일을 지우고, 잠금을 푼다.</li>
  * </ul>
  */
 public class DesktopLauncher implements ApplicationListener<ApplicationEvent>, Ordered {
@@ -42,6 +49,8 @@ public class DesktopLauncher implements ApplicationListener<ApplicationEvent>, O
 	private @Nullable InstanceLock lock;
 
 	private @Nullable CozyDataDirectory dataDir;
+
+	private final CozyTray tray = new CozyTray();
 
 	@Override
 	public int getOrder() {
@@ -58,9 +67,10 @@ public class DesktopLauncher implements ApplicationListener<ApplicationEvent>, O
 			PortFile.write(this.dataDir.portFile(), initialized.getWebServer().getPort());
 		}
 		else if (event instanceof ApplicationReadyEvent ready) {
-			openBrowserIfEnabled(ready);
+			onReady(ready);
 		}
 		else if (event instanceof ContextClosedEvent || event instanceof ApplicationFailedEvent) {
+			this.tray.remove();
 			release();
 		}
 	}
@@ -88,15 +98,31 @@ public class DesktopLauncher implements ApplicationListener<ApplicationEvent>, O
 		throw new AlreadyRunningException();
 	}
 
-	private void openBrowserIfEnabled(ApplicationReadyEvent ready) {
+	private void onReady(ApplicationReadyEvent ready) {
 		if (!(ready.getApplicationContext() instanceof WebServerApplicationContext webContext)
 				|| webContext.getWebServer() == null) {
 			return;
 		}
+		ConfigurableApplicationContext context = ready.getApplicationContext();
+		Environment environment = context.getEnvironment();
 		URI uri = localUri(webContext.getWebServer().getPort());
+		CozyShutdown shutdown = context.getBean(CozyShutdown.class);
+		if (environment.getProperty("cozy.runtime.training", Boolean.class, false)) {
+			List<String> paths = Binder.get(environment)
+				.bind("cozy.runtime.training-paths", Bindable.listOf(String.class))
+				.orElse(List.of("/"));
+			LogFactory.getLog(DesktopLauncher.class).info("[cozy] 훈련 실행: " + paths);
+			TrainingRun.start(uri, paths, shutdown);
+			return;
+		}
+		context.getBeanProvider(UpdateService.class).ifAvailable(UpdateService::signalReady);
 		LogFactory.getLog(DesktopLauncher.class).info("[cozy] 실행 중: " + uri);
-		if (openBrowser(ready.getApplicationContext().getEnvironment())) {
+		if (openBrowser(environment)) {
 			BrowserOpener.open(uri);
+		}
+		if (environment.getProperty("cozy.runtime.tray", Boolean.class, true)) {
+			String name = environment.getProperty("cozy.app.name", environment.getProperty("cozy.app.id", "Cozy"));
+			this.tray.install(name, uri, shutdown);
 		}
 	}
 

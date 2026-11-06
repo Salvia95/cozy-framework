@@ -52,6 +52,13 @@
       ${org.mockito:mockito-core:jar}는 dependency:properties가 채운다. Mockito가 없는 모듈은 이 값을 비운다.
     -->
     <cozy.test.argLine>-javaagent:${org.mockito:mockito-core:jar}</cozy.test.argLine>
+
+    <!-- mvn -Pdist package (PRD §9.6, docs/conventions/distribution.md) -->
+    <cozy.dist.minimum-version></cozy.dist.minimum-version>
+    <cozy.dist.notes></cozy.dist.notes>
+    <cozy.dist.java-options>-Xmx512m</cozy.dist.java-options>
+    <cozy.dist.training>true</cozy.dist.training>
+    <cozy.java.executable>${java.home}/bin/java</cozy.java.executable>
   </properties>
 
   <dependencyManagement>
@@ -303,4 +310,87 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>cozy-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <cozy.java.executable>${java.home}\bin\java.exe</cozy.java.executable>
+      </properties>
+    </profile>
+
+    <!-- 배포 패키지: app-image + AOT 캐시 + zip + 업데이트 매니페스트 (PRD §9.6) -->
+    <profile>
+      <id>dist</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>cozy-dist-app</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireFilesExist>
+                      <message>-Pdist는 Cozy 앱(src/main/resources/application.yml이 있는 모듈)에서 실행합니다. 프레임워크 레포에서는 -pl samples/reference-app처럼 앱만 고르세요.</message>
+                      <files>
+                        <file>${project.basedir}/src/main/resources/application.yml</file>
+                      </files>
+                    </requireFilesExist>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
+            같은 package 단계에서 repackage가 먼저 돌아야 한다. 부모 프로필의 플러그인은 앱 POM의 플러그인보다 앞에 놓이므로
+            spring-boot-maven-plugin을 여기서 exec보다 먼저 선언해 순서를 고정한다.
+          -->
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>cozy-dist</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>${cozy.java.executable}</executable>
+                  <classpathScope>runtime</classpathScope>
+                  <arguments>
+                    <argument>-cp</argument>
+                    <classpath/>
+                    <argument>io.salvia95.cozy.runtime.internal.dist.CozyPackager</argument>
+                    <argument>--jar=${project.build.directory}/${project.build.finalName}.jar</argument>
+                    <argument>--out=${project.build.directory}/dist</argument>
+                    <argument>--work=${project.build.directory}/dist-work</argument>
+                    <argument>--version=${project.version}</argument>
+                    <argument>--minimum-version=${cozy.dist.minimum-version}</argument>
+                    <argument>--notes=${cozy.dist.notes}</argument>
+                    <argument>--java-options=${cozy.dist.java-options}</argument>
+                    <argument>--training=${cozy.dist.training}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

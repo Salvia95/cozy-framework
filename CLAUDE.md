@@ -36,6 +36,8 @@ source ~/.sdkman/bin/sdkman-init.sh   # JDK 25, Maven 3.10.0
 mvn verify                            # 전체 빌드 + invoker 픽스처 + 테스트
 mvn -o verify                         # 오프라인 (의존성을 한 번 받은 뒤)
 mvn -pl cozy-rules -am test           # 모듈 하나만
+mvn -o -Pe2e install                  # + 배포·업데이트 종단 검증 (몇 분, M6)
+mvn -o -Pdist package -pl samples/reference-app   # 앱 하나를 배포 패키지로 (target/dist)
 ```
 
 ## 환경

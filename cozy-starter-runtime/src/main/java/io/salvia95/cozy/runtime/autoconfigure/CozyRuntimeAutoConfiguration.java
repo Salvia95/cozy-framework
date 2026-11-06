@@ -3,32 +3,44 @@ package io.salvia95.cozy.runtime.autoconfigure;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.time.Clock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 
+import io.salvia95.cozy.runtime.CozyApplication;
 import io.salvia95.cozy.runtime.CozyDataDirectory;
+import io.salvia95.cozy.runtime.CozyDiagnosticsContributor;
 import io.salvia95.cozy.runtime.CozyRuntimeProperties;
 import io.salvia95.cozy.runtime.CozySecretStore;
+import io.salvia95.cozy.runtime.internal.CozyControlController;
 import io.salvia95.cozy.runtime.internal.CozyRuntimeEnvironmentPostProcessor;
+import io.salvia95.cozy.runtime.internal.CozyShutdown;
+import io.salvia95.cozy.runtime.internal.diagnostics.DiagnosticsExporter;
+import io.salvia95.cozy.runtime.internal.update.AppImage;
+import io.salvia95.cozy.runtime.internal.update.UpdateService;
 import io.salvia95.cozy.runtime.internal.HostHeaderFilter;
 import io.salvia95.cozy.runtime.internal.PropertiesFileSecretStore;
 
 /**
- * 런타임 기반 자동 설정 (PRD §9.1, §9.3).
+ * 런타임 기반 자동 설정 (PRD §9.1~9.5): 데이터 경로, 비밀 값, 127.0.0.1 고정, Host 필터, 종료, 업데이트, 진단.
  */
 @AutoConfiguration
 @EnableConfigurationProperties(CozyRuntimeProperties.class)
@@ -49,6 +61,32 @@ public class CozyRuntimeAutoConfiguration {
 	}
 
 	@Bean
+	CozyShutdown cozyShutdown(ConfigurableApplicationContext context, Environment environment) {
+		return new CozyShutdown(context, environment.getProperty(CozyShutdown.EXIT_JVM_PROPERTY, Boolean.class, false));
+	}
+
+	@Bean
+	UpdateService cozyUpdateService(CozyRuntimeProperties properties, ObjectProvider<BuildProperties> buildProperties,
+			CozyDataDirectory dataDirectory) {
+		BuildProperties build = buildProperties.getIfAvailable();
+		return new UpdateService(properties.app().id(), (build != null) ? build.getVersion() : null,
+				properties.update().manifestUrl(), properties.update().checkInterval(),
+				properties.update().readyTimeout(), dataDirectory, AppImage.current());
+	}
+
+	@Bean
+	DiagnosticsExporter cozyDiagnosticsExporter(ConfigurableEnvironment environment, CozyDataDirectory dataDirectory,
+			CozyRuntimeProperties properties, ObjectProvider<BuildProperties> buildProperties,
+			ObjectProvider<CozyDiagnosticsContributor> contributors, UpdateService updates) {
+		BuildProperties build = buildProperties.getIfAvailable();
+		String cozyVersion = CozyApplication.class.getPackage().getImplementationVersion();
+		return new DiagnosticsExporter(environment, dataDirectory, properties.app().id(),
+				properties.app().displayName(), (build != null) ? build.getVersion() : "dev",
+				(cozyVersion != null) ? cozyVersion : "dev", contributors.orderedStream().toList(), updates,
+				Clock.systemDefaultZone());
+	}
+
+	@Bean
 	ApplicationListener<ApplicationStartedEvent> cozyStartupLog(CozyRuntimeProperties properties,
 			CozyDataDirectory dataDirectory) {
 		return (event) -> logger.info("[cozy] app=" + properties.app().id() + " (" + properties.app().displayName()
@@ -62,6 +100,12 @@ public class CozyRuntimeAutoConfiguration {
 		@Bean
 		WebServerFactoryCustomizer<ConfigurableWebServerFactory> cozyLoopbackCustomizer() {
 			return new LoopbackCustomizer();
+		}
+
+		@Bean
+		CozyControlController cozyControlController(CozyShutdown shutdown, DiagnosticsExporter diagnostics,
+				UpdateService updates, CozyRuntimeProperties properties) {
+			return new CozyControlController(shutdown, diagnostics, updates, properties.runtime().openBrowser());
 		}
 
 		@Bean

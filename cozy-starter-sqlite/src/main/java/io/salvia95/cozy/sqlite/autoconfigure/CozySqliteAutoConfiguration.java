@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -41,6 +42,7 @@ import io.salvia95.cozy.sqlite.CozySqliteProperties;
 import io.salvia95.cozy.sqlite.internal.CozyMigrations;
 import io.salvia95.cozy.sqlite.internal.CozySqliteTransactionManager;
 import io.salvia95.cozy.sqlite.internal.DatabaseBackup;
+import io.salvia95.cozy.sqlite.internal.SqliteDiagnostics;
 import io.salvia95.cozy.sqlite.internal.SqliteExceptionTranslator;
 import io.salvia95.cozy.sqlite.internal.TextTypeHandlers;
 
@@ -96,6 +98,15 @@ public class CozySqliteAutoConfiguration {
 	@ConditionalOnMissingBean
 	CozyMigrations cozyMigrations(ObjectProvider<CozyMigrationLocation> locations, DatabaseBackup backup) {
 		return new CozyMigrations(locations.orderedStream().toList(), backup);
+	}
+
+	/** 진단 파일의 sqlite.txt: DB 파일, PRAGMA, Flyway 이력 (PRD §9.5) */
+	@Bean
+	SqliteDiagnostics cozySqliteDiagnostics(DataSource dataSource, Environment environment) {
+		return new SqliteDiagnostics(dataSource, databaseFile(environment),
+				List.of(CozyMigrations.FRAMEWORK_HISTORY_TABLE,
+						environment.getProperty("spring.flyway.table", "flyway_schema_history")),
+				CozySqliteAutoConfiguration::readSettings);
 	}
 
 	/** 기동할 때 실제 연결 설정값을 로그로 남긴다. */

@@ -104,6 +104,10 @@ states:                               # default와 empty는 필수
 
 `samples/violations/`에 규칙(R1~R8)과 검사(C1~C7)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
 
+## 배포 종단 검증
+
+`samples/dist-e2e`는 reference-app을 실제로 패키징하고 업데이트·롤백하는 종단 검증이다(M6 완료 기준). 몇 분 걸리므로 `mvn -Pe2e install`로만 돈다. 내용은 [distribution.md](distribution.md)에 있다.
+
 ## 테스트 JVM
 
 cozy-parent는 테스트 JVM에 Mockito를 `-javaagent`로 올린다. JDK가 실행 중 에이전트 부착을 막을 예정이기 때문이다. 속성은 `cozy.test.argLine`이다. Mockito가 없는 모듈은 이 속성을 비운다(`<cozy.test.argLine/>`).

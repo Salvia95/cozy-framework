@@ -25,6 +25,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import io.salvia95.cozy.runtime.CozyApplication;
 import io.salvia95.cozy.runtime.CozyRuntimeProperties;
 import io.salvia95.cozy.runtime.autoconfigure.CozySecurityAutoConfiguration;
+import io.salvia95.cozy.runtime.update.CozyUpdates;
 import io.salvia95.cozy.ui.CozyNavItem;
 import io.salvia95.cozy.ui.CozyViews;
 import io.salvia95.cozy.ui.internal.CatalogController;
@@ -54,8 +55,9 @@ public class CozyUiAutoConfiguration {
 	}
 
 	@Bean
-	CozyLayoutAdvice cozyLayoutAdvice(CozyAppInfo appInfo, ObjectProvider<CozyNavItem> navItems) {
-		return new CozyLayoutAdvice(appInfo, navItems.orderedStream().toList());
+	CozyLayoutAdvice cozyLayoutAdvice(CozyAppInfo appInfo, ObjectProvider<CozyNavItem> navItems,
+			ObjectProvider<CozyUpdates> updates) {
+		return new CozyLayoutAdvice(appInfo, navItems.orderedStream().toList(), updates.getIfAvailable());
 	}
 
 	@Bean

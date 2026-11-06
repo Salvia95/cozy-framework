@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
+import io.salvia95.cozy.runtime.CozyDiagnosticsContributor;
 import io.salvia95.cozy.sqlite.testapp.SampleItem;
 import io.salvia95.cozy.sqlite.testapp.SampleMapper;
 
@@ -45,6 +46,22 @@ class SqliteSettingsAndTypesTest {
 	@AfterAll
 	static void stop() {
 		context.close();
+	}
+
+	@Test
+	void diagnosticsReportSettingsAndBothMigrationHistories() throws Exception {
+		CozyDiagnosticsContributor diagnostics = context.getBeansOfType(CozyDiagnosticsContributor.class)
+			.values()
+			.stream()
+			.filter((c) -> c.fileName().equals("sqlite.txt"))
+			.findFirst()
+			.orElseThrow();
+		String text = diagnostics.content();
+		assertThat(text).contains("DB 파일: " + dataDir.resolve("data/app.db"))
+			.contains("journal_mode=wal")
+			.contains("== Flyway 이력: cozy_schema_history ==")
+			.contains("== Flyway 이력: flyway_schema_history ==")
+			.containsPattern("\\| 202611061000 \\| sample create tables \\| SQL \\| .+ \\| true");
 	}
 
 	@Test

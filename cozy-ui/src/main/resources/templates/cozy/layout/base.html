@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   Cozy 레이아웃 (PRD §6.4). 같은 파일 안의 fragment끼리만 서로 참조한다.
-  - base(cozyTitle, cozyContent): 완전한 HTML 문서. head, 자산, CSRF meta, 업데이트 배너, 플래시, 푸터 버전, 토스트 자리.
-  - appShell(cozyTitle, cozyContent): base + 사이드 내비. 앱 화면은 이것을 쓴다.
+  - base(cozyTitle, cozyContent): 완전한 HTML 문서. head, 자산, CSRF meta, 업데이트 결과·배너, 푸터 버전, 토스트 자리.
+  - appShell(cozyTitle, cozyContent): base + 사이드 내비 + 앱 메뉴(진단 내보내기, 종료) + 플래시. 앱 화면은 이것을 쓴다.
   화면에서 쓰는 법:
     <html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}"> ... <main> 본문 </main> ... </html>
 -->
@@ -23,10 +23,25 @@
 </head>
 <body>
   <div class="cozy-progress" aria-hidden="true"></div>
+  <th:block th:if="${cozyUpdateOutcome != null}">
+    <div class="alert rounded-0 mb-0" role="status"
+         th:classappend="${cozyUpdateOutcome.success} ? 'alert-success' : 'alert-danger'"
+         th:text="${cozyUpdateOutcome.message}">업데이트 결과</div>
+  </th:block>
   <th:block th:if="${cozyUpdate != null}">
-    <div class="alert alert-warning rounded-0 mb-0 cozy-update-banner" role="status">
-      <span th:text="|새 버전 ${cozyUpdate.version}이 있습니다.|">새 버전이 있습니다.</span>
-      <strong th:if="${cozyUpdate.required}">필수 업데이트입니다.</strong>
+    <div class="alert rounded-0 mb-0 cozy-update-banner d-flex flex-wrap align-items-center gap-2" role="status"
+         th:classappend="${cozyUpdate.required} ? 'alert-danger' : 'alert-warning'">
+      <div class="flex-fill">
+        <strong th:if="${cozyUpdate.required}">필수 업데이트입니다.</strong>
+        <span th:text="|새 버전 ${cozyUpdate.version}이 있습니다.|">새 버전이 있습니다.</span>
+        <span class="text-secondary" th:if="${!#strings.isEmpty(cozyUpdate.notes)}" th:text="${cozyUpdate.notes}">변경 내용</span>
+        <span class="text-secondary" th:unless="${cozyUpdate.installable}" th:text="${cozyUpdate.reason}">설치할 수 없는 이유</span>
+      </div>
+      <form th:if="${cozyUpdate.installable}" method="post" th:action="@{/cozy/update}"
+            data-cozy-confirm="앱을 종료하고 새 버전으로 바꿉니다. 저장하지 않은 입력은 사라집니다. 계속할까요?">
+        <input type="hidden" name="version" th:value="${cozyUpdate.version}">
+        <button type="submit" class="btn btn-sm btn-primary">지금 업데이트</button>
+      </form>
     </div>
   </th:block>
   <th:block th:replace="${cozyContent}"></th:block>
@@ -60,6 +75,14 @@
               </a>
             </li>
           </ul>
+          <div class="cozy-app-menu mt-lg-auto pt-3">
+            <form method="post" th:action="@{/cozy/diagnostics}">
+              <button type="submit" class="btn btn-ghost-secondary w-100 justify-content-start">진단 내보내기</button>
+            </form>
+            <form method="post" th:action="@{/cozy/shutdown}" data-cozy-confirm="앱을 종료할까요?">
+              <button type="submit" class="btn btn-ghost-danger w-100 justify-content-start">종료</button>
+            </form>
+          </div>
         </div>
       </div>
     </aside>

@@ -57,7 +57,8 @@ class VendorAssetsTest {
 
 	@Test
 	void templatesOnlyReferenceExistingLocalAssets() throws Exception {
-		Pattern asset = Pattern.compile("@\\{/cozy/([^}(]+)\\}");
+		// 자산 참조(href, src)만 본다. 폼 action(/cozy/shutdown 등)은 런타임의 엔드포인트다
+		Pattern asset = Pattern.compile("th:(?:href|src)=\"@\\{/cozy/([^}(]+)\\}");
 		List<String> missing = new ArrayList<>();
 		for (Path template : files(RESOURCES.resolve("templates"), ".html")) {
 			Matcher m = asset.matcher(Files.readString(template));

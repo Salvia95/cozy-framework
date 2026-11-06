@@ -14,4 +14,5 @@ v1부터 매니페스트 기반 자체 업데이트(검증, 교체, 롤백)를 �
 
 ## 결과
 
-- 구현은 M6에서 한다. 실제 동작은 Windows에서 검증한다.
+- 구현은 M6에서 했다. 세부 결정은 ADR-0024, 사용법은 docs/conventions/distribution.md에 있다.
+- 실제 app-image의 업데이트·롤백은 종단 검증(`mvn -Pe2e install`)이 확인한다. Windows에서는 사용자가 같은 검증을 돌린다.

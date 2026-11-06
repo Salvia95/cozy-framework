@@ -24,6 +24,29 @@
     <module>samples/violations</module>
   </modules>
 
+  <!-- aggregator는 cozy-parent를 상속하지 않는다. install 플러그인을 모듈과 같은 버전(Boot 관리 3.1.4)으로 맞춰 오프라인 install이 되게 한다 -->
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>3.1.4</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <!-- 배포·자체 업데이트 종단 검증 (M6). jpackage로 몇 분 걸린다: mvn -Pe2e install -->
+    <profile>
+      <id>e2e</id>
+      <modules>
+        <module>samples/dist-e2e</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- aggregator 자체는 배포하지 않는다 -->

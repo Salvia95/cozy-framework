@@ -4,6 +4,7 @@
  * - 4xx/5xx 응답과 연결 실패를 토스트로 알린다
  * - 요청 중이면 화면 맨 위에 진행 막대를 보인다
  * - 서버는 HX-Trigger: {"cozy:toast": {"message": "...", "kind": "success"}}로 토스트를 띄울 수 있다
+ * - data-cozy-confirm이 있는 폼은 제출 전에 확인을 받는다 (앱 메뉴의 종료, 업데이트)
  */
 (function () {
   'use strict';
@@ -51,6 +52,14 @@
   });
   document.addEventListener('cozy:toast', function (event) {
     toast(event.detail.message, event.detail.kind);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    var message = form && form.getAttribute && form.getAttribute('data-cozy-confirm');
+    if (message && !window.confirm(message)) {
+      event.preventDefault();
+    }
   });
 
   window.Cozy = { toast: toast };

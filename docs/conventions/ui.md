@@ -106,4 +106,6 @@ fragments:
 
 - **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.3, htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
-- **cozy.js**: 변경 요청에 CSRF 헤더를 넣는다. 4xx·5xx 응답과 연결 실패는 토스트로 알리고, 요청 중에는 맨 위 진행 막대를 보인다. 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.
+- **app-shell의 앱 메뉴**: 사이드 내비 아래에 "진단 내보내기"와 "종료" 버튼이 있다. 런타임의 `POST /cozy/diagnostics`, `POST /cozy/shutdown`을 부른다([runtime.md](runtime.md)).
+- **업데이트 배너**: 새 버전이 있으면 layout 맨 위에 배너가 뜬다. 필수 업데이트면 빨간색이다. 설치할 수 있으면 "지금 업데이트" 버튼이 있고, 없으면 이유가 보인다. 직전 업데이트의 결과(성공, 롤백)도 같은 자리에 한 번 보인다([distribution.md](distribution.md)).
+- **cozy.js**: 변경 요청에 CSRF 헤더를 넣는다. `data-cozy-confirm="문장"`이 있는 폼은 제출 전에 확인을 받는다. 4xx·5xx 응답과 연결 실패는 토스트로 알리고, 요청 중에는 맨 위 진행 막대를 보인다. 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.

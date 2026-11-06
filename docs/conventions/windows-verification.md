@@ -84,6 +84,55 @@ mvn -o verify
 - [ ] 메모를 만든 직후 작업 관리자에서 java 프로세스를 끝내고 다시 실행해도, 그 메모의 활동이 한 번만 보인다.
 - [ ] `mvn -o verify`에서 cozy-starter-events의 `EventContractTest` 9개가 통과한다. 강제 종료 테스트도 포함된다.
 
+## M6 배포 장치
+
+레포를 Windows 쪽에 둔다(예: `C:\cozy-framework`). PowerShell에서 JDK 25와 Maven 3.10.0으로 실행한다.
+
+### 종단 검증 (M6 완료 기준)
+
+```powershell
+cd C:\cozy-framework
+mvn -Pe2e install
+```
+
+- [ ] `UpdateEndToEndTest` 5개가 통과한다. 다음을 확인한다.
+  - reference-app을 Windows app-image(`cozy-reference.exe`)로 세 버전 패키징한다.
+  - 1.0.0 → 1.1.0 업데이트에서 메모가 보존된다.
+  - 1.1.1이 롤백된다.
+  - 화면 메뉴로 종료된다.
+- [ ] 실패하면 다음 파일을 기록에 남긴다.
+  - `samples\dist-e2e\target\e2e\data\update\update.log`
+  - `samples\dist-e2e\target\e2e\build-*.log`
+  - `samples\dist-e2e\target\surefire-reports`
+
+### 직접 설치해서 확인
+
+```powershell
+cd C:\cozy-framework
+mvn -o -Pdist package -pl samples/reference-app
+Expand-Archive samples\reference-app\target\dist\cozy-reference-*-win-x64.zip $env:LOCALAPPDATA\Programs
+& "$env:LOCALAPPDATA\Programs\cozy-reference\cozy-reference.exe"
+```
+
+- [ ] JDK가 없는 다른 PC(또는 JDK를 PATH에서 뺀 상태)에서도 `cozy-reference.exe`가 뜬다.
+- [ ] 작업 표시줄 알림 영역에 "C" 아이콘이 보인다. 마우스를 올리면 앱 이름과 주소가 보인다.
+- [ ] 트레이 메뉴 "열기"와 아이콘 더블클릭이 브라우저로 앱을 연다.
+- [ ] 트레이 메뉴 "종료"로 프로세스가 끝난다. 작업 관리자에서 `cozy-reference.exe`가 사라진다.
+- [ ] 화면 메뉴 "종료"는 확인 창을 띄운 뒤 "앱을 종료했습니다"를 보이고, 프로세스와 트레이 아이콘이 사라진다.
+- [ ] 화면 메뉴 "진단 내보내기"는 탐색기로 `%LOCALAPPDATA%\cozy-reference\diagnostics`를 연다. zip 안에 `summary.txt`, `config.txt`, `logs\app.log`, `sqlite.txt`, `events.txt`가 있다.
+- [ ] 두 번째 실행 시간이 첫 실행보다 짧다(AOT 캐시). 시작 메뉴 바로가기는 없는 것이 정상이다.
+
+### 공유 폴더 업데이트
+
+1. 버전을 올려(예: reference-app POM에 `<version>1.0.1</version>`) 다시 `-Pdist`로 만든다.
+2. zip과 `cozy-reference-update.json`을 공유 폴더(예: `\\fileserver\share\cozy-reference\`)에 복사한다.
+3. `%LOCALAPPDATA%\cozy-reference\config\application.yml`에 `cozy.update.manifest-url: \\fileserver\share\cozy-reference\cozy-reference-update.json`을 쓴다.
+
+- [ ] 앱을 다시 실행하면 배너 "새 버전 1.0.1이 있습니다."가 뜬다.
+- [ ] "지금 업데이트"를 누르면 앱이 닫히고 몇 초 뒤 새 버전 브라우저 창이 열린다. 푸터 버전이 1.0.1이고 "v1.0.1으로 업데이트했습니다."가 보인다.
+- [ ] `%LOCALAPPDATA%\Programs\cozy-reference.old`가 남아 있다.
+- [ ] 회사 PC의 PowerShell 실행 정책 때문에 실패하면 "업데이트 스크립트를 실행하지 못했습니다"가 보이고 앱은 그대로다. 이 경우 `Get-ExecutionPolicy -List` 결과를 기록한다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -93,3 +142,4 @@ mvn -o verify
 | | M3 | | |
 | | M4 | | |
 | | M5 | | |
+| | M6 | | |

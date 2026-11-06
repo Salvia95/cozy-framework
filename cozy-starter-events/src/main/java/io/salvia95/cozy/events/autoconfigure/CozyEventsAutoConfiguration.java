@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import io.salvia95.cozy.events.CozyEventsProperties;
 import io.salvia95.cozy.events.internal.CozyEventSerializer;
+import io.salvia95.cozy.events.internal.EventDiagnostics;
 import io.salvia95.cozy.events.internal.EventRetentionCleaner;
 import io.salvia95.cozy.events.internal.InboxAdvisor;
 import io.salvia95.cozy.events.internal.SqliteEventPublicationRepository;
@@ -69,6 +70,12 @@ public class CozyEventsAutoConfiguration {
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	static InboxAdvisor cozyInboxAdvisor(ObjectProvider<JdbcTemplate> jdbcTemplate, ObjectProvider<Clock> clock) {
 		return new InboxAdvisor(() -> JdbcClient.create(jdbcTemplate.getObject()), clock.getIfAvailable(Clock::systemUTC));
+	}
+
+	/** 진단 파일의 events.txt: 상태별 발행 기록 수, 미완료 기록 (PRD §9.5) */
+	@Bean
+	EventDiagnostics cozyEventDiagnostics(JdbcTemplate jdbcTemplate) {
+		return new EventDiagnostics(JdbcClient.create(jdbcTemplate));
 	}
 
 	@Bean

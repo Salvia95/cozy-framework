@@ -42,6 +42,30 @@ public final class BrowserOpener {
 		return false;
 	}
 
+	/** 탐색기로 폴더를 연다 (진단 파일). @return 열기를 요청했으면 true */
+	public static boolean openFolder(java.nio.file.Path folder) {
+		try {
+			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+				Desktop.getDesktop().open(folder.toFile());
+				return true;
+			}
+		}
+		catch (Exception | LinkageError ex) {
+			logger.debug("Desktop.open을 쓸 수 없습니다", ex);
+		}
+		if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows")) {
+			try {
+				new ProcessBuilder("explorer.exe", folder.toString()).start();
+				return true;
+			}
+			catch (IOException ex) {
+				logger.debug("탐색기를 실행할 수 없습니다", ex);
+			}
+		}
+		logger.info("[cozy] 폴더를 열 수 없습니다. 직접 여세요: " + folder);
+		return false;
+	}
+
 	private static boolean browseWithDesktop(URI uri) {
 		try {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
