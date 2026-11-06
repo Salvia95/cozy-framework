@@ -46,6 +46,7 @@
     <!-- Boot가 관리하지 않는 플러그인 -->
     <maven-archetype-plugin.version>3.4.1</maven-archetype-plugin.version>
     <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
+    <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
 
     <!--
       테스트 JVM 옵션. Mockito를 실행 중에 붙이지 않고 -javaagent로 올린다 (JDK가 동적 에이전트를 막을 예정).
@@ -58,6 +59,11 @@
     <cozy.dist.notes></cozy.dist.notes>
     <cozy.dist.java-options>-Xmx512m</cozy.dist.java-options>
     <cozy.dist.training>true</cozy.dist.training>
+    <!--
+      배포물에 들어가는 의존성의 허용 라이선스 (PRD §11). 이름은 dist 프로필의 licenseMerges가 맞춘 SPDX ID다.
+      이중 라이선스는 하나만 있으면 된다. 바꾸려면 ADR을 먼저 고친다 (ADR-0026).
+    -->
+    <cozy.dist.allowed-licenses>Apache-2.0|MIT|BSD-2-Clause|BSD-3-Clause|EPL-1.0|EPL-2.0</cozy.dist.allowed-licenses>
     <cozy.java.executable>${java.home}/bin/java</cozy.java.executable>
   </properties>
 
@@ -196,6 +202,11 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>${exec-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${license-maven-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -352,6 +363,46 @@
             </executions>
           </plugin>
           <!--
+            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 보고, cozy 모듈은 뺀다(전이 의존성은 남는다).
+            라이선스 정보가 없거나 허용 목록에 없으면 실패한다. CozyPackager가 결과를 다시 검사하고 실행 폴더의 licenses/에 담는다.
+            - force: 결과 파일이 최신이면 플러그인이 검사를 건너뛰므로 매번 다시 만든다
+            - useRepositoryMissingFiles=false: 원격 저장소에서 보충 파일을 찾지 않는다 (오프라인 빌드)
+          -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>cozy-third-party</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>add-third-party</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/dist-licenses</outputDirectory>
+                  <addOutputDirectoryAsResourceDir>false</addOutputDirectoryAsResourceDir>
+                  <excludedScopes>test,provided,system</excludedScopes>
+                  <excludedGroups>^io\.salvia95\.cozy</excludedGroups>
+                  <useRepositoryMissingFiles>false</useRepositoryMissingFiles>
+                  <deployMissingFile>false</deployMissingFile>
+                  <failOnMissing>true</failOnMissing>
+                  <failOnBlacklist>true</failOnBlacklist>
+                  <force>true</force>
+                  <sortArtifactByName>true</sortArtifactByName>
+                  <includedLicenses>${cozy.dist.allowed-licenses}</includedLicenses>
+                  <licenseMerges>
+                    <licenseMerge>Apache-2.0|Apache License, Version 2.0|The Apache Software License, Version 2.0|Apache License 2.0|The Apache License, Version 2.0|Apache 2.0|Apache License Version 2.0|Apache Software License - Version 2.0|ASF 2.0</licenseMerge>
+                    <licenseMerge>MIT|MIT License|The MIT License|The MIT License (MIT)|MIT license</licenseMerge>
+                    <licenseMerge>BSD-2-Clause|BSD 2-Clause|The BSD 2-Clause License|BSD-2-Clause License|Simplified BSD License</licenseMerge>
+                    <licenseMerge>BSD-3-Clause|BSD 3-Clause|The BSD 3-Clause License|BSD-3-Clause License|New BSD License|Revised BSD License|BSD License 3</licenseMerge>
+                    <licenseMerge>EPL-1.0|Eclipse Public License 1.0|Eclipse Public License - v 1.0|Eclipse Public License v1.0</licenseMerge>
+                    <licenseMerge>EPL-2.0|EPL 2.0|Eclipse Public License 2.0|Eclipse Public License v2.0|Eclipse Public License - v 2.0</licenseMerge>
+                  </licenseMerges>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
             같은 package 단계에서 repackage가 먼저 돌아야 한다. 부모 프로필의 플러그인은 앱 POM의 플러그인보다 앞에 놓이므로
             spring-boot-maven-plugin을 여기서 exec보다 먼저 선언해 순서를 고정한다.
           -->
@@ -384,6 +435,8 @@
                     <argument>--notes=${cozy.dist.notes}</argument>
                     <argument>--java-options=${cozy.dist.java-options}</argument>
                     <argument>--training=${cozy.dist.training}</argument>
+                    <argument>--licenses=${project.build.directory}/dist-licenses/THIRD-PARTY.txt</argument>
+                    <argument>--allowed-licenses=${cozy.dist.allowed-licenses}</argument>
                   </arguments>
                 </configuration>
               </execution>

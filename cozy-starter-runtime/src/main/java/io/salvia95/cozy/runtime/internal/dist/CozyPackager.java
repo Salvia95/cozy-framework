@@ -42,6 +42,7 @@ import io.salvia95.cozy.runtime.internal.update.ZipArchives;
  * <li>{@code jpackage --type app-image}로 앱 폴더를 만든다. 런타임이 들어 있어 사용자 PC에 JDK가 필요 없다.</li>
  * <li>AOT 캐시: 만든 앱의 런처로 훈련 실행(record)과 캐시 생성(create)을 하고, 실행 옵션에 {@code -XX:AOTCache}를 등록한다.
  * 캐시가 맞지 않거나 없어도 JVM은 경고만 남기고 정상 기동한다.</li>
+ * <li>sqlite-jdbc 네이티브 라이브러리와 제3자 라이선스 목록({@link ThirdPartyLicenses})을 실행 폴더에 담는다.</li>
  * <li>zip과 업데이트 매니페스트(SHA-256 포함)를 만든다.</li>
  * </ol>
  *
@@ -115,6 +116,9 @@ public final class CozyPackager {
 		Path image = jpackage(appId, appName, version, input, mainJar, imageRoot, javaOptions);
 
 		bundleSqliteNative(image, platform);
+		int[] licenses = ThirdPartyLicenses.bundle(Path.of(require("licenses")).toAbsolutePath(),
+				require("allowed-licenses"), platform.cfg(image, appId).getParent().resolve("lib"), image);
+		log("   제3자 라이선스: 의존성 " + licenses[0] + "개, 웹 자산 " + licenses[1] + "개 → " + ThirdPartyLicenses.FOLDER + "/");
 		normalizeTimes(image);
 		Path trainingLog = outDir.resolve("training.log");
 		if (training) {

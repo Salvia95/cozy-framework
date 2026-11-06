@@ -129,6 +129,15 @@ class UpdateEndToEndTest {
 		assertThat(cfg.resolveSibling("native").resolve(nativeLib)).isNotEmptyFile();
 		assertThat(Files.readString(cfg)).contains("java-options=-Dorg.sqlite.lib.path=$APPDIR/native")
 			.contains("java-options=-Dorg.sqlite.lib.name=" + nativeLib);
+		// 제3자 라이선스 목록 (PRD §11): 런타임 의존성과 웹 자산
+		assertThat(image.resolve("licenses/THIRD-PARTY.txt")).content()
+			.contains("org.xerial:sqlite-jdbc:")
+			.contains("org.springframework:spring-webmvc:")
+			.doesNotContain("io.salvia95.cozy:")
+			.doesNotContain("org.junit");
+		assertThat(image.resolve("licenses/vendor")).isDirectoryContaining("glob:**/tabler-*-LICENSE.txt")
+			.isDirectoryContaining("glob:**/htmx-*-LICENSE.txt")
+			.isDirectoryContaining("glob:**/pretendard-*-LICENSE.txt");
 		String manifest = Files.readString(dist.resolve(APP_ID + "-update.json"));
 		assertThat(manifest).contains("\"appId\" : \"cozy-reference\"").contains("\"version\" : \"1.0.0\"");
 		assertThat(Files.readString(dist.resolve("training.log"))).contains("훈련 요청").contains("/cozy/dev/catalog → 200");

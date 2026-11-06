@@ -62,7 +62,7 @@ AOT 캐시로 기동 시간이 절반 이하로 준다(reference-app 3.50초 →
 
 | 항목 | 결과 |
 | --- | --- |
-| 번들 크기 | 195MB (Maven 저장소 + Maven 3.10.0 + 문서) |
+| 번들 크기 | 224MB (Maven 저장소 + Maven 3.10.0 + 문서). license-maven-plugin을 더하기 전에는 195MB |
 | 번들만으로 생성·`mvn -o verify`·`mvn -o -Pdist package` | 3조합 통과. 네트워크 장치가 루프백뿐인 상태(`verify-offline.sh`)에서 확인했다 |
 | 빌드 중 외부 요청 | 0건. 네트워크 장치가 없어 외부 요청은 실패할 수밖에 없고, 빌드가 성공했다 |
 

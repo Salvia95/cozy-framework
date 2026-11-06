@@ -9,6 +9,10 @@ assert file("AGENTS.md").text.contains("mvn -o verify") : "AGENTS.md가 없습�
 assert file("src/main/resources/application.yml").getText("UTF-8").contains('name: "데모 업무 도구"') : "appName이 들어가지 않았습니다"
 assert file("target/dist/demo-persistence-update.json").isFile() : "-Pdist 매니페스트가 없습니다"
 assert file("target/dist/image/demo-persistence").isDirectory() : "app-image가 없습니다"
+def thirdParty = file("target/dist/image/demo-persistence/licenses/THIRD-PARTY.txt")
+assert thirdParty.isFile() : "제3자 라이선스 목록이 없습니다"
+assert thirdParty.getText("UTF-8").contains("org.springframework:spring-webmvc:")
+assert thirdParty.getText("UTF-8").contains("org.xerial:sqlite-jdbc:") == true
 assert file("$pkg/internal/MemoryNoteStore.java").exists() == !true
 assert file("$pkg/internal/SqliteNoteStore.java").exists() == true
 assert file("src/main/resources/db/migration").exists() == true

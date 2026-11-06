@@ -15,7 +15,7 @@ mvn -Pdist package -Dcozy.dist.notes="검색 속도 개선" -Dcozy.dist.minimum-
 
 | 경로 | 내용 |
 | --- | --- |
-| `image/{appId}/` | 실행 폴더(jpackage app-image). Windows는 `{appId}.exe`, 런타임, 앱 jar, AOT 캐시 |
+| `image/{appId}/` | 실행 폴더(jpackage app-image). Windows는 `{appId}.exe`, 런타임, 앱 jar, AOT 캐시, `licenses/`(제3자 라이선스 목록) |
 | `{appId}-{version}-{platform}.zip` | 실행 폴더를 담은 zip. 최상위 폴더는 `{appId}/`. platform은 `win-x64`, `linux-x64` 등 |
 | `{appId}-update.json` | 업데이트 매니페스트(zip의 SHA-256 포함) |
 | `training.log` | AOT 캐시 훈련 실행의 로그 |
@@ -32,13 +32,16 @@ mvn -Pdist package -Dcozy.dist.notes="검색 속도 개선" -Dcozy.dist.minimum-
    - 기본 동작은 실행할 때마다 `%TEMP%`에 DLL을 풀어 읽는 것이다. AppLocker 같은 정책이 임시 폴더의 DLL을 막는 PC에서는 이 동작이 실패한다.
    - 앱 폴더에 둔 DLL은 실행 파일과 같은 정책을 받는다.
    - 종단 검증이 파일과 옵션을 확인한다.
-4. **AOT 캐시 훈련**: 만든 실행 폴더의 런처로 두 번 실행한다.
+4. **제3자 라이선스 목록**: license-maven-plugin이 런타임 의존성의 라이선스 목록을 만든다(`prepare-package`). 패키징이 그 목록을 다시 검사하고, 웹 자산(Tabler, htmx, Pretendard)의 LICENSE와 함께 실행 폴더의 `licenses/`에 담는다.
+   - 허용 목록(`cozy.dist.allowed-licenses`)에 없는 라이선스이거나 라이선스 정보가 없는 의존성이 있으면 실패한다.
+   - 허용 목록과 이름 맞추기 규칙은 [ADR-0026](../adr/0026-third-party-licenses.md)에 있다.
+5. **AOT 캐시 훈련**: 만든 실행 폴더의 런처로 두 번 실행한다.
    - 훈련 실행은 `-XX:AOTMode=record`와 `cozy.runtime.training=true`로 한다. 앱이 기동한 뒤 `/`와 패턴 카탈로그(`/cozy/dev/catalog`)를 한 번씩 요청하고 종료한다.
    - 캐시 생성은 `-XX:AOTMode=create`로 한다.
    - 마지막으로 실행 옵션에 `-XX:AOTCache=$APPDIR/{appId}.aot`를 등록한다.
    - 런타임에 `java` 명령이 없어서(jpackage가 뺀다) JDK 25의 한 단계 방식(`AOTCacheOutput`) 대신 두 단계 방식을 쓴다.
    - 요청이 하나라도 2xx가 아니거나 캐시가 생기지 않으면 패키징이 실패한다.
-5. **zip과 매니페스트**: zip을 만든다. Linux 실행 권한을 보존한다. 그다음 SHA-256과 매니페스트를 쓴다.
+6. **zip과 매니페스트**: zip을 만든다. Linux 실행 권한을 보존한다. 그다음 SHA-256과 매니페스트를 쓴다.
 
 ### 설정 (앱 POM의 `<properties>` 또는 `-D`)
 
@@ -48,6 +51,7 @@ mvn -Pdist package -Dcozy.dist.notes="검색 속도 개선" -Dcozy.dist.minimum-
 | `cozy.dist.minimum-version` | 빈 값 | 매니페스트의 `minimumVersion`. 이보다 낮은 버전에는 필수 업데이트로 보인다 |
 | `cozy.dist.java-options` | `-Xmx512m` | 실행 JVM 옵션(공백으로 구분) |
 | `cozy.dist.training` | `true` | AOT 캐시 훈련. 끄면 캐시 없이 만든다 |
+| `cozy.dist.allowed-licenses` | `Apache-2.0\|MIT\|BSD-2-Clause\|BSD-3-Clause\|EPL-1.0\|EPL-2.0` | 의존성 허용 라이선스(SPDX ID). 바꾸려면 ADR-0026을 먼저 고친다 |
 | `cozy.runtime.training-paths` (앱 `application.yml`) | `/`, `/cozy/dev/catalog` | 훈련 실행에서 요청할 경로. 카탈로그는 cozy-ui가 있을 때만 넣는다 |
 
 ### AOT 캐시

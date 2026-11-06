@@ -41,6 +41,7 @@
 | maven-dependency-plugin | 3.11.0 (Boot 기본 3.10.0) | cozy-parent |
 | maven-archetype-plugin | 3.4.1 | cozy-parent |
 | exec-maven-plugin | 3.6.4 | cozy-parent |
+| license-maven-plugin | 2.7.1 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
 | Tabler | 1.7.3 | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |

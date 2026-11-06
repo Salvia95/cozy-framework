@@ -170,6 +170,7 @@ mvn -o -Pdist package
 - [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다. 테스트 10개가 통과한다.
 - [ ] `mvn -o -Pdist package`가 `target\dist\voc-assistant-1.0.0-SNAPSHOT-win-x64.zip`을 만든다.
 - [ ] 실행하면 브라우저 제목과 사이드바에 "VOC 도우미"가 보인다. 메모를 추가하면 목록과 "최근 활동"에 나타난다.
+- [ ] `target\dist\image\voc-assistant\licenses\THIRD-PARTY.txt`에 의존성 목록과 웹 자산 3개가 있다.
 - [ ] `target\dist\image\voc-assistant\app\native\sqlitejdbc.dll`이 있다. 실행 중에 `%TEMP%`에 `sqlite-*-sqlitejdbc.dll`이 생기지 않는다.
 - [ ] `"-Devents=true" "-Dpersistence=false"`로 만들면 `[cozy] events=true는 persistence=true가 필요합니다`로 실패하고 폴더가 남지 않는다.
 - [ ] IntelliJ로 `voc-assistant`를 열면 실행 설정 "dev 실행", "아키텍처 테스트", "mvn -o verify"가 보인다. "dev 실행"이 `/cozy/dev/catalog`를 연다.
