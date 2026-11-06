@@ -43,8 +43,8 @@ distribution/offline-bundle/build-bundle.sh
 ## 설치와 사용 (오프라인 PC)
 
 ```powershell
-Expand-Archive cozy-offline-bundle-1.0.0-SNAPSHOT.zip C:\cozy-bundle
-cd C:\cozy-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT
+Expand-Archive cozy-offline-bundle-1.0.0.zip C:\cozy-bundle
+cd C:\cozy-bundle\cozy-offline-bundle-1.0.0
 .\cozy.cmd install                      # %USERPROFILE%\cozy에 설치 (다른 곳: .\cozy.cmd install D:\cozy)
 $env:Path = "$env:USERPROFILE\cozy\bin;$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
 

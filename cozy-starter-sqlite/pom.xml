@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.salvia95.cozy</groupId>
     <artifactId>cozy-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <relativePath>../cozy-parent/pom.xml</relativePath>
   </parent>
 
