@@ -28,6 +28,10 @@ if ((Resolve-Path (Join-Path $Bundle 'repository')).Path -ne $repo) {
 $docs = Join-Path $Destination 'docs'
 if (Test-Path $docs) { Remove-Item -Recurse -Force $docs }
 Copy-Item -Recurse (Join-Path $Bundle 'docs') $docs
+$licenses = Join-Path $Destination 'licenses'
+if (Test-Path $licenses) { Remove-Item -Recurse -Force $licenses }
+Copy-Item -Recurse (Join-Path $Bundle 'licenses') $licenses
+Copy-Item (Join-Path $Bundle 'LICENSE'), (Join-Path $Bundle 'NOTICE') $Destination -Force
 Copy-Item (Join-Path $Bundle 'new-app.ps1'), (Join-Path $Bundle 'COZY_VERSION') $Destination -Force
 
 $settings = @"

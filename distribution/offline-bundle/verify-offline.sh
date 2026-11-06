@@ -32,6 +32,20 @@ fi
 cd "$WORK"
 unzip -q "$ZIP"
 BUNDLE="$(ls -d "$WORK"/cozy-offline-bundle-*/ | head -1)"
+BUNDLE="${BUNDLE%/}"
+
+# 라이선스 목록 (ADR-0028): 번들의 저장소만으로 다시 만들어 담긴 목록과 같은지 본다.
+# 네트워크가 없으므로 약한 카피레프트 jar의 소스 jar가 빠져 있으면 여기서 실패한다
+VERSION="$(cat "$BUNDLE/COZY_VERSION")"
+MAVEN_FILE="$(basename "$(ls "$BUNDLE"/apache-maven-*-bin.zip | head -1)")"
+test -f "$BUNDLE/LICENSE" && test -f "$BUNDLE/NOTICE"
+java -cp "$BUNDLE/repository/io/salvia95/cozy/cozy-starter-runtime/$VERSION/cozy-starter-runtime-$VERSION.jar" \
+  io.salvia95.cozy.runtime.internal.dist.BundleLicenses --repository="$BUNDLE/repository" \
+  --overrides="$BUNDLE/licenses/license-overrides.txt" --output="$WORK/THIRD-PARTY.check.txt" \
+  --title="Cozy offline bundle $VERSION" --maven-distribution="$MAVEN_FILE"
+diff -u "$BUNDLE/licenses/THIRD-PARTY.txt" "$WORK/THIRD-PARTY.check.txt"
+echo "[cozy] 라이선스 목록 확인: $(grep -c 'sources.jar\]' "$BUNDLE/licenses/THIRD-PARTY.txt")개 jar의 소스 jar 포함"
+
 bash "$BUNDLE/install-offline.sh" "$WORK/cozy"
 MAVEN_BIN="$(ls -d "$WORK"/cozy/apache-maven-*/bin | head -1)"
 export PATH="$MAVEN_BIN:$PATH"

@@ -37,6 +37,11 @@ mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCa
 - 결정 기록: [docs/adr/](docs/adr/README.md)
 - 코딩 에이전트용 규칙(생성 앱에 들어간다): [docs/AGENTS.md](docs/AGENTS.md)
 - 오프라인 번들: [distribution/offline-bundle/README.md](distribution/offline-bundle/README.md)
+- 릴리스 절차: [docs/conventions/release.md](docs/conventions/release.md)
+
+## 릴리스
+
+프레임워크는 [GitHub Releases](https://github.com/Salvia95/cozy-framework/releases)에 오프라인 번들 zip과 `SHA256SUMS`로 나온다. 번들 하나에 Cozy 모듈, 앱 빌드에 필요한 Maven 저장소, Maven 배포판, 설치 스크립트, 문서가 들어 있다. 절차는 [docs/conventions/release.md](docs/conventions/release.md), 결정은 [ADR-0028](docs/adr/0028-release.md)에 있다.
 
 ## 라이선스
 

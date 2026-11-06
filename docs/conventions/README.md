@@ -15,3 +15,4 @@
 | [getting-started.md](getting-started.md) | 새 앱 만들기: 아키타입 옵션(`appId`, `appName`, `persistence`, `events`), 생성 구조, 오프라인 번들 | M7 |
 | [../AGENTS.md](../AGENTS.md) | 생성 앱에 들어가는 코딩 에이전트용 1페이지 규칙 | M7 |
 | [performance.md](performance.md) | 비기능 목표(PRD §11) 측정: 기동 시간(AOT 유무), 힙, app-image 크기, 오프라인 빌드 | M7 |
+| [release.md](release.md) | 프레임워크 릴리스 절차, 버전 바꾸기, 릴리스 워크플로, 번들 라이선스 목록과 예외 목록 형식 | 릴리스 |

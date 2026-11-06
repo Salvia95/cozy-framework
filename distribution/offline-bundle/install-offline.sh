@@ -26,6 +26,8 @@ if [ "$BUNDLE/repository" != "$DEST/repository" ]; then
   cp -r "$BUNDLE/repository" "$DEST/repository"
 fi
 rm -rf "$DEST/docs" && cp -r "$BUNDLE/docs" "$DEST/docs"
+rm -rf "$DEST/licenses" && cp -r "$BUNDLE/licenses" "$DEST/licenses"
+cp "$BUNDLE/LICENSE" "$BUNDLE/NOTICE" "$DEST/"
 cp "$BUNDLE/new-app.sh" "$BUNDLE/COZY_VERSION" "$DEST/"
 
 cat > "$MAVEN_DIR/conf/settings.xml" <<XML

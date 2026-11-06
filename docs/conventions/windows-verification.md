@@ -144,8 +144,10 @@ powershell -ExecutionPolicy Bypass -File distribution\offline-bundle\build-bundl
 
 - [ ] `build\offline-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT.zip`이 생긴다.
 - [ ] 로그에 옵션 3조합(basic, persistence, events)의 `BUILD SUCCESS`가 각각 두 번 있다(verify, -Pdist package).
+- [ ] 로그에 `[cozy] 번들 라이선스 목록: 아티팩트 ...개, 소스 jar ...개`가 있다. 번들에 `LICENSE`, `NOTICE`, `licenses\THIRD-PARTY.txt`가 있다(ADR-0028).
 
 WSL이나 Linux에서 만든 번들(`distribution/offline-bundle/build-bundle.sh`)을 써도 된다. 번들 내용은 운영체제와 상관없다.
+릴리스 전에는 CI가 만든 번들로 확인한다(`gh workflow run release.yml` → 실행 결과의 `cozy-offline-bundle-{버전}`). 받은 뒤 `Get-FileHash -Algorithm SHA256`이 `SHA256SUMS`와 같은지 본다.
 
 ### 오프라인 PC에서 확인 (M7 완료 기준)
 

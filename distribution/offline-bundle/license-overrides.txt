@@ -1,0 +1,24 @@
+# 오프라인 번들 라이선스 예외 목록 (ADR-0028)
+#
+# POM의 <licenses>로 라이선스를 정할 수 없는 아티팩트만 적는다. 형식: groupId:artifactId:version  SPDX[|SPDX]  # 근거
+# 근거에는 확인한 곳(jar 안의 파일, 상위 저장소의 LICENSE, 소스 머리말)을 적는다. 버전까지 맞아야 적용되므로
+# 버전이 바뀌면 BundleLicenses가 다시 실패하고, 그때 다시 확인한다. 확인일: 2026-11-06.
+
+# POM에 라이선스가 없음
+isorelax:isorelax:20030108                    MIT           # jar의 COPYING.txt가 MIT 문구
+xalan:serializer:2.7.3                        Apache-2.0    # Apache Xalan. 상위 저장소 apache/xalan-java LICENSE.txt가 Apache-2.0
+org.codehaus.plexus:plexus-i18n:1.0-beta-10   Apache-2.0    # 상위 저장소 codehaus-plexus/plexus-i18n 소스 머리말이 Apache-2.0
+org.codehaus.plexus:plexus-components:1.1.12  Apache-2.0    # POM만 있음. Codehaus Plexus 부모 POM. 다음 판 plexus:1.0.11부터 POM에 Apache-2.0
+org.codehaus.plexus:plexus:1.0.10             Apache-2.0    # POM만 있음. 다음 판 plexus:1.0.11의 POM이 Apache-2.0
+org.sonatype.oss:oss-parent:7                 Apache-2.0    # POM만 있음. POM 머리말 주석이 Apache-2.0
+org.sonatype.oss:oss-parent:9                 Apache-2.0    # POM만 있음. POM 머리말 주석이 Apache-2.0
+org.sonatype.forge:forge-parent:10            Apache-2.0    # POM만 있음. POM 머리말 주석이 Apache-2.0
+org.sonatype.forge:forge-parent:5             Apache-2.0    # POM만 있음. 같은 프로젝트의 forge-parent:10 머리말이 Apache-2.0
+
+# 이름으로 정할 수 없음
+net.rootdev:java-rdfa:1.0.0-BETA1             BSD-3-Clause  # POM은 "BSD". 상위 저장소 iteggmbh/java-rdfa COPYING이 3조항 BSD 문구
+net.rootdev:java-rdfa-parent:1.0.0-BETA1      BSD-3-Clause  # POM만 있음. java-rdfa와 같은 COPYING
+org.jdom:jdom2:2.0.6.1                        LicenseRef-JDOM  # jar의 META-INF/LICENSE.txt. Apache 1.1식 허용형(감사 문구 조항 없음)
+
+# POM의 이름이 소스와 다름
+org.springframework.session:spring-session-bom:4.1.1  Apache-2.0  # POM만 있는 BOM. POM은 "Broadcom Foundation License"이지만 4.1.1 태그의 LICENSE.txt가 Apache-2.0. Spring 빌드 규약의 상용판 값이 들어간 것으로 보인다
