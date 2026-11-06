@@ -14,4 +14,4 @@
 ## 결과
 
 - resources에는 경계 메타데이터를 두지 않는다.
-- cozy-rules R1~R8이 이 결정을 강제한다(M4). ADR-0029 이후 R1~R11.
+- cozy-rules R1~R8이 이 결정을 강제한다(M4). ADR-0029 이후 R1~R11, ADR-0030 이후 R1~R13.

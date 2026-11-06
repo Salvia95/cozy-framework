@@ -5,7 +5,8 @@
 <main class="container-xl py-4">
   <div class="page-header mb-4">
     <h2 class="page-title">패턴 카탈로그</h2>
-    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면 <span th:text="${screens.size()}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.</div>
+    <div class="text-secondary">fragment <span th:text="${total}">0</span>개 · 화면 <span th:text="${screens.size()}">0</span>개 · 화면은 먼저 여기 있는 패턴을 찾아 쓰고, 없을 때만 새로 만듭니다.
+      아이콘 이름은 <a th:href="@{/cozy/dev/catalog/icons}">아이콘 목록</a>에서 찾습니다.</div>
   </div>
   <section class="mb-5" th:if="${!screens.isEmpty()}">
     <h3 class="mb-3">screen</h3>
@@ -63,6 +64,9 @@
 </body>
 </html>
 
+<!--/* 아래 조각은 카탈로그가 골라 쓰는 것뿐이다. 카탈로그 화면 자체에는 그리지 않는다(th:remove="all"). 고를 때는 조각만 꺼내므로 영향이 없다 */-->
+<th:block th:remove="all">
+
 <div class="cozy-catalog-placeholder" th:fragment="placeholder(name)" th:text="|${name} 자리|">자리</div>
 
 <!--/* 매니페스트 샘플이 fragment 파라미터에 쓰는 예시 조각 */-->
@@ -75,4 +79,18 @@
   <div class="col"><input class="form-control" type="search" name="q" placeholder="검색" aria-label="검색"></div>
   <div class="col-auto"><button class="btn" type="submit">찾기</button></div>
 </form>
-<a class="btn btn-primary" th:fragment="sampleAction" href="#">새로 만들기</a>
+<a class="btn btn-primary" th:fragment="sampleAction" href="#"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새로 만들기</a>
+<div class="datagrid" th:fragment="sampleDetail">
+  <div class="datagrid-item"><div class="datagrid-title">상태</div><div class="datagrid-content"><span class="badge bg-blue-lt">고정</span></div></div>
+  <div class="datagrid-item"><div class="datagrid-title">만든 시각</div><div class="datagrid-content">2026-11-06 10:00</div></div>
+</div>
+<div class="row row-deck row-cards" th:fragment="sampleStats">
+  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('notes', 'primary', '12개', '전체 메모')}"></div></div>
+  <div class="col-sm-6 col-lg-3"><div th:replace="~{cozy/component/stat :: stat('pin', 'azure', '3개', '고정한 메모')}"></div></div>
+</div>
+<div class="card" th:fragment="sampleCard"><div class="card-body text-secondary">본문 카드</div></div>
+<div class="list-group list-group-flush" th:fragment="sampleList">
+  <div class="list-group-item">메모를 만들었습니다: 회의록 정리</div>
+  <div class="list-group-item">메모를 만들었습니다: 주간 보고</div>
+</div>
+</th:block>

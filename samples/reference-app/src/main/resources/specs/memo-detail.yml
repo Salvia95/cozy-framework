@@ -1,7 +1,7 @@
 # 메모 상세 + 수정
 screen: memo-detail
 template: memo/api/detail
-fragments: [form]
+fragments: [memoForm]
 model:
   memo: io.salvia95.cozy.reference.memo.api.dto.MemoViews.Detail
   form: io.salvia95.cozy.reference.memo.api.dto.MemoForm

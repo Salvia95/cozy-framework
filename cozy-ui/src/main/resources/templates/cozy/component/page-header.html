@@ -1,0 +1,9 @@
+<!--/* 화면 머리: 제목과 오른쪽 동작 버튼. 패턴이 쓴다. actions가 없으면 ~{}를 넘긴다. */-->
+<div class="page-header d-print-none" th:fragment="pageHeader(cozyHeading, cozyActions)">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col"><h2 class="page-title" th:text="${cozyHeading}">제목</h2></div>
+      <div class="col-auto ms-auto d-print-none"><div class="btn-list"><th:block th:replace="${cozyActions}"></th:block></div></div>
+    </div>
+  </div>
+</div>

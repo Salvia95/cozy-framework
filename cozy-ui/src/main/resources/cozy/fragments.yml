@@ -1,5 +1,6 @@
 # Cozy 프레임워크 fragment 매니페스트 (PRD §6.4). 형식: docs/conventions/ui.md
 # 앱은 자기 resources/cozy/fragments.yml에 templates/fragments/ 아래 fragment를 같은 형식으로 적는다.
+# 계층: layout → pattern → component → icon (R4)
 fragments:
   # ── layout ───────────────────────────────────────────────
   - id: layout/base
@@ -15,7 +16,7 @@ fragments:
   - id: layout/app-shell
     template: cozy/layout/base
     signature: appShell(cozyTitle, cozyContent)
-    purpose: 앱 화면의 기본 레이아웃. 사이드 내비(CozyNavItem)와 플래시 알림을 포함한다.
+    purpose: 앱 화면의 기본 레이아웃. Tabler 세로 내비(CozyNavItem의 아이콘·이름), 앱 메뉴(진단 내보내기·종료), 푸터 버전.
     document: true
     params:
       - { name: cozyTitle, type: String, required: true, description: 브라우저 제목 앞부분 }
@@ -35,7 +36,7 @@ fragments:
   - id: pattern/list-with-filter
     template: cozy/pattern/list-with-filter
     signature: listWithFilter(cozyHeading, cozyActions, cozyFilter, cozyResult)
-    purpose: 필터 폼 + 결과 목록. 필터가 hx-get으로 result fragment만 바꾼다.
+    purpose: 필터 폼 + 결과 목록. 필터가 hx-get으로 result fragment만 바꾼다. 머리(제목·동작)와 플래시를 그린다.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
       - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
@@ -54,35 +55,47 @@ fragments:
       default: { cozyHeading: 새 메모 }
   - id: pattern/detail-edit
     template: cozy/pattern/detail-edit
-    signature: detailEdit(cozyHeading, cozyDetail, cozyForm)
-    purpose: 상세 보기와 수정 폼을 나란히 둔다.
+    signature: detailEdit(cozyHeading, cozyActions, cozyDetail, cozyForm)
+    purpose: 상세 보기와 수정 폼을 나란히 둔다. 삭제 같은 동작은 머리 오른쪽(actions)에 둔다.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
-      - { name: cozyDetail, type: fragment, required: true, description: 읽기 화면 }
+      - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyDetail, type: fragment, required: true, description: "읽기 화면 (datagrid 권장)" }
       - { name: cozyForm, type: fragment, required: true, description: 수정 <form> }
     samples:
-      default: { cozyHeading: 메모 상세 }
+      default: { cozyHeading: 메모 상세, cozyActions: sampleAction, cozyDetail: sampleDetail }
   - id: pattern/master-detail
     template: cozy/pattern/master-detail
     signature: masterDetail(cozyHeading, cozyMaster, cozyDetail)
-    purpose: 왼쪽 목록 + 오른쪽 상세. 목록 링크가 hx-get으로 #detail을 바꾼다.
+    purpose: 왼쪽 목록 + 오른쪽 상세. 목록(list-group list-group-flush)의 링크가 hx-get으로 #detail을 바꾼다.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
       - { name: cozyMaster, type: fragment, required: true, description: 목록 }
       - { name: cozyDetail, type: fragment, required: true, description: 처음 보일 상세 }
     samples:
       default: { cozyHeading: 목록 }
+  - id: pattern/overview
+    template: cozy/pattern/overview
+    signature: overview(cozyHeading, cozyActions, cozyStats, cozyBody)
+    purpose: 개요(대시보드). 숫자 카드 줄(component/stat)과 그 아래 카드들.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyStats, type: fragment, required: true, description: '<div class="row row-deck row-cards"> 안의 col과 stat' }
+      - { name: cozyBody, type: fragment, required: true, description: 숫자 카드 아래 본문 }
+    samples:
+      default: { cozyHeading: 대시보드, cozyActions: sampleAction, cozyStats: sampleStats, cozyBody: sampleCard }
   - id: pattern/polling-panel
     template: cozy/pattern/polling-panel
     signature: pollingPanel(cozyHeading, cozyUrl, cozySeconds, cozyBody)
-    purpose: 주기적으로 본문을 다시 받아 오는 패널.
+    purpose: 주기적으로 본문을 다시 받아 오는 카드. 본문은 list-group list-group-flush나 card-body로 감싼다.
     params:
       - { name: cozyHeading, type: String, required: true, description: 패널 제목 }
       - { name: cozyUrl, type: String, required: true, description: 본문 fragment를 돌려주는 주소 }
       - { name: cozySeconds, type: int, required: true, description: 갱신 간격(초) }
       - { name: cozyBody, type: fragment, required: true, description: 처음 보일 본문 }
     samples:
-      default: { cozyHeading: 최근 활동, cozyUrl: /cozy/dev/catalog, cozySeconds: 3600 }
+      default: { cozyHeading: 최근 활동, cozyUrl: /cozy/dev/catalog, cozySeconds: 3600, cozyBody: sampleList }
 
   # ── component ────────────────────────────────────────────
   - id: component/field
@@ -92,12 +105,13 @@ fragments:
     params:
       - { name: name, type: String, required: true, description: 폼 객체의 속성 이름 }
       - { name: label, type: String, required: true, description: 표시 이름 }
-      - { name: type, type: String, required: true, description: "text, textarea, checkbox, number, date, email" }
+      - { name: type, type: String, required: true, description: "text, textarea, checkbox, switch, number, date, email" }
     samples:
       default: { name: title, label: 제목, type: text, _form: { title: 회의록 정리 } }
       error: { name: title, label: 제목, type: text, _form: { title: "" }, _errors: { title: 제목을 입력하세요 } }
       textarea: { name: body, label: 본문, type: textarea, _form: { body: 여러 줄 본문 } }
       checkbox: { name: pinned, label: 고정, type: checkbox, _form: { pinned: true } }
+      switch: { name: pinned, label: 목록 위에 고정, type: switch, _form: { pinned: true } }
   - id: component/data-table
     template: cozy/component/data-table
     signature: dataTable(cozyHead, cozyBody)
@@ -110,7 +124,7 @@ fragments:
   - id: component/pagination
     template: cozy/component/pagination
     signature: pagination(page, url, target, include)
-    purpose: 이전·다음 페이지 이동과 전체 건수.
+    purpose: 이전·다음, 페이지 번호(최대 5개)와 전체 건수.
     params:
       - { name: page, type: io.salvia95.cozy.ui.CozyPage, required: true, description: 현재 페이지 }
       - { name: url, type: String, required: true, description: 목록 주소 (page 파라미터가 붙는다) }
@@ -132,23 +146,65 @@ fragments:
   - id: component/alert
     template: cozy/component/alert
     signature: alert(kind, message)
-    purpose: 화면 위쪽 알림. app-shell이 플래시(CozyFlash)를 이것으로 그린다.
+    purpose: 아이콘이 붙은 알림. 패턴은 같은 파일의 flash()로 플래시(CozyFlash)를 그린다.
     params:
       - { name: kind, type: String, required: true, description: "success, info, warning, danger" }
       - { name: message, type: String, required: true, description: 알림 문장 }
     samples:
       success: { kind: success, message: 저장했습니다 }
+      info: { kind: info, message: 메모를 지웠습니다 }
+      warning: { kind: warning, message: 저장하지 않은 입력이 있습니다 }
       danger: { kind: danger, message: 저장하지 못했습니다 }
+  - id: component/flash
+    template: cozy/component/alert
+    signature: flash()
+    purpose: 컨트롤러가 남긴 플래시(CozyFlash)를 alert로 그린다. 패턴이 page-body 맨 위에 둔다.
+    params: []
+    samples:
+      default: {}
+  - id: component/page-header
+    template: cozy/component/page-header
+    signature: pageHeader(cozyHeading, cozyActions)
+    purpose: 화면 머리. 제목과 오른쪽 동작 버튼. 패턴이 쓴다.
+    params:
+      - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
+      - { name: cozyActions, type: fragment, required: false, description: "오른쪽 버튼 (없으면 ~{})" }
+    samples:
+      default: { cozyHeading: 메모, cozyActions: sampleAction }
+  - id: component/stat
+    template: cozy/component/stat
+    signature: stat(icon, color, value, label)
+    purpose: 숫자 하나를 보여 주는 작은 카드 (개요 화면).
+    params:
+      - { name: icon, type: String, required: true, description: Tabler Icons 이름 }
+      - { name: color, type: String, required: false, description: "Tabler 색 이름 (primary, azure, green, orange, red)" }
+      - { name: value, type: String, required: true, description: 값 }
+      - { name: label, type: String, required: true, description: 설명 }
+    samples:
+      default: { icon: notes, color: primary, value: 12개, label: 전체 메모 }
+      azure: { icon: pin, color: azure, value: 3개, label: 고정한 메모 }
   - id: component/empty-state
     template: cozy/component/empty-state
-    signature: emptyState(title, description)
-    purpose: 결과가 없을 때 보여 준다.
+    signature: emptyState(icon, title, description)
+    purpose: 결과가 없을 때 아이콘과 함께 보여 준다.
     params:
+      - { name: icon, type: String, required: true, description: "Tabler Icons 이름 (예: notes, search)" }
       - { name: title, type: String, required: true, description: 한 줄 제목 }
       - { name: description, type: String, required: false, description: 다음에 할 일 }
     samples:
-      default: { title: 메모가 없습니다, description: 새 메모를 만들어 보세요. }
-      titleOnly: { title: 결과가 없습니다 }
+      default: { icon: notes, title: 메모가 없습니다, description: 새 메모를 만들어 보세요. }
+      titleOnly: { icon: search, title: 결과가 없습니다 }
+  - id: component/empty-state-action
+    template: cozy/component/empty-state
+    signature: emptyStateAction(cozyIcon, cozyTitle, cozyDescription, cozyAction)
+    purpose: 결과가 없을 때 다음 행동 버튼까지 보여 준다.
+    params:
+      - { name: cozyIcon, type: String, required: true, description: Tabler Icons 이름 }
+      - { name: cozyTitle, type: String, required: true, description: 한 줄 제목 }
+      - { name: cozyDescription, type: String, required: false, description: 다음에 할 일 }
+      - { name: cozyAction, type: fragment, required: true, description: 버튼 }
+    samples:
+      default: { cozyIcon: notes, cozyTitle: 메모가 없습니다, cozyDescription: 첫 메모를 만들어 보세요., cozyAction: sampleAction }
   - id: component/modal
     template: cozy/component/modal
     signature: modal(cozyId, cozyTitle, cozyBody)
@@ -175,3 +231,22 @@ fragments:
     params: []
     samples:
       default: {}
+
+  # ── icon ─────────────────────────────────────────────────
+  - id: icon/tabler
+    template: cozy/icon/tabler
+    signature: icon(name)
+    purpose: Tabler Icons 외곽선 아이콘 (5,203개). 이름은 /cozy/dev/catalog/icons에서 찾는다.
+    params:
+      - { name: name, type: String, required: true, description: "아이콘 이름 (예: plus, notes, trash)" }
+    samples:
+      default: { name: notes }
+      plus: { name: plus }
+  - id: icon/tabler-filled
+    template: cozy/icon/tabler
+    signature: iconFilled(name)
+    purpose: Tabler Icons 채운 아이콘 (1,054개).
+    params:
+      - { name: name, type: String, required: true, description: "아이콘 이름 (예: star, heart, pin)" }
+    samples:
+      default: { name: star }

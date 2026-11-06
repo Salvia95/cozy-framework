@@ -35,7 +35,12 @@ public final class RuleChecker {
 
 	private static final Set<String> RESERVED = Set.of("cozy", "fragments", "error");
 
-	private static final List<String> LAYERS = List.of("layout", "pattern", "component");
+	private static final List<String> LAYERS = List.of("layout", "pattern", "component", "icon");
+
+	/** 아이콘 fragment가 있는 템플릿 (R13) */
+	private static final String ICON_TEMPLATE = "cozy/icon/tabler";
+
+	private static final java.util.regex.Pattern STRING_LITERAL = java.util.regex.Pattern.compile("'([a-z0-9-]+)'");
 
 	/** 모듈 템플릿 폴더: 화면, 다른 모듈용, 모듈 전용 */
 	private static final List<String> MODULE_LAYERS = List.of("api", "spi", "internal");
@@ -144,6 +149,13 @@ public final class RuleChecker {
 			error(template.file, each.line(), "R11", each.text(), "같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 "
 					+ "실행되어 반복 변수가 아직 없습니다. <th:block th:each=\"...\"> 안쪽 요소에 th:replace를 두세요.");
 		}
+		for (FragmentDef def : template.fragments.values()) {
+			if (template.elements.contains(def.name().toLowerCase())) {
+				error(template.file, def.line(), "R12", "th:fragment=\"" + def.name() + "\"", "같은 파일에 <" + def.name().toLowerCase()
+						+ "> 요소가 있습니다. Thymeleaf는 '" + def.name() + "'를 고를 때 그 이름의 fragment와 요소를 모두 가져옵니다. "
+						+ "HTML 요소 이름과 다른 이름으로 바꾸세요 (예: form → memoForm, table → memoTable).");
+			}
+		}
 		for (FragmentDef duplicate : template.duplicateFragments) {
 			error(template.file, duplicate.line(), "R6", duplicate.signature(), "같은 파일에 fragment '" + duplicate.name()
 					+ "'가 두 번 선언되어 있습니다. 이름을 바꾸세요.");
@@ -239,7 +251,7 @@ public final class RuleChecker {
 		if (fromRank >= 0 && toRank >= 0) {
 			if (toRank < fromRank) {
 				error(file, line, "R4", display, LAYERS.get(fromRank) + "는 " + LAYERS.get(toRank)
-						+ "를 참조할 수 없습니다. layout → pattern → component 방향으로만 참조합니다.");
+						+ "를 참조할 수 없습니다. layout → pattern → component → icon 방향으로만 참조합니다.");
 				return true;
 			}
 			if (toRank == fromRank && !this.input.allowSameLayer()) {
@@ -280,9 +292,59 @@ public final class RuleChecker {
 				if (given != def.params().size()) {
 					error(file, line, "R6", display, def.signature() + "는 파라미터가 " + def.params().size() + "개인데 "
 							+ given + "개를 넘겼습니다. 선언과 같은 개수로 넘기세요.");
+					return;
+				}
+				if (targetName.equals(ICON_TEMPLATE) && given == 1) {
+					checkIcon(file, line, display, ref);
 				}
 			}
 		}
+	}
+
+	/** R13: 글자로 쓴 아이콘 이름이 스프라이트에 있어야 한다. 변수로 넘긴 이름은 Java 쪽(CozyNavItem 등)이 검사한다 */
+	private void checkIcon(TemplateFile file, int line, String display, Ref ref) {
+		Matcher literal = STRING_LITERAL.matcher(ref.args().get(0));
+		if (!literal.matches()) {
+			return;
+		}
+		String name = literal.group(1);
+		boolean filled = ref.selector().equals("iconFilled");
+		java.util.Set<String> names = filled ? this.input.filledIcons() : this.input.icons();
+		if (names.isEmpty()) {
+			error(file, line, "R13", display, "아이콘 목록이 없어 '" + name + "'를 확인할 수 없습니다. cozy-ui가 클래스패스에 있어야 합니다.");
+			return;
+		}
+		if (!names.contains(name)) {
+			String similar = names.stream()
+				.filter((n) -> distance(n, name) <= 2)
+				.sorted(java.util.Comparator.comparingInt((String n) -> distance(n, name)).thenComparing(n -> n))
+				.limit(5)
+				.reduce((a, b) -> a + ", " + b)
+				.map((s) -> " 비슷한 이름: " + s + ".")
+				.orElse("");
+			error(file, line, "R13", display, "아이콘 '" + name + "'가 Tabler Icons" + (filled ? " filled" : "")
+					+ "에 없습니다." + similar + " 이름은 tabler.io/icons에서 찾습니다(오프라인이면 /cozy/dev/catalog의 icon).");
+		}
+	}
+
+	/** 편집 거리 (오타 제안용) */
+	private static int distance(String a, String b) {
+		int[] previous = new int[b.length() + 1];
+		int[] current = new int[b.length() + 1];
+		for (int j = 0; j <= b.length(); j++) {
+			previous[j] = j;
+		}
+		for (int i = 1; i <= a.length(); i++) {
+			current[0] = i;
+			for (int j = 1; j <= b.length(); j++) {
+				int cost = (a.charAt(i - 1) == b.charAt(j - 1)) ? 0 : 1;
+				current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + cost);
+			}
+			int[] swap = previous;
+			previous = current;
+			current = swap;
+		}
+		return previous[b.length()];
 	}
 
 	// ── R8: 매니페스트 ──────────────────────────────────────────

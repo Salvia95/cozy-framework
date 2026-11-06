@@ -12,10 +12,26 @@
 .cozy-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 2000; background: var(--tblr-primary); transition: width 300ms ease; }
 html.cozy-busy .cozy-progress { width: 70%; }
 
-/* 업데이트 배너 */
-.cozy-update-banner { text-align: center; }
+/* 앱 화면 틀(Tabler 세로 내비). 패턴의 루트는 th:block이라 page-header·page-body가 <main>의 자식이다.
+   main이 page-wrapper의 남은 높이를 채워 푸터를 아래로 민다 */
+.page-wrapper > main { display: flex; flex: 1 0 auto; flex-direction: column; }
+.cozy-brand { display: inline-flex; align-items: center; gap: .5rem; color: inherit; text-decoration: none; }
+.cozy-brand:hover { text-decoration: none; }
+/* 앱 메뉴(진단 내보내기, 종료)는 POST 폼이라 버튼을 nav-link처럼 그린다 */
+.cozy-nav-button { width: 100%; border: 0; background: transparent; text-align: start; }
+/* 한글 문장은 단어 중간에서 끊지 않고 줄 길이를 고르게 */
+.empty-title, .empty-subtitle, .alert-description { word-break: keep-all; text-wrap: balance; }
+/* overview 패턴: 숫자 카드 줄이 있으면 본문과 띄운다 */
+.cozy-overview-body { margin-top: var(--tblr-page-padding-y, 1.5rem); }
+.page-body > .container-xl > .cozy-overview-body:first-child { margin-top: 0; }
 
 /* 패턴 카탈로그 */
 .cozy-catalog-frame { width: 100%; height: 320px; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
 .cozy-catalog-frame-tall { height: 560px; }
 .cozy-catalog-placeholder { padding: 1rem; border: 1px dashed var(--tblr-border-color); border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); text-align: center; }
+
+/* 아이콘 목록 (/cozy/dev/catalog/icons) */
+.cozy-icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .5rem; }
+.cozy-icon-cell { display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: .75rem .25rem; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); color: inherit; font-size: .75rem; word-break: break-all; }
+.cozy-icon-cell .icon { width: 1.5rem; height: 1.5rem; }
+.cozy-icon-cell:hover { border-color: var(--tblr-primary); }

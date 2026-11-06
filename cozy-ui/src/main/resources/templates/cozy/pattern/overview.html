@@ -1,0 +1,14 @@
+<!--/*
+  개요(대시보드). 머리(제목·동작) + 플래시 + 숫자 카드 줄 + 본문.
+  stats: <div class="row row-deck row-cards"> 안에 col과 component/stat을 둔 영역(없으면 ~{}), body: 그 아래 카드들.
+*/-->
+<th:block th:fragment="overview(cozyHeading, cozyActions, cozyStats, cozyBody)">
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyActions})}"></div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div th:replace="~{cozy/component/alert :: flash()}"></div>
+      <th:block th:replace="${cozyStats}"></th:block>
+      <div class="cozy-overview-body"><th:block th:replace="${cozyBody}"></th:block></div>
+    </div>
+  </div>
+</th:block>

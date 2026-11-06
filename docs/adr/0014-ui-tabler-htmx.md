@@ -17,3 +17,4 @@ UI는 Tabler(MIT), htmx(0BSD), Pretendard(OFL-1.1)로 구성한다. 화면은 Th
 
 - 벤더 자산은 레포에 커밋하고, vendor.lock의 SHA-256으로 검증한다(M3).
 - 버전은 ADR-0017을 따른다. 2026-11-05 기준 Tabler 1.7.3, htmx 2.0.11, Pretendard 1.3.9.
+- 2026-11-06: 아이콘은 Tabler Icons 3.50.0 전체를 쓴다([ADR-0030](0030-ui-quality.md)).

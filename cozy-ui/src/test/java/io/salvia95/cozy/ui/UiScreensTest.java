@@ -44,13 +44,18 @@ class UiScreensTest {
 		assertThat(html.indexOf(">항목<")).isLessThan(html.indexOf(">둘째<"));
 		assertThat(html).containsPattern("class=\"nav-item active\"[\\s\\S]*?항목");
 		// 모든 자산이 로컬이고 실제로 내려온다 (네트워크를 끊어도 같게 그려진다)
-		Matcher m = Pattern.compile("(?:href|src)=\"(/cozy/[^\"]+)\"").matcher(html);
-		int count = 0;
+		Matcher m = Pattern.compile("(?:href|src)=\"(/cozy/[^\"#]+)(?:#[^\"]*)?\"").matcher(html);
+		java.util.Set<String> assets = new java.util.TreeSet<>();
 		while (m.find()) {
-			this.mvc.perform(get(m.group(1))).andExpect(status().isOk());
-			count++;
+			assets.add(m.group(1));
 		}
-		assertThat(count).isEqualTo(6);
+		for (String asset : assets) {
+			this.mvc.perform(get(asset)).andExpect(status().isOk());
+		}
+		assertThat(assets).containsExactlyInAnyOrder("/cozy/vendor/pretendard/1.3.9/pretendardvariable.css",
+				"/cozy/vendor/tabler/1.7.3/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.3/js/tabler.min.js",
+				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/tabler-icons/3.50.0/tabler-sprite.svg",
+				"/cozy/favicon.svg");
 		assertThat(html).doesNotContainPattern("(?:href|src)=\"(?:https?:)?//");
 	}
 

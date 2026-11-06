@@ -7,9 +7,9 @@
 | [runtime.md](runtime.md) | CozyApplication, `cozy.app.*`, `cozy.data-dir`, `cozy.runtime.*`, 데이터 경로, 외부 설정, 비밀 값, 보안 최소선, 종료(트레이·화면 메뉴), 진단 내보내기, CozyDiagnosticsContributor | M1, M6 |
 | [windows-verification.md](windows-verification.md) | Windows에서 직접 확인하는 수용 기준과 기록 | M1~ |
 | [sqlite.md](sqlite.md) | `cozy.sqlite.*`, 연결 설정, 트랜잭션 모드, 마이그레이션 규칙, TypeHandler, 예외 분류 | M2 |
-| [ui.md](ui.md) | 화면 구성, 컨트롤러 규약, fragment 목록, 매니페스트 형식, 카탈로그, 벤더 자산 | M3 |
+| [ui.md](ui.md) | 화면 구성(Tabler 세로 레이아웃), 컨트롤러 규약, fragment 목록, 아이콘(CozyIcons), 매니페스트 형식, 카탈로그, 벤더 자산 | M3, ADR-0030 |
 | [structure.md](structure.md) | 모듈 구조: Java 패키지와 템플릿의 api · spi · internal, 레이어 방향(C8), fragment 조합 | ADR-0029 |
-| [rules.md](rules.md) | 템플릿 경계 규칙 R1~R11, 실패 메시지, `cozy.rules.*`, cozy-rules API | M4 |
+| [rules.md](rules.md) | 템플릿 경계 규칙 R1~R13, 실패 메시지, `cozy.rules.*`, cozy-rules API | M4 |
 | [testing.md](testing.md) | CozyArchitectureTest, CozyRenderingTest, 검사 C1~C8, 화면 스펙 형식, 위반 픽스처 | M4 |
 | [events.md](events.md) | CozyEvent, 전달 보장, 인박스, 스키마 진화 규칙과 샘플, 외부 호출 리스너 규칙, `cozy.events.*` | M5 |
 | [distribution.md](distribution.md) | `mvn -Pdist package`, `cozy.dist.*`, AOT 캐시, SQLite 네이티브 라이브러리, 설치 위치, `cozy.update.*`, 매니페스트 형식, 업데이트·롤백 흐름, 종단 검증 | M6, M7 |

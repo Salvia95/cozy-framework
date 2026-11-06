@@ -1,52 +1,68 @@
 <!DOCTYPE html>
 <!--/*
-  홈 화면(api): list-with-filter 패턴. 필터는 result fragment만 바꾸고(htmx), 등록 폼은 오류면 noteForm fragment만 다시
-  그린다. 최근 활동 카드는 home/internal/activity 조각을 조합한다.
+  홈 화면(api): overview 패턴. 머리 오른쪽에 메모 추가 폼, 본문은 목록 카드(필터·결과)와 최근 활동 카드.
+  필터는 result fragment만 바꾸고(htmx), 추가 폼은 오류면 noteForm fragment만 다시 그린다. 최근 활동은 home/internal/activity 조각이다.
   - api/: 컨트롤러가 렌더링하는 화면. 모델을 읽는 곳은 여기뿐이다.
   - internal/: 화면과 spi가 조합하는 조각. 값은 파라미터로만 받는다.
   - spi/: 다른 모듈이 부르는 fragment(공개하면 cozy/fragments.yml에 적는다). 값은 파라미터로만 받는다.
-  새 화면을 만들 때는 먼저 패턴 카탈로그(/cozy/dev/catalog)에서 맞는 패턴을 찾는다.
+  새 화면을 만들 때는 먼저 패턴 카탈로그(/cozy/dev/catalog)에서 맞는 패턴을, 아이콘은 /cozy/dev/catalog/icons에서 찾는다.
 */-->
 <html th:replace="~{cozy/layout/base :: appShell('홈', ~{::main})}">
 <body>
 <main>
-  <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#noteForm}, ~{::#filter}, ~{::#result})}">
-    <form id="noteForm" th:fragment="noteForm" class="d-flex gap-2 align-items-start" th:action="@{/notes}" method="post"
+  <section th:replace="~{cozy/pattern/overview :: overview('홈', ~{::#noteForm}, ~{}, ~{::#home-body})}">
+    <form id="noteForm" th:fragment="noteForm" class="d-flex align-items-start gap-2" th:action="@{/notes}" method="post"
           th:object="${form}" th:hx-post="@{/notes}" hx-target="this" hx-swap="outerHTML">
-      <div th:replace="~{cozy/component/field :: field('title', '새 메모', 'text')}"></div>
-      <button class="btn btn-primary mt-4" type="submit">추가</button>
-    </form>
-
-    <form id="filter" class="row g-2 align-items-center" th:action="@{/}" method="get" th:object="${filter}"
-          th:hx-get="@{/}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true" hx-trigger="submit, input delay:300ms">
-      <div class="col">
-        <input class="form-control" type="search" th:field="*{q}" placeholder="제목으로 찾기" aria-label="검색">
+      <div class="position-relative">
+        <input type="text" class="form-control" th:field="*{title}" placeholder="새 메모 제목" aria-label="새 메모 제목"
+               th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'">
+        <div class="invalid-tooltip d-block" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">오류</div>
       </div>
-      <div class="col-auto"><span th:replace="~{cozy/component/loading :: loading()}"></span></div>
+      <button class="btn btn-primary" type="submit"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>추가</button>
     </form>
 
-    <div id="result" th:fragment="result">
-      <th:block th:if="${result.rows.isEmpty()}">
-        <div th:replace="~{cozy/component/empty-state :: emptyState('메모가 없습니다', '위에서 첫 메모를 추가해 보세요.')}"></div>
-      </th:block>
-      <th:block th:unless="${result.rows.isEmpty()}">
-        <div th:replace="~{cozy/component/data-table :: dataTable(~{::#note-head}, ~{::.note-row})}">
-          <table>
-            <thead><tr id="note-head"><th>제목</th><th>추가한 시각</th></tr></thead>
-            <tbody>
-              <tr class="note-row" th:each="row : ${result.rows}">
-                <td th:text="${row.title}">제목</td>
-                <td class="text-secondary" th:text="${row.createdAt}">2026-11-07 09:00</td>
-              </tr>
-            </tbody>
-          </table>
+    <div id="home-body" class="row row-cards">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">메모</h3></div>
+          <div class="card-body border-bottom py-3">
+            <form id="filter" class="row g-2 align-items-center" th:action="@{/}" method="get" th:object="${filter}"
+                  th:hx-get="@{/}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true" hx-trigger="submit, input delay:300ms">
+              <div class="col">
+                <div class="input-icon">
+                  <span class="input-icon-addon"><svg th:replace="~{cozy/icon/tabler :: icon('search')}"></svg></span>
+                  <input class="form-control" type="search" th:field="*{q}" placeholder="제목으로 찾기" aria-label="검색">
+                  <span class="input-icon-addon"><span th:replace="~{cozy/component/loading :: loading()}"></span></span>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div id="result" th:fragment="result">
+            <th:block th:if="${result.rows.isEmpty()}">
+              <div class="card-body">
+                <div th:replace="~{cozy/component/empty-state :: emptyState('notes', '메모가 없습니다', '위에서 첫 메모를 추가해 보세요.')}"></div>
+              </div>
+            </th:block>
+            <th:block th:unless="${result.rows.isEmpty()}">
+              <div th:replace="~{cozy/component/data-table :: dataTable(~{::#note-head}, ~{::.note-row})}">
+                <table>
+                  <thead><tr id="note-head"><th>제목</th><th class="w-1">추가한 시각</th></tr></thead>
+                  <tbody>
+                    <tr class="note-row" th:each="row : ${result.rows}">
+                      <td class="fw-medium" th:text="${row.title}">제목</td>
+                      <td class="text-secondary text-nowrap" th:text="${row.createdAt}">2026-11-07 09:00</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </th:block>
+          </div>
         </div>
-      </th:block>
+      </div>
+      <div class="col-lg-4">
+        <div th:replace="~{home/internal/activity :: recentActivity(${activity.items})}"></div>
+      </div>
     </div>
-  </section>
-
-  <section class="container-xl pb-3">
-    <div th:replace="~{home/internal/activity :: recentActivity(${activity.items})}"></div>
   </section>
 </main>
 </body>

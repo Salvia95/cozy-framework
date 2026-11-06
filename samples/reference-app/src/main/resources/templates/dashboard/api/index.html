@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<!--/* 대시보드 화면(api): memo·activity의 spi fragment 조합 + polling-panel 주기 갱신. */-->
+<!--/* 대시보드 화면(api): overview 패턴. 숫자 카드는 memo의 spi fragment, 최근 활동은 activity의 spi fragment를 polling-panel로 감싼다. */-->
 <html th:replace="~{cozy/layout/base :: appShell('대시보드', ~{::main})}">
 <body>
 <main>
-  <section th:replace="~{cozy/pattern/master-detail :: masterDetail('대시보드', ~{::#memo-summary}, ~{::#activity-panel})}">
+  <section th:replace="~{cozy/pattern/overview :: overview('대시보드', ~{::#dashboard-actions}, ~{::#memo-summary}, ~{::#activity-panel})}">
+    <a id="dashboard-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
     <div id="memo-summary">
       <div th:replace="~{memo/spi/summary :: memoSummary(${dashboard.memo})}"></div>
     </div>

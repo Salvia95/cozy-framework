@@ -1,5 +1,8 @@
 package io.salvia95.cozy.ui;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
 /**
  * 페이지 정보 (pagination 컴포넌트 입력).
  *
@@ -43,5 +46,13 @@ public record CozyPage(int number, int size, long totalElements) {
 
 	public int next() {
 		return Math.min(totalPages(), this.number + 1);
+	}
+
+	/** pagination에 보일 페이지 번호: 현재 페이지를 가운데 두고 최대 5개 */
+	public List<Integer> window() {
+		int total = totalPages();
+		int first = Math.max(1, Math.min(this.number - 2, total - 4));
+		int last = Math.min(total, first + 4);
+		return IntStream.rangeClosed(first, last).boxed().toList();
 	}
 }

@@ -1,11 +1,11 @@
 <!--/* 메모 입력 칸과 버튼 (memo 안에서만 쓰는 조각). 새 메모(api/form)와 상세 수정(api/detail)이 같이 쓴다.
-     칸은 감싸는 form의 th:object에 바인딩된다. */-->
+     칸은 감싸는 form의 th:object에 바인딩된다. backLabel: 저장하지 않고 나가는 링크 글자 */-->
 <th:block th:fragment="memoFields(backLabel)">
   <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
   <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
-  <div th:replace="~{cozy/component/field :: field('pinned', '고정', 'checkbox')}"></div>
-  <div class="d-flex gap-2">
-    <button class="btn btn-primary" type="submit">저장</button>
-    <a class="btn" th:href="@{/memo}" th:text="${backLabel}">목록</a>
+  <div th:replace="~{cozy/component/field :: field('pinned', '목록 위에 고정', 'switch')}"></div>
+  <div class="btn-list mt-4">
+    <button class="btn btn-primary" type="submit"><svg th:replace="~{cozy/icon/tabler :: icon('device-floppy')}"></svg>저장</button>
+    <a class="btn btn-ghost-secondary" th:href="@{/memo}" th:text="${backLabel}">취소</a>
   </div>
 </th:block>

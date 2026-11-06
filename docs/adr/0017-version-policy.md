@@ -46,6 +46,8 @@
 | Tabler | 1.7.3 | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
+| Tabler Icons (`@tabler/icons-sprite`) | 3.50.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
+| agent-browser | 0.41.2 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
 
 ## 근거
 

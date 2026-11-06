@@ -1,11 +1,20 @@
-<!--/* 최근 활동 카드 (home 안에서만 쓰는 조각). items: 화면 DTO HomeViews.ActivityRow 목록 */-->
+<!--/* 최근 활동 카드 (home 안에서만 쓰는 조각). items: 화면 DTO HomeViews.ActivityRow 목록. 값은 파라미터로만 받는다. */-->
 <div class="card" th:fragment="recentActivity(items)">
   <div class="card-header"><h3 class="card-title">최근 활동</h3></div>
-  <ul class="list-group list-group-flush" th:unless="${items.isEmpty()}">
-    <li class="list-group-item d-flex justify-content-between" th:each="item : ${items}">
-      <span th:text="${item.message}">메모를 추가했습니다</span>
-      <span class="text-secondary" th:text="${item.at}">2026-11-07 09:00</span>
-    </li>
-  </ul>
-  <div class="card-body text-secondary" th:if="${items.isEmpty()}">아직 활동이 없습니다.</div>
+  <th:block th:if="${items.isEmpty()}">
+    <div class="card-body">
+      <div th:replace="~{cozy/component/empty-state :: emptyState('activity', '아직 활동이 없습니다', '메모를 추가하면 여기에 기록됩니다.')}"></div>
+    </div>
+  </th:block>
+  <div class="list-group list-group-flush" th:unless="${items.isEmpty()}">
+    <div class="list-group-item" th:each="item : ${items}">
+      <div class="row align-items-center">
+        <div class="col-auto"><span class="avatar avatar-sm bg-primary-lt"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
+        <div class="col text-truncate">
+          <div class="text-truncate" th:text="${item.message}">메모를 추가했습니다</div>
+          <div class="text-secondary small" th:text="${item.at}">2026-11-07 09:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

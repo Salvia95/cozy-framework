@@ -1,4 +1,12 @@
-<!--/* 알림(플래시 포함). kind: success, info, warning, danger */-->
-<div class="alert" role="alert" th:fragment="alert(kind, message)" th:classappend="|alert-${kind ?: 'info'}|">
+<!--/* 알림. kind: success, info, warning, danger. 종류에 맞는 아이콘이 붙는다. flash()는 컨트롤러의 CozyFlash를 그린다(패턴이 쓴다). */-->
+<div class="alert" role="alert" th:fragment="alert(kind, message)" th:classappend="|alert-${kind ?: 'info'}|"
+     th:with="cozyAlertIcon=${kind == 'success'} ? 'circle-check' : (${kind == 'danger'} ? 'alert-circle' : (${kind == 'warning'} ? 'alert-triangle' : 'info-circle'))">
+  <div class="alert-icon"><svg th:replace="~{cozy/icon/tabler :: icon(${cozyAlertIcon})}"></svg></div>
   <div class="alert-description" th:text="${message}">알림</div>
 </div>
+
+<th:block th:fragment="flash()">
+  <th:block th:if="${cozyFlash != null}">
+    <div th:replace="~{:: alert(${cozyFlash.kind}, ${cozyFlash.message})}"></div>
+  </th:block>
+</th:block>

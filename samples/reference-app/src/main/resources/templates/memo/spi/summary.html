@@ -1,20 +1,13 @@
-<!--/* memo 공개 fragment(spi): 메모 요약. 다른 모듈(dashboard)이 "memo :: spi" 의존을 선언하고 쓴다.
-     값은 파라미터(summary: spi.dto.MemoSummary)로만 받는다. */-->
-<div class="row g-3" th:fragment="memoSummary(summary)">
-  <div class="col-sm-6">
-    <div class="card card-sm"><div class="card-body">
-      <div class="text-secondary">전체 메모</div>
-      <div class="h2 mb-0" th:text="${summary.total}">0</div>
-    </div></div>
+<!--/* memo 공개 fragment(spi): 메모 요약 숫자 카드 줄. 다른 모듈(dashboard)이 "memo :: spi" 의존을 선언하고 쓴다.
+     값은 파라미터(summary: spi.dto.MemoSummary)로만 받는다. overview 패턴의 stats 자리에 맞는다. */-->
+<div class="row row-deck row-cards" th:fragment="memoSummary(summary)">
+  <div class="col-sm-6 col-lg-3">
+    <div th:replace="~{cozy/component/stat :: stat('notes', 'primary', ${summary.total} + '개', '전체 메모')}"></div>
   </div>
-  <div class="col-sm-6">
-    <div class="card card-sm"><div class="card-body">
-      <div class="text-secondary">고정한 메모</div>
-      <div class="h2 mb-0" th:text="${summary.pinned}">0</div>
-    </div></div>
+  <div class="col-sm-6 col-lg-3">
+    <div th:replace="~{cozy/component/stat :: stat('pin', 'azure', ${summary.pinned} + '개', '고정한 메모')}"></div>
   </div>
-  <div class="col-12 text-secondary">
-    <th:block th:if="${summary.latestTitle != null}">최근: <a th:href="@{/memo}" th:text="${summary.latestTitle}">제목</a></th:block>
-    <th:block th:if="${summary.latestTitle == null}">아직 메모가 없습니다. <a th:href="@{/memo/new}">새 메모</a></th:block>
+  <div class="col-lg-6">
+    <div th:replace="~{cozy/component/stat :: stat('clock', 'green', ${summary.latestTitle} ?: '아직 없습니다', '가장 최근에 만든 메모')}"></div>
   </div>
 </div>

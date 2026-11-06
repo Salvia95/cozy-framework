@@ -46,8 +46,14 @@ final class FragmentExpressions {
 	 * @param selector fragment 이름, id, class 이름
 	 * @param argCount 괄호 안 인자 개수. 괄호가 없으면 {@code null}
 	 * @param problem 검사할 수 없는 이유 (R7). 검사할 수 있으면 {@code null}
+	 * @param args 괄호 안 인자 원문(최상위 쉼표로 나눈 것). 괄호가 없으면 빈 목록
 	 */
-	record Ref(String raw, String template, SelectorKind kind, String selector, Integer argCount, String problem) {
+	record Ref(String raw, String template, SelectorKind kind, String selector, Integer argCount, String problem,
+			List<String> args) {
+
+		Ref(String raw, String template, SelectorKind kind, String selector, Integer argCount, String problem) {
+			this(raw, template, kind, selector, argCount, problem, List.of());
+		}
 
 		boolean sameFile() {
 			return this.template == null;
@@ -133,18 +139,20 @@ final class FragmentExpressions {
 		int open = indexOutsideQuotes(selectorPart, "(", 0);
 		String name = (open >= 0) ? selectorPart.substring(0, open).strip() : selectorPart;
 		Integer argCount = null;
+		List<String> args = List.of();
 		if (open >= 0) {
 			int close = matchingParen(selectorPart, open);
 			if (close < 0 || !selectorPart.substring(close + 1).isBlank()) {
 				return problem(raw, "fragment 인자의 괄호가 맞지 않습니다");
 			}
-			argCount = countArgs(selectorPart.substring(open + 1, close));
+			args = splitArgs(selectorPart.substring(open + 1, close));
+			argCount = args.size();
 		}
 		if (DYNAMIC.matcher(name).find()) {
 			return problem(raw, "fragment 이름이 동적입니다");
 		}
 		if (FRAGMENT_NAME.matcher(name).matches()) {
-			return new Ref(raw, template, SelectorKind.NAME, name, argCount, null);
+			return new Ref(raw, template, SelectorKind.NAME, name, argCount, null, args);
 		}
 		var id = ID_SELECTOR.matcher(name);
 		if (id.matches() && argCount == null) {
@@ -161,13 +169,14 @@ final class FragmentExpressions {
 		return new Ref(raw, null, SelectorKind.WHOLE, null, null, why);
 	}
 
-	/** 최상위 쉼표로 나눈 인자 개수. 비어 있으면 0 */
-	static int countArgs(String args) {
+	/** 최상위 쉼표로 나눈 인자 원문 (앞뒤 공백 제거). 비어 있으면 빈 목록 */
+	static List<String> splitArgs(String args) {
+		List<String> parts = new ArrayList<>();
 		if (args.isBlank()) {
-			return 0;
+			return parts;
 		}
-		int count = 1;
 		int depth = 0;
+		int start = 0;
 		boolean quoted = false;
 		for (int i = 0; i < args.length(); i++) {
 			char c = args.charAt(i);
@@ -186,14 +195,16 @@ final class FragmentExpressions {
 				case ')', '}', ']' -> depth--;
 				case ',' -> {
 					if (depth == 0) {
-						count++;
+						parts.add(args.substring(start, i).strip());
+						start = i + 1;
 					}
 				}
 				default -> {
 				}
 			}
 		}
-		return count;
+		parts.add(args.substring(start).strip());
+		return parts;
 	}
 
 	private static int indexOutsideQuotes(String s, String token, int from) {

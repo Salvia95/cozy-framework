@@ -108,7 +108,7 @@ public abstract class CozyArchitectureTest {
 		List<TemplateFile> templates = new ArrayList<>(CozyProject.appTemplates(templateRoot()));
 		templates.addAll(CozyProject.frameworkTemplates());
 		RulesInput input = new RulesInput(templates, CozyModules.model(CozyModules.of(applicationClass())),
-				CozyProject.manifest(manifestFile()), allowSameLayer());
+				CozyProject.manifest(manifestFile()), allowSameLayer(), CozyProject.icons(), CozyProject.filledIcons());
 		List<Violation> violations = TemplateRules.check(input);
 		violations.stream().filter((v) -> !v.isError()).forEach((v) -> System.out.println(v.format()));
 		List<Violation> errors = violations.stream().filter(Violation::isError).toList();

@@ -40,6 +40,10 @@
 ## 화면
 
 - 먼저 패턴 카탈로그(`/cozy/dev/catalog`, IntelliJ "dev 실행")와 `cozy/fragments.yml`에서 맞는 패턴·컴포넌트를 찾아 쓴다. 없을 때만 새로 만든다.
+- 화면은 패턴(`list-with-filter`, `form-page`, `detail-edit`, `master-detail`, `overview`)으로 감싼다. 패턴이 제목줄(`page-header`), 본문(`page-body`), 플래시를 그린다. `container-xl` 같은 틀을 직접 만들지 않는다.
+- 아이콘은 `<svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>`로 쓴다. 이름은 `/cozy/dev/catalog/icons`에서 찾는다. 버튼 글자 앞, 빈 상태, 내비(`CozyNavItem`의 네 번째 인자)에 둔다.
+- 마크업은 Tabler 클래스를 따른다: 카드 안의 목록은 `list-group list-group-flush`, 상세는 `datagrid`, 숫자는 `stat`, 결과 없음은 `emptyState`.
+- fragment 이름은 HTML 요소 이름(`form`, `table`)과 겹치지 않게 짓는다(예: `memoForm`).
 - 템플릿은 자기 모듈, `cozy/`(프레임워크), `fragments/`(앱 공용), 허용된 모듈의 `spi/`만 참조한다.
 - 같은 모듈 안에서는 api → spi → internal 방향으로만 참조한다. internal은 다른 모듈을 참조하지 않는다.
 - spi·internal fragment는 `${...}`로 파라미터와 `th:each`·`th:with` 지역 변수만 읽는다. 부르는 화면의 모델을 읽지 않는다.
@@ -60,7 +64,7 @@
 
 - 작업을 마치면 `mvn -o verify`를 실행한다.
 - 실패 메시지 앞의 ID대로 고친다.
-  - `[R1]`~`[R11]`: 템플릿 규칙
+  - `[R1]`~`[R13]`: 템플릿 규칙
   - `[C1]`~`[C8]`: 검사 (C8은 모듈 안 구조)
 - 메시지 형식은 `[ID] 위치 → 대상 — 고치는 법`이다. `—` 뒤의 고치는 법을 따른다.
 - 규칙 설명은 Cozy 문서 `docs/conventions/structure.md`, `rules.md`, `testing.md`에 있다.

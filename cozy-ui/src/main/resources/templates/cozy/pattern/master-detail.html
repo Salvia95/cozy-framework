@@ -1,8 +1,16 @@
-<!--/* 왼쪽 목록 + 오른쪽 상세. master의 링크가 hx-get으로 #detail을 바꾼다. */-->
-<section class="container-xl py-3" th:fragment="masterDetail(cozyHeading, cozyMaster, cozyDetail)">
-  <div class="page-header d-print-none mb-3"><h2 class="page-title" th:text="${cozyHeading}">목록</h2></div>
-  <div class="row row-cards">
-    <div class="col-md-4"><div class="card"><th:block th:replace="${cozyMaster}"></th:block></div></div>
-    <div class="col-md-8"><div class="card" id="detail"><th:block th:replace="${cozyDetail}"></th:block></div></div>
+<!--/*
+  왼쪽 목록 + 오른쪽 상세. master: 카드 안에 들어갈 목록(list-group list-group-flush 권장), detail: 상세 영역.
+  master의 링크가 hx-get으로 #detail을 바꾼다.
+*/-->
+<th:block th:fragment="masterDetail(cozyHeading, cozyMaster, cozyDetail)">
+  <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ~{})}"></div>
+  <div class="page-body">
+    <div class="container-xl">
+      <div th:replace="~{cozy/component/alert :: flash()}"></div>
+      <div class="row row-cards">
+        <div class="col-md-4"><div class="card"><th:block th:replace="${cozyMaster}"></th:block></div></div>
+        <div class="col-md-8"><div class="card" id="detail"><th:block th:replace="${cozyDetail}"></th:block></div></div>
+      </div>
+    </div>
   </div>
-</section>
+</th:block>

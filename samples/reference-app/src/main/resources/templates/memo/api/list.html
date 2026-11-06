@@ -1,39 +1,49 @@
 <!DOCTYPE html>
-<!--/* 메모 목록: list-with-filter 패턴. 필터와 페이지 이동은 result fragment만 바꾼다. */-->
+<!--/* 메모 목록 화면(api): list-with-filter 패턴. 필터와 페이지 이동은 result fragment만 바꾼다. */-->
 <html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}">
 <body>
 <main>
   <section th:replace="~{cozy/pattern/list-with-filter :: listWithFilter('메모', ~{::#memo-actions}, ~{::#filter}, ~{::#result})}">
-    <a id="memo-actions" class="btn btn-primary" th:href="@{/memo/new}">새 메모</a>
+    <a id="memo-actions" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
 
     <form id="filter" class="row g-2 align-items-center" th:action="@{/memo}" method="get" th:object="${filter}"
           th:hx-get="@{/memo}" hx-target="#result" hx-swap="outerHTML" hx-push-url="true"
           hx-trigger="submit, input delay:300ms, change">
       <div class="col">
-        <input class="form-control" type="search" th:field="*{q}" placeholder="제목이나 본문으로 찾기" aria-label="검색">
+        <div class="input-icon">
+          <span class="input-icon-addon"><svg th:replace="~{cozy/icon/tabler :: icon('search')}"></svg></span>
+          <input class="form-control" type="search" th:field="*{q}" placeholder="제목이나 본문으로 찾기" aria-label="검색">
+          <span class="input-icon-addon"><span th:replace="~{cozy/component/loading :: loading()}"></span></span>
+        </div>
       </div>
       <div class="col-auto">
-        <label class="form-check mb-0">
+        <label class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" th:field="*{pinned}">
           <span class="form-check-label">고정만</span>
         </label>
       </div>
-      <div class="col-auto"><span th:replace="~{cozy/component/loading :: loading()}"></span></div>
     </form>
 
     <div id="result" th:fragment="result">
       <th:block th:if="${result.rows.isEmpty()}">
-        <div th:replace="~{cozy/component/empty-state :: emptyState('메모가 없습니다', '조건을 바꾸거나 새 메모를 만들어 보세요.')}"></div>
+        <div class="card-body">
+          <div th:replace="~{cozy/component/empty-state :: emptyStateAction('notes', '메모가 없습니다', '조건을 바꾸거나 새 메모를 만들어 보세요.', ~{::#empty-action})}">
+            <a id="empty-action" class="btn btn-primary" th:href="@{/memo/new}"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>새 메모</a>
+          </div>
+        </div>
       </th:block>
       <th:block th:unless="${result.rows.isEmpty()}">
         <div th:replace="~{cozy/component/data-table :: dataTable(~{::#memo-head}, ~{::.memo-row})}">
           <table>
-            <thead><tr id="memo-head"><th>제목</th><th>상태</th><th>수정</th></tr></thead>
+            <thead><tr id="memo-head"><th>제목</th><th class="w-1">상태</th><th class="w-1">수정</th></tr></thead>
             <tbody>
               <tr class="memo-row" th:each="row : ${result.rows}">
-                <td><a th:href="@{/memo/{id}(id=${row.id})}" th:text="${row.title}">제목</a></td>
-                <td><th:block th:if="${row.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></th:block></td>
-                <td class="text-secondary" th:text="${row.updatedAt}">2026-11-06 10:00</td>
+                <td><a class="text-reset fw-medium" th:href="@{/memo/{id}(id=${row.id})}" th:text="${row.title}">제목</a></td>
+                <td class="text-nowrap">
+                  <th:block th:if="${row.pinned}"><span th:replace="~{cozy/component/badge :: badge('고정', 'blue')}"></span></th:block>
+                  <span class="text-secondary" th:unless="${row.pinned}">—</span>
+                </td>
+                <td class="text-secondary text-nowrap" th:text="${row.updatedAt}">2026-11-06 10:00</td>
               </tr>
             </tbody>
           </table>

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <!--
   Cozy 레이아웃 (PRD §6.4). 같은 파일 안의 fragment끼리만 서로 참조한다.
-  - base(cozyTitle, cozyContent): 완전한 HTML 문서. head, 자산, CSRF meta, 업데이트 결과·배너, 푸터 버전, 토스트 자리.
-  - appShell(cozyTitle, cozyContent): base + 사이드 내비 + 앱 메뉴(진단 내보내기, 종료) + 플래시. 앱 화면은 이것을 쓴다.
+  - base(cozyTitle, cozyContent): 완전한 HTML 문서. head, 자산, CSRF meta, 업데이트 결과·배너, 토스트 자리.
+  - appShell(cozyTitle, cozyContent): base + Tabler 세로 내비(아이콘, 앱 메뉴: 진단 내보내기·종료) + 푸터 버전. 앱 화면은 이것을 쓴다.
+    본문(<main>)은 .page-wrapper 안에 들어간다. 머리(page-header)·몸통(page-body)·플래시는 패턴이 그린다.
   화면에서 쓰는 법:
     <html th:replace="~{cozy/layout/base :: appShell('메모', ~{::main})}"> ... <main> 본문 </main> ... </html>
 -->
@@ -14,6 +15,7 @@
   <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
   <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"historyCacheSize":0}'>
   <title th:text="${cozyApp != null} ? ${cozyTitle + ' · ' + cozyApp.name} : ${cozyTitle}">Cozy</title>
+  <link rel="icon" type="image/svg+xml" th:href="@{/cozy/favicon.svg}">
   <link rel="stylesheet" th:href="@{/cozy/vendor/pretendard/1.3.9/pretendardvariable.css}">
   <link rel="stylesheet" th:href="@{/cozy/vendor/tabler/1.7.3/css/tabler.min.css}">
   <link rel="stylesheet" th:href="@{/cozy/cozy.css}">
@@ -25,34 +27,32 @@
   <div class="cozy-progress" aria-hidden="true"></div>
   <th:block th:if="${cozyUpdateOutcome != null}">
     <div class="alert rounded-0 mb-0" role="status"
-         th:classappend="${cozyUpdateOutcome.success} ? 'alert-success' : 'alert-danger'"
-         th:text="${cozyUpdateOutcome.message}">업데이트 결과</div>
+         th:classappend="${cozyUpdateOutcome.success} ? 'alert-success' : 'alert-danger'">
+      <div class="container-xl d-flex align-items-center gap-2">
+        <svg th:replace="~{cozy/icon/tabler :: icon(${cozyUpdateOutcome.success} ? 'circle-check' : 'alert-circle')}"></svg>
+        <span th:text="${cozyUpdateOutcome.message}">업데이트 결과</span>
+      </div>
+    </div>
   </th:block>
   <th:block th:if="${cozyUpdate != null}">
-    <div class="alert rounded-0 mb-0 cozy-update-banner d-flex flex-wrap align-items-center gap-2" role="status"
-         th:classappend="${cozyUpdate.required} ? 'alert-danger' : 'alert-warning'">
-      <div class="flex-fill">
-        <strong th:if="${cozyUpdate.required}">필수 업데이트입니다.</strong>
-        <span th:text="|새 버전 ${cozyUpdate.version}이 있습니다.|">새 버전이 있습니다.</span>
-        <span class="text-secondary" th:if="${!#strings.isEmpty(cozyUpdate.notes)}" th:text="${cozyUpdate.notes}">변경 내용</span>
-        <span class="text-secondary" th:unless="${cozyUpdate.installable}" th:text="${cozyUpdate.reason}">설치할 수 없는 이유</span>
+    <div class="alert rounded-0 mb-0" role="status" th:classappend="${cozyUpdate.required} ? 'alert-danger' : 'alert-warning'">
+      <div class="container-xl d-flex flex-wrap align-items-center gap-2">
+        <svg th:replace="~{cozy/icon/tabler :: icon('download')}"></svg>
+        <div class="flex-fill">
+          <strong th:if="${cozyUpdate.required}">필수 업데이트입니다.</strong>
+          <span th:text="|새 버전 ${cozyUpdate.version}이 있습니다.|">새 버전이 있습니다.</span>
+          <span class="text-secondary" th:if="${!#strings.isEmpty(cozyUpdate.notes)}" th:text="${cozyUpdate.notes}">변경 내용</span>
+          <span class="text-secondary" th:unless="${cozyUpdate.installable}" th:text="${cozyUpdate.reason}">설치할 수 없는 이유</span>
+        </div>
+        <form th:if="${cozyUpdate.installable}" method="post" th:action="@{/cozy/update}"
+              data-cozy-confirm="앱을 종료하고 새 버전으로 바꿉니다. 저장하지 않은 입력은 사라집니다. 계속할까요?">
+          <input type="hidden" name="version" th:value="${cozyUpdate.version}">
+          <button type="submit" class="btn btn-sm btn-primary">지금 업데이트</button>
+        </form>
       </div>
-      <form th:if="${cozyUpdate.installable}" method="post" th:action="@{/cozy/update}"
-            data-cozy-confirm="앱을 종료하고 새 버전으로 바꿉니다. 저장하지 않은 입력은 사라집니다. 계속할까요?">
-        <input type="hidden" name="version" th:value="${cozyUpdate.version}">
-        <button type="submit" class="btn btn-sm btn-primary">지금 업데이트</button>
-      </form>
     </div>
   </th:block>
   <th:block th:replace="${cozyContent}"></th:block>
-  <footer class="footer footer-transparent d-print-none">
-    <div class="container-xl text-secondary small">
-      <span th:text="${cozyApp?.name}">앱</span>
-      <span th:text="${cozyApp?.version}">dev</span>
-      <span>· Cozy</span>
-      <span th:text="${cozyApp?.cozyVersion}">dev</span>
-    </div>
-  </footer>
   <div id="cozy-toasts" class="toast-container position-fixed bottom-0 end-0 p-3" aria-live="polite"></div>
 </body>
 </html>
@@ -64,35 +64,57 @@
   <div class="page">
     <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
       <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cozy-sidebar"
+                aria-controls="cozy-sidebar" aria-expanded="false" aria-label="메뉴 열기">
+          <span class="navbar-toggler-icon"></span>
+        </button>
         <h1 class="navbar-brand navbar-brand-autodark">
-          <a th:href="@{/}" th:text="${cozyApp?.name}">앱</a>
+          <a class="cozy-brand" th:href="@{/}">
+            <span class="avatar avatar-sm bg-primary text-white" aria-hidden="true"
+                  th:text="${cozyApp != null} ? ${#strings.substring(cozyApp.name, 0, 1)} : 'C'">C</span>
+            <span th:text="${cozyApp?.name}">앱</span>
+          </a>
         </h1>
-        <div class="navbar-collapse">
+        <div class="collapse navbar-collapse" id="cozy-sidebar">
           <ul class="navbar-nav pt-lg-3">
             <li class="nav-item" th:each="link : ${cozyNav}" th:classappend="${link.active} ? 'active'">
               <a class="nav-link" th:href="@{${link.path}}" th:attr="aria-current=${link.active} ? 'page' : null">
+                <span class="nav-link-icon"><svg th:replace="~{cozy/icon/tabler :: icon(${link.icon})}"></svg></span>
                 <span class="nav-link-title" th:text="${link.label}">메뉴</span>
               </a>
             </li>
           </ul>
-          <div class="cozy-app-menu mt-lg-auto pt-3">
-            <form method="post" th:action="@{/cozy/diagnostics}">
-              <button type="submit" class="btn btn-ghost-secondary w-100 justify-content-start">진단 내보내기</button>
-            </form>
-            <form method="post" th:action="@{/cozy/shutdown}" data-cozy-confirm="앱을 종료할까요?">
-              <button type="submit" class="btn btn-ghost-danger w-100 justify-content-start">종료</button>
-            </form>
-          </div>
+          <ul class="navbar-nav mt-lg-auto pb-lg-3">
+            <li class="nav-item">
+              <form class="m-0" method="post" th:action="@{/cozy/diagnostics}">
+                <button type="submit" class="nav-link cozy-nav-button">
+                  <span class="nav-link-icon"><svg th:replace="~{cozy/icon/tabler :: icon('file-download')}"></svg></span>
+                  <span class="nav-link-title">진단 내보내기</span>
+                </button>
+              </form>
+            </li>
+            <li class="nav-item">
+              <form class="m-0" method="post" th:action="@{/cozy/shutdown}" data-cozy-confirm="앱을 종료할까요?">
+                <button type="submit" class="nav-link cozy-nav-button text-danger">
+                  <span class="nav-link-icon"><svg th:replace="~{cozy/icon/tabler :: icon('power')}"></svg></span>
+                  <span class="nav-link-title">종료</span>
+                </button>
+              </form>
+            </li>
+          </ul>
         </div>
       </div>
     </aside>
     <div class="page-wrapper">
-      <th:block th:if="${cozyFlash != null}">
-        <div class="container-xl pt-3">
-          <div th:replace="~{cozy/component/alert :: alert(${cozyFlash.kind}, ${cozyFlash.message})}"></div>
-        </div>
-      </th:block>
       <th:block th:replace="${cozyShellContent}"></th:block>
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl text-secondary small text-center">
+          <span th:text="${cozyApp?.name}">앱</span>
+          <span th:text="${cozyApp?.version}">dev</span>
+          <span>· Cozy</span>
+          <span th:text="${cozyApp?.cozyVersion}">dev</span>
+        </div>
+      </footer>
     </div>
   </div>
 </th:block>

@@ -340,12 +340,12 @@ class TemplateRulesTest {
 			Fixture f = fixture();
 			f.app("memo/internal/row.html", ROW);
 			f.app("memo/internal/table.html", """
-					<table th:fragment="table(items)"><th:block th:each="i : ${items}"><tr th:replace="~{memo/internal/row :: row(${i})}"></tr></th:block></table>""");
+					<table th:fragment="memoTable(items)"><th:block th:each="i : ${items}"><tr th:replace="~{memo/internal/row :: row(${i})}"></tr></th:block></table>""");
 			f.app("memo/spi/board.html", """
-					<section th:fragment="board(items)"><table th:replace="~{memo/internal/table :: table(${items})}"></table></section>""");
+					<section th:fragment="board(items)"><table th:replace="~{memo/internal/table :: memoTable(${items})}"></table></section>""");
 			f.app("memo/api/list.html", """
 					<main><section th:replace="~{memo/spi/board :: board(${memos})}"></section>
-					<table th:replace="~{memo/internal/table :: table(${memos})}"></table>
+					<table th:replace="~{memo/internal/table :: memoTable(${memos})}"></table>
 					<div th:replace="~{memo/api/detail :: body}"></div></main>""");
 			f.app("memo/api/detail.html", "<div th:fragment=\"body\">d</div>");
 			assertThat(f.check()).isEmpty();
@@ -440,6 +440,83 @@ class TemplateRulesTest {
 		}
 	}
 
+	@Nested
+	class R12 {
+
+		@Test
+		void fragmentNamedLikeAnotherElementInTheFileFails() {
+			Fixture f = fixture();
+			f.app("memo/api/detail.html", """
+					<div><form action="/memo/1/delete" method="post"><button>삭제</button></form>
+					<form id="edit" th:fragment="form"><input name="title"></form></div>""");
+			assertThat(f.rules()).containsExactly("R12");
+			assertThat(f.check().get(0).format()).contains("th:fragment=\"form\"").contains("<form>");
+		}
+
+		@Test
+		void fragmentNameThatIsNoElementOfTheFilePasses() {
+			Fixture f = fixture();
+			f.app("memo/api/detail.html", "<div><form id=\"edit\" th:fragment=\"memoForm\"><input name=\"title\"></form></div>");
+			assertThat(f.check()).isEmpty();
+		}
+	}
+
+	@Nested
+	class IconLayer {
+
+		static final String ICON = """
+				<svg class="icon" th:fragment="icon(name)"><use th:href="@{/x.svg} + '#tabler-' + ${name}"></use></svg>
+				<svg class="icon" th:fragment="iconFilled(name)"><use th:href="@{/y.svg} + '#tabler-filled-' + ${name}"></use></svg>""";
+
+		Fixture withIcons() {
+			Fixture f = fixture();
+			f.framework("cozy/icon/tabler.html", ICON);
+			f.manifest("icon/tabler", "cozy/icon/tabler", "icon(name)");
+			f.manifest("icon/tabler-filled", "cozy/icon/tabler", "iconFilled(name)");
+			f.icons = Set.of("plus", "home");
+			f.filledIcons = Set.of("star");
+			return f;
+		}
+
+		@Test
+		void componentMayUseIconAndKnownNamesPass() {
+			Fixture f = withIcons();
+			f.app("fragments/component/chip.html", """
+					<span th:fragment="chip(icon)"><svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>
+					<svg th:replace="~{cozy/icon/tabler :: iconFilled('star')}"></svg>
+					<svg th:replace="~{cozy/icon/tabler :: icon(${icon})}"></svg></span>""");
+			f.manifest("component/chip", "fragments/component/chip", "chip(icon)");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void iconMustNotUseComponent() {
+			Fixture f = withIcons();
+			f.app("fragments/icon/dot.html", "<span th:fragment=\"dot()\"><span th:replace=\"~{cozy/component/badge :: badge('a', 'b')}\"></span></span>");
+			f.manifest("icon/dot", "fragments/icon/dot", "dot()");
+			assertThat(f.rules()).containsExactly("R4");
+		}
+
+		@Test
+		void unknownIconNameFails() {
+			Fixture f = withIcons();
+			f.app("memo/api/list.html", """
+					<p><svg th:replace="~{cozy/icon/tabler :: icon('pluss')}"></svg>
+					<svg th:replace="~{cozy/icon/tabler :: iconFilled('home')}"></svg></p>""");
+			assertThat(f.rules()).containsExactly("R13", "R13");
+			assertThat(f.check().get(0).format()).contains("'pluss'").contains("비슷한 이름: plus");
+			assertThat(f.check().get(1).format()).contains("filled");
+		}
+
+		@Test
+		void iconNamesMissingFailClosed() {
+			Fixture f = withIcons();
+			f.icons = Set.of();
+			f.app("memo/api/list.html", "<p><svg th:replace=\"~{cozy/icon/tabler :: icon('plus')}\"></svg></p>");
+			assertThat(f.rules()).containsExactly("R13");
+		}
+	}
+
 	/** 검사 입력을 조립한다 */
 	static final class Fixture {
 
@@ -450,6 +527,10 @@ class TemplateRulesTest {
 		ModuleModel modules = ModuleModel.of();
 
 		boolean allowSameLayer;
+
+		Set<String> icons = Set.of();
+
+		Set<String> filledIcons = Set.of();
 
 		void app(String path, String content) {
 			this.templates.add(new TemplateFile(path, Origin.APP, "templates/" + path, content));
@@ -464,7 +545,8 @@ class TemplateRulesTest {
 		}
 
 		List<Violation> check() {
-			return TemplateRules.check(new RulesInput(this.templates, this.modules, this.manifest, this.allowSameLayer));
+			return TemplateRules.check(new RulesInput(this.templates, this.modules, this.manifest, this.allowSameLayer,
+					this.icons, this.filledIcons));
 		}
 
 		List<String> rules() {

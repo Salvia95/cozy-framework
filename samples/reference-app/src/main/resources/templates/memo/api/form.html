@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!--/* 새 메모 화면(api): form-page 패턴 + memo/internal/fields 조각. 검증 오류면 htmx가 form fragment만 바꾸고, 성공하면 상세로 이동한다(PRG). */-->
+<!--/* 새 메모 화면(api): form-page 패턴 + memo/internal/fields 조각. 검증 오류면 htmx가 memoForm fragment만 바꾸고, 성공하면 상세로 이동한다(PRG). */-->
 <html th:replace="~{cozy/layout/base :: appShell('새 메모', ~{::main})}">
 <body>
 <main>
-  <section th:replace="~{cozy/pattern/form-page :: formPage('새 메모', ~{::#form})}">
-    <form id="form" th:fragment="form" th:action="@{/memo}" method="post" th:object="${form}"
+  <section th:replace="~{cozy/pattern/form-page :: formPage('새 메모', ~{::#memoForm})}">
+    <form id="memoForm" th:fragment="memoForm" th:action="@{/memo}" method="post" th:object="${form}"
           th:hx-post="@{/memo}" hx-target="this" hx-swap="outerHTML">
       <th:block th:replace="~{memo/internal/fields :: memoFields('취소')}"></th:block>
     </form>

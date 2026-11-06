@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--/* 아이콘 목록 (cozy.dev.catalog.enabled=true). 화면에서는 ~{cozy/icon/tabler :: icon('이름')}으로 쓴다. 검색은 cozy.js가 한다. */-->
+<html th:replace="~{cozy/layout/base :: base('아이콘 목록', ~{::main})}">
+<body>
+<main class="container-xl py-4">
+  <div class="page-header mb-4">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">아이콘 목록</h2>
+        <div class="text-secondary">Tabler Icons 3.50.0 (MIT) · 외곽선 <span th:text="${outline.size()}">0</span>개 · 채운 아이콘
+          <span th:text="${filled.size()}">0</span>개 · 이름을 눌러 <code>icon('이름')</code>을 복사합니다.</div>
+      </div>
+      <div class="col-auto"><a class="btn" th:href="@{/cozy/dev/catalog}">카탈로그로</a></div>
+    </div>
+  </div>
+  <div class="input-icon mb-4">
+    <span class="input-icon-addon"><svg th:replace="~{cozy/icon/tabler :: icon('search')}"></svg></span>
+    <input class="form-control" type="search" placeholder="이름으로 찾기 (예: arrow, user, file)" aria-label="아이콘 찾기"
+           data-cozy-icon-filter="#cozy-icons">
+  </div>
+  <div id="cozy-icons">
+    <h3 class="mb-3">외곽선 <code>icon('이름')</code></h3>
+    <div class="cozy-icon-grid mb-5">
+      <button type="button" class="cozy-icon-cell" th:each="name : ${outline}" th:attr="data-name=${name},data-copy=|icon('${name}')|">
+        <svg th:replace="~{cozy/icon/tabler :: icon(${name})}"></svg><span th:text="${name}">plus</span>
+      </button>
+    </div>
+    <h3 class="mb-3">채운 아이콘 <code>iconFilled('이름')</code></h3>
+    <div class="cozy-icon-grid">
+      <button type="button" class="cozy-icon-cell" th:each="name : ${filled}" th:attr="data-name=${name},data-copy=|iconFilled('${name}')|">
+        <svg th:replace="~{cozy/icon/tabler :: iconFilled(${name})}"></svg><span th:text="${name}">star</span>
+      </button>
+    </div>
+  </div>
+</main>
+</body>
+</html>

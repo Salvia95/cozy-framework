@@ -23,12 +23,12 @@ public class UiTestApp {
 
 	@Bean
 	CozyNavItem second() {
-		return new CozyNavItem("둘째", "/second", 20);
+		return new CozyNavItem("둘째", "/second", 20, "file");
 	}
 
 	@Bean
 	CozyNavItem first() {
-		return new CozyNavItem("항목", "/uitest", 10);
+		return new CozyNavItem("항목", "/uitest", 10, "list");
 	}
 
 	@Controller

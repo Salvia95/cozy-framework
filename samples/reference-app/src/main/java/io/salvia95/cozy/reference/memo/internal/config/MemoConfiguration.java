@@ -10,6 +10,6 @@ class MemoConfiguration {
 
 	@Bean
 	CozyNavItem memoNavItem() {
-		return new CozyNavItem("메모", "/memo", 10);
+		return new CozyNavItem("메모", "/memo", 10, "notes");
 	}
 }

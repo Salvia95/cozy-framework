@@ -1,12 +1,18 @@
-<!--/* activity 공개 fragment(spi): 최근 활동 목록. 값은 파라미터(items: spi.dto.ActivityItem 목록)로만 받는다. */-->
+<!--/* activity 공개 fragment(spi): 최근 활동 목록. 값은 파라미터(items: spi.dto.ActivityItem 목록)로만 받는다.
+     카드 안에 바로 들어간다(list-group-flush). 비어 있으면 card-body 안에 빈 상태를 그린다. */-->
 <div th:fragment="recentActivity(items)">
   <th:block th:if="${items.isEmpty()}">
-    <div th:replace="~{cozy/component/empty-state :: emptyState('활동이 없습니다', '메모를 만들면 여기에 기록됩니다.')}"></div>
+    <div class="card-body">
+      <div th:replace="~{cozy/component/empty-state :: emptyState('activity', '활동이 없습니다', '메모를 만들면 여기에 기록됩니다.')}"></div>
+    </div>
   </th:block>
-  <ul class="list-unstyled mb-0" th:unless="${items.isEmpty()}">
-    <li class="py-1" th:each="item : ${items}">
-      <span th:text="${item.message}">메모를 만들었습니다</span>
-      <span class="text-secondary small ms-2" th:text="${item.at}">2026-11-06 10:00</span>
-    </li>
-  </ul>
+  <div class="list-group list-group-flush" th:unless="${items.isEmpty()}">
+    <div class="list-group-item" th:each="item : ${items}">
+      <div class="row align-items-center">
+        <div class="col-auto"><span class="avatar avatar-sm bg-primary-lt"><svg th:replace="~{cozy/icon/tabler :: icon('pencil-plus')}"></svg></span></div>
+        <div class="col text-truncate" th:text="${item.message}">메모를 만들었습니다: 회의록 정리</div>
+        <div class="col-auto text-secondary small text-nowrap" th:text="${item.at}">2026-11-06 10:00</div>
+      </div>
+    </div>
+  </div>
 </div>

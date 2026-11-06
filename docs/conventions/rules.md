@@ -6,8 +6,8 @@
 
 | 경로 | 소유 | 참조할 수 있는 것 |
 | --- | --- | --- |
-| `templates/cozy/{layout,pattern,component}/` | 프레임워크(cozy-ui jar). 앱은 쓰지 않는다 | `cozy/` 안의 아래 계층 |
-| `templates/fragments/{layout,pattern,component}/` | 앱 공용 | `cozy/`와 `fragments/`의 아래 계층 |
+| `templates/cozy/{layout,pattern,component,icon}/` | 프레임워크(cozy-ui jar). 앱은 쓰지 않는다 | `cozy/` 안의 아래 계층 |
+| `templates/fragments/{layout,pattern,component,icon}/` | 앱 공용 | `cozy/`와 `fragments/`의 아래 계층 |
 | `templates/{모듈}/api/` | 컨트롤러가 렌더링하는 화면. 모델을 읽는다 | 자기 모듈 전체, 선언한 모듈의 `spi/`, `cozy/`, `fragments/` |
 | `templates/{모듈}/spi/` | 다른 모듈이 부르는 fragment. 파라미터로만 받는다 | 자기 `internal/`·`spi/`, 선언한 모듈의 `spi/`, `cozy/`, `fragments/` |
 | `templates/{모듈}/internal/` | 같은 모듈의 api·spi가 조합하는 조각. 파라미터로만 받는다 | 자기 `internal/`, `cozy/`, `fragments/` |
@@ -17,10 +17,10 @@
 
 | ID | 규칙 | 위반 예 |
 | --- | --- | --- |
-| R1 | 최상위 폴더는 Java 모듈 이름이거나 예약어(`fragments`, `error`)여야 한다. 앱은 `cozy/`에 쓰지 않는다. `cozy/`와 `fragments/` 바로 아래에는 `layout`, `pattern`, `component` 폴더만 둔다. 모듈 템플릿은 `api/`, `spi/`, `internal/` 아래에 둔다 | `templates/vocc/`, `templates/memo/list.html` |
+| R1 | 최상위 폴더는 Java 모듈 이름이거나 예약어(`fragments`, `error`)여야 한다. 앱은 `cozy/`에 쓰지 않는다. `cozy/`와 `fragments/` 바로 아래에는 `layout`, `pattern`, `component`, `icon` 폴더만 둔다. 모듈 템플릿은 `api/`, `spi/`, `internal/` 아래에 둔다 | `templates/vocc/`, `templates/memo/list.html` |
 | R2 | `templates/` 바로 아래에 `.html`을 두지 않는다 | `templates/index.html` |
 | R3 | 다른 모듈의 템플릿은 `spi/` 아래 것만 참조한다. 이때 내 모듈의 allowedDependencies에 `"{모듈} :: spi"` 또는 `"{모듈}"`이 있어야 한다 | voc/api/list가 `wiki/api/detail :: body`를 참조 |
-| R4 | `cozy/`와 `fragments/` 안에서는 layout → pattern → component 방향으로만 참조한다. 같은 계층끼리는 기본으로 금지다 | component가 pattern을 참조 |
+| R4 | `cozy/`와 `fragments/` 안에서는 layout → pattern → component → icon 방향으로만 참조한다. 같은 계층끼리는 기본으로 금지다 | component가 pattern을 참조 |
 | R5 | `cozy/`는 `cozy/` 밖을 참조하지 않는다. `fragments/`는 모듈 템플릿을 참조하지 않는다 | `fragments/pattern/x`가 `memo/spi/y`를 참조 |
 | R6 | 참조한 템플릿과 fragment가 실제로 있고, 넘긴 인자 개수가 선언과 같아야 한다 | `~{cozy/component/badge :: badg(x)}` |
 | R7 | 동적 참조는 금지한다. 검사할 수 없는 것은 실패로 닫는다 | `th:replace="~{${view} :: body}"` |
@@ -28,6 +28,8 @@
 | R9 | 같은 모듈 안에서는 api → spi → internal 방향으로만 참조한다. spi는 자기 api를, internal은 자기 spi·api를 참조하지 않는다. internal은 다른 모듈의 템플릿을 참조하지 않는다 | `memo/spi/board`가 `memo/api/list :: result`를 참조 |
 | R10 | 앱 모듈의 `spi/`·`internal/` fragment는 파라미터와 지역 변수만 읽는다. 부르는 화면의 모델을 읽지 않는다 | `card(summary)`가 `${memos.size()}`를 읽음 |
 | R11 | 한 요소에 `th:each`와 `th:replace`(`th:insert`)를 같이 쓰지 않는다 | `<tr th:each="m : ${memos}" th:replace="~{memo/internal/row :: row(${m})}">` |
+| R12 | fragment 이름은 같은 파일에 있는 요소 이름과 겹치지 않는다. Thymeleaf가 `~{t :: form}`으로 `th:fragment="form"`과 `<form>` 요소를 모두 고르기 때문이다 | 삭제 `<form>`이 있는 파일의 `th:fragment="form"` |
+| R13 | `cozy/icon/tabler :: icon('이름')`, `iconFilled('이름')`에 글자로 쓴 이름은 Tabler Icons에 있어야 한다 | `icon('pluss')` |
 
 ### 세부 기준
 
@@ -50,6 +52,8 @@
   - 이름이 `cozy`로 시작하는 프레임워크 전역, `_csrf`
   - `@빈` 참조와 `param`(요청 파라미터)은 금지다. `*{...}`는 fragment 안의 `th:object` 아래에서만 쓴다
 - **R10과 R11**: 같은 요소의 th:each + th:replace는 R11 하나로 보고한다. 반복 변수를 R10으로 한 번 더 보고하지 않는다.
+- **R12 범위**: 그 요소가 fragment 자신뿐이어서 지금은 해롭지 않아도 실패로 닫는다. 같은 요소가 하나 더 생기는 순간 선택이 깨지기 때문이다. 이름은 `memoForm`, `memoTable`처럼 짓는다.
+- **R13 범위**: 글자로 쓴 이름만 본다. 변수로 넘긴 이름(`icon(${link.icon})`)은 Java 쪽이 확인한다(`CozyIcons.requireOutline`, `CozyNavItem`). 아이콘 목록이 없으면(cozy-ui가 클래스패스에 없으면) 글자로 쓴 아이콘은 모두 실패한다.
 - **속성 순서**: 검사는 Thymeleaf의 속성 우선순위(th:insert/replace → th:each → th:if·th:unless·th:switch·th:case → th:object·th:with → 나머지)대로 지역 변수가 생기는 시점을 따른다.
 
 ## 실패 메시지
@@ -60,6 +64,8 @@
 [R3] templates/voc/api/list.html:2 → wiki/api/detail :: body — wiki/api/는 wiki 안에서만 씁니다. 다른 모듈에는 wiki/spi/ 아래 fragment만 공개됩니다. wiki/spi/에 공개 fragment를 추가하세요.
 [R9] templates/memo/spi/board.html:2 → memo/api/list :: result — spi는 같은 모듈의 api를 참조하지 않습니다. 화면과 같이 쓰는 조각은 memo/internal/로 옮기고 api와 spi가 둘 다 그것을 조합하게 하세요.
 [R10] templates/memo/spi/card.html:2 → ${memos.size()} → memos — 'memos'는 card(summary)의 파라미터나 지역 변수가 아닙니다. spi·internal fragment는 부르는 화면의 모델을 읽지 않습니다. card(summary)에 파라미터를 더하고 부르는 쪽이 값을 넘기게 하세요.
+[R12] templates/memo/api/detail.html:3 → th:fragment="form" — 같은 파일에 <form> 요소가 있습니다. Thymeleaf는 'form'를 고를 때 그 이름의 fragment와 요소를 모두 가져옵니다. HTML 요소 이름과 다른 이름으로 바꾸세요 (예: form → memoForm, table → memoTable).
+[R13] templates/memo/api/list.html:2 → cozy/icon/tabler :: icon(1개 인자) — 아이콘 'pluss'가 Tabler Icons에 없습니다. 비슷한 이름: plus, …
 [R11] templates/memo/internal/table.html:2 → th:each + th:replace — 같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 실행되어 반복 변수가 아직 없습니다. <th:block th:each="..."> 안쪽 요소에 th:replace를 두세요.
 [R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
 [R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.

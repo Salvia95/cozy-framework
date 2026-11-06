@@ -42,7 +42,7 @@ class RuleFixturesTest {
 			fixtures = dirs.filter(Files::isDirectory).sorted().toList();
 		}
 		assertThat(fixtures).extracting(RuleFixturesTest::rule)
-			.containsExactlyInAnyOrder("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11");
+			.containsExactlyInAnyOrder("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13");
 		return fixtures.stream().map((fixture) -> DynamicTest.dynamicTest(fixture.getFileName().toString(), () -> {
 			String rule = rule(fixture);
 			List<Violation> violations = check(fixture);
@@ -66,7 +66,7 @@ class RuleFixturesTest {
 		List<TemplateFile> templates = new ArrayList<>(CozyProject.appTemplates(fixture.resolve("templates")));
 		templates.addAll(CozyProject.frameworkTemplates());
 		return TemplateRules.check(new RulesInput(templates, modules(fixture.resolve("modules.properties")),
-				CozyProject.manifest(fixture.resolve("fragments.yml")), false));
+				CozyProject.manifest(fixture.resolve("fragments.yml")), false, CozyProject.icons(), CozyProject.filledIcons()));
 	}
 
 	static ModuleModel modules(Path file) throws IOException {

@@ -38,8 +38,9 @@ class AppMenuAndUpdateBannerTest {
 	@Test
 	void appShellHasDiagnosticsAndShutdownForms() throws Exception {
 		String html = body(this.mvc.perform(get("/uitest")).andExpect(status().isOk()).andReturn());
-		assertThat(html).containsPattern("<form method=\"post\" action=\"/cozy/diagnostics\">\\s*<input type=\"hidden\" name=\"_csrf\"")
-			.containsPattern("<form method=\"post\" action=\"/cozy/shutdown\" data-cozy-confirm=\"앱을 종료할까요\\?\">\\s*<input type=\"hidden\" name=\"_csrf\"");
+		assertThat(html).containsPattern("<form class=\"m-0\" method=\"post\" action=\"/cozy/diagnostics\">\\s*<input type=\"hidden\" name=\"_csrf\"")
+			.containsPattern("<form class=\"m-0\" method=\"post\" action=\"/cozy/shutdown\" data-cozy-confirm=\"앱을 종료할까요\\?\">\\s*<input type=\"hidden\" name=\"_csrf\"")
+			.contains("#tabler-file-download").contains("#tabler-power");
 	}
 
 	@Test

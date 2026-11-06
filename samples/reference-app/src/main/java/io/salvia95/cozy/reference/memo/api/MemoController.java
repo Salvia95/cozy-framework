@@ -64,7 +64,7 @@ class MemoController {
 	@PostMapping
 	String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors, RedirectAttributes flash) {
 		if (errors.hasErrors()) {
-			return CozyViews.pageOrFragment("memo/api/form", "form");
+			return CozyViews.pageOrFragment("memo/api/form", "memoForm");
 		}
 		long id = this.memos.create(form.getTitle(), form.getBody(), form.isPinned());
 		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 저장했습니다"));
@@ -85,7 +85,7 @@ class MemoController {
 		MemoItem memo = find(id);
 		if (errors.hasErrors()) {
 			model.addAttribute("memo", MemoViews.Detail.of(memo));
-			return CozyViews.pageOrFragment("memo/api/detail", "form");
+			return CozyViews.pageOrFragment("memo/api/detail", "memoForm");
 		}
 		this.memos.update(id, form.getTitle(), form.getBody(), form.isPinned());
 		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("메모를 고쳤습니다"));

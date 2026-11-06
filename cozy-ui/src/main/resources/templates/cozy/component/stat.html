@@ -1,0 +1,14 @@
+<!--/* 숫자 하나를 보여 주는 작은 카드. icon: Tabler Icons 이름, color: Tabler 색 이름(primary, azure, green 등) */-->
+<div class="card card-sm" th:fragment="stat(icon, color, value, label)">
+  <div class="card-body">
+    <div class="row align-items-center">
+      <div class="col-auto">
+        <span class="avatar text-white" th:classappend="|bg-${color ?: 'primary'}|"><svg th:replace="~{cozy/icon/tabler :: icon(${icon})}"></svg></span>
+      </div>
+      <div class="col">
+        <div class="fw-medium" th:text="${value}">0</div>
+        <div class="text-secondary" th:text="${label}">항목</div>
+      </div>
+    </div>
+  </div>
+</div>

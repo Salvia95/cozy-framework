@@ -59,7 +59,7 @@ public class CozyLayoutAdvice {
 	List<NavLink> cozyNav(HttpServletRequest request) {
 		String path = request.getRequestURI().substring(request.getContextPath().length());
 		return this.navItems.stream()
-			.map((item) -> new NavLink(item.label(), item.path(), isActive(path, item.path())))
+			.map((item) -> new NavLink(item.label(), item.path(), item.icon(), isActive(path, item.path())))
 			.toList();
 	}
 
@@ -71,7 +71,7 @@ public class CozyLayoutAdvice {
 	}
 
 	/** 화면에 그리는 내비 링크. */
-	public record NavLink(String label, String path, boolean active) {
+	public record NavLink(String label, String path, String icon, boolean active) {
 	}
 
 	/** 푸터와 제목에 쓰는 앱 정보. */

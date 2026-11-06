@@ -80,6 +80,20 @@ public final class CozyProject {
 	}
 
 	/** 프레임워크와 앱 매니페스트의 모든 항목. UI 모듈이 없으면 빈 목록 */
+	/** 템플릿이 쓸 수 있는 Tabler Icons 이름 (외곽선). cozy-ui가 없으면 비어 있다 (R13) */
+	public static java.util.Set<String> icons() {
+		return uiPresent() ? io.salvia95.cozy.ui.CozyIcons.outline() : java.util.Set.of();
+	}
+
+	/** 템플릿이 쓸 수 있는 Tabler Icons 이름 (채운 아이콘). cozy-ui가 없으면 비어 있다 (R13) */
+	public static java.util.Set<String> filledIcons() {
+		return uiPresent() ? io.salvia95.cozy.ui.CozyIcons.filled() : java.util.Set.of();
+	}
+
+	private static boolean uiPresent() {
+		return ClassUtils.isPresent("io.salvia95.cozy.ui.CozyIcons", CozyProject.class.getClassLoader());
+	}
+
 	public static List<FragmentDeclaration> manifest(Path appManifest) {
 		if (!ClassUtils.isPresent("io.salvia95.cozy.ui.catalog.FragmentManifest", CozyProject.class.getClassLoader())) {
 			return List.of();

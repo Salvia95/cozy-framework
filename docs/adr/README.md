@@ -33,3 +33,4 @@
 | [0027](0027-framework-license.md) | 프레임워크 라이선스: Apache-2.0 | 레포 공개 |
 | [0028](0028-release.md) | 릴리스: GitHub Release의 오프라인 번들, 버전 고정, 번들 라이선스 | 배포 방식 |
 | [0029](0029-module-layers.md) | 모듈 안의 구조: api · spi · internal, 템플릿도 같은 3분할 (0008, 0009 개정) | 사용자 지시 |
+| [0030](0030-ui-quality.md) | 화면 품질: Tabler 레이아웃 구조, Tabler Icons 전체, 화면 확인(runtime-verifier) | 사용자 지적 |

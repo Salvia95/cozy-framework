@@ -10,6 +10,6 @@ class DashboardConfiguration {
 
 	@Bean
 	CozyNavItem dashboardNavItem() {
-		return new CozyNavItem("대시보드", "/dashboard", 0);
+		return new CozyNavItem("대시보드", "/dashboard", 0, "layout-dashboard");
 	}
 }

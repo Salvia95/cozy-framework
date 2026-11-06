@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import io.salvia95.cozy.ui.CozyIcons;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.FragmentManifest.Entry;
 import io.salvia95.cozy.ui.catalog.FragmentManifest.Param;
@@ -25,6 +26,7 @@ import io.salvia95.cozy.ui.catalog.ScreenSpec;
  * <ul>
  * <li>{@code /render?id&state}: 매니페스트 fragment를 상태별 샘플로 그린다.</li>
  * <li>{@code /screen?spec&state[&fragment]}: 화면 스펙의 템플릿을 상태별 fixture로 그린다 (PRD §10).</li>
+ * <li>{@code /icons}: 쓸 수 있는 Tabler Icons 이름 전체 (오프라인에서 이름을 찾는 곳).</li>
  * </ul>
  * 미리보기는 iframe으로 분리해 레이아웃(완전한 문서)도 그대로 보인다. cozy-test의 렌더링 테스트가 같은 경로를 쓴다.
  */
@@ -54,13 +56,20 @@ public class CatalogController {
 	@GetMapping
 	String catalog(Model model) {
 		Map<String, List<Entry>> groups = new LinkedHashMap<>();
-		for (String group : List.of("layout", "pattern", "component", "spi")) {
+		for (String group : List.of("layout", "pattern", "component", "icon", "spi")) {
 			groups.put(group, this.manifest.fragments().stream().filter((e) -> e.group().equals(group)).toList());
 		}
 		model.addAttribute("groups", groups);
 		model.addAttribute("total", this.manifest.fragments().size());
 		model.addAttribute("screens", this.specs);
 		return "cozy/dev/catalog";
+	}
+
+	@GetMapping("/icons")
+	String icons(Model model) {
+		model.addAttribute("outline", CozyIcons.outline().stream().sorted().toList());
+		model.addAttribute("filled", CozyIcons.filled().stream().sorted().toList());
+		return "cozy/dev/icons";
 	}
 
 	@GetMapping("/render")

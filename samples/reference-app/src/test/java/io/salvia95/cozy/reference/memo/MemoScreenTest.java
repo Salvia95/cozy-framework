@@ -65,7 +65,7 @@ class MemoScreenTest {
 			.andReturn();
 		String detail = body(this.mvc.perform(get(created.getResponse().getRedirectedUrl()).session(session)).andReturn());
 		assertThat(detail).contains("메모를 저장했습니다").contains("화면 메모").contains(">첫 줄<").contains(">둘째 줄<")
-			.contains(">예<");
+			.contains(">고정<");
 	}
 
 	@Test
@@ -88,8 +88,8 @@ class MemoScreenTest {
 		String page2 = body(this.mvc.perform(get("/memo").param("q", "페이지 메모").param("page", "2").header("HX-Request", "true"))
 			.andExpect(status().isOk())
 			.andReturn());
-		assertThat(page2).doesNotContain("<html").contains("id=\"result\"").contains("전체 <span>12</span>건")
-			.contains("<span>2</span> / <span>2</span>쪽");
+		assertThat(page2).doesNotContain("<html").contains("id=\"result\"").contains("전체 <span class=\"fw-medium\">12</span>건")
+			.containsPattern("aria-current=\"page\"[^>]*>2</a>");
 		assertThat(Pattern.compile("class=\"memo-row\"").matcher(page2).results().count()).isEqualTo(2);
 
 		// LIKE 특수문자는 글자 그대로 찾는다
@@ -104,6 +104,12 @@ class MemoScreenTest {
 	void updateAndDelete() throws Exception {
 		long id = this.memos.create("고칠 메모", "", false);
 		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "")).andExpect(status().isOk());
+		// htmx 검증 오류: 수정 폼만 돌아온다 (삭제 폼이 끼어들지 않는다, R12)
+		String invalidHtmx = body(this.mvc.perform(post("/memo/" + id).with(csrf()).header("HX-Request", "true").param("title", ""))
+			.andExpect(status().isOk())
+			.andReturn());
+		assertThat(invalidHtmx).startsWith("<form").contains("제목을 입력하세요").doesNotContain("/delete");
+		assertThat(invalidHtmx.split("<form", -1)).hasSize(2);
 		this.mvc.perform(post("/memo/" + id).with(csrf()).param("title", "고친 메모").param("body", "새 본문"))
 			.andExpect(status().isFound())
 			.andExpect(redirectedUrl("/memo/" + id));
@@ -122,13 +128,15 @@ class MemoScreenTest {
 		for (String path : List.of("/memo", "/memo/new", "/memo/" + id)) {
 			String html = body(this.mvc.perform(get(path)).andExpect(status().isOk()).andReturn());
 			assertThat(html).doesNotContainPattern("(?:href|src|action)=\"(?:https?:)?//");
-			Matcher assets = Pattern.compile("(?:href|src)=\"(/cozy/[^\"]+)\"").matcher(html);
-			int count = 0;
+			Matcher assets = Pattern.compile("(?:href|src)=\"(/cozy/[^\"#]+)(?:#[^\"]*)?\"").matcher(html);
+			java.util.Set<String> distinct = new java.util.TreeSet<>();
 			while (assets.find()) {
-				this.mvc.perform(get(assets.group(1))).andExpect(status().isOk());
-				count++;
+				distinct.add(assets.group(1));
 			}
-			assertThat(count).as(path).isEqualTo(6);
+			for (String asset : distinct) {
+				this.mvc.perform(get(asset)).andExpect(status().isOk());
+			}
+			assertThat(distinct).as(path).hasSize(8).contains("/cozy/vendor/tabler-icons/3.50.0/tabler-sprite.svg");
 		}
 	}
 

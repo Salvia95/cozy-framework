@@ -11,6 +11,6 @@ class HomeConfiguration {
 	/** 사이드 내비 항목 (순서가 작을수록 위) */
 	@Bean
 	CozyNavItem homeNavItem() {
-		return new CozyNavItem("홈", "/", 0);
+		return new CozyNavItem("홈", "/", 0, "home");
 	}
 }
