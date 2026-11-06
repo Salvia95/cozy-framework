@@ -12,6 +12,7 @@ assert file("target/dist/image/demo-basic").isDirectory() : "app-image가 없습
 def thirdParty = file("target/dist/image/demo-basic/licenses/THIRD-PARTY.txt")
 assert thirdParty.isFile() : "제3자 라이선스 목록이 없습니다"
 assert thirdParty.getText("UTF-8").contains("org.springframework:spring-webmvc:")
+assert thirdParty.getText("UTF-8").contains("(Apache-2.0) Cozy :: UI (io.salvia95.cozy:cozy-ui:") : "Cozy 모듈이 목록에 없습니다"
 assert thirdParty.getText("UTF-8").contains("org.xerial:sqlite-jdbc:") == false
 assert file("$pkg/internal/MemoryNoteStore.java").exists() == !false
 assert file("$pkg/internal/SqliteNoteStore.java").exists() == false

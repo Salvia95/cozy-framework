@@ -14,6 +14,14 @@
   <artifactId>cozy-starter-runtime</artifactId>
   <name>Cozy :: Starter Runtime</name>
   <description>데스크톱형 실행 기반, 보안 최소선, 업데이트, 진단</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>
@@ -43,6 +51,20 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- Cozy의 LICENSE와 NOTICE. 패키저가 앱 실행 폴더의 licenses/에 담는다 (ADR-0027) -->
+      <resource>
+        <directory>${project.basedir}/..</directory>
+        <targetPath>META-INF/cozy</targetPath>
+        <includes>
+          <include>LICENSE</include>
+          <include>NOTICE</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

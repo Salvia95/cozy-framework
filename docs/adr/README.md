@@ -30,3 +30,4 @@
 | [0024](0024-distribution-and-update.md) | 배포 장치: 패키징 도구, AOT 캐시, 교체 스크립트, 롤백 | M6 |
 | [0025](0025-archetype-and-offline-bundle.md) | 아키타입과 오프라인 번들: 옵션 처리, 검증, 번들 구성, SQLite 네이티브 반입 | M7 |
 | [0026](0026-third-party-licenses.md) | 제3자 라이선스 목록과 허용 목록 | PRD §11 |
+| [0027](0027-framework-license.md) | 프레임워크 라이선스: Apache-2.0 | 레포 공개 |

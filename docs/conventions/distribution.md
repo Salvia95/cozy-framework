@@ -32,7 +32,7 @@ mvn -Pdist package -Dcozy.dist.notes="검색 속도 개선" -Dcozy.dist.minimum-
    - 기본 동작은 실행할 때마다 `%TEMP%`에 DLL을 풀어 읽는 것이다. AppLocker 같은 정책이 임시 폴더의 DLL을 막는 PC에서는 이 동작이 실패한다.
    - 앱 폴더에 둔 DLL은 실행 파일과 같은 정책을 받는다.
    - 종단 검증이 파일과 옵션을 확인한다.
-4. **제3자 라이선스 목록**: license-maven-plugin이 런타임 의존성의 라이선스 목록을 만든다(`prepare-package`). 패키징이 그 목록을 다시 검사하고, 웹 자산(Tabler, htmx, Pretendard)의 LICENSE와 함께 실행 폴더의 `licenses/`에 담는다.
+4. **제3자 라이선스 목록**: license-maven-plugin이 런타임 의존성의 라이선스 목록을 만든다(`prepare-package`). 패키징이 그 목록을 다시 검사하고, 웹 자산(Tabler, htmx, Pretendard)의 LICENSE, Cozy 자신의 LICENSE·NOTICE(Apache-2.0)와 함께 실행 폴더의 `licenses/`에 담는다.
    - 허용 목록(`cozy.dist.allowed-licenses`)에 없는 라이선스이거나 라이선스 정보가 없는 의존성이 있으면 실패한다.
    - 허용 목록과 이름 맞추기 규칙은 [ADR-0026](../adr/0026-third-party-licenses.md)에 있다.
 5. **AOT 캐시 훈련**: 만든 실행 폴더의 런처로 두 번 실행한다.

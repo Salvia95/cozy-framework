@@ -363,7 +363,7 @@
             </executions>
           </plugin>
           <!--
-            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 보고, cozy 모듈은 뺀다(전이 의존성은 남는다).
+            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 본다. cozy 모듈도 목록에 들어간다(Apache-2.0, ADR-0027).
             라이선스 정보가 없거나 허용 목록에 없으면 실패한다. CozyPackager가 결과를 다시 검사하고 실행 폴더의 licenses/에 담는다.
             - force: 결과 파일이 최신이면 플러그인이 검사를 건너뛰므로 매번 다시 만든다
             - useRepositoryMissingFiles=false: 원격 저장소에서 보충 파일을 찾지 않는다 (오프라인 빌드)
@@ -382,7 +382,6 @@
                   <outputDirectory>${project.build.directory}/dist-licenses</outputDirectory>
                   <addOutputDirectoryAsResourceDir>false</addOutputDirectoryAsResourceDir>
                   <excludedScopes>test,provided,system</excludedScopes>
-                  <excludedGroups>^io\.salvia95\.cozy</excludedGroups>
                   <useRepositoryMissingFiles>false</useRepositoryMissingFiles>
                   <deployMissingFile>false</deployMissingFile>
                   <failOnMissing>true</failOnMissing>

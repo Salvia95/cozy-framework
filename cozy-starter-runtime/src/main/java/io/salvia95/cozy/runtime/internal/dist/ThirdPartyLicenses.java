@@ -28,6 +28,7 @@ import java.util.zip.ZipFile;
  * 동작이 바뀌어도 실패로 닫는다. 이중 라이선스(예: EPL-2.0 또는 LGPL-2.1)는 하나만 허용 목록에 있으면 된다.</li>
  * <li>웹 자산: 클래스패스 jar의 {@code META-INF/resources/cozy/vendor/{이름}/{버전}/LICENSE}를 함께 담는다
  * (Tabler, htmx, Pretendard). Maven 의존성이 아니라 플러그인 목록에 나오지 않는다.</li>
+ * <li>Cozy 자신: 이 jar의 {@code META-INF/cozy/LICENSE}, {@code NOTICE}(Apache-2.0)를 함께 담는다.</li>
  * </ul>
  *
  * 결과는 실행 폴더의 {@code licenses/}다. JDK 런타임의 라이선스는 jpackage가 런타임 폴더의 {@code legal/}에 둔다.
@@ -128,6 +129,14 @@ final class ThirdPartyLicenses {
 
 		Path folder = image.resolve(FOLDER);
 		Files.createDirectories(folder);
+		for (String name : List.of("LICENSE", "NOTICE")) {
+			try (InputStream in = ThirdPartyLicenses.class.getResourceAsStream("/META-INF/cozy/" + name)) {
+				if (in == null) {
+					throw new IllegalStateException("cozy-starter-runtime jar에 META-INF/cozy/" + name + "가 없습니다");
+				}
+				Files.copy(in, folder.resolve("cozy-" + name + ".txt"));
+			}
+		}
 		var vendors = new TreeMap<String, byte[]>();
 		try (Stream<Path> jars = Files.list(libDir)) {
 			for (Path jar : jars.filter((p) -> p.toString().endsWith(".jar")).sorted().toList()) {
@@ -145,7 +154,8 @@ final class ThirdPartyLicenses {
 				}
 			}
 		}
-		StringBuilder list = new StringBuilder(text.stripTrailing()).append("\n\n");
+		StringBuilder list = new StringBuilder("Cozy is licensed under the Apache License 2.0 (cozy-LICENSE.txt, cozy-NOTICE.txt).\n")
+			.append(text.stripTrailing()).append("\n\n");
 		if (!vendors.isEmpty()) {
 			list.append("Bundled web assets (license texts in vendor/):\n\n");
 			for (var vendor : vendors.entrySet()) {

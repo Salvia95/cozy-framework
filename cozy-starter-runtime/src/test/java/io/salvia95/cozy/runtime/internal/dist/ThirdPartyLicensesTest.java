@@ -75,6 +75,10 @@ class ThirdPartyLicensesTest {
 		String bundled = Files.readString(image.resolve("licenses/THIRD-PARTY.txt"));
 		assertThat(bundled).contains("org.xerial:sqlite-jdbc:3.54.1.0").contains("htmx-2.0.11").contains("legal/");
 		assertThat(image.resolve("licenses/vendor/htmx-2.0.11-LICENSE.txt")).hasContent("Zero-Clause BSD");
+		// Cozy 자신의 라이선스 (Apache-2.0, 이 모듈 jar의 META-INF/cozy/)
+		assertThat(image.resolve("licenses/cozy-LICENSE.txt")).content().contains("Apache License").contains("Version 2.0");
+		assertThat(image.resolve("licenses/cozy-NOTICE.txt")).content().contains("Cozy").contains("Pretendard");
+		assertThat(bundled).startsWith("Cozy is licensed under the Apache License 2.0");
 	}
 
 	@Test

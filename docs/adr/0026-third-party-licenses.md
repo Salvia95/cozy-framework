@@ -13,7 +13,7 @@
   - 수작업 목록은 의존성이 바뀔 때마다 어긋나므로 쓰지 않는다.
 - **위치**: cozy-parent의 `dist` 프로필, `prepare-package` 단계에서 돈다. 평소 `mvn verify`에는 영향이 없다.
 - **대상**: 런타임 의존성(test, provided, system 범위 제외)이다.
-  - cozy 모듈 자신은 뺀다. 전이 의존성은 남는다.
+  - cozy 모듈도 목록에 들어간다(Apache-2.0, ADR-0027에서 바꿈).
 - **실패 조건**: 다음 경우 패키징이 실패한다.
   - 라이선스 정보가 없는 의존성(`failOnMissing`)
   - 허용 목록에 없는 라이선스(`failOnBlacklist`)
@@ -39,6 +39,7 @@
   | --- | --- |
   | `THIRD-PARTY.txt` | 의존성 목록 + 웹 자산 목록 |
   | `vendor/{이름}-{버전}-LICENSE.txt` | 클래스패스 jar의 `META-INF/resources/cozy/vendor/*/*/LICENSE` |
+  | `cozy-LICENSE.txt`, `cozy-NOTICE.txt` | Cozy 자신의 라이선스(ADR-0027). cozy-starter-runtime jar의 `META-INF/cozy/` |
 
   - JDK 런타임의 라이선스는 jpackage가 런타임 폴더의 `legal/`에 둔다.
 
@@ -53,5 +54,5 @@
 
 ## 결과
 
-- reference-app 기준 의존성 77개(Apache-2.0 72, EPL-2.0 3, MIT 2)와 웹 자산 3개(Tabler, htmx, Pretendard)가 목록에 들어간다.
+- reference-app 기준 의존성 81개(cozy 모듈 4개 포함. Apache-2.0 76, EPL-2.0 3, MIT 2)와 웹 자산 3개(Tabler, htmx, Pretendard)가 목록에 들어간다.
 - 허용 목록 밖 라이선스의 의존성을 더하면 `-Pdist`가 실패한다. 이때 의존성과 라이선스가 메시지에 나온다.

@@ -15,6 +15,14 @@
   <packaging>maven-archetype</packaging>
   <name>Cozy :: Archetype</name>
   <description>오프라인 이니셜라이저: home 샘플 모듈과 규약을 갖춘 앱 (PRD §6.6, §10)</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <!--
     생성한 앱이 쓰는 모듈. invoker:install이 통합 테스트 전에 로컬 저장소에 설치한다.

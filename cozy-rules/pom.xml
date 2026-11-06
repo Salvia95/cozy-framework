@@ -14,6 +14,14 @@
   <artifactId>cozy-rules</artifactId>
   <name>Cozy :: Rules</name>
   <description>템플릿 경계·fragment 검사 로직 (Spring 비의존)</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <properties>
     <!-- Mockito를 쓰지 않는다 -->

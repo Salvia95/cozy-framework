@@ -133,8 +133,10 @@ class UpdateEndToEndTest {
 		assertThat(image.resolve("licenses/THIRD-PARTY.txt")).content()
 			.contains("org.xerial:sqlite-jdbc:")
 			.contains("org.springframework:spring-webmvc:")
-			.doesNotContain("io.salvia95.cozy:")
+			.contains("(Apache-2.0) Cozy :: UI (io.salvia95.cozy:cozy-ui:")
+			.doesNotContain("io.salvia95.cozy:cozy-test:")
 			.doesNotContain("org.junit");
+		assertThat(image.resolve("licenses/cozy-LICENSE.txt")).content().contains("Apache License");
 		assertThat(image.resolve("licenses/vendor")).isDirectoryContaining("glob:**/tabler-*-LICENSE.txt")
 			.isDirectoryContaining("glob:**/htmx-*-LICENSE.txt")
 			.isDirectoryContaining("glob:**/pretendard-*-LICENSE.txt");

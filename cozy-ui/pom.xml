@@ -14,6 +14,14 @@
   <artifactId>cozy-ui</artifactId>
   <name>Cozy :: UI</name>
   <description>Tabler·htmx·Pretendard 자산, 공용 fragment, 패턴 카탈로그</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>

@@ -37,3 +37,7 @@ mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCa
 - 결정 기록: [docs/adr/](docs/adr/README.md)
 - 코딩 에이전트용 규칙(생성 앱에 들어간다): [docs/AGENTS.md](docs/AGENTS.md)
 - 오프라인 번들: [distribution/offline-bundle/README.md](distribution/offline-bundle/README.md)
+
+## 라이선스
+
+[Apache License 2.0](LICENSE). 상업적 이용, 수정, 재배포를 허용한다. 함께 담긴 웹 자산(Tabler, htmx, Pretendard)과 의존성의 라이선스는 [NOTICE](NOTICE)와 [ADR-0027](docs/adr/0027-framework-license.md)에 있다.
