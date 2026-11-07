@@ -46,7 +46,7 @@
 
 | 스크립트 | 하는 일 |
 | --- | --- |
-| `distribution/release/set-version.sh <버전>` | 레포의 POM(아키타입 템플릿 제외), 문서의 `-DarchetypeVersion=` 예시, 번들 README의 zip 이름을 바꾼다. POM에 이전 버전이 남으면 실패한다. 생성 앱의 기본 버전(`cozy new`의 `-Dversion`)은 앱 버전이라 바꾸지 않는다 |
+| `distribution/release/set-version.sh <버전>` | 레포의 POM(아키타입 템플릿과 invoker 픽스처 제외. 픽스처 POM이 바뀌면 실패한다), 문서의 `-DarchetypeVersion=` 예시, 번들 README의 zip 이름을 바꾼다. POM에 이전 버전이 남으면 실패한다. 생성 앱의 기본 버전(`cozy new`의 `-Dversion`)은 앱 버전이라 바꾸지 않는다 |
 | `distribution/release/check-version.sh <tag\|branch> <ref>` | cozy 모듈 POM이 모두 `cozy.version`을 쓰는지 본다. 태그 빌드면 태그가 `v{버전}`이고 SNAPSHOT이 아닌지도 본다 |
 | `distribution/release/install-maven.sh <폴더>` | Maven 3.10.0을 받아 SHA-512를 확인하고 푼다 |
 | `distribution/release/release-notes.sh <버전> <zip>` | 릴리스 노트 초안(파일, 크기, SHA-256, 설치 요약) |

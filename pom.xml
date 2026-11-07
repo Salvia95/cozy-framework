@@ -7,7 +7,7 @@
   <!-- 루트 aggregator. 모든 cozy-* 모듈은 하나의 버전으로 함께 릴리스한다 (PRD §5). -->
   <groupId>io.salvia95.cozy</groupId>
   <artifactId>cozy-build</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Cozy :: Build</name>
 
