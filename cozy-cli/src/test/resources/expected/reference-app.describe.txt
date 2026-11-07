@@ -1,0 +1,39 @@
+앱 io.salvia95.cozy.reference (메인 ReferenceApp, cozy 1.1.0-SNAPSHOT)
+스타터: cozy-starter-events, cozy-ui
+
+모듈 activity (io.salvia95.cozy.reference.activity)
+  의존: memo :: spi
+  읽기 ActivityFinder
+    List<ActivityItem> recent(int limit)
+  DTO ActivityItem(String message, String at)
+  리스너 MemoCreatedListener.on ← memo.MemoCreated
+  공개 fragment activity/recent-activity: recentActivity(items)
+
+모듈 dashboard (io.salvia95.cozy.reference.dashboard)
+  의존: memo :: spi, activity :: spi
+  컨트롤러 DashboardController
+  화면 dashboard/api/index — src/main/resources/specs/dashboard-index.yml: default, empty
+
+모듈 memo (io.salvia95.cozy.reference.memo)
+  의존: 없음
+  쓰기 MemoFacade
+    long create(String title, String body, boolean pinned)
+    boolean update(long id, String title, String body, boolean pinned)
+    boolean delete(long id)
+  읽기 MemoFinder
+    Optional<MemoItem> find(long id)
+    List<MemoItem> list()
+    MemoPage search(String query, boolean pinnedOnly, long offset, int limit)
+    MemoSummary summary()
+  DTO MemoItem(long id, String title, String body, boolean pinned, Instant createdAt, Instant updatedAt)
+  DTO MemoPage(List<MemoItem> items, long total)
+  DTO MemoSummary(long total, long pinned, String latestTitle)
+  이벤트 MemoCreated(long memoId, String title) 발행: src/main/java/io/salvia95/cozy/reference/memo/internal/app/command/MemoFacadeImpl.java
+  컨트롤러 MemoController
+  화면 memo/api/detail — src/main/resources/specs/memo-detail.yml: default, empty
+  화면 memo/api/edit — src/main/resources/specs/memo-edit.yml: default, empty, invalid
+  화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid
+  화면 memo/api/list — src/main/resources/specs/memo-list.yml: default, empty, noResults, paged
+  공개 fragment memo/summary: memoSummary(summary)
+
+빈칸: 없음

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <relativePath>../cozy-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>cozy-cli</artifactId>
+  <name>Cozy :: CLI</name>
+  <description>cozy 명령: 앱 구조 보기(describe), 빠른 검사(check), 레시피(ADR-0032)</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <properties>
+    <!-- Mockito를 쓰지 않는다 -->
+    <cozy.test.argLine/>
+    <cozy.cli.test-repository>${project.build.directory}/test-repository</cozy.cli.test-repository>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-rules</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      테스트만: 프레임워크 템플릿·매니페스트·아이콘을 읽는 cozy-ui jar. 명령은 cozy-ui 클래스를 쓰지 않고 jar를 zip으로 연다.
+      저장소 배치로 target/test-repository에 복사해 실제 사용과 같은 방식(저장소 옵션)으로 찾는다.
+    -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cozy-module-boundary</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <message>cozy-cli는 cozy-rules와 SnakeYAML(그리고 JDK)에만 의존합니다 (ADR-0016 개정, ADR-0032 §5). 앱이 쓰는 스타터나 cozy-ui를 쓰지 마세요.</message>
+                  <excludes>
+                    <exclude>*:*:*:*:compile</exclude>
+                    <exclude>*:*:*:*:runtime</exclude>
+                    <exclude>*:*:*:*:provided</exclude>
+                    <exclude>*:*:*:*:system</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.salvia95.cozy:cozy-rules</include>
+                    <include>org.attoparser:attoparser</include>
+                    <include>org.yaml:snakeyaml</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <!-- java -jar target/cozy-cli-*.jar 로 실행할 수 있게 실행 의존성을 target/lib에 둔다 (번들 반입은 M11) -->
+          <execution>
+            <id>cozy-cli-lib</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+          <execution>
+            <id>cozy-cli-test-repository</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${cozy.cli.test-repository}</outputDirectory>
+              <useRepositoryLayout>true</useRepositoryLayout>
+              <includeArtifactIds>cozy-ui</includeArtifactIds>
+              <excludeTransitive>true</excludeTransitive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>io.salvia95.cozy.cli.CozyCli</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <cozy.cli.test-repository>${cozy.cli.test-repository}</cozy.cli.test-repository>
+            <cozy.cli.version>${project.version}</cozy.cli.version>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

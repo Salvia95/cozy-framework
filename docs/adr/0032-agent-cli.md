@@ -79,6 +79,12 @@
 - **의존 방향(ADR-0016 개정)**: `cli → rules`를 더한다. 바깥 의존은 SnakeYAML 하나만 허용한다(ADR-0017 표에 있고 Boot BOM이 관리한다). 매니페스트와 스펙을 읽는 데 쓴다.
 - **명령 진입점**: 오프라인 번들의 `cozy`(bash), `cozy.cmd`, `cozy.ps1`이 `add`, `link`, `describe`, `check`, `recipes`를 `java -jar lib/cozy-cli.jar`로 넘긴다. `install`, `new`, `version`, `help`는 지금처럼 셸이 처리한다.
 - **앱 찾기**: 현재 폴더에서 위로 올라가며 `pom.xml`과 `@SpringBootApplication`을 찾는다. 기본 패키지는 메인 클래스의 패키지다.
+- **구현 (M9, 2026-11-08)**:
+  - Java 소스는 JDK의 javac 파서(`com.sun.source`)로 읽는다. 컴파일하지 않고 클래스패스도 쓰지 않는다. 새 의존성이 생기지 않는 대신 JRE가 아니라 JDK로 실행한다.
+  - cozy-ui의 템플릿·매니페스트·아이콘은 저장소(`--repository`, `COZY_REPOSITORY`, `~/.m2/repository`)의 cozy-ui jar를 zip으로 읽는다. cozy-ui 클래스는 쓰지 않는다. jar가 없으면 판단할 수 없으므로 종료 코드 2다.
+  - 매니페스트 파서는 cozy-ui의 `FragmentManifest`와 같은 형식 검사를 cozy-cli 안에 다시 둔다(cli → ui 의존을 만들지 않기 위해). 매니페스트 형식을 바꿀 때는 두 곳을 함께 고친다. cozy-ui에만 새 검사가 생기면 `cozy check`는 그것을 모른 채 통과시킬 수 있다(최종 판단은 `mvn verify`).
+  - 소스로 읽지 못한 것(문법 오류, 글자 그대로가 아닌 `allowedDependencies`, 메인 클래스 없음)은 규칙 id `CLI`의 오류다.
+  - 문서: [cli.md](../conventions/cli.md)
 
 ### 6. 조회와 빠른 검사
 
