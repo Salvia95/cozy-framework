@@ -1,0 +1,19 @@
+# {{L}} 수정 (form-page 패턴, cozy add crud)
+screen: {{module}}-edit
+template: {{module}}/api/edit
+fragments: [{{e}}Form]
+model:
+  item: {{dtoPkg}}.{{E}}Views.Detail
+  form: {{dtoPkg}}.{{E}}Form
+states:
+  default:
+    item: {{detailSample}}
+    form: {{formSample}}
+  empty:
+    item: {{detailEmpty}}
+    form: {{formEmptySample}}
+  invalid:
+    item: {{detailSample}}
+    form: {{formInvalid}}
+    _errors:
+      form: { {{name}}: {{nameRequired}} }

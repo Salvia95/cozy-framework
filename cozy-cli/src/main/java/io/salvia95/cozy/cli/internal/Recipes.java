@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * {@code cozy recipes}: 구조를 만드는 명령 목록 (ADR-0032 부록). 에이전트는 파일을 만들거나 옮기지 않고 이 명령을 쓴다. 아직 만들지 않은
- * 레시피는 {@code available: false}이고, 실행하면 종료 코드 2로 알린다.
+ * 레시피(2단계)는 {@code available: false}이고, 실행하면 종료 코드 2로 알린다.
  */
 public final class Recipes {
 
@@ -28,22 +28,22 @@ public final class Recipes {
 
 	public static final List<Recipe> ALL = List.of(
 			new Recipe("module", 1, "cozy add module <모듈> [--label 라벨]", "빈 모듈(package-info.java, allowedDependencies = {})",
-					"없음", false),
+					"없음", true),
 			new Recipe("link", 1, "cozy link <모듈> --uses <다른 모듈>[,…]", "package-info.java의 allowedDependencies에 \"모듈 :: spi\" 추가",
-					"없음", false),
+					"없음", true),
 			new Recipe("crud", 1,
 					"cozy add crud <모듈> --entity <E> --label 라벨 --icon 아이콘 --field 이름:종류[!][:라벨] … [--publish created,updated,deleted]",
-					"목록·만들기·상세·수정·삭제 한 벌(spi, internal, api, SQL, 템플릿, 스펙, 테스트)", "없음", false),
+					"목록·만들기·상세·수정·삭제 한 벌(spi, internal, api, SQL, 템플릿, 스펙, 테스트)", "없음", true),
 			new Recipe("screen", 1,
-					"cozy add screen <모듈> <화면> --pattern overview|details|list|master-detail --title 제목 [--field …] [--nav 라벨:아이콘]",
-					"읽기 화면 하나(컨트롤러, 화면 DTO, 템플릿, 스펙)", "컨트롤러 view-model", false),
+					"cozy add screen <모듈> <화면> --pattern overview|details --title 제목 [--field …] [--nav 라벨:아이콘]",
+					"읽기 화면 하나(컨트롤러, 화면 DTO, 템플릿, 스펙, 내비게이션). 목록·폼은 crud가 만든다", "컨트롤러 view-model", true),
 			new Recipe("fragment", 1, "cozy add fragment <모듈> <이름> --param 이름:타입 … --purpose \"용도\"",
-					"다른 모듈에 공개하는 fragment와 매니페스트 항목", "템플릿 fragment-body", false),
+					"다른 모듈에 공개하는 fragment와 매니페스트 항목", "템플릿 fragment-body", true),
 			new Recipe("event", 1, "cozy add event <모듈> <이벤트> --field 이름:종류 …", "CozyEvent record와 직렬화 샘플 v1",
-					"없음(발행할 한 줄은 에이전트가 넣는다)", false),
+					"없음(발행할 한 줄은 에이전트가 넣는다)", true),
 			new Recipe("listener", 1, "cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]",
-					"이벤트 리스너(필요하면 link 포함)", "listener-body", false),
-			new Recipe("migration", 1, "cozy add migration <모듈> <설명>", "V{시각}__{모듈}_{설명}.sql", "migration-sql", false),
+					"이벤트 리스너(필요하면 link 포함)", "listener-body", true),
+			new Recipe("migration", 1, "cozy add migration <모듈> <설명>", "V{시각}__{모듈}_{설명}.sql", "migration-sql", true),
 			new Recipe("query", 2, "cozy add query <모듈> <이름> --param … --returns …", "Finder 메서드, 구현, Mapper, SELECT",
 					"SQL, 변환", false),
 			new Recipe("command", 2, "cozy add command <모듈> <이름> --param … --returns …", "Facade 메서드와 구현", "메서드 본문",

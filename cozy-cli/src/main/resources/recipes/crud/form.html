@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<!--/* {{L}} 만들기 화면(api): form-page 패턴 + {{module}}/internal/fields 조각 + 오른쪽 아래 [취소] [{{L}} 만들기] (cozy add crud).
+     검증 오류면 htmx가 {{e}}Form fragment만 바꾸고(첫 오류 칸으로 포커스), 성공하면 상세로 이동한다(PRG). */-->
+<html th:replace="~{cozy/layout/base :: appShell('{{L}} 만들기', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/form-page :: formPage('{{L}} 만들기', '{{L}}', '/{{module}}', ~{::#{{e}}Form})}">
+    <form id="{{e}}Form" class="card" th:fragment="{{e}}Form" th:action="@{/{{module}}}" method="post" th:object="${form}"
+          th:hx-post="@{/{{module}}}" hx-target="this" hx-swap="outerHTML">
+      <div th:replace="~{{{module}}/internal/fields :: {{e}}Fields()}"></div>
+      <div th:replace="~{cozy/component/form-actions :: formActions('/{{module}}', 'plus', '{{L}} 만들기')}"></div>
+    </form>
+  </section>
+</main>
+</body>
+</html>

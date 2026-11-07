@@ -142,7 +142,7 @@ public final class Describe {
 	}
 
 	/** record의 구성 요소, 클래스면 인스턴스 필드 ({@code long id}) */
-	static List<String> fields(ClassTree type) {
+	public static List<String> fields(ClassTree type) {
 		List<String> fields = new ArrayList<>();
 		for (Tree member : type.getMembers()) {
 			if (member instanceof VariableTree field && !field.getModifiers().getFlags().contains(Modifier.STATIC)) {

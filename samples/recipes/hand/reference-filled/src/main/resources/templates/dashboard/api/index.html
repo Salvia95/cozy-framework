@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--/* 대시보드 화면(api): overview 패턴 (cozy add screen). 숫자는 stat 카드, 최근 활동은 activity의 공개 fragment. 값은 모델 view(DashboardView)에서 읽는다. */-->
+<html th:replace="~{cozy/layout/base :: appShell('대시보드', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/overview :: overview('대시보드', ~{}, ~{::#dashboard-stats}, ~{::#dashboard-body})}">
+    <div id="dashboard-stats" class="row row-deck row-cards">
+      <div class="col-sm-6 col-lg-3">
+        <div th:replace="~{cozy/component/stat :: stat('notes', ${view.memos}, '전체 메모')}"></div>
+      </div>
+    </div>
+    <div id="dashboard-body" class="card">
+      <div class="card-header"><h3 class="card-title">최근 활동</h3></div>
+      <div th:replace="~{activity/spi/recent-activity :: recentActivity(${view.activities})}"></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# dev 프로필: 패턴 카탈로그(/cozy/dev/catalog)가 켜진다. IntelliJ의 "dev 실행"이 이 프로필로 실행한다.
+logging:
+  level:
+    it.cozy.app: DEBUG

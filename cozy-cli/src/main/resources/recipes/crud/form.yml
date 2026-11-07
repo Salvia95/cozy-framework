@@ -1,0 +1,15 @@
+# {{L}} 만들기 (form-page 패턴, cozy add crud)
+screen: {{module}}-form
+template: {{module}}/api/form
+fragments: [{{e}}Form]
+model:
+  form: {{dtoPkg}}.{{E}}Form
+states:
+  default:
+    form: {{formSample}}
+  empty:
+    form: {}
+  invalid:
+    form: {{formInvalid}}
+    _errors:
+      form: { {{name}}: {{nameRequired}} }

@@ -1,0 +1,11 @@
+# {{title}} (cozy add screen). 상태 값은 화면 확인용 예시다. 패턴 카탈로그 미리보기와 렌더링 검사(C3)가 같이 쓴다.
+screen: {{screen}}
+template: {{template}}
+fragments: []
+model:
+  view: {{viewType}}
+states:
+  default:
+    view: {{default}}
+  empty:
+    view: {{empty}}

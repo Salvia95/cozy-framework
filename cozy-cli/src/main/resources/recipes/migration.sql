@@ -1,0 +1,3 @@
+-- {{module}}: {{description}} (cozy add migration). 이 모듈의 테이블만 다룬다. 배포한 마이그레이션은 고치지 않고 새로 더한다
+-- (docs/conventions/sqlite.md)
+-- cozy:slot migration-sql — DDL을 쓰세요. 테이블과 인덱스 이름은 {{module}}로 시작합니다

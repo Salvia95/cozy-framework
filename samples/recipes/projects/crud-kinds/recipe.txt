@@ -1,0 +1,7 @@
+# crud의 필드 종류를 모두 쓰고(text·longtext·int·long·date·bool, 필수와 선택) 이벤트 셋을 발행한다. 빈칸이 없으니 바로 통과해야 한다
+cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목 --field note:text:메모 --field detail:longtext:설명 --field priority:int!:우선순위 --field "estimate:long:예상 시간" --field due:date:마감일 --field done:bool:완료 --publish created,updated,deleted
+# 다른 모듈이 task의 spi를 쓰도록 선언하고, 빈칸 없는 이벤트를 하나 더 만든다
+cozy add module report --label 보고
+cozy link report --uses task
+cozy add event report ReportSent --field title:text --field sentOn:date --field pages:int --field urgent:bool
+rerun

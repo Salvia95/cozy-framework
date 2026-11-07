@@ -1,0 +1,11 @@
+# {{L}} 상세 (읽기 전용, details 패턴, cozy add crud). 수정은 {{module}}-edit, 삭제는 확인 창
+screen: {{module}}-detail
+template: {{module}}/api/detail
+fragments: []
+model:
+  item: {{dtoPkg}}.{{E}}Views.Detail
+states:
+  default:
+    item: {{detailSample}}
+  empty:
+    item: {{detailEmpty}}

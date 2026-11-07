@@ -1,0 +1,31 @@
+# {{L}} 목록 (list-with-filter 패턴, cozy add crud). 패턴 카탈로그 미리보기와 렌더링 검사(C3)가 같이 쓴다.
+screen: {{module}}-list
+template: {{module}}/api/list
+fragments: [result]
+model:
+  filter: {{dtoPkg}}.{{E}}Filter
+  result: {{dtoPkg}}.{{E}}Views.ListResult
+states:
+  default:
+    filter: { q: "" }
+    result:
+      rows:
+        - {{rowSample1}}
+        - {{rowSample2}}
+      page: { number: 1, size: 10, totalElements: 2 }
+  empty:
+    filter: { q: "" }
+    result:
+      rows: []
+      page: { number: 1, size: 10, totalElements: 0 }
+  noResults:
+    filter: { q: 없는 단어 }
+    result:
+      rows: []
+      page: { number: 1, size: 10, totalElements: 0 }
+  paged:
+    filter: { q: "" }
+    result:
+      rows:
+        - {{rowSample11}}
+      page: { number: 2, size: 10, totalElements: 11 }

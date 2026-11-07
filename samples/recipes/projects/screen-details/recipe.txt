@@ -1,0 +1,8 @@
+# screen(details·overview), event, listener(같은 모듈), migration. 빈칸이 남으니 C9만 실패해야 한다
+cozy add module report --label 보고
+cozy add screen report summary --pattern details --title "보고 요약" --field title:text!:제목 --field pages:int:쪽수 --field "sentOn:date:보낸 날" --field urgent:bool:긴급 --field note:longtext:메모 --nav "보고 요약:chart-bar"
+cozy add screen report index --pattern overview --title 보고 --field total:long:전체 --field late:int:늦음 --field owner:text:담당
+cozy add event report ReportSent --field reportId:long --field sentOn:date
+cozy add listener report --on report.ReportSent --name ReportAudit
+cozy add migration report create_report
+rerun

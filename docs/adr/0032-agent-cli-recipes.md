@@ -21,7 +21,7 @@
 
 | 대상 | 형식 | 거절하는 것 |
 | --- | --- | --- |
-| 모듈 | `[a-z][a-z0-9]*` | 예약어 `cozy`, `fragments`, `error`, Java 예약어, 이미 있는 모듈 |
+| 모듈 | `[a-z][a-z0-9]*` | 예약어 `cozy`, `fragments`, `error`, Java 예약어 |
 | 엔티티, 이벤트 | PascalCase | 같은 모듈에 이미 있는 이름 |
 | 화면 | `[a-z][a-z0-9-]*` | 같은 모듈에 이미 있는 화면 |
 | fragment | 파일은 kebab-case, fragment 이름은 camelCase | HTML 요소 이름과 같은 것(R12): `form`, `table`, `main` 등 |
@@ -42,13 +42,16 @@
 | `instant` | `Instant` | `TEXT` | (폼에 두지 않는다) | `NOT NULL` | `2026-11-06T01:00:00Z` |
 
 - 시간 값의 저장 형식은 [sqlite.md](../conventions/sqlite.md)를 따른다.
-- 라벨은 한글을 쓸 수 있다. 문구의 조사(을/를, 이/가)는 라벨 마지막 글자의 받침을 보고 명령이 고른다. 예: "메모를 만들었습니다", "일정을 만들었습니다".
+- 라벨은 한글을 쓸 수 있다. 문구의 조사(을/를, 이/가, 은/는)는 라벨 마지막 글자의 받침을 보고 명령이 고른다. 예: "메모를 만들었습니다", "일정을 만들었습니다".
+- 라벨과 제목에는 따옴표, `<>`, `{}`, `$`, `\`, `;`를 쓰지 않는다. 템플릿 식과 Java 문자열에 그대로 들어가기 때문이다.
+- 필드 이름으로 `id`, `createdAt`, `updatedAt`, `eventId`, `schemaVersion`, `page`, `q`는 쓰지 않는다(명령이 쓰는 이름).
 
 ### 동작
 
 - **원자성**: 계획을 먼저 세우고, 하나라도 실패하면 아무 파일도 쓰지 않는다. `--dry-run`은 계획만 출력한다.
 - **같은 명령 두 번**: 이미 같은 내용이 있으면 아무것도 하지 않고 "바뀐 것 없음"을 알린다. 다른 내용이 있으면 덮어쓰지 않고 실패한다.
 - **알아볼 수 없는 파일**: 덧붙일 파일이 명령이 만든 형식이 아니거나 `cozy:append` 표시가 없으면 실패한다. 이때 무엇을 손으로 해야 하는지 알린다.
+- **생성 파일의 내용은 그때의 앱 상태에 기대지 않는다**: 같은 명령을 나중에 다시 실행해도 "바뀐 것 없음"이 되게 하기 위해서다. 그때그때 바뀌는 안내(예: 지금 쓸 수 있는 Finder)는 파일이 아니라 명령 출력에 적는다.
 - **사전 조건**: 레시피가 필요로 하는 스타터(`cozy-starter-sqlite`, `cozy-starter-events`)가 pom에 없으면 실패한다. 아키타입 옵션(`persistence`, `events`)을 알린다.
 
 ### 출력
@@ -59,12 +62,12 @@ $ cozy add listener activity --on memo.MemoCreated
   바꿈  src/main/java/{base}/activity/package-info.java    allowedDependencies += "memo :: spi"
   만듦  src/main/java/{base}/activity/internal/app/command/MemoCreatedListener.java
 [cozy] 적용했습니다. 빈칸 1곳
-  src/main/java/{base}/activity/internal/app/command/MemoCreatedListener.java:24
-    listener-body — MemoCreated를 받았을 때 할 일을 쓰세요. 다 쓰면 cozy:slot 표시를 지웁니다
-[cozy] 다음: 빈칸을 채우고 cozy check, 그다음 mvn verify
+  src/main/java/{base}/activity/internal/app/command/MemoCreatedListener.java:17
+    listener-body — MemoCreated를 받았을 때 할 일을 쓰세요. … 다 채우면 이 cozy:slot 표시를 지웁니다.
+[cozy] 다음: 빈칸을 채우고 cozy check, 그다음 mvn verify. 빈칸 listener-body를 채웁니다. …
 ```
 
-`--json`을 붙이면 같은 내용을 `{plan: [{action, file, detail}], slots: [{id, file, line, what}], next}`로 낸다.
+`--json`을 붙이면 같은 내용을 `{recipe, applied, plan: [{action, file, detail}], slots: [{slot, file, line, what}], next}`로 낸다. 형식은 [cli.md](../conventions/cli.md)에 있다.
 
 ## 2. 1단계 레시피
 
@@ -82,6 +85,7 @@ cozy add module <m> [--label 라벨]
 | 생성 직후 | 통과 |
 
 - `spi/`, `spi/dto/`, `spi/event/`의 `package-info.java`는 그 안에 처음 무언가를 만드는 레시피가 함께 만든다. 빈 패키지는 두지 않는다.
+- 모듈이 이미 있으면 아무것도 바꾸지 않는다("바뀐 것 없음"). 의존 선언은 `link`가 바꾼다.
 
 ### 2.2 `link`: 모듈 의존 선언
 
@@ -95,7 +99,7 @@ cozy link <m> --uses <다른 모듈>[,<다른 모듈>…]
 | 알아보는 형식 | `{}`, `"x"`, `"x :: spi"`, `{ … }` 배열. 문자열 상수가 아닌 값(상수 참조, 식)이 있으면 실패한다 |
 | 빈칸 | 없음 |
 | 생성 직후 | 통과 |
-| 실패 | 대상 모듈이 없을 때. 대상에 `spi/`가 없을 때("공개된 것이 없습니다. 먼저 `cozy add fragment`나 `cozy add event`로 공개하세요"). 의존이 순환할 때(경로를 보여 준다) |
+| 실패 | 대상 모듈이 없을 때. 대상에 `spi/`가 없을 때("공개된 것이 없습니다. 먼저 `cozy add fragment`나 `cozy add event`로 공개하세요"). 의존이 순환할 때(경로를 보여 준다). 바꿀 모듈에 `@ApplicationModule`이 없을 때(open 모듈은 바꾸지 않는다) |
 
 - 다른 레시피(`listener`, `fragment`를 다른 모듈 화면에 쓸 때)가 필요하면 같은 계획 안에서 `link`를 함께 실행한다.
 
@@ -120,6 +124,8 @@ reference-app의 memo와 같은 한 벌을 만든다. 흐름과 문구는 [desig
 - **검색**: 목록 필터 `q`는 `text`·`longtext` 필드를 LIKE로 찾는다. 다른 조건은 2단계 `query`로 더한다.
 - **`--publish`**: `{E}Created`, `{E}Updated`, `{E}Deleted` 이벤트를 `event` 레시피로 함께 만든다. 그리고 `{E}FacadeImpl`의 해당 메서드 안, 같은 트랜잭션에서 발행한다. 이벤트 필드는 `{e}Id`와 `text!` 필드다.
 - **이벤트 스타터가 있을 때**: `{E}FacadeImpl`은 `--publish`가 없어도 `ApplicationEventPublisher`를 받아 둔다. 나중에 에이전트가 발행 한 줄만 쓰면 되게 하기 위해서다.
+- **필드 조건**: 이름으로 보일 필수 `text` 필드(`text!`)가 하나 있어야 한다. 처음 나오는 것이 목록의 링크와 상세의 제목이 된다. `instant`는 쓰지 않는다(만든·수정한 시각은 명령이 넣는다).
+- **아이콘**: `--icon`은 cozy-ui jar의 Tabler 외곽선 아이콘이어야 한다. 빈 상태와 내비게이션에 쓴다. 내비게이션 순서는 앱에 있는 항목 수 + 1에 10을 곱한 값이다.
 - **빈칸**: 없음. 업무 규칙(검증 추가, 기본값, 정렬)은 생성된 코드를 에이전트가 고친다.
 - **생성 직후**: 통과한다. 생성된 테스트까지 포함한다.
 - **프레임워크 레포의 확인**: 이 레시피가 만든 화면은 runtime-verifier로 확인한다(ADR-0030). 레시피 템플릿이 바뀔 때마다 다시 한다.
@@ -127,10 +133,12 @@ reference-app의 memo와 같은 한 벌을 만든다. 흐름과 문구는 [desig
 ### 2.4 `screen`: 화면 하나
 
 ```text
-cozy add screen <m> <s> --pattern overview|details|list|master-detail --title 제목 [--field …] [--nav 라벨:아이콘]
+cozy add screen <m> <s> --pattern overview|details --title 제목 [--field …] [--nav 라벨:아이콘]
 ```
 
-CRUD가 아닌 읽기 화면이다. 예: dashboard의 index.
+CRUD가 아닌 읽기 화면이다. 예: dashboard의 index. 모듈이 없으면 함께 만든다(라벨은 제목).
+
+- **패턴 (M10에서 줄였다)**: `overview`는 숫자 필드(`int`, `long`)를 stat 카드로, 나머지를 요약 카드로 놓는다. `details`는 모든 필드를 정보 카드(datagrid)에 놓는다. `list`와 `master-detail`은 뺐다. 목록·폼은 쓰기와 함께 다니므로 `crud`가 만들고, 읽기 전용 목록이나 두 칸 화면은 2단계 `query`와 함께 다시 정한다.
 
 | 구분 | 내용 |
 | --- | --- |
@@ -139,7 +147,7 @@ CRUD가 아닌 읽기 화면이다. 예: dashboard의 index.
 | 빈칸 | 컨트롤러 `view-model`: Finder로 값을 모아 `{S}View`를 만든다 |
 | 생성 직후 | C9 1곳 |
 
-- 다른 모듈의 Finder나 spi fragment를 쓰려면 먼저 `cozy link`를 실행한다. 빈칸 설명에 지금 쓸 수 있는 Finder 목록을 함께 적는다.
+- 다른 모듈의 Finder나 spi fragment를 쓰려면 먼저 `cozy link`를 실행한다. 지금 쓸 수 있는 Finder 목록은 명령 출력의 "다음"에 적는다(파일에 적으면 link 뒤에 다시 실행할 때 내용이 달라진다). 빈칸 설명은 `cozy describe`를 가리킨다.
 - 기존 컨트롤러에 메서드를 더하지 않고 화면마다 컨트롤러를 따로 만든다. 1단계에서는 Java 파일의 본문을 고치지 않기 위해서다.
 
 ### 2.5 `fragment`: 다른 모듈에 공개하는 fragment
@@ -151,9 +159,9 @@ cozy add fragment <m> <이름> --param 이름:타입 [--param …] --purpose "�
 | 구분 | 내용 |
 | --- | --- |
 | 타입 | 필드 종류(§1), `{m}.spi.dto`의 record 이름, `list:{record 이름}` |
-| 만드는 파일 | `templates/{m}/spi/{이름}.html`: `th:fragment="{camelCase}(파라미터…)"`, 본문은 `card` 하나와 빈칸 |
+| 만드는 파일 | `templates/{m}/spi/{이름}.html`: `th:fragment="{camelCase}(파라미터…)"`, 본문은 `card` 하나와 빈칸. `spi/package-info.java`(없으면). 다른 모듈이 `"{m} :: spi"`를 선언하려면 그 Named Interface가 있어야 한다 |
 | 덧붙이는 곳 | `cozy/fragments.yml`에 항목을 더한다(id, template, signature, purpose, params, samples default·empty). 샘플 값은 타입에서 만든다. record는 소스의 구성 요소를 읽는다 |
-| 빈칸 | 템플릿 `fragment-body`: 파라미터로 받은 값만으로 그린다(R10) |
+| 빈칸 | 템플릿 `fragment-body`: 파라미터로 받은 값만으로 그린다(R10). record 구성 요소의 타입을 몰라 샘플 값을 `null`로 두면 매니페스트에 `fragment-samples`도 남긴다 |
 | 생성 직후 | C9 1곳 |
 | 실패 | 타입이 api·internal 타입일 때(C5와 같은 기준). record를 알아볼 수 없을 때 |
 
@@ -250,4 +258,16 @@ cozy link dashboard --uses memo,activity              # screen 빈칸에서 Find
 ```
 
 - 빈칸을 채우기 전에는 C9만 실패해야 한다. reference-app의 해당 코드로 빈칸을 채우면 `mvn verify`가 통과해야 한다.
+- **구현 (M10, 2026-11-08)**: `samples/recipes`의 invoker 픽스처가 이 순서를 실행한다. 기본 앱은 아키타입(persistence, events)에서 `home`을 뺀 것이다.
+
+  | 픽스처 | 내용 | 기대 |
+  | --- | --- | --- |
+  | `reference` | 위 명령. `fragment` 앞에 `ActivityItem`(spi.dto)만 손으로 둔다. 같은 명령을 다시 실행하고, 실패해야 하는 명령 5개를 실행한다 | C9 4곳만 실패. 다시 실행하면 바뀐 것 없음. 실패한 명령은 파일을 바꾸지 않는다 |
+  | `reference-filled` | 위 명령 뒤에 빈칸을 채운다. activity는 reference-app 코드, dashboard는 생성된 `MemoFinder`에 맞춰 쓴 코드, 흐름 테스트 하나 | 통과 |
+  | `crud-kinds` | 필드 종류를 모두 쓴 `crud`와 `--publish created,updated,deleted`, `module`, `link`, `event` | 통과 |
+  | `screen-details` | `screen`(details·overview), 같은 모듈의 `event`·`listener`, `migration` | C9 4곳만 실패 |
+
+  - 생성된 memo는 reference-app의 memo와 글자 그대로 같지 않다(`MemoSummary`와 공개 fragment `memo/summary`가 없다). 그래서 채운 dashboard는 메모 수만 보인다. 요약 값은 2단계 `query`로 만든다.
+  - 빈칸만 남긴 마이그레이션(주석뿐인 SQL)을 Flyway가 받아들인다. 그래서 C9 말고 다른 검사는 실패하지 않는다.
+  - 남은 빈칸이 있는 리스너는 이벤트를 받으면 예외를 던진다. 테스트는 통과하지만 로그에 오류가 남고, 발행 기록은 끝나지 않은 채 남는다.
 - activity의 `ActivityItem`, `ActivityFinder`, `ActivityService`는 1단계로 만들 수 없다. 이 부분은 2단계 `query`·`command`를 기다리거나 손으로 쓴다. 1단계에서 손으로 써야 하는 부분이 얼마나 되는지는 사용자의 내부 평가(ADR-0032 §8)로 잰다.

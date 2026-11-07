@@ -1,0 +1,15 @@
+# 대시보드 (cozy add screen). 상태 값은 화면 확인용 예시다. 패턴 카탈로그 미리보기와 렌더링 검사(C3)가 같이 쓴다.
+screen: dashboard-index
+template: dashboard/api/index
+fragments: []
+model:
+  view: it.cozy.app.dashboard.api.dto.DashboardView
+states:
+  default:
+    view:
+      memos: 12
+      activities:
+        - { message: "메모를 만들었습니다: 회의록 정리", at: "2026-11-06 10:00" }
+        - { message: "메모를 만들었습니다: 주간 보고", at: "2026-11-05 17:20" }
+  empty:
+    view: { memos: 0, activities: [] }

@@ -85,6 +85,11 @@
   - 매니페스트 파서는 cozy-ui의 `FragmentManifest`와 같은 형식 검사를 cozy-cli 안에 다시 둔다(cli → ui 의존을 만들지 않기 위해). 매니페스트 형식을 바꿀 때는 두 곳을 함께 고친다. cozy-ui에만 새 검사가 생기면 `cozy check`는 그것을 모른 채 통과시킬 수 있다(최종 판단은 `mvn verify`).
   - 소스로 읽지 못한 것(문법 오류, 글자 그대로가 아닌 `allowedDependencies`, 메인 클래스 없음)은 규칙 id `CLI`의 오류다.
   - 문서: [cli.md](../conventions/cli.md)
+- **구현 (M10, 2026-11-08)**:
+  - 생성 템플릿은 cozy-cli jar의 `/recipes/`에 두고 `{{이름}}` 자리만 채운다(JDK만 쓴다). 모르는 자리가 남으면 명령이 실패한다.
+  - `package-info.java`의 의존 선언은 javac 파서로 위치를 찾아 그 부분만 바꾼다. 매니페스트는 SnakeYAML로 형식을 확인한 뒤 끝에 글자로 덧붙인다(주석과 순서를 지키기 위해서다).
+  - 적용은 임시 파일에 쓰고 옮긴다(`ATOMIC_MOVE`). 쓰는 도중 실패하면 이미 바꾼 파일을 되돌린다. 계획을 세운 뒤 그사이 바뀐 파일이 있으면 적용하지 않는다.
+  - 문서: [cli.md](../conventions/cli.md), 결과: [부록 §5](0032-agent-cli-recipes.md#5-reference-app을-레시피로-다시-만들기-m10-완료-기준)
 
 ### 6. 조회와 빠른 검사
 

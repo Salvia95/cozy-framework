@@ -23,6 +23,7 @@
     <module>cozy-archetype</module>
     <module>samples/reference-app</module>
     <module>samples/violations</module>
+    <module>samples/recipes</module>
   </modules>
 
   <!-- aggregator는 cozy-parent를 상속하지 않는다. install 플러그인을 모듈과 같은 버전(Boot 관리 3.1.4)으로 맞춰 오프라인 install이 되게 한다 -->

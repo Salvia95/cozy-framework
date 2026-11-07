@@ -238,14 +238,15 @@ class CozyCliTest {
 		void recipesJsonSaysWhatIsAvailable() {
 			Result result = run("recipes", "--json");
 			assertThat(result.out()).startsWith("{\n  \"recipes\": [\n    {\n      \"name\": \"module\",\n      \"stage\": 1,")
+				.contains("\"available\": true")
 				.contains("\"available\": false");
 		}
 
 		@Test
-		void addIsNotThereYet() {
-			Result result = run("add", "module", "memo");
+		void stageTwoIsNotThereYet() {
+			Result result = run("enable", "events");
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
-			assertThat(result.err()).contains("아직 만들지 않았습니다(M10)");
+			assertThat(result.err()).contains("2단계 레시피라 아직 만들지 않았습니다");
 		}
 
 		@Test

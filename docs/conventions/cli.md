@@ -1,9 +1,9 @@
 # cozy 명령 (cozy-cli)
 
-앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만드는 레시피를 알려 준다(`recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
+앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, 목록은 `recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것(M9)**: `describe`, `check`, `recipes`
-- **아직 없는 것**: `add`와 `link`(레시피)는 M10에서 만든다. 지금은 종료 코드 2로 알린다.
+- **지금 쓸 수 있는 것(M10)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`
+- **아직 없는 것**: 2단계 레시피(`add query|command|field|event-version`, `enable events`)는 종료 코드 2로 알린다.
 - **번들 반입**: 오프라인 번들의 `cozy` 진입점에 붙이는 일은 M11이다. 그 전까지는 jar로 실행한다.
 
 ```bash
@@ -19,6 +19,8 @@ cozy <동작> [옵션]
   describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
   check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9
   recipes [--json]    구조를 만드는 명령 목록
+  add <레시피> …       구조 만들기 [--dry-run] [--json]
+  link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -26,12 +28,13 @@ cozy <동작> [옵션]
 | `--project <폴더>` | 현재 폴더 | 앱 폴더. 위로 올라가며 `pom.xml`과 `src/main/java`가 함께 있는 폴더를 찾는다 |
 | `--repository <폴더>` | `COZY_REPOSITORY`, 없으면 `~/.m2/repository` | cozy jar가 있는 Maven 저장소(저장소 배치). `check`가 cozy-ui jar를 여기서 찾는다 |
 | `--json` | 끔 | 기계가 읽는 출력 (아래 형식) |
+| `--dry-run` | 끔 | (`add`, `link`) 계획만 보이고 파일을 쓰지 않는다 |
 
 | 종료 코드 | 뜻 |
 | --- | --- |
 | 0 | 이상 없음 |
 | 1 | `check`에서 오류가 하나 이상 있음 |
-| 2 | 사용법 오류이거나 판단할 수 없음. 앱을 찾지 못함, cozy-ui jar가 없음, 아직 없는 동작. 이유는 표준 오류에 한 줄로 쓴다 |
+| 2 | 사용법 오류이거나 판단할 수 없음. 앱을 찾지 못함, cozy-ui jar가 없음, 아직 없는 동작, 레시피를 적용할 수 없음(이미 다른 내용이 있음, 순환, 없는 이벤트 등). 이유는 표준 오류에 한 줄로 쓴다. 레시피가 실패하면 아무 파일도 바뀌지 않는다 |
 
 ## describe
 
@@ -129,7 +132,70 @@ cozy <동작> [옵션]
 
 ## recipes
 
-구조를 만드는 명령의 목록이다. [ADR-0032 부록](../adr/0032-agent-cli-recipes.md)과 같다. `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`을 낸다. 지금은 모두 `available: false`다.
+구조를 만드는 명령의 목록이다. [ADR-0032 부록](../adr/0032-agent-cli-recipes.md)과 같다. `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`을 낸다. 1단계는 `available: true`, 2단계는 `false`다.
+
+## add, link
+
+레시피 하나를 실행한다. 레시피마다 만드는 파일, 빈칸, 실패하는 경우는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md) §2에 있다.
+
+```bash
+cozy add crud memo --entity Memo --label 메모 --icon notes \
+  --field title:text!:제목 --field body:longtext:본문 --field pinned:bool:고정 --publish created
+cozy add module activity --label 활동
+cozy add migration activity create_activity
+cozy add listener activity --on memo.MemoCreated
+cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
+cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
+cozy link dashboard --uses memo,activity
+cozy add event report ReportSent --field reportId:long --field sentOn:date
+```
+
+- **필드**: `이름:종류[!][:라벨]`. 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`이고 `!`는 필수다. 라벨에 공백이 있으면 따옴표로 묶는다(`--field "dueOn:date:마감 날짜"`).
+- **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.
+- **같은 명령 두 번**: 파일마다 같은 내용이면 `그대로`, 다른 내용이면 덮어쓰지 않고 실패한다. 모든 파일이 `그대로`면 "바뀐 것 없음"이다.
+- **덧붙이는 곳**: `package-info.java`의 `allowedDependencies`, `cozy/fragments.yml`의 `fragments` 목록 끝, `internal/config/{M}Configuration.java`의 `// cozy:append nav` 표시 앞. 이 형식이 아니면 손으로 할 일을 알리고 실패한다.
+- **아이콘**: `--icon`, `--nav`의 아이콘은 cozy-ui jar로 확인한다(`check`와 같은 `--repository`). 아이콘을 쓰는 레시피만 jar를 찾는다.
+
+글 출력:
+
+```text
+[cozy] 계획
+  바꿈  src/main/java/it/cozy/app/activity/package-info.java    allowedDependencies += "memo :: spi"
+  만듦  src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java
+[cozy] 적용했습니다. 빈칸 1곳
+  src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java:17
+    listener-body — MemoCreated를 받았을 때 할 일을 쓰세요. … 다 채우면 이 cozy:slot 표시를 지웁니다.
+[cozy] 다음: 빈칸을 채우고 cozy check, 그다음 mvn verify. 빈칸 listener-body를 채웁니다. …
+```
+
+- 줄 머리: `만듦`(새 파일), `바꿈`(덧붙임, 뒤에 무엇을), `그대로`(이미 같음).
+- 상태 줄: `적용했습니다`, `계획만 보였습니다(--dry-run)`, `바뀐 것 없음(이미 같은 내용이 있습니다)`.
+
+`--json`:
+
+```json
+{
+  "recipe": "listener",
+  "applied": true,
+  "plan": [
+    { "action": "edit", "file": "src/main/java/it/cozy/app/activity/package-info.java", "detail": "allowedDependencies += \"memo :: spi\"" },
+    { "action": "create", "file": "src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java", "detail": null }
+  ],
+  "slots": [
+    { "slot": "listener-body", "file": "src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java", "line": 17, "what": "…" }
+  ],
+  "next": "빈칸을 채우고 cozy check, 그다음 mvn verify. …"
+}
+```
+
+| 키 | 값 |
+| --- | --- |
+| `applied` | 파일을 하나라도 썼으면 `true`. `--dry-run`이거나 바뀐 것이 없으면 `false` |
+| `plan[].action` | `create`, `edit`, `unchanged` |
+| `slots[]` | 이 명령이 만든 파일에 남은 빈칸. 앱 전체의 빈칸은 `cozy check`가 본다 |
+
+- **시각**: 마이그레이션 이름의 시각은 지금 시각이다. 테스트는 시스템 속성 `cozy.cli.now`(`yyyyMMddHHmm`)로 고정한다.
+- **검증**: `samples/recipes`의 픽스처가 레시피를 실제 앱에 적용하고 `mvn verify` 결과를 확인한다([ADR-0032 부록 §5](../adr/0032-agent-cli-recipes.md)).
 
 ## 의존
 

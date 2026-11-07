@@ -1,0 +1,11 @@
+# reference와 같은 명령 뒤에 빈칸을 채운다(hand/reference-filled: reference-app의 activity 코드와, 생성된 memo에 맞춘 dashboard). mvn verify가 통과해야 한다
+cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목 --field body:longtext:본문 --field pinned:bool:고정 --publish created
+cozy add module activity --label 활동
+cozy add migration activity create_activity
+cozy add listener activity --on memo.MemoCreated
+# ActivityItem(spi.dto)은 1단계 레시피로 만들 수 없다(2단계 query). 손으로 쓴 것으로 친다
+hand activity-item
+cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
+cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
+cozy link dashboard --uses memo,activity
+hand reference-filled

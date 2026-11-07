@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <relativePath>../../cozy-parent/pom.xml</relativePath>
+  </parent>
+  <artifactId>cozy-recipes-fixtures</artifactId>
+  <name>Cozy :: Samples :: Recipes</name>
+  <description>cozy add·link 레시피 종단 검증 (ADR-0032 M10). 기본 앱에 레시피를 실행하고 mvn verify 결과를 확인한다. 배포하지 않는다.</description>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+  <!-- invoker:install이 픽스처 앱이 쓰는 cozy 산출물을 로컬 저장소에 설치하도록 모두 의존한다. cozy-cli는 레시피를 실행한다 -->
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-cli</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-starter-events</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <!-- cozy 명령의 실행 클래스패스: cozy-cli와 그 의존(cozy-rules, AttoParser, SnakeYAML)만 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cozy-cli-classpath</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeScope>test</includeScope>
+              <includeArtifactIds>cozy-cli,cozy-rules,attoparser,snakeyaml</includeArtifactIds>
+              <outputDirectory>${project.build.directory}/cli</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        projects/*: 기본 앱(base/)에 recipe.txt의 cozy 명령을 차례로 실행한 앱. 빈칸이 남는 레시피는 C9만 실패해야 하고,
+        빈칸을 채운 앱(hand/)과 빈칸 없는 레시피는 mvn verify가 통과해야 한다. verify.groovy가 결과를 확인한다
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <configuration>
+          <projectsDirectory>projects</projectsDirectory>
+          <cloneProjectsTo>${project.build.directory}/projects</cloneProjectsTo>
+          <streamLogsOnFailures>true</streamLogsOnFailures>
+          <preBuildHookScript>setup</preBuildHookScript>
+          <postBuildHookScript>verify</postBuildHookScript>
+          <parallelThreads>2</parallelThreads>
+          <scriptVariables>
+            <recipesScript>${project.basedir}/recipes.groovy</recipesScript>
+            <recipesHome>${project.basedir}</recipesHome>
+            <cliDir>${project.build.directory}/cli</cliDir>
+          </scriptVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>cozy-recipe-fixtures</id>
+            <goals>
+              <goal>install</goal>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

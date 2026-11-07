@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!--/*
+  {{L}} 상세 화면(api): details 패턴(읽기 전용, cozy add crud). 경로 {{L}} › 이름, 머리 오른쪽에 [삭제(확인 창)] [수정(주 버튼)].
+  긴 글은 넓은 칸, 나머지 값과 시각은 옆 칸(datagrid). 수정은 /{{module}}/{id}/edit 화면에서 한다.
+*/-->
+<html th:replace="~{cozy/layout/base :: appShell(${item.{{name}}}, ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/details :: details(${item.{{name}}}, '{{L}}', '/{{module}}', ~{::#{{eKebab}}-actions}, ~{::#{{eKebab}}-body})}">
+    <div id="{{eKebab}}-actions" class="btn-list">
+      <th:block th:replace="~{cozy/component/delete-confirm :: deleteConfirm('{{eKebab}}-delete', '{{L}}', ${item.{{name}}}, '/{{module}}/' + ${item.id} + '/delete')}"></th:block>
+      <a class="btn btn-primary" th:href="@{/{{module}}/{id}/edit(id=${item.id})}"><svg th:replace="~{cozy/icon/tabler :: icon('pencil')}"></svg>수정</a>
+    </div>
+
+    <div id="{{eKebab}}-body" class="row row-cards">
+{{detailBody}}    </div>
+  </section>
+</main>
+</body>
+</html>

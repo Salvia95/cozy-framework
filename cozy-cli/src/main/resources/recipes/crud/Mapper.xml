@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- {{L}} SQL (cozy add crud). 열 순서는 도메인 record {{E}}의 구성 요소 순서와 같다 -->
+<mapper namespace="{{infraPkg}}.{{E}}Mapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO {{table}} ({{insertColumns}})
+    VALUES ({{insertValues}})
+  </insert>
+
+  <sql id="columns">{{columnsList}}</sql>
+
+  <select id="findById" resultType="{{domainPkg}}.{{E}}">
+    SELECT <include refid="columns"/> FROM {{table}} WHERE id = #{id}
+  </select>
+
+  <select id="findAll" resultType="{{domainPkg}}.{{E}}">
+    SELECT <include refid="columns"/> FROM {{table}} ORDER BY updated_at DESC, id DESC
+  </select>
+
+  <sql id="searchCondition">
+    <where>
+      <if test="like != null">({{searchCondition}})</if>
+    </where>
+  </sql>
+
+  <select id="search" resultType="{{domainPkg}}.{{E}}">
+    SELECT <include refid="columns"/> FROM {{table}}
+    <include refid="searchCondition"/>
+    ORDER BY updated_at DESC, id DESC
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="count" resultType="long">
+    SELECT count(*) FROM {{table}} <include refid="searchCondition"/>
+  </select>
+
+  <update id="update">
+    UPDATE {{table}} SET {{updateSets}}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM {{table}} WHERE id = #{id}
+  </delete>
+</mapper>

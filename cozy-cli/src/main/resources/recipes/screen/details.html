@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<!--/* {{title}} 화면(api): details 패턴 (cozy add screen). 읽기 전용. 값은 모델 view({{View}})에서 읽는다. */-->
+<html th:replace="~{cozy/layout/base :: appShell('{{title}}', ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/details :: details('{{title}}', null, null, ~{}, ~{::#{{id}}-body})}">
+{{body}}  </section>
+</main>
+</body>
+</html>

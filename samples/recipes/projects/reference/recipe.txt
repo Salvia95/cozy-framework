@@ -1,0 +1,18 @@
+# ADR-0032 부록 §5: reference-app을 레시피로 다시 만든다. 빈칸을 채우기 전이라 C9만 실패해야 한다
+cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목 --field body:longtext:본문 --field pinned:bool:고정 --publish created
+cozy add module activity --label 활동
+cozy add migration activity create_activity
+cozy add listener activity --on memo.MemoCreated
+# ActivityItem(spi.dto)은 1단계 레시피로 만들 수 없다(2단계 query). 손으로 쓴 것으로 친다
+hand activity-item
+cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
+cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
+cozy link dashboard --uses memo,activity
+# 같은 명령을 다시 실행하면 아무것도 바뀌지 않는다
+rerun
+# 실패하는 명령은 아무 파일도 바꾸지 않는다: 내용이 다른 파일, 의존 순환, 없는 이벤트, 없는 아이콘, 2단계 레시피
+cozy! add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목
+cozy! link memo --uses activity
+cozy! add listener activity --on memo.MemoDeleted
+cozy! add screen dashboard stats --pattern details --title 통계 --nav 통계:no-such-icon
+cozy! add query memo pinned
