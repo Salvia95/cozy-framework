@@ -7,7 +7,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 
 ## 진행 방식 (PRD §14)
 
-- M0~M7을 순서대로, 한 번에 한 마일스톤씩 진행한다.
+- M0~M11을 순서대로, 한 번에 한 마일스톤씩 진행한다. M8~M11은 ADR-0032(구조는 cozy 명령, 로직은 에이전트)다.
 - 완료 기준을 먼저 테스트로 쓰고, 테스트가 통과한 뒤 다음으로 넘어간다.
 - 마일스톤이 끝나면 커밋한다. 그리고 변경 요약, 통과한 완료 기준, 남은 위험을 보고한다.
 - PRD §3의 결정(`docs/adr/0001`~`0015`)은 바꾸지 않는다. 바꿔야 한다면 ADR 개정안을 먼저 제안한다.
@@ -28,7 +28,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 
 - groupId와 패키지는 `io.salvia95.cozy`다. 모든 모듈은 `cozy-parent`를 상속한다.
 - 루트 `pom.xml`은 aggregator(`cozy-build`)다.
-- 모듈 의존 방향: events → sqlite → runtime, ui → runtime, test → rules (나머지 cozy 모듈은 optional로만). rules는 JDK와 AttoParser에만 의존한다.
+- 모듈 의존 방향: events → sqlite → runtime, ui → runtime, test → rules (나머지 cozy 모듈은 optional로만), cli → rules (+ SnakeYAML, ADR-0032). rules는 JDK와 AttoParser에만 의존한다.
 - 이 규칙은 각 모듈의 enforcer(`cozy-module-boundary`)와 `PomBoundaryTest`가 검사한다.
 - 앱 모듈 안의 구조(api · spi · internal, Java와 템플릿)는 ADR-0029와 `docs/conventions/structure.md`를 따른다. reference-app과 아키타입 `home`이 기준 예시다.
 

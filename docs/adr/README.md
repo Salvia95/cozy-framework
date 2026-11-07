@@ -35,3 +35,4 @@
 | [0029](0029-module-layers.md) | 모듈 안의 구조: api · spi · internal, 템플릿도 같은 3분할 (0008, 0009 개정) | 사용자 지시 |
 | [0030](0030-ui-quality.md) | 화면 품질: Tabler 레이아웃 구조, Tabler Icons 전체, 화면 확인(runtime-verifier) | 사용자 지적 |
 | [0031](0031-design-system.md) | 디자인 시스템: Tabler 구현 + Polaris 원칙 + Cloudscape CRUD 흐름, 색 tone, 버튼 순서(R14, R15) | 사용자 지시 |
+| [0032](0032-agent-cli.md) | 에이전트 작업 분담: 구조는 cozy 명령이, 로직은 에이전트가. 빈칸 검사 C9, cozy-cli (0016 개정). 부록: [레시피 목록](0032-agent-cli-recipes.md) | 사용자 지시 |

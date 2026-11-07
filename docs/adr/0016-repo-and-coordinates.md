@@ -19,3 +19,9 @@
 
 - PRD 본문의 `com.example.cozy`는 모두 `io.salvia95.cozy`로 읽는다.
 - `cozy-framework/` 폴더 이름은 산출물에 드러나지 않는다.
+
+## 개정 (2026-11-07, ADR-0032)
+
+- 새 모듈 `cozy-cli`를 더한다. 실행 jar이고, 앱은 이 모듈에 의존하지 않는다.
+- 모듈 의존 방향에 `cli → rules`를 더한다. 바깥 의존은 SnakeYAML(Boot BOM)만 허용한다.
+- 각 모듈의 enforcer(`cozy-module-boundary`)와 `PomBoundaryTest`에는 모듈을 만드는 M9에서 이 방향을 더한다.

@@ -27,7 +27,7 @@
 | Flyway | 12.4.0 | Boot BOM |
 | HikariCP | 7.0.2 | Boot BOM |
 | JUnit | 6.0.3 | Boot BOM |
-| SnakeYAML | 2.6 | Boot BOM |
+| SnakeYAML | 2.6 | Boot BOM. cozy-cli도 매니페스트·스펙을 읽는 데 쓴다 (ADR-0032, 승인 2026-11-07) |
 | Hibernate Validator (spring-boot-starter-validation) | Boot BOM | Boot BOM. cozy-ui, `@Valid` 규약 (M3, 승인 2026-11-06) |
 | log4j-over-slf4j | 2.0.20 | Boot BOM. cozy-test, vnu의 log4j 1.x 대체 (ADR-0022) |
 | Spring Modulith (api, core, events-core) | 2.1.2 (core는 ArchUnit 1.4.2를 가져온다) | cozy-parent |
