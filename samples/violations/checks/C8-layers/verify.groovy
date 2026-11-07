@@ -9,7 +9,7 @@ def expected = [
   "[C8] it.cozy.app.memo.internal.app.query.MemoFinderImpl → it.cozy.app.memo.internal.app.command.MemoWriter — app.query는 app.command에 의존하지 않습니다",
   "[C8] it.cozy.app.memo.internal.domain.MemoRepository — domain에는 엔티티·VO·도메인 규칙만 둡니다",
   "modulesFollowLayerRules",
-  "Tests run: 5, Failures: 1, Errors: 0, Skipped: 0",
+  "Tests run: 6, Failures: 1, Errors: 0, Skipped: 0",
 ]
 expected.each { assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it }
 assert log.contains("[C8] 모듈 구조 규칙 위반 7건") : "C8 위반이 7건이 아닙니다"

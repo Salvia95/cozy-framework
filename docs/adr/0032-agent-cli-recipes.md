@@ -250,4 +250,4 @@ cozy link dashboard --uses memo,activity              # screen 빈칸에서 Find
 ```
 
 - 빈칸을 채우기 전에는 C9만 실패해야 한다. reference-app의 해당 코드로 빈칸을 채우면 `mvn verify`가 통과해야 한다.
-- activity의 `ActivityItem`, `ActivityFinder`, `ActivityService`는 1단계로 만들 수 없다. 이 부분은 2단계 `query`·`command`를 기다리거나 손으로 쓴다. 1단계에서 손으로 써야 하는 부분이 얼마나 되는지는 평가(ADR-0032 §8)로 잰다.
+- activity의 `ActivityItem`, `ActivityFinder`, `ActivityService`는 1단계로 만들 수 없다. 이 부분은 2단계 `query`·`command`를 기다리거나 손으로 쓴다. 1단계에서 손으로 써야 하는 부분이 얼마나 되는지는 사용자의 내부 평가(ADR-0032 §8)로 잰다.

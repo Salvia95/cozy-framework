@@ -11,6 +11,7 @@ import org.opentest4j.AssertionFailedError;
 import org.springframework.modulith.core.ApplicationModules;
 
 import io.salvia95.cozy.rules.RulesInput;
+import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
@@ -28,6 +29,7 @@ import io.salvia95.cozy.rules.Violation;
  * <li>C2: 템플릿 규칙 R1~R15. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
  * <li>C6: 이벤트 리스너 파라미터는 CozyEvent, 이벤트마다 버전별 직렬화 샘플과 호환 (cozy-starter-events를 쓰는 앱)</li>
  * <li>C8: 모듈 안의 패키지(api, spi, internal/app·domain·infra·config)와 레이어 방향, 인터페이스 + Impl (ADR-0029)</li>
+ * <li>C9: {@code src/main} 아래에 채우지 않은 빈칸({@code cozy:slot} 표시)이 없다 (ADR-0032)</li>
  * </ul>
  * 문서: docs/conventions/structure.md, docs/conventions/testing.md, docs/conventions/rules.md
  */
@@ -44,6 +46,11 @@ public abstract class CozyArchitectureTest {
 	/** 앱 템플릿 루트 */
 	protected Path templateRoot() {
 		return CozyProject.TEMPLATES;
+	}
+
+	/** 빈칸(C9)을 찾을 앱 소스 루트 */
+	protected Path sourceRoot() {
+		return CozyProject.SOURCES;
 	}
 
 	/** 앱 매니페스트 */
@@ -74,6 +81,15 @@ public abstract class CozyArchitectureTest {
 		if (!problems.isEmpty()) {
 			throw new AssertionFailedError("[C8] 모듈 구조 규칙 위반 " + problems.size() + "건 (docs/conventions/structure.md)\n"
 					+ String.join("\n", problems));
+		}
+	}
+
+	@Test
+	public final void slotsAreFilled() {
+		List<Violation> slots = SlotRules.check(sourceRoot(), "src/main/");
+		if (!slots.isEmpty()) {
+			throw new AssertionFailedError("[C9] 채우지 않은 빈칸 " + slots.size() + "곳 (docs/conventions/testing.md)\n"
+					+ slots.stream().map(Violation::format).collect(Collectors.joining("\n")));
 		}
 	}
 

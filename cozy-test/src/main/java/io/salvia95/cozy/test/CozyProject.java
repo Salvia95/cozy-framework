@@ -32,7 +32,9 @@ import io.salvia95.cozy.rules.TemplateFile;
  */
 public final class CozyProject {
 
-	public static final Path RESOURCES = Path.of("src/main/resources");
+	public static final Path SOURCES = Path.of("src/main");
+
+	public static final Path RESOURCES = SOURCES.resolve("resources");
 
 	public static final Path TEMPLATES = RESOURCES.resolve("templates");
 

@@ -7,7 +7,7 @@
 
 ### 1. license-maven-plugin 2.7.1을 dist 프로필에서만 쓴다
 
-- **도구**: `org.codehaus.mojo:license-maven-plugin:2.7.1`의 `add-third-party`
+- **도구**: `org.codehaus.mojo:license-maven-plugin`(결정 때 2.7.1, 지금 버전은 ADR-0017 표)의 `add-third-party`
   - 2026-11-06 기준 최신 GA다(2026-01 릴리스).
   - 의존성 POM의 `<licenses>`를 읽어 목록을 만든다.
   - 수작업 목록은 의존성이 바뀔 때마다 어긋나므로 쓰지 않는다.

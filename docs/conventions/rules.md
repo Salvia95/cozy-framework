@@ -110,3 +110,19 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
 - 모듈 이름은 Modulith 규칙을 따른다. 메인 패키지 바로 아래 패키지의 단순 이름이고, `@ApplicationModule(id = ...)`이 있으면 그 이름이다.
 
 규칙마다 통과하는 경우와 위반하는 경우의 테스트가 있다(`cozy-rules`의 `TemplateRulesTest`). `samples/violations/rules/`에는 규칙별 위반 픽스처가 있다.
+
+## 모듈 구조와 빈칸 API (cozy-rules)
+
+모듈 안 구조(C8)와 빈칸(C9)의 판단도 cozy-rules에 있다. cozy-test는 컴파일된 클래스로, cozy-cli는 소스로 같은 판단을 쓴다(ADR-0032 §4).
+
+| 타입 | 무엇 |
+| --- | --- |
+| `Layer` | 모듈 안의 자리 10개(`API`, `API_DTO`, `SPI`, `SPI_DTO`, `SPI_EVENT`, `APP_COMMAND`, `APP_QUERY`, `DOMAIN`, `INFRA`, `CONFIG`). `path()`, `packageIn(모듈 패키지)`, `Layer.of(모듈 패키지, 패키지)` |
+| `Role` | 자리 표. 역할마다 자리, 종류(클래스·인터페이스·record), 이름 접미사, 구현하는 계약(`FACADE_IMPL` → `FACADE`). `typeName("Memo")` → `MemoFacadeImpl` |
+| `JavaType` | 검사할 타입 하나: 이름, 최상위 타입, 인터페이스인가, 성질(`CONTROLLER`, `COMPONENT`, `COZY_EVENT`, `LISTENER`), 구현하는 인터페이스, 쓰는 타입 |
+| `ModulePackage` | 모듈 이름과 기준 패키지 |
+| `LayerRules.check(모듈, 타입, Named Interface 패키지)` | C8 위반 목록. 같은 메시지는 한 번만, 메시지 순서로 |
+| `SlotRules.check(src/main, 표시할 접두사)`, `SlotRules.scan(위치, 내용)` | C9 빈칸 목록. 경로 순서, 파일 안에서는 줄 순서 |
+
+- **자리 표와 검사가 같은지**: `LayerRulesTest`가 `Role`의 모든 역할을 표대로 만든 타입으로 바꿔 C8을 통과하는지 확인한다. 역할을 더하거나 검사를 바꾸면 이 테스트가 어긋남을 잡는다.
+- **`Violation`의 참조**: C8의 배치 위반처럼 위치 자체가 문제면 `reference`가 `null`이다. 이때 `format()`은 `→ 참조` 없이 `[C8] 위치 — 메시지`를 낸다.

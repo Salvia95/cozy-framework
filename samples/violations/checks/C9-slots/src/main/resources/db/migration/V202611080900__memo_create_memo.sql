@@ -1,0 +1,1 @@
+-- cozy:slot migration-sql — memo 테이블을 만드는 DDL을 쓰세요

@@ -1,6 +1,6 @@
 # 모듈 구조: api · spi · internal
 
-앱의 모듈은 Java 패키지와 템플릿 폴더 모두 api · spi · internal로 나눈다(ADR-0029). 배치와 방향은 검사 C8(Java)과 R1·R3·R9·R10·R11(템플릿)이 빌드 때 검사한다. 예시는 `samples/reference-app`의 memo · activity · dashboard 모듈이다.
+앱의 모듈은 Java 패키지와 템플릿 폴더 모두 api · spi · internal로 나눈다(ADR-0029). 배치와 방향은 검사 C8(Java)과 R1·R3·R9·R10·R11(템플릿)이 빌드 때 검사한다. 아래 "놓는 자리" 표는 cozy-rules의 `Role`·`Layer`와 같고, cozy 명령(ADR-0032)도 이 표대로 파일을 만든다. 예시는 `samples/reference-app`의 memo · activity · dashboard 모듈이다.
 
 | 이름 | 뜻 | Java | 템플릿 |
 | --- | --- | --- | --- |
