@@ -2,11 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="it.cozy.app.activity.internal.infra.ActivityMapper">
 
-  <insert id="insert">
-    INSERT INTO activity (event_id, message, created_at) VALUES (#{eventId}, #{message}, #{createdAt})
-  </insert>
-
-  <select id="findRecent" resultType="it.cozy.app.activity.internal.infra.ActivityRow">
-    SELECT id, message, created_at FROM activity ORDER BY created_at DESC, id DESC LIMIT #{limit}
+  <select id="recent" resultType="it.cozy.app.activity.internal.infra.ActivityItemRow">
+    SELECT message, strftime('%Y-%m-%d %H:%M', created_at, 'localtime') AS at
+    FROM activity ORDER BY created_at DESC, id DESC LIMIT #{limit}
   </select>
+
+  <insert id="record">
+    INSERT INTO activity (event_id, message, created_at)
+    VALUES (#{eventId}, #{message}, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  </insert>
 </mapper>

@@ -270,4 +270,4 @@ cozy link dashboard --uses memo,activity              # screen 빈칸에서 Find
   - 생성된 memo는 reference-app의 memo와 글자 그대로 같지 않다(`MemoSummary`와 공개 fragment `memo/summary`가 없다). 그래서 채운 dashboard는 메모 수만 보인다. 요약 값은 2단계 `query`로 만든다.
   - 빈칸만 남긴 마이그레이션(주석뿐인 SQL)을 Flyway가 받아들인다. 그래서 C9 말고 다른 검사는 실패하지 않는다.
   - 남은 빈칸이 있는 리스너는 이벤트를 받으면 예외를 던진다. 테스트는 통과하지만 로그에 오류가 남고, 발행 기록은 끝나지 않은 채 남는다.
-- activity의 `ActivityItem`, `ActivityFinder`, `ActivityService`는 1단계로 만들 수 없다. 이 부분은 2단계 `query`·`command`를 기다리거나 손으로 쓴다. 1단계에서 손으로 써야 하는 부분이 얼마나 되는지는 사용자의 내부 평가(ADR-0032 §8)로 잰다.
+- activity의 `ActivityItem`, `ActivityFinder`, `ActivityService`는 1단계로 만들 수 없다. 이 부분은 2단계 `query`·`command`를 기다리거나 손으로 쓴다(M13부터 `cozy add dto`·`query`·`command`가 만든다. ADR-0033 §6). 1단계에서 손으로 써야 하는 부분이 얼마나 되는지는 사용자의 내부 평가(ADR-0032 §8)로 잰다.

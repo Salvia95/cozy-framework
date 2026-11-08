@@ -46,7 +46,7 @@ public final class CozyCli {
 			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
 			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)
 			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link, enable)
-			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto
+			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto, query, command
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
 			  cozy enable events       pom에 cozy-starter-events 더하기
 

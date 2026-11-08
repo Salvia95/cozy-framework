@@ -37,12 +37,17 @@
       spi/dto의 record 하나(모듈 사이 값). 종류는 crud와 같고 같은 모듈의 record·list:record도 쓴다. 빈칸: 없음
   cozy enable events
       pom에 cozy-starter-events 추가(cozy-starter-sqlite가 있어야 한다). 빈칸: 없음
+  cozy add query <모듈> <이름> [--param 이름:종류 …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]
+      Finder 메서드와 구현, Mapper 메서드, 행 record, <select>. Finder가 없으면 만든다. 빈칸: query-sql
+  cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]
+      Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다. 빈칸: command-body, (--sql이면) command-sql
 ```
 
 - **이름**: 모듈은 영문 소문자와 숫자(`memo`, `voc2`). 엔티티·이벤트는 대문자로 시작한다(`Memo`, `MemoCreated`). 필드는 소문자로 시작하는 camelCase다(`dueOn`).
 - **필드** `이름:종류[!][:라벨]`: 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`다. `!`는 필수다. 라벨은 화면에 보이는 한글 이름이다. 예: `--field title:text!:제목 --field dueOn:date:마감일`
   - `crud`에는 `text!` 필드가 하나 이상 있어야 한다. 첫 `text!` 필드가 목록의 이름 칸이 된다. `instant`는 쓰지 않는다(만든 시각·수정한 시각은 명령이 넣는다).
 - **fragment 파라미터** `이름:종류` 또는 `이름:Record`(내 모듈 `spi/dto`의 record) 또는 `이름:list:Record`.
+- **query·command 파라미터** `--param 이름:종류`: 종류는 위 필드 종류와 같다. 메서드 이름은 소문자로 시작하는 camelCase다(`recent`, `countPinned`).
 - **dto 필드** `이름:종류[:설명]`: 종류는 위와 같고, 내 모듈 `spi/dto`의 record(`이름:Record`, `이름:list:Record`)도 쓴다. `!`는 쓰지 않는다. 설명은 record의 `@param`이 된다.
 - **아이콘**: Tabler Icons 이름(`notes`, `checklist`, `dashboard`). 없는 이름이면 명령이 실패한다. 목록은 `/cozy/dev/catalog/icons`에 있다.
 - **공백이 있는 값**은 따옴표로 감싼다: `--label "할 일"`, `--purpose "최근 활동 목록"`.
@@ -54,12 +59,18 @@ cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!
 cozy add module activity --label 활동
 cozy add migration activity create_activity       # 빈칸: CREATE TABLE
 cozy add listener activity --on memo.MemoCreated  # 빈칸: 받았을 때 할 일 (memo :: spi 의존도 함께 선언된다)
+cozy add dto activity ActivityItem --field message:text:무엇이 있었는지 --field at:text:언제
+cozy add query activity recent --param limit:int --returns list:ActivityItem                     # 빈칸: SELECT
+cozy add command activity record --param eventId:text --param message:text --sql insert         # 빈칸: 본문, INSERT
 ```
 
 - `--publish`가 없는 이벤트를 새로 만들었으면(`cozy add event`), 보내는 모듈의 `*FacadeImpl` 트랜잭션 안에 한 줄을 넣는다: `this.events.publishEvent(MemoCreated.of(...));`
 - 리스너는 자기 모듈의 `{모듈}Facade`(`activity`면 `ActivityFacade`)를 받는다. 없으면 `cozy add listener`가 빈 Facade와 구현을 함께 만든다. 리스너 본문은 그 Facade의 쓰기를 부르는 한 줄이 된다.
-- 다른 모듈에 보일 값(화면 조각의 파라미터, Finder가 돌려줄 값)은 `cozy add dto`로 만든다: `cozy add dto activity ActivityItem --field message:text:무엇이 있었는지 --field at:text:언제`
-- 명령이 없는 구조(Finder·Facade에 메서드 추가, 그 구현과 Mapper·SQL)는 아래 "파일 위치" 표대로 만든다. 이것은 다음 단계 명령(`cozy add query`, `cozy add command`)이 맡을 몫이다.
+- 다른 모듈에 보일 값(화면 조각의 파라미터, Finder가 돌려줄 값)은 `cozy add dto`로 만든다.
+- 읽기는 `cozy add query`, 쓰기는 `cozy add command`로 더한다. Finder·Facade, 구현, Mapper, 행, Mapper XML을 명령이 함께 맞춘다. 너는 SQL과 본문만 쓴다.
+  - 행(`{Record}Row`)은 record와 같은 모양으로 만들어진다. 저장 형식이 다르면(예: `Instant`를 `"2026-11-08 10:00"`으로 보이기) SELECT에서 바꾸거나, 행의 타입과 Finder 구현의 옮기는 코드를 고친다.
+  - 같은 명령을 다시 실행해도 안전하다. 메서드 본문은 비교하지 않는다. 같은 이름이 다른 시그니처로 있으면 실패한다(오버로드를 만들지 않는다).
+  - 모듈에 Finder(또는 Facade)가 둘 이상이면 `--in <이름>`으로 고른다.
 
 ### 명령 결과 읽기
 

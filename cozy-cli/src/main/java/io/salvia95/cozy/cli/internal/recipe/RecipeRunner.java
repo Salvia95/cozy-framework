@@ -60,7 +60,9 @@ public final class RecipeRunner {
 			case "crud" -> CrudRecipe.run(ctx, parsed);
 			case "dto" -> StageTwoRecipes.dto(ctx, parsed);
 			case "enable events", "enable " -> StageTwoRecipes.enableEvents(ctx, parsed);
-			case "query", "command", "event-version" -> throw new CliException("cozy add " + recipe
+			case "query" -> MethodRecipes.query(ctx, parsed);
+			case "command" -> MethodRecipes.command(ctx, parsed);
+			case "event-version" -> throw new CliException("cozy add " + recipe
 					+ "는 2단계 레시피라 아직 만들지 않았습니다. cozy recipes로 지금 쓸 수 있는 것을 봅니다.");
 			case "field" -> throw new CliException("cozy add field는 보류한 레시피입니다(ADR-0033 §1). 필드는 손으로 더하고 cozy check와 "
 					+ "mvn verify로 확인합니다.");

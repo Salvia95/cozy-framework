@@ -50,10 +50,10 @@ public final class Recipes {
 					true),
 			new Recipe("query", 2,
 					"cozy add query <모듈> <이름> [--param 이름:종류 …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]",
-					"Finder 메서드, 구현, Mapper 메서드, 행 record, <select>", "query-sql", false),
+					"Finder 메서드와 구현, Mapper 메서드, 행 record, <select>. Finder가 없으면 만든다", "query-sql", true),
 			new Recipe("command", 2,
 					"cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]",
-					"Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문", "command-body, (--sql이면) command-sql", false),
+					"Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다", "command-body, (--sql이면) command-sql", true),
 			new Recipe("event-version", 2, "cozy add event-version <모듈> <이벤트> --field 이름:종류 …",
 					"이벤트 필드 추가, schemaVersion 올림, 옛 of() 유지, 샘플 v{n+1} 추가", "없음", false));
 

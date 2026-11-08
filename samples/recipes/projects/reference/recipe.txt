@@ -5,14 +5,18 @@ cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
 # 화면 조각의 파라미터가 될 spi DTO (2단계 dto, ADR-0033)
 cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
+# 읽기와 쓰기 (2단계 query·command, ADR-0033 §6). 빈칸은 SELECT, 쓰기 본문, INSERT
+cozy add query activity recent --param limit:int --returns list:ActivityItem
+cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
 cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
 cozy link dashboard --uses memo,activity
 # 같은 명령을 다시 실행하면 아무것도 바뀌지 않는다
 rerun
-# 실패하는 명령은 아무 파일도 바꾸지 않는다: 내용이 다른 파일, 의존 순환, 없는 이벤트, 없는 아이콘, 2단계 레시피
+# 실패하는 명령은 아무 파일도 바꾸지 않는다: 내용이 다른 파일, 의존 순환, 없는 이벤트, 없는 아이콘, 다른 시그니처, 아직 없는 레시피
 cozy! add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목
 cozy! link memo --uses activity
 cozy! add listener activity --on memo.MemoDeleted
 cozy! add screen dashboard stats --pattern details --title 통계 --nav 통계:no-such-icon
-cozy! add query memo pinned
+cozy! add query activity recent --param limit:long --returns list:ActivityItem
+cozy! add event-version memo MemoCreated --field pinned:bool

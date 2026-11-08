@@ -1,10 +1,13 @@
-// 레시피만 실행한 앱: 남은 빈칸 4곳(C9)만 실패하고 나머지 검사·테스트(생성된 memo 테스트 포함)는 통과한다
+// 레시피만 실행한 앱: 남은 빈칸 7곳(C9)만 실패하고 나머지 검사·테스트(생성된 memo 테스트 포함)는 통과한다
 def log = new File(basedir, "build.log").getText("UTF-8")
 def expected = [
-  "[C9] 채우지 않은 빈칸 4곳",
+  "[C9] 채우지 않은 빈칸 7곳",
+  "[C9] src/main/java/it/cozy/app/activity/internal/app/command/ActivityFacadeImpl.java:25 → cozy:slot command-body",
   "[C9] src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java:24 → cozy:slot listener-body",
   "[C9] src/main/java/it/cozy/app/dashboard/api/DashboardController.java:20 → cozy:slot view-model",
   "[C9] src/main/resources/db/migration/V202611081001__activity_create_activity.sql:3 → cozy:slot migration-sql",
+  "[C9] src/main/resources/mapper/activity/ActivityMapper.xml:6 → cozy:slot query-sql",
+  "[C9] src/main/resources/mapper/activity/ActivityMapper.xml:10 → cozy:slot command-sql",
   "[C9] src/main/resources/templates/activity/spi/recent-activity.html:5 → cozy:slot fragment-body",
   "ArchitectureTest.slotsAreFilled",
   "Tests run: 14, Failures: 1, Errors: 0, Skipped: 0",
@@ -16,6 +19,7 @@ def recipes = new File(basedir, "recipes.log").getText("UTF-8")
   "의존이 순환합니다: memo → activity → memo",
   "memo에 이벤트 MemoDeleted가 없습니다",
   "아이콘 'no-such-icon'가 Tabler Icons에 없습니다",
-  "cozy add query는 2단계 레시피라 아직 만들지 않았습니다",
+  "같은 이름이 다른 시그니처로 있습니다: ActivityFinder에 List<ActivityItem> recent(int)",
+  "cozy add event-version는 2단계 레시피라 아직 만들지 않았습니다",
 ].each { assert recipes.contains(it) : "recipes.log에 기대한 메시지가 없습니다: " + it }
 return true

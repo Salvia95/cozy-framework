@@ -316,7 +316,7 @@ class RecipeCommandTest {
 	void unknownAndStageTwoRecipes() throws IOException {
 		app();
 		fails("모르는 레시피입니다: table", "add", "table", "memo");
-		fails("cozy add query는 2단계 레시피라", "add", "query", "memo", "pinned");
+		fails("cozy add event-version는 2단계 레시피라", "add", "event-version", "memo", "MemoCreated");
 		fails("cozy add field는 보류한 레시피입니다", "add", "field", "memo", "x:text");
 		fails("cozy add 뒤에 레시피 이름을 적습니다", "add");
 		fails("cozy enable 뒤에는 events를 적습니다", "enable");
@@ -473,6 +473,192 @@ class RecipeCommandTest {
 				"public interface ActivityFacade {\n\n\tvoid record(String message);\n"));
 		fails("ActivityFacade.java가 이미 있고 내용이 다릅니다", "add", "crud", "activity", "--entity", "Activity", "--label", "활동", "--icon",
 				"activity", "--field", "message:text!:내용");
+	}
+
+	static final String[] QUERY = { "add", "query", "activity", "recent", "--param", "limit:int", "--returns", "list:ActivityItem" };
+
+	static final String[] COMMAND = { "add", "command", "activity", "record", "--param", "eventId:text", "--param", "message:text",
+			"--sql", "insert" };
+
+	/** reference-app의 activity: 리스너, dto, query, command (ADR-0033 §6) */
+	void activity() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long", "--field", "title:text");
+		ok("add", "module", "activity");
+		ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		ok("add", "dto", "activity", "ActivityItem", "--field", "message:text", "--field", "at:text");
+	}
+
+	/** ADR-0033 §5.2: Finder가 없으면 만들고, 구현·Mapper·행·select를 함께 만든다. 빈칸은 SQL 하나다 */
+	@Test
+	void queryCreatesTheFinderMapperRowAndSelect() throws IOException {
+		activity();
+		Result query = ok(QUERY);
+		assertThat(query.out()).contains("만듦  " + ACTIVITY + "spi/ActivityFinder.java")
+			.contains("만듦  " + ACTIVITY + "internal/app/query/ActivityFinderImpl.java")
+			.contains("만듦  " + ACTIVITY + "internal/infra/ActivityMapper.java")
+			.contains("만듦  " + ACTIVITY + "internal/infra/ActivityItemRow.java")
+			.contains("만듦  src/main/resources/mapper/activity/ActivityMapper.xml")
+			.contains("빈칸 1곳")
+			.contains("query-sql")
+			.contains("마이그레이션에 activity 테이블이 아직 없습니다");
+		assertThat(read(ACTIVITY + "spi/ActivityFinder.java")).contains("""
+				import java.util.List;
+
+				import it.cozy.app.activity.spi.dto.ActivityItem;
+				""").contains("public interface ActivityFinder {\n\n\tList<ActivityItem> recent(int limit);\n}\n");
+		assertThat(read(ACTIVITY + "internal/app/query/ActivityFinderImpl.java")).contains("""
+				@Service
+				@Transactional(readOnly = true)
+				class ActivityFinderImpl implements ActivityFinder {
+
+					private final ActivityMapper mapper;
+
+					ActivityFinderImpl(ActivityMapper mapper) {
+						this.mapper = mapper;
+					}
+
+					@Override
+					public List<ActivityItem> recent(int limit) {
+						return this.mapper.recent(limit).stream().map((row) -> new ActivityItem(row.message(), row.at())).toList();
+					}
+				}
+				""").contains("import it.cozy.app.activity.internal.infra.ActivityMapper;");
+		assertThat(read(ACTIVITY + "internal/infra/ActivityMapper.java"))
+			.contains("public interface ActivityMapper {\n\n\tList<ActivityItemRow> recent(@Param(\"limit\") int limit);\n}\n")
+			.contains("import org.apache.ibatis.annotations.Param;");
+		assertThat(read(ACTIVITY + "internal/infra/ActivityItemRow.java")).contains("public record ActivityItemRow(String message, String at) {");
+		assertThat(read("src/main/resources/mapper/activity/ActivityMapper.xml")).contains("""
+				<mapper namespace="it.cozy.app.activity.internal.infra.ActivityMapper">
+
+				  <select id="recent" resultType="it.cozy.app.activity.internal.infra.ActivityItemRow">
+				    <!-- cozy:slot query-sql — SELECT 문을 쓰세요. 결과 열: message, at (행 ActivityItemRow의 구성 요소). 파라미터: #{limit} -->
+				  </select>
+				</mapper>
+				""");
+		assertThat(ok(QUERY).out()).contains("[cozy] 바뀐 것 없음");
+
+		// 에이전트가 SQL과 옮기는 코드를 고친 뒤에도 다시 실행하면 바뀐 것이 없다(본문은 비교하지 않는다)
+		write("src/main/resources/mapper/activity/ActivityMapper.xml", read("src/main/resources/mapper/activity/ActivityMapper.xml")
+			.replaceAll("<!-- cozy:slot query-sql[^\n]*", "SELECT message, created_at AS at FROM activity LIMIT #{limit}"));
+		write(ACTIVITY + "internal/app/query/ActivityFinderImpl.java", read(ACTIVITY + "internal/app/query/ActivityFinderImpl.java")
+			.replace("new ActivityItem(row.message(), row.at())", "new ActivityItem(row.message(), \"방금\")"));
+		assertThat(ok(QUERY).out()).contains("[cozy] 바뀐 것 없음");
+	}
+
+	/** ADR-0033 §5.3: 쓰기는 Facade로. 리스너가 만든 빈 구현에는 Mapper를 받는 생성자를 더한다 */
+	@Test
+	void commandAddsTheFacadeMethodAndItsSql() throws IOException {
+		activity();
+		ok(QUERY);
+		Result command = ok(COMMAND);
+		assertThat(command.out()).contains("바꿈  " + ACTIVITY + "internal/app/command/ActivityFacadeImpl.java    생성자 += ActivityMapper; ")
+			.as("바뀐 파일에 남은 빈칸을 모두 보인다(query가 남긴 query-sql 포함)")
+			.contains("빈칸 3곳")
+			.contains("command-body")
+			.contains("command-sql")
+			.contains("ApplicationEventPublisher");
+		assertThat(read(ACTIVITY + "spi/ActivityFacade.java")).contains("\tvoid record(String eventId, String message);\n}\n");
+		assertThat(read(ACTIVITY + "internal/app/command/ActivityFacadeImpl.java")).contains("""
+				class ActivityFacadeImpl implements ActivityFacade {
+
+					private final ActivityMapper mapper;
+
+					ActivityFacadeImpl(ActivityMapper mapper) {
+						this.mapper = mapper;
+					}
+
+					@Override
+					public void record(String eventId, String message) {
+						// cozy:slot command-body — this.mapper.record(eventId, message)로 SQL을 실행하고""")
+			.contains("throw new UnsupportedOperationException(\"cozy:slot command-body\");");
+		assertThat(read(ACTIVITY + "internal/infra/ActivityMapper.java"))
+			.contains("\tint record(@Param(\"eventId\") String eventId, @Param(\"message\") String message);\n}\n")
+			.as("query가 만든 Mapper를 함께 쓴다")
+			.contains("List<ActivityItemRow> recent(");
+		assertThat(read("src/main/resources/mapper/activity/ActivityMapper.xml")).contains("""
+				  <insert id="record">
+				    <!-- cozy:slot command-sql — INSERT 문을 쓰세요. 파라미터: #{eventId}, #{message} -->
+				  </insert>
+				</mapper>
+				""");
+		assertThat(ok(COMMAND).out()).contains("[cozy] 바뀐 것 없음");
+		// 리스너 명령도 여전히 바뀐 것이 없다
+		assertThat(ok("add", "listener", "activity", "--on", "memo.MemoCreated").out()).contains("[cozy] 바뀐 것 없음");
+		// 빈칸 없는 command: Facade 메서드와 본문 빈칸만
+		Result plain = ok("add", "command", "activity", "clear", "--returns", "int");
+		assertThat(plain.out()).contains("빈칸 1곳").doesNotContain("ActivityMapper.xml");
+		assertThat(read(ACTIVITY + "spi/ActivityFacade.java")).contains("\tint clear();\n}\n");
+		Result check = cozy("check");
+		assertThat(check.out()).contains("command-body").contains("command-sql").contains("query-sql").doesNotContain("[C8]");
+	}
+
+	/** crud가 만든 Finder·Facade·Mapper에 더한다. 옵션 없이 정해진다 */
+	@Test
+	void queryAndCommandExtendACrudModule() throws IOException {
+		app();
+		ok("add", "crud", "memo", "--entity", "Memo", "--label", "메모", "--icon", "notes", "--field", "title:text!:제목", "--field",
+				"pinned:bool:고정");
+		Result query = ok("add", "query", "memo", "countPinned", "--returns", "long");
+		assertThat(query.out()).contains("바꿈  " + MEMO + "spi/MemoFinder.java    MemoFinder += long countPinned()")
+			.contains("테이블: memo(id, title, pinned, created_at, updated_at)")
+			.doesNotContain("Row.java");
+		assertThat(read(MEMO + "internal/app/query/MemoFinderImpl.java")).contains("\t\treturn this.mapper.countPinned();");
+		assertThat(read("src/main/resources/mapper/memo/MemoMapper.xml")).contains("<select id=\"countPinned\" resultType=\"long\">");
+		Result command = ok("add", "command", "memo", "pin", "--param", "id:long", "--param", "pinned:bool", "--returns", "bool",
+				"--sql", "update");
+		assertThat(command.out()).doesNotContain("생성자 +=");
+		assertThat(read(MEMO + "internal/infra/MemoMapper.java")).contains("int pin(@Param(\"id\") long id, @Param(\"pinned\") boolean pinned);");
+		assertThat(read("src/main/resources/mapper/memo/MemoMapper.xml")).contains("<update id=\"pin\">");
+		assertThat(ok("add", "query", "memo", "countPinned", "--returns", "long").out()).contains("[cozy] 바뀐 것 없음");
+	}
+
+	@Test
+	void queryAndCommandRefuseWhatTheyCannotDecide() throws IOException {
+		activity();
+		fails("ActivityLine가 없습니다. 먼저 cozy add dto activity ActivityLine", "add", "query", "activity", "lines", "--returns",
+				"list:ActivityLine");
+		fails("--returns는 long, int, bool, text", "add", "query", "activity", "x", "--returns", "list:int");
+		fails("--returns가 필요합니다", "add", "query", "activity", "x");
+		fails("--sql은 insert, update, delete 중 하나입니다", "add", "command", "activity", "x", "--sql", "select");
+		fails("메서드 이름 'Recent'는", "add", "query", "activity", "Recent", "--returns", "long");
+		fails("같은 이름의 파라미터가 둘 이상입니다", "add", "query", "activity", "x", "--param", "a:int", "--param", "a:text", "--returns",
+				"long");
+		ok(QUERY);
+		fails("같은 이름이 다른 시그니처로 있습니다: ActivityFinder에 List<ActivityItem> recent(int)", "add", "query", "activity", "recent",
+				"--param", "limit:long", "--returns", "list:ActivityItem");
+
+		// 일부만 있다: Mapper에서 메서드를 지우면 다시 실행할 수 없다
+		String mapper = ACTIVITY + "internal/infra/ActivityMapper.java";
+		write(mapper, read(mapper).replace("\n\tList<ActivityItemRow> recent(@Param(\"limit\") int limit);\n", ""));
+		Result partial = fails("query recent의 일부만 있습니다", QUERY);
+		assertThat(partial.err()).contains("없는 곳: ActivityMapper.recent");
+
+		// Finder가 둘이면 --in이 필요하다
+		write(ACTIVITY + "spi/ActivityStatsFinder.java", "package it.cozy.app.activity.spi;\n\npublic interface ActivityStatsFinder {\n}\n");
+		fails("Finder가 둘 이상입니다(ActivityFinder, ActivityStatsFinder). --in ActivityFinder|ActivityStatsFinder", "add", "query",
+				"activity", "total", "--returns", "long");
+		fails("ActivityStatsFinder를 구현한 클래스를 하나로 찾지 못했습니다", "add", "query", "activity", "total", "--returns", "long", "--in",
+				"ActivityStatsFinder");
+
+		// 생성자가 있는데 Mapper가 없는 구현은 고치지 않는다
+		write(ACTIVITY + "internal/app/query/ActivityStatsFinderImpl.java", """
+				package it.cozy.app.activity.internal.app.query;
+
+				import it.cozy.app.activity.spi.ActivityStatsFinder;
+
+				class ActivityStatsFinderImpl implements ActivityStatsFinder {
+
+					private final java.time.Clock clock;
+
+					ActivityStatsFinderImpl(java.time.Clock clock) {
+						this.clock = clock;
+					}
+				}
+				""");
+		fails("Mapper가 없습니다. 이미 있는 생성자는 고치지 않습니다", "add", "query", "activity", "total", "--returns", "long", "--in",
+				"ActivityStatsFinder");
 	}
 
 	static String[] concat(String[] base, String... more) {

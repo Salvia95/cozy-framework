@@ -184,6 +184,14 @@ cozy add event-version <m> <Ev> --field 이름:종류 …
 - **`listener`**: 리스너가 만든 빈 Facade·구현은 같은 모듈의 `crud`가 채운다(엔티티 이름이 모듈 이름과 같을 때). 내용이 리스너가 만든 빈 파일과 글자까지 같을 때만 바꾸고, 메서드를 더했으면 1단계처럼 실패한다. 그래서 "리스너를 먼저, crud를 나중에" 순서도 동작한다(픽스처 `stage-two`).
 - **`cozy recipes`**: 글 출력은 쓸 수 있는 레시피를 먼저, 준비 중인 것을 뒤에 둔다. 보류한 `field`는 목록에서 뺐고, 실행하면 보류했다고 알린다.
 
+### M13 구현 메모
+
+- **빈 구현에 Mapper 생성자를 더한다**: §4는 "이미 있는 구현에 Mapper가 없으면 실패한다"였다. 그런데 `listener`(§5.6)와 Mapper 없는 `command`가 만든 빈 구현에도 그대로 적용하면 `listener` → `command --sql` 순서가 늘 실패한다. 그래서 **생성자도 필드도 없는 구현**에만 `{M}Mapper`를 받는 필드와 생성자를 본문 맨 앞에 더한다. 이미 있는 생성자는 여전히 고치지 않고, 생성자가 있는데 Mapper가 없으면 실패한다.
+- **행은 구성 요소 이름으로 비교한다**: §5.2 표는 "이미 있으면 구성 요소가 같아야 한다", 본문은 "에이전트가 행의 타입을 고친다"였다. 둘을 함께 지키려고 이름(순서 포함)만 비교하고 타입은 비교하지 않는다.
+- **import 그룹**: §2는 "마지막 import 뒤"였다. 생성된 앱 코드의 관례(java, javax, org, com, 그 밖, 그룹 사이 빈 줄)에 맞추려고 같은 그룹의 끝에 넣는다. 이미 있는 import는 정렬하지 않는다.
+- **빈칸 목록**: 명령 출력은 바뀐 파일에 남은 빈칸을 모두 보인다(예: `command --sql`이 query가 남긴 `query-sql`도 보인다). 1단계와 같은 동작이다.
+- **완료 기준**: 레시피 픽스처 `reference`·`reference-filled`가 §6의 세 줄로 activity를 만든다. `hand/reference-filled`에서 `ActivityFinder`, `ActivityFinderImpl`, `ActivityMapper`, `ActivityRow`, `ActivityService`, `ActivityServiceImpl`이 사라졌고, 남은 것은 빈칸을 채운 파일(SQL, Facade 본문, 리스너 본문, 마이그레이션, 화면)뿐이다. 이것을 `verify.groovy`가 확인한다. 채운 뒤 `query`·`command`를 다시 실행해도 바뀐 것이 없다.
+
 ## 정한 것
 
 사용자가 2026-11-08에 여섯 가지 모두 제안대로 정했다.

@@ -147,6 +147,65 @@ final class JavaEdits {
 			return methods(simpleName).stream().filter((m) -> m.name().equals(name)).map(Signature::text).toList();
 		}
 
+		/** static이 아닌 필드: 타입(소스 그대로) → 이름 */
+		java.util.Map<String, String> fields(String simpleName) {
+			java.util.Map<String, String> fields = new java.util.LinkedHashMap<>();
+			for (Tree member : type(simpleName).getMembers()) {
+				if (member instanceof com.sun.source.tree.VariableTree field
+						&& !field.getModifiers().getFlags().contains(javax.lang.model.element.Modifier.STATIC)) {
+					fields.put(field.getName().toString(), normalize(field.getType().toString()));
+				}
+			}
+			return fields;
+		}
+
+		/** 선언한 생성자 수 */
+		int constructors(String simpleName) {
+			int count = 0;
+			for (Tree member : type(simpleName).getMembers()) {
+				if (member instanceof MethodTree method && method.getReturnType() == null) {
+					count++;
+				}
+			}
+			return count;
+		}
+
+		/** record 구성 요소 이름 (순서대로) */
+		List<String> recordComponents(String simpleName) {
+			ClassTree type = type(simpleName);
+			if (type.getKind() != Tree.Kind.RECORD) {
+				throw new CliException(this.file + "의 " + simpleName + "가 record가 아닙니다.");
+			}
+			List<String> names = new ArrayList<>();
+			for (Tree member : type.getMembers()) {
+				if (member instanceof com.sun.source.tree.VariableTree field
+						&& !field.getModifiers().getFlags().contains(javax.lang.model.element.Modifier.STATIC)) {
+					names.add(field.getName() + ":" + normalize(field.getType().toString()));
+				}
+			}
+			return names;
+		}
+
+		/** 타입 본문을 여는 {@code {}의 위치 */
+		int bodyOpen(String simpleName) {
+			ClassTree type = type(simpleName);
+			int from = end(type.getModifiers());
+			List<Tree> heads = new ArrayList<>(type.getTypeParameters());
+			heads.addAll(type.getImplementsClause());
+			heads.addAll(type.getPermitsClause());
+			if (type.getExtendsClause() != null) {
+				heads.add(type.getExtendsClause());
+			}
+			for (Tree head : heads) {
+				from = Math.max(from, end(head));
+			}
+			int open = this.source.indexOf('{', Math.max(from, start(type)));
+			if (open < 0) {
+				throw new CliException(this.file + "에서 " + simpleName + " 본문의 시작을 찾지 못했습니다. 이 파일은 손으로 고치세요.");
+			}
+			return open;
+		}
+
 		/** import한 이름 (static은 빼고) */
 		List<String> imports() {
 			List<String> names = new ArrayList<>();
@@ -212,6 +271,20 @@ final class JavaEdits {
 	}
 
 	/**
+	 * 타입 본문 맨 앞에 멤버를 더한다 (필드와 생성자).
+	 *
+	 * @param member 탭 하나로 들여쓴 멤버. 끝에 줄바꿈을 두지 않는다
+	 */
+	static String addFirstMember(String file, String source, String typeName, String member) {
+		Parsed parsed = parse(file, source);
+		int open = parsed.bodyOpen(typeName);
+		String rest = source.substring(open + 1).replaceFirst("^[ \\t]*\\n(?:[ \\t]*\\n)*", "");
+		String result = source.substring(0, open + 1) + "\n\n" + member.stripTrailing() + (rest.startsWith("}") ? "\n" : "\n\n") + rest;
+		parse(file, result);
+		return result;
+	}
+
+	/**
 	 * import를 더한다. 이미 있거나(같은 이름, 같은 패키지의 {@code *}) 같은 패키지의 타입이면 더하지 않는다.
 	 *
 	 * @param names 완전한 이름 ({@code java.util.List})
@@ -235,27 +308,69 @@ final class JavaEdits {
 			}
 			added.add(name);
 		}
-		if (added.isEmpty()) {
-			return source;
+		String result = source;
+		for (String name : added) {
+			result = insertImport(file, result, name);
 		}
-		String lines = String.join("", added.stream().map((n) -> "\nimport " + n + ";").toList());
-		int at;
-		String text;
-		if (!parsed.unit().getImports().isEmpty()) {
-			at = parsed.end(parsed.unit().getImports().getLast());
-			text = lines;
+		return result;
+	}
+
+	/** import 그룹: java, javax, org, com, 그 밖(앱 패키지). 그룹 사이에는 빈 줄을 둔다 */
+	static int group(String name) {
+		for (String prefix : new String[] { "java.", "javax.", "org.", "com." }) {
+			if (name.startsWith(prefix)) {
+				return List.of("java.", "javax.", "org.", "com.").indexOf(prefix);
+			}
 		}
-		else if (parsed.unit().getPackage() != null) {
-			at = source.indexOf(';', parsed.start(parsed.unit().getPackage())) + 1;
+		return 4;
+	}
+
+	/** 같은 그룹의 마지막 import 뒤에 넣는다. 그룹이 없으면 앞 그룹 뒤(없으면 뒤 그룹 앞)에 빈 줄을 두고 넣는다 */
+	private static String insertImport(String file, String source, String name) {
+		Parsed parsed = parse(file, source);
+		List<? extends ImportTree> imports = parsed.unit().getImports().stream().filter((i) -> !i.isStatic()).toList();
+		String line = "import " + name + ";";
+		int g = group(name);
+		String result;
+		if (imports.isEmpty()) {
+			if (parsed.unit().getPackage() == null) {
+				throw new CliException(file + "에 package 선언이 없습니다. 이 파일은 손으로 고치세요.");
+			}
+			int at = source.indexOf(';', parsed.start(parsed.unit().getPackage())) + 1;
 			if (at <= 0) {
 				throw new CliException(file + "의 package 선언 끝을 찾지 못했습니다. 이 파일은 손으로 고치세요.");
 			}
-			text = "\n" + lines;
+			result = source.substring(0, at) + "\n\n" + line + source.substring(at);
 		}
 		else {
-			throw new CliException(file + "에 package 선언이 없습니다. 이 파일은 손으로 고치세요.");
+			ImportTree same = null;
+			ImportTree before = null;
+			ImportTree after = null;
+			for (ImportTree i : imports) {
+				int ig = group(i.getQualifiedIdentifier().toString());
+				if (ig == g) {
+					same = i;
+				}
+				else if (ig < g) {
+					before = i;
+				}
+				else if (after == null) {
+					after = i;
+				}
+			}
+			if (same != null) {
+				int at = parsed.end(same);
+				result = source.substring(0, at) + "\n" + line + source.substring(at);
+			}
+			else if (before != null) {
+				int at = parsed.end(before);
+				result = source.substring(0, at) + "\n\n" + line + source.substring(at);
+			}
+			else {
+				int at = parsed.start(after);
+				result = source.substring(0, at) + line + "\n\n" + source.substring(at);
+			}
 		}
-		String result = source.substring(0, at) + text + source.substring(at);
 		parse(file, result);
 		return result;
 	}

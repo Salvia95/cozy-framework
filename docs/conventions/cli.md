@@ -2,8 +2,8 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것(M12)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto`, `enable events`
-- **아직 없는 것**: `add query|command`(M13), `add event-version`(M14)은 종료 코드 2로 알린다. `add field`는 보류했다(ADR-0033 §1).
+- **지금 쓸 수 있는 것(M13)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command`, `enable events`
+- **아직 없는 것**: `add event-version`(M14)은 종료 코드 2로 알린다. `add field`는 보류했다(ADR-0033 §1).
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`가 작업 순서와 명령 목록을 싣는다.
 - **레포에서 실행**: jar로 실행한다.
 
@@ -169,17 +169,35 @@ cozy add screen dashboard index --pattern overview --title 대시보드 --nav �
 cozy link dashboard --uses memo,activity
 cozy add event report ReportSent --field reportId:long --field sentOn:date
 cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
+cozy add query activity recent --param limit:int --returns list:ActivityItem
+cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy enable events
 ```
 
 - **필드**: `이름:종류[!][:라벨]`. 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`이고 `!`는 필수다. 라벨에 공백이 있으면 따옴표로 묶는다(`--field "dueOn:date:마감 날짜"`).
 - **dto 필드**: `이름:종류[:설명]`. 종류는 위와 같고, 같은 모듈 `spi/dto`의 record(`이름:Record`)와 그 목록(`이름:list:Record`)도 쓴다. `!`는 받지 않는다. 설명은 record의 `@param`이 된다. 타입은 `text`→`String`, `int`→`int`, `long`→`long`, `bool`→`boolean`, `date`→`LocalDate`, `instant`→`Instant`, `list:R`→`List<R>`이다.
 - **listener와 Facade**: 리스너는 늘 자기 모듈의 `{M}Facade`를 생성자로 받는다(`activity` → `ActivityFacade`). 없으면 빈 `{M}Facade`와 `internal/app/command/{M}FacadeImpl`을 함께 만든다. 그래서 리스너 파일은 앱 상태와 상관없이 같다(ADR-0033 §5.6). 그 빈 Facade·구현은 나중에 같은 모듈의 `cozy add crud`(엔티티 이름이 모듈 이름과 같을 때)가 채운다(`바꿈 … listener가 만든 빈 Facade를 crud로 채움`). 메서드를 더한 Facade는 덮어쓰지 않고 실패한다.
+- **query** (ADR-0033 §5.2): `--returns`는 `long`, `int`, `bool`, `text`, `<Record>`(Finder는 `Optional<Record>`), `list:<Record>`(`List<Record>`)다. 네 곳에 더한다.
+
+  | 곳 | 더하는 것 (예: `recent --param limit:int --returns list:ActivityItem`) |
+  | --- | --- |
+  | `spi/{X}Finder` | `List<ActivityItem> recent(int limit);` |
+  | `internal/app/query/{X}FinderImpl` | `@Override` 메서드. Mapper를 부르고 행을 record로 옮긴다(같은 이름 구성 요소) |
+  | `internal/infra/{X}Mapper` | `List<ActivityItemRow> recent(@Param("limit") int limit);` |
+  | `mapper/{m}/{X}Mapper.xml` | `<select id="recent" resultType="…ActivityItemRow">`. 본문은 빈칸 `query-sql` |
+
+  - 행 `internal/infra/{Record}Row`는 없으면 record와 같은 구성 요소로 만든다. 있으면 구성 요소 **이름**이 같아야 한다(타입은 에이전트가 저장 형식에 맞춰 바꿀 수 있다). record에 행으로 옮길 수 없는 구성 요소(다른 record, 목록)가 있으면 실패한다.
+  - 원시 값을 돌려주면 행을 만들지 않는다(`resultType`은 `long`, `int`, `boolean`, `string`).
+  - 출력의 "다음"에 마이그레이션에서 읽은 이 모듈의 테이블과 열을 적는다.
+- **command** (ADR-0033 §5.3): Facade 메서드(`--returns`가 없으면 `void`)와 구현을 더한다. 구현 본문은 빈칸 `command-body`다. `--sql insert|update|delete`면 Mapper 메서드(`int`, 영향받은 행 수)와 `<insert>` 등을 더하고, 문의 본문은 빈칸 `command-sql`이다. 앱에 이벤트 스타터가 있는데 구현이 `ApplicationEventPublisher`를 받지 않으면 출력이 알린다.
+- **대상 고르기** (ADR-0033 §4): 모듈 `spi`의 `*Finder`(`*Facade`)가 하나면 그것, 둘 이상이면 `--in <이름>`, 없으면 `{M}Finder`와 `internal/app/query/{M}FinderImpl`(`{M}Facade`와 `{M}FacadeImpl`)을 만든다. 구현은 그 인터페이스를 `implements`하는 `app.query`(`app.command`)의 클래스 하나다.
+- **Mapper 고르기**: 구현의 `*Mapper` 필드(이 모듈 `internal/infra`의 것) 하나를 쓴다. 구현에 생성자도 필드도 없으면(명령이 만든 빈 구현) `{M}Mapper`를 받는 필드와 생성자를 본문 맨 앞에 더하고, Mapper와 XML이 없으면 만든다(`바꿈 … 생성자 += ActivityMapper`). 이미 생성자가 있는데 Mapper가 없으면 고치지 않고 실패한다.
+- **다시 실행** (ADR-0033 §3): 네 곳(command는 두 곳이나 네 곳)의 시그니처를 비교한다. 모두 있으면 바뀐 것 없음(본문과 SQL은 비교하지 않으므로 빈칸을 채운 뒤에도 같다), 모두 없으면 더한다. 일부만 있으면 있는 곳과 없는 곳을 알리고 실패하고, 같은 이름이 다른 시그니처로 있으면 실패한다(오버로드를 만들지 않는다).
 - **enable events**: `pom.xml`의 `cozy-starter-sqlite` 의존 블록 바로 뒤에 `cozy-starter-events`를 더한다. 이미 있으면 바뀐 것 없음, `cozy-starter-sqlite`가 없으면 실패한다. 아키타입 `events=true`의 예시 코드는 만들지 않는다.
 - **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.
 - **같은 명령 두 번**: 파일마다 같은 내용이면 `그대로`, 다른 내용이면 덮어쓰지 않고 실패한다. 모든 파일이 `그대로`면 "바뀐 것 없음"이다.
 - **덧붙이는 곳**: `package-info.java`의 `allowedDependencies`, `cozy/fragments.yml`의 `fragments` 목록 끝, `internal/config/{M}Configuration.java`의 `// cozy:append nav` 표시 앞, `pom.xml`의 `cozy-starter-sqlite` 블록 뒤. 이 형식이 아니면 손으로 할 일을 알리고 실패한다.
-- **2단계 편집기 (ADR-0033 §2)**: Java는 javac가 찾은 위치(타입 본문의 마지막 `}` 앞, 마지막 import 뒤), Mapper XML은 `</mapper>` 앞(루트와 `namespace` 확인), pom은 JDK XML 파서로 확인한 뒤 덧붙인다. 외부 DTD는 읽지 않는다. 덧붙인 결과를 다시 읽어 문법 오류가 없는지 본다. 메서드는 이름·반환 타입·파라미터 타입으로 비교하고 본문은 비교하지 않는다(같은 시그니처면 있음, 이름만 같으면 실패). `query`·`command`(M13)가 이 편집기를 쓴다.
+- **2단계 편집기 (ADR-0033 §2)**: Java는 javac가 찾은 위치(타입 본문의 마지막 `}` 앞, 같은 import 그룹의 끝. 그룹은 java, javax, org, com, 그 밖 순서이고 이미 있는 import는 정렬하지 않는다), Mapper XML은 `</mapper>` 앞(루트와 `namespace` 확인), pom은 JDK XML 파서로 확인한 뒤 덧붙인다. 외부 DTD는 읽지 않는다. 덧붙인 결과를 다시 읽어 문법 오류가 없는지 본다. 메서드는 이름·반환 타입·파라미터 타입으로 비교하고 본문은 비교하지 않는다(같은 시그니처면 있음, 이름만 같으면 실패). `query`·`command`가 이 편집기를 쓴다.
 - **아이콘**: `--icon`, `--nav`의 아이콘은 cozy-ui jar로 확인한다(`check`와 같은 `--repository`). 아이콘을 쓰는 레시피만 jar를 찾는다.
 
 글 출력:
@@ -223,7 +241,7 @@ cozy enable events
 | --- | --- |
 | `applied` | 파일을 하나라도 썼으면 `true`. `--dry-run`이거나 바뀐 것이 없으면 `false` |
 | `plan[].action` | `create`, `edit`, `unchanged` |
-| `slots[]` | 이 명령이 만든 파일에 남은 빈칸. 앱 전체의 빈칸은 `cozy check`가 본다 |
+| `slots[]` | 이 명령이 만들거나 바꾼 파일에 남은 빈칸(앞서 남긴 것 포함). 앱 전체의 빈칸은 `cozy check`가 본다 |
 
 - **시각**: 마이그레이션 이름의 시각은 지금 시각이다. 테스트는 시스템 속성 `cozy.cli.now`(`yyyyMMddHHmm`)로 고정한다.
 - **검증**: `samples/recipes`의 픽스처가 레시피를 실제 앱에 적용하고 `mvn verify` 결과를 확인한다([ADR-0032 부록 §5](../adr/0032-agent-cli-recipes.md)).

@@ -206,10 +206,25 @@ class EditsTest {
 		}
 
 		@Test
-		void importsGoAfterTheLastImportOnlyWhenMissing() {
-			assertThat(JavaEdits.addImports("f", FINDER, List.of("java.util.List", "java.util.Optional", "it.cozy.app.activity.spi.Other")))
-				.contains("import it.cozy.app.activity.spi.dto.ActivityItem;\nimport java.util.Optional;\n\n/** 활동 읽기. */")
+		void importsGoToTheEndOfTheirGroupOnlyWhenMissing() {
+			assertThat(JavaEdits.addImports("f", FINDER, List.of("java.util.List", "java.util.Optional", "it.cozy.app.activity.spi.Other",
+					"org.apache.ibatis.annotations.Param", "it.cozy.app.activity.internal.infra.ActivityRow")))
+				.contains("""
+						import java.util.List;
+						import java.util.Optional;
+
+						import org.apache.ibatis.annotations.Param;
+
+						import it.cozy.app.activity.spi.dto.ActivityItem;
+						import it.cozy.app.activity.internal.infra.ActivityRow;
+
+						/** 활동 읽기. */""")
+				.as("같은 패키지는 import하지 않는다")
 				.doesNotContain("import it.cozy.app.activity.spi.Other;");
+			String appOnly = FINDER.replace("import java.util.List;\n\n", "");
+			assertThat(JavaEdits.addImports("f", appOnly, List.of("java.util.List")))
+				.as("앞 그룹이 없으면 뒤 그룹 앞에 둔다")
+				.contains("package it.cozy.app.activity.spi;\n\nimport java.util.List;\n\nimport it.cozy.app.activity.spi.dto.ActivityItem;\n");
 			assertThat(JavaEdits.addImports("f", FINDER, List.of("java.util.List", "java.lang.String"))).isSameAs(FINDER);
 			String wildcard = FINDER.replace("import java.util.List;", "import java.util.*;");
 			assertThat(JavaEdits.addImports("f", wildcard, List.of("java.util.Optional"))).isSameAs(wildcard);
