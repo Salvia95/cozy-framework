@@ -1,6 +1,6 @@
 # ADR-0032 부록: 레시피 목록
 
-- 상태: 승인 (2026-11-07). [ADR-0032](0032-agent-cli.md)의 §9 범위를 구체화한다.
+- 상태: 승인 (2026-11-07). [ADR-0032](0032-agent-cli.md)의 §9 범위를 구체화한다. §1 동작, §2.7, §3 개정 (2026-11-08): [ADR-0033](0033-stage-two-recipes.md)
 - 기준 예시: reference-app의 memo(`crud`), activity(`listener`, `fragment`), dashboard(`screen`). 아래 1단계 레시피를 이어 붙이면 reference-app과 같은 구조가 나와야 한다(M10 완료 기준).
 
 ## 1. 공통 규칙
@@ -50,7 +50,7 @@
 
 - **원자성**: 계획을 먼저 세우고, 하나라도 실패하면 아무 파일도 쓰지 않는다. `--dry-run`은 계획만 출력한다.
 - **같은 명령 두 번**: 이미 같은 내용이 있으면 아무것도 하지 않고 "바뀐 것 없음"을 알린다. 다른 내용이 있으면 덮어쓰지 않고 실패한다.
-- **알아볼 수 없는 파일**: 덧붙일 파일이 명령이 만든 형식이 아니거나 `cozy:append` 표시가 없으면 실패한다. 이때 무엇을 손으로 해야 하는지 알린다.
+- **알아볼 수 없는 파일**: 덧붙일 위치를 알아볼 수 없으면 실패한다. 이때 무엇을 손으로 해야 하는지 알린다. 위치는 `cozy:append` 표시(내비게이션)나 파서가 찾은 위치(Java 타입 본문·import, Mapper XML, pom)다([ADR-0033](0033-stage-two-recipes.md) §2).
 - **생성 파일의 내용은 그때의 앱 상태에 기대지 않는다**: 같은 명령을 나중에 다시 실행해도 "바뀐 것 없음"이 되게 하기 위해서다. 그때그때 바뀌는 안내(예: 지금 쓸 수 있는 Finder)는 파일이 아니라 명령 출력에 적는다.
 - **사전 조건**: 레시피가 필요로 하는 스타터(`cozy-starter-sqlite`, `cozy-starter-events`)가 pom에 없으면 실패한다. 아키타입 옵션(`persistence`, `events`)을 알린다.
 
@@ -190,7 +190,7 @@ cozy add listener <m> --on <보내는 모듈>.<Ev> [--name 이름]
 | 구분 | 내용 |
 | --- | --- |
 | 함께 하는 것 | 보내는 모듈이 다르면 `cozy link <m> --uses <보내는 모듈>` |
-| 만드는 파일 | `internal/app/command/{Ev}Listener.java`(이름을 주면 `{이름}Listener`): `@Component`, `@ApplicationModuleListener void on({Ev} event)`. 같은 모듈에 `{M}Facade`가 있으면 생성자로 받는다 |
+| 만드는 파일 | `internal/app/command/{Ev}Listener.java`(이름을 주면 `{이름}Listener`): `@Component`, `@ApplicationModuleListener void on({Ev} event)`. 같은 모듈에 `{M}Facade`가 있으면 생성자로 받는다. **개정 예정 (ADR-0033 §5.6, M12)**: 늘 `{M}Facade`를 받고, 없으면 빈 Facade를 함께 만든다 |
 | 빈칸 | `listener-body`: 받았을 때 할 일. 자기 모듈의 Facade를 부른다. 다른 모듈의 Facade는 부르지 않는다(C8) |
 | 생성 직후 | C9 1곳 |
 | 실패 | 이벤트가 없을 때. 같은 모듈에 같은 이름의 리스너가 있을 때(`--name`을 알린다) |
@@ -212,7 +212,7 @@ cozy add migration <m> <설명>
 
 ## 3. 2단계 레시피 (기존 Java 본문을 고친다)
 
-모두 명령이 만든 파일의 `cozy:append` 표시에만 덧붙인다. 표시가 없으면 실패한다.
+> **개정 (2026-11-08)**: 2단계는 [ADR-0033](0033-stage-two-recipes.md)이 정한다. 표시가 아니라 파서가 찾은 위치에 덧붙이고, `dto`를 더하고, `field`는 보류한다. `query`·`command`의 인자도 ADR-0033 §5를 따른다. 아래 표는 처음 계획으로 남겨 둔다.
 
 | 레시피 | 하는 일 | 빈칸 |
 | --- | --- | --- |
