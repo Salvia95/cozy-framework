@@ -13,4 +13,4 @@
 | `reference-filled` | 위와 같고 빈칸을 `hand/reference-filled`로 채움. 채운 뒤 `query`·`command`를 다시 실행 | 통과 |
 | `crud-kinds` | `crud`(필드 종류 전부, 이벤트 셋), `module`, `link`, `event`, 다시 실행 | 통과 |
 | `screen-details` | `screen`(details, overview), `event`, `listener`, `migration`, 다시 실행 | C9 4곳만 실패 |
-| `stage-two` | sqlite만 있는 앱에 `enable events`, `crud`, 리스너가 만든 빈 Facade를 `crud`가 채움, `dto`(record·list 구성 요소), 다시 실행, 실패해야 하는 명령 4개, 리스너 빈칸을 `hand/stage-two`로 채움 | 통과 |
+| `stage-two` | sqlite만 있는 앱에 `enable events`, `crud`, 리스너가 만든 빈 Facade를 `crud`가 채움, `dto`(record·list 구성 요소), crud가 발행하는 이벤트에 `event-version` 두 번(v3까지), 다시 실행, 실패해야 하는 명령 5개, 리스너 빈칸을 `hand/stage-two`로 채움 | 통과 (C6 포함) |

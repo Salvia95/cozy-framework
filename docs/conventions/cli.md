@@ -2,8 +2,8 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것(M13)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command`, `enable events`
-- **아직 없는 것**: `add event-version`(M14)은 종료 코드 2로 알린다. `add field`는 보류했다(ADR-0033 §1).
+- **지금 쓸 수 있는 것(M14)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version`, `enable events`
+- **보류한 것**: `add field`(ADR-0033 §1). 실행하면 종료 코드 2로 보류했다고 알린다.
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`가 작업 순서와 명령 목록을 싣는다.
 - **레포에서 실행**: jar로 실행한다.
 
@@ -171,6 +171,7 @@ cozy add event report ReportSent --field reportId:long --field sentOn:date
 cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
 cozy add query activity recent --param limit:int --returns list:ActivityItem
 cozy add command activity record --param eventId:text --param message:text --sql insert
+cozy add event-version memo MemoCreated --field pinned:bool
 cozy enable events
 ```
 
@@ -193,6 +194,12 @@ cozy enable events
 - **대상 고르기** (ADR-0033 §4): 모듈 `spi`의 `*Finder`(`*Facade`)가 하나면 그것, 둘 이상이면 `--in <이름>`, 없으면 `{M}Finder`와 `internal/app/query/{M}FinderImpl`(`{M}Facade`와 `{M}FacadeImpl`)을 만든다. 구현은 그 인터페이스를 `implements`하는 `app.query`(`app.command`)의 클래스 하나다.
 - **Mapper 고르기**: 구현의 `*Mapper` 필드(이 모듈 `internal/infra`의 것) 하나를 쓴다. 구현에 생성자도 필드도 없으면(명령이 만든 빈 구현) `{M}Mapper`를 받는 필드와 생성자를 본문 맨 앞에 더하고, Mapper와 XML이 없으면 만든다(`바꿈 … 생성자 += ActivityMapper`). 이미 생성자가 있는데 Mapper가 없으면 고치지 않고 실패한다.
 - **다시 실행** (ADR-0033 §3): 네 곳(command는 두 곳이나 네 곳)의 시그니처를 비교한다. 모두 있으면 바뀐 것 없음(본문과 SQL은 비교하지 않으므로 빈칸을 채운 뒤에도 같다), 모두 없으면 더한다. 일부만 있으면 있는 곳과 없는 곳을 알리고 실패하고, 같은 이름이 다른 시그니처로 있으면 실패한다(오버로드를 만들지 않는다).
+- **event-version** (ADR-0033 §5.4): 이벤트 record 끝에 필드를 박싱 타입(`String`, `Integer`, `Long`, `Boolean`, `LocalDate`, `Instant`)으로 더한다. 옛 샘플을 읽으면 그 필드는 `null`이다.
+  - `of()`: `return new Ev(UUID.randomUUID(), N, <파라미터>…);` 한 줄인 static `of()`를 하나 찾는다. 그것을 새 필드를 `null`로 넘기는 위임(`return of(memoId, title, null);`)으로 바꾸고, 새 필드를 받고 `N + 1`을 쓰는 `of()`를 더한다. 그래서 발행하는 곳(crud의 `*FacadeImpl` 등)은 그대로 컴파일된다. 이 모양의 `of()`가 하나가 아니면 실패한다.
+  - 샘플: 가장 높은 `v{n}.json`에 새 필드의 샘플 값을 더하고 `schemaVersion`을 `n + 1`로 바꿔 `v{n+1}.json`을 만든다. 옛 샘플은 그대로 둔다. `of()`의 버전과 가장 높은 샘플 번호가 다르면 실패한다.
+  - 다시 실행: 필드가 모두 같은 타입으로 있고 지금의 `of()`와 가장 높은 샘플이 그 필드를 가지면 바뀐 것 없음이다. 일부만 있거나 같은 이름이 다른 타입이면 실패한다.
+  - 출력의 "다음"은 이 이벤트의 리스너(`@ApplicationModuleListener`)를 나열한다. 리스너는 옛 이벤트의 새 필드가 `null`일 때도 처리해야 한다.
+  - 이벤트 파일이 바뀌므로 그 뒤에 같은 `cozy add event`(또는 `--publish`가 있는 `crud`)를 다시 실행하면 "내용이 다릅니다"로 실패한다. 빈칸을 채운 뒤의 1단계 명령과 같다.
 - **enable events**: `pom.xml`의 `cozy-starter-sqlite` 의존 블록 바로 뒤에 `cozy-starter-events`를 더한다. 이미 있으면 바뀐 것 없음, `cozy-starter-sqlite`가 없으면 실패한다. 아키타입 `events=true`의 예시 코드는 만들지 않는다.
 - **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.
 - **같은 명령 두 번**: 파일마다 같은 내용이면 `그대로`, 다른 내용이면 덮어쓰지 않고 실패한다. 모든 파일이 `그대로`면 "바뀐 것 없음"이다.

@@ -19,4 +19,4 @@ cozy! link memo --uses activity
 cozy! add listener activity --on memo.MemoDeleted
 cozy! add screen dashboard stats --pattern details --title 통계 --nav 통계:no-such-icon
 cozy! add query activity recent --param limit:long --returns list:ActivityItem
-cozy! add event-version memo MemoCreated --field pinned:bool
+cozy! add event-version memo MemoCreated --field title:int

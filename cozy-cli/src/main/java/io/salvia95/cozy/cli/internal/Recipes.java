@@ -55,7 +55,7 @@ public final class Recipes {
 					"cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]",
 					"Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다", "command-body, (--sql이면) command-sql", true),
 			new Recipe("event-version", 2, "cozy add event-version <모듈> <이벤트> --field 이름:종류 …",
-					"이벤트 필드 추가, schemaVersion 올림, 옛 of() 유지, 샘플 v{n+1} 추가", "없음", false));
+					"이벤트 필드 추가(박싱 타입), schemaVersion 올림, 옛 of()는 새 필드를 null로 넘김, 샘플 v{n+1} 추가", "없음", true));
 
 	public static Map<String, Object> model() {
 		List<Object> recipes = new ArrayList<>();
@@ -70,8 +70,10 @@ public final class Recipes {
 	public static String text() {
 		StringBuilder out = new StringBuilder("구조는 아래 명령으로 바꾸고, 명령이 남긴 빈칸(cozy:slot)만 채운다 (ADR-0032, ADR-0033).\n\n");
 		out.append(availableText());
-		out.append("\n준비 중 (실행하면 종료 코드 2)\n");
-		ALL.stream().filter((r) -> !r.available()).forEach((r) -> append(out, r));
+		if (ALL.stream().anyMatch((r) -> !r.available())) {
+			out.append("\n준비 중 (실행하면 종료 코드 2)\n");
+			ALL.stream().filter((r) -> !r.available()).forEach((r) -> append(out, r));
+		}
 		return out.toString();
 	}
 

@@ -192,6 +192,14 @@ cozy add event-version <m> <Ev> --field 이름:종류 …
 - **빈칸 목록**: 명령 출력은 바뀐 파일에 남은 빈칸을 모두 보인다(예: `command --sql`이 query가 남긴 `query-sql`도 보인다). 1단계와 같은 동작이다.
 - **완료 기준**: 레시피 픽스처 `reference`·`reference-filled`가 §6의 세 줄로 activity를 만든다. `hand/reference-filled`에서 `ActivityFinder`, `ActivityFinderImpl`, `ActivityMapper`, `ActivityRow`, `ActivityService`, `ActivityServiceImpl`이 사라졌고, 남은 것은 빈칸을 채운 파일(SQL, Facade 본문, 리스너 본문, 마이그레이션, 화면)뿐이다. 이것을 `verify.groovy`가 확인한다. 채운 뒤 `query`·`command`를 다시 실행해도 바뀐 것이 없다.
 
+### M14 구현 메모
+
+- **`event-version`**: §5.4대로 만들었다. "지금의 `of()`"는 `return new Ev(UUID.randomUUID(), <정수>, <파라미터 이름 그대로>…);` 한 줄인 static 메서드이고, 파라미터는 record 구성 요소 순서의 앞부분이어야 한다. 위임으로 바뀐 옛 `of()`는 이 모양이 아니므로 버전을 거듭 올려도 지금의 `of()`는 늘 하나다.
+- **샘플**: 샘플은 평평한 JSON 객체만 이어 쓴다(SnakeYAML로 읽는다, 새 의존 없음). 키는 이름순이고 한 줄이다(`cozy add event`의 v1과 같은 형식).
+- **완료 기준**: 레시피 픽스처 `stage-two`가 crud가 발행하는 `MemoCreated`에 버전을 두 번 올린다(v3). crud의 `MemoFacadeImpl`은 옛 `of(id, title)`를 그대로 부르고, C6를 포함한 `ArchitectureTest`와 생성된 테스트가 통과한다.
+- **import**: 같은 그룹이 이미 정렬돼 있으면 정렬된 자리에 넣는다(M13 메모의 "같은 그룹 끝"을 다듬었다. 정렬되지 않은 그룹은 끝에 넣고, 이미 있는 import는 옮기지 않는다).
+- 이로써 §1의 레시피(보류한 `field` 말고)를 모두 쓸 수 있다. `cozy recipes --json`에 `available: false`가 없다.
+
 ## 정한 것
 
 사용자가 2026-11-08에 여섯 가지 모두 제안대로 정했다.

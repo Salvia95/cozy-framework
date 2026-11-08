@@ -316,7 +316,6 @@ class RecipeCommandTest {
 	void unknownAndStageTwoRecipes() throws IOException {
 		app();
 		fails("모르는 레시피입니다: table", "add", "table", "memo");
-		fails("cozy add event-version는 2단계 레시피라", "add", "event-version", "memo", "MemoCreated");
 		fails("cozy add field는 보류한 레시피입니다", "add", "field", "memo", "x:text");
 		fails("cozy add 뒤에 레시피 이름을 적습니다", "add");
 		fails("cozy enable 뒤에는 events를 적습니다", "enable");
@@ -659,6 +658,80 @@ class RecipeCommandTest {
 				""");
 		fails("Mapper가 없습니다. 이미 있는 생성자는 고치지 않습니다", "add", "query", "activity", "total", "--returns", "long", "--in",
 				"ActivityStatsFinder");
+	}
+
+	static final String EVENT = MEMO + "spi/event/MemoCreated.java";
+
+	/** ADR-0033 §5.4: 필드를 박싱 타입으로 더하고, 옛 of()는 위임으로 남기고, 새 샘플을 더한다 */
+	@Test
+	void eventVersionAddsAFieldKeepsTheOldFactoryAndWritesTheNextSample() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long", "--field", "title:text");
+		ok("add", "module", "activity");
+		ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		Result v2 = ok("add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool", "--field", "dueOn:date");
+		assertThat(v2.out()).contains("바꿈  " + EVENT + "    += Boolean pinned, LocalDate dueOn, schemaVersion 1 → 2")
+			.contains("만듦  src/test/resources/events/MemoCreated/v2.json")
+			.contains("받는 쪽(MemoCreatedListener.on)은 옛 이벤트의 새 필드가 null일 때도 처리해야 합니다")
+			.doesNotContain("빈칸");
+		assertThat(read(EVENT)).contains("""
+				import java.time.LocalDate;
+				import java.util.UUID;
+				""").contains("""
+				public record MemoCreated(UUID eventId, int schemaVersion, long memoId, String title, Boolean pinned, LocalDate dueOn) implements CozyEvent {
+
+					public static MemoCreated of(long memoId, String title) {
+						return of(memoId, title, null, null);
+					}
+
+					/** schemaVersion 2: pinned, dueOn 추가 (cozy add event-version). 옛 of()는 새 필드를 null로 넘긴다. */
+					public static MemoCreated of(long memoId, String title, Boolean pinned, LocalDate dueOn) {
+						return new MemoCreated(UUID.randomUUID(), 2, memoId, title, pinned, dueOn);
+					}
+				}
+				""");
+		assertThat(read("src/test/resources/events/MemoCreated/v2.json")).isEqualTo(
+				"{\"dueOn\":\"2026-11-06\",\"eventId\":\"7d4b3c2a-1e0f-4a5b-9c8d-6e7f8a9b0c1d\",\"memoId\":1,\"pinned\":true,"
+						+ "\"schemaVersion\":2,\"title\":\"예시 title\"}\n");
+		assertThat(read("src/test/resources/events/MemoCreated/v1.json")).as("옛 샘플은 그대로").contains("\"schemaVersion\":1");
+		assertThat(ok("add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool", "--field", "dueOn:date").out())
+			.contains("[cozy] 바뀐 것 없음");
+
+		// 한 번 더: 위임이 이어진다
+		ok("add", "event-version", "memo", "MemoCreated", "--field", "note:text");
+		assertThat(read(EVENT)).contains("""
+					public static MemoCreated of(long memoId, String title) {
+						return of(memoId, title, null, null);
+					}
+				""").contains("""
+					public static MemoCreated of(long memoId, String title, Boolean pinned, LocalDate dueOn) {
+						return of(memoId, title, pinned, dueOn, null);
+					}
+				""").contains("return new MemoCreated(UUID.randomUUID(), 3, memoId, title, pinned, dueOn, note);");
+		assertThat(read("src/test/resources/events/MemoCreated/v3.json")).contains("\"note\":\"예시 note\"").contains("\"schemaVersion\":3");
+	}
+
+	@Test
+	void eventVersionRefusesWhatItCannotRead() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		fails("이벤트 MemoCreated가 없습니다", "add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long", "--field", "title:text");
+		fails("--field가 하나 이상 필요합니다", "add", "event-version", "memo", "MemoCreated");
+		fails("title가 이미 String로 있습니다(원하는 것: Integer)", "add", "event-version", "memo", "MemoCreated", "--field", "title:int");
+		fails("일부 필드만 있습니다", "add", "event-version", "memo", "MemoCreated", "--field", "title:text", "--field", "pinned:bool");
+		fails("명령이 직접 넣는 이름", "add", "event-version", "memo", "MemoCreated", "--field", "schemaVersion:int");
+
+		String original = read(EVENT);
+		write(EVENT, original.replace("return new MemoCreated(UUID.randomUUID(), 1, memoId, title);",
+				"MemoCreated event = new MemoCreated(UUID.randomUUID(), 1, memoId, title);\n\t\treturn event;"));
+		fails("한 줄인 of()를 하나로 찾지 못했습니다(0개)", "add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool");
+		write(EVENT, original);
+		Files.delete(this.dir.resolve("src/test/resources/events/MemoCreated/v1.json"));
+		fails("v1.json이 없습니다", "add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool");
+		write("src/test/resources/events/MemoCreated/v1.json", "{\"schemaVersion\":2}\n");
+		fails("v1.json의 schemaVersion이 1가 아닙니다", "add", "event-version", "memo", "MemoCreated", "--field", "pinned:bool");
 	}
 
 	static String[] concat(String[] base, String... more) {

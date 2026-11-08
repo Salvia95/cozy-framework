@@ -12,6 +12,12 @@ def board = "src/main/java/it/cozy/app/board/"
 assert read(board + "spi/BoardFacade.java").contains("long create(String title);")
 assert read(board + "internal/app/command/MemoCreatedListener.java").contains("MemoCreatedListener(BoardFacade facade)")
 assert read(board + "spi/dto/BoardSummary.java").contains("public record BoardSummary(long total, BoardLine latest, List<BoardLine> lines, LocalDate since)")
+def event = read("src/main/java/it/cozy/app/memo/spi/event/MemoCreated.java")
+assert event.contains("String title, Boolean pinned, LocalDate dueOn, String note) implements CozyEvent")
+assert event.contains("return new MemoCreated(UUID.randomUUID(), 3, memoId, title, pinned, dueOn, note);")
+assert read("src/main/java/it/cozy/app/memo/internal/app/command/MemoFacadeImpl.java").contains("MemoCreated.of(") : "crud가 옛 of()를 부른다"
+["v1", "v2", "v3"].each { assert new File(basedir, "src/test/resources/events/MemoCreated/" + it + ".json").isFile() : it }
+assert log =~ /Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: [^\n]* in it\.cozy\.app\.ArchitectureTest/ : "C6를 포함한 검사가 통과해야 합니다"
 def recipes = read("recipes.log")
 [
   "--publish(이벤트)에는 cozy-starter-events가 필요합니다",
@@ -20,5 +26,7 @@ def recipes = read("recipes.log")
   "record에는 필수 여부가 없어 !를 쓰지 않습니다",
   "it.cozy.app.board.spi.dto.BoardRow가 없습니다",
   "BoardLine.java가 이미 있고 내용이 다릅니다",
+  "+= Boolean pinned, LocalDate dueOn, schemaVersion 1 → 2",
+  "MemoCreated에 pinned가 이미 Boolean로 있습니다(원하는 것: Integer)",
 ].each { assert recipes.contains(it) : "recipes.log에 기대한 메시지가 없습니다: " + it }
 return true

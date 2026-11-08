@@ -2,7 +2,7 @@
 #
 #   .\cozy.cmd install [설치 폴더]   번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: %USERPROFILE%\cozy)
 #   cozy new ["-D이름=값" ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
-#   cozy add <레시피> ...             앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration, dto, query, command)
+#   cozy add <레시피> ...             앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version)
 #   cozy link <모듈> --uses <모듈>    모듈 의존 선언. 그 밖에 cozy describe | check | recipes | enable events (자세히: cozy recipes, AGENTS.md)
 #   cozy version                     프레임워크 버전
 #   cozy help                        이 도움말

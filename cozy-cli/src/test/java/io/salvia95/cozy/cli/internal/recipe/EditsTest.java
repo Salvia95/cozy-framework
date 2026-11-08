@@ -215,12 +215,15 @@ class EditsTest {
 
 						import org.apache.ibatis.annotations.Param;
 
-						import it.cozy.app.activity.spi.dto.ActivityItem;
 						import it.cozy.app.activity.internal.infra.ActivityRow;
+						import it.cozy.app.activity.spi.dto.ActivityItem;
 
 						/** 활동 읽기. */""")
 				.as("같은 패키지는 import하지 않는다")
 				.doesNotContain("import it.cozy.app.activity.spi.Other;");
+			String unsorted = FINDER.replace("import java.util.List;", "import java.util.Set;\nimport java.util.List;");
+			assertThat(JavaEdits.addImports("f", unsorted, List.of("java.util.Map"))).as("정렬되지 않은 그룹은 끝에 넣는다")
+				.contains("import java.util.Set;\nimport java.util.List;\nimport java.util.Map;\n");
 			String appOnly = FINDER.replace("import java.util.List;\n\n", "");
 			assertThat(JavaEdits.addImports("f", appOnly, List.of("java.util.List")))
 				.as("앞 그룹이 없으면 뒤 그룹 앞에 둔다")

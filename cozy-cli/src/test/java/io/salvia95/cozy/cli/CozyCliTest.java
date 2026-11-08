@@ -253,7 +253,8 @@ class CozyCliTest {
 			Result result = run("recipes", "--json");
 			assertThat(result.out()).startsWith("{\n  \"recipes\": [\n    {\n      \"name\": \"module\",\n      \"stage\": 1,")
 				.contains("\"available\": true")
-				.contains("\"available\": false");
+				.as("M14로 ADR-0033의 레시피를 모두 쓸 수 있다(field는 보류해 목록에 없다)")
+				.doesNotContain("\"available\": false");
 		}
 
 		@Test

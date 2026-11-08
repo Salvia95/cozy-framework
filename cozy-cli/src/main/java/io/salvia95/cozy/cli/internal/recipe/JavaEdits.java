@@ -325,7 +325,7 @@ final class JavaEdits {
 		return 4;
 	}
 
-	/** 같은 그룹의 마지막 import 뒤에 넣는다. 그룹이 없으면 앞 그룹 뒤(없으면 뒤 그룹 앞)에 빈 줄을 두고 넣는다 */
+	/** 같은 그룹 안에 넣는다(그룹이 정렬돼 있으면 정렬된 자리, 아니면 끝). 그룹이 없으면 앞 그룹 뒤(없으면 뒤 그룹 앞)에 빈 줄을 두고 넣는다 */
 	private static String insertImport(String file, String source, String name) {
 		Parsed parsed = parse(file, source);
 		List<? extends ImportTree> imports = parsed.unit().getImports().stream().filter((i) -> !i.isStatic()).toList();
@@ -346,10 +346,12 @@ final class JavaEdits {
 			ImportTree same = null;
 			ImportTree before = null;
 			ImportTree after = null;
+			List<ImportTree> group = new ArrayList<>();
 			for (ImportTree i : imports) {
 				int ig = group(i.getQualifiedIdentifier().toString());
 				if (ig == g) {
 					same = i;
+					group.add(i);
 				}
 				else if (ig < g) {
 					before = i;
@@ -358,7 +360,16 @@ final class JavaEdits {
 					after = i;
 				}
 			}
-			if (same != null) {
+			List<String> names = group.stream().map((i) -> i.getQualifiedIdentifier().toString()).toList();
+			ImportTree next = names.equals(names.stream().sorted().toList())
+					? group.stream().filter((i) -> i.getQualifiedIdentifier().toString().compareTo(name) > 0).findFirst().orElse(null)
+					: null;
+			if (next != null) {
+				// 이미 정렬된 그룹이면 정렬된 자리에 넣는다
+				int at = parsed.start(next);
+				result = source.substring(0, at) + line + "\n" + source.substring(at);
+			}
+			else if (same != null) {
 				int at = parsed.end(same);
 				result = source.substring(0, at) + "\n" + line + source.substring(at);
 			}

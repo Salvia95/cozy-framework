@@ -20,6 +20,6 @@ def recipes = new File(basedir, "recipes.log").getText("UTF-8")
   "memo에 이벤트 MemoDeleted가 없습니다",
   "아이콘 'no-such-icon'가 Tabler Icons에 없습니다",
   "같은 이름이 다른 시그니처로 있습니다: ActivityFinder에 List<ActivityItem> recent(int)",
-  "cozy add event-version는 2단계 레시피라 아직 만들지 않았습니다",
+  "MemoCreated에 title가 이미 String로 있습니다(원하는 것: Integer)",
 ].each { assert recipes.contains(it) : "recipes.log에 기대한 메시지가 없습니다: " + it }
 return true

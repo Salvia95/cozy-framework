@@ -41,6 +41,8 @@
       Finder 메서드와 구현, Mapper 메서드, 행 record, <select>. Finder가 없으면 만든다. 빈칸: query-sql
   cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]
       Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다. 빈칸: command-body, (--sql이면) command-sql
+  cozy add event-version <모듈> <이벤트> --field 이름:종류 …
+      이벤트 필드 추가(박싱 타입), schemaVersion 올림, 옛 of()는 새 필드를 null로 넘김, 샘플 v{n+1} 추가. 빈칸: 없음
 ```
 
 - **이름**: 모듈은 영문 소문자와 숫자(`memo`, `voc2`). 엔티티·이벤트는 대문자로 시작한다(`Memo`, `MemoCreated`). 필드는 소문자로 시작하는 camelCase다(`dueOn`).
@@ -156,7 +158,7 @@ cozy add command activity record --param eventId:text --param message:text --sql
 - 인라인 스크립트(`<script>` 본문, `onclick=`, `hx-on`)와 인라인 style을 쓰지 않는다. 보안 정책(CSP)이 막는다.
 - 외부 주소(CDN, `http://`)를 참조하지 않는다.
 - 이미 적용된 마이그레이션 파일을 고치지 않는다. `cozy add migration`으로 새 파일을 더한다.
-- 이벤트(`CozyEvent`) 필드를 지우거나 이름·타입을 바꾸지 않는다. 필드 추가만 하고, `schemaVersion`을 올리고, 새 샘플을 남긴다.
+- 이벤트(`CozyEvent`) 필드를 지우거나 이름·타입을 바꾸지 않는다. 필드는 `cozy add event-version`으로만 더한다(schemaVersion을 올리고 새 샘플을 남긴다). 받는 쪽은 옛 이벤트의 새 필드가 `null`인 경우를 처리한다.
 - 검사를 끄거나 테스트를 건너뛰지 않는다.
 
 ## 검증

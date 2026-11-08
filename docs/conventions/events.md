@@ -94,7 +94,7 @@ class MemoCreatedListener {
 4. 가장 높은 버전의 샘플이 현재 클래스의 모든 필드를 가진다. 필드를 추가했는데 새 버전 샘플이 없으면 실패한다.
 5. 샘플 폴더마다 같은 이름의 CozyEvent 구현이 있다. 이로써 클래스 이름 변경을 잡는다.
 
-필드를 추가하는 순서는 다음과 같다.
+필드를 추가하는 순서는 다음과 같다. 1~3은 `cozy add event-version <모듈> <이벤트> --field 이름:종류 …`가 한 번에 한다([cli.md](cli.md#add-link-enable)).
 
 1. record에 필드를 추가한다.
 2. `of()`의 schemaVersion을 올린다.
