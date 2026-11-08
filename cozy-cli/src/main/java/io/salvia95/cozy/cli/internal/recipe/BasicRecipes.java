@@ -187,30 +187,55 @@ final class BasicRecipes {
 			link(ctx, module, List.of(source));
 		}
 		String pkg = ctx.rolePackage(module, Layer.APP_COMMAND);
-		List<JavaSources.SourceType> facades = ctx.project()
-			.sources()
-			.types()
-			.values()
-			.stream()
-			.filter((t) -> t.isInterface() && t.simpleName().endsWith("Facade") && t.pkg().equals(ctx.rolePackage(module, Layer.SPI)))
-			.toList();
+		// 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 앱 상태에 따라 내용이 달라지면 다시 실행할 때 충돌한다(ADR-0033 §5.6)
+		String facade = ensureFacade(ctx, module);
 		Template t = new Template().put("pkg", pkg)
 			.put("eventImport", eventName)
 			.put("source", source)
 			.put("Event", event)
-			.put("Name", name);
-		if (facades.size() == 1) {
-			String facade = facades.getFirst().simpleName();
-			t.put("facadeImport", "import " + facades.getFirst().name() + ";\n")
-				.put("facadeField", "\n\tprivate final " + facade + " facade;\n\n\t" + name + "Listener(" + facade
-						+ " facade) {\n\t\tthis.facade = facade;\n\t}\n")
-				.put("use", "자기 모듈의 " + facade + "(this.facade)를 부르세요");
-		}
-		else {
-			t.put("facadeImport", "").put("facadeField", "").put("use", "자기 모듈의 쓰기(*Facade나 *Service)를 부르세요");
-		}
+			.put("Name", name)
+			.put("facadeImport", "import " + ctx.rolePackage(module, Layer.SPI) + "." + facade + ";\n")
+			.put("facadeField", "\n\tprivate final " + facade + " facade;\n\n\t" + name + "Listener(" + facade
+					+ " facade) {\n\t\tthis.facade = facade;\n\t}\n")
+			.put("use", "자기 모듈의 " + facade + "(this.facade)를 부르세요");
 		ctx.plan().create(ctx.javaFile(pkg, name + "Listener"), t.render("listener.java"));
 		return "다음: 빈칸 listener-body를 채웁니다. 다른 모듈의 Facade는 부르지 않습니다(C8)";
+	}
+
+	/**
+	 * 모듈의 {@code {M}Facade}. 없으면 빈 Facade와 구현을 만든다. 이미 있으면(crud나 손으로 만든 것) 그대로 쓴다.
+	 *
+	 * @return Facade의 단순 이름
+	 */
+	static String ensureFacade(Context ctx, String module) {
+		String M = Names.capitalize(module);
+		String facade = M + "Facade";
+		String spi = ctx.rolePackage(module, Layer.SPI);
+		String file = ctx.roleFile(module, Role.FACADE, M);
+		if (ctx.project().sources().types().containsKey(spi + "." + facade) || ctx.plan().exists(file)) {
+			return facade;
+		}
+		ctx.ensureNamedInterface(module, Layer.SPI);
+		Template t = new Template().put("module", module).put("M", M);
+		ctx.plan().create(file, t.put("pkg", spi).render("facade.java"));
+		ctx.plan()
+			.create(ctx.roleFile(module, Role.FACADE_IMPL, M), new Template().putAll(t)
+				.put("pkg", ctx.rolePackage(module, Layer.APP_COMMAND))
+				.put("facadeImport", spi + "." + facade)
+				.render("facade-impl.java"));
+		return facade;
+	}
+
+	/** listener가 만든 빈 Facade·구현인가 (crud가 같은 이름으로 채워도 된다) */
+	static boolean isEmptyFacade(Context ctx, String module, String file, String content) {
+		String M = Names.capitalize(module);
+		String spi = ctx.rolePackage(module, Layer.SPI);
+		Template t = new Template().put("module", module).put("M", M);
+		return content.equals(new Template().putAll(t).put("pkg", spi).render("facade.java"))
+				|| content.equals(new Template().putAll(t)
+					.put("pkg", ctx.rolePackage(module, Layer.APP_COMMAND))
+					.put("facadeImport", spi + "." + M + "Facade")
+					.render("facade-impl.java"));
 	}
 
 	// ── migration ─────────────────────────────────────────────

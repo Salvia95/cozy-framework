@@ -22,7 +22,7 @@ mvn -Pdist package       # 배포 패키지 (docs/conventions/distribution.md)
 | `appId` | artifactId | `cozy.app.id`. 영문 소문자·숫자와 단어 사이 하이픈. 데이터 폴더와 실행 파일 이름이 된다 |
 | `appName` | appId | 화면 표시명. 한글과 공백을 쓸 수 있다. `" \ < > & $ #`는 쓸 수 없다 |
 | `persistence` | `true` | SQLite + MyBatis + Flyway(cozy-starter-sqlite) |
-| `events` | `false` | 모듈 사이 이벤트(cozy-starter-events). `persistence=true`가 필요하다 |
+| `events` | `false` | 모듈 사이 이벤트(cozy-starter-events). `persistence=true`가 필요하다. 나중에 켜려면 앱 폴더에서 `cozy enable events` |
 
 생성이 실패하는 경우는 다음과 같다. 실패하면 만들던 폴더를 지우고 메시지를 남긴다.
 

@@ -152,4 +152,217 @@ class EditsTest {
 			assertThatThrownBy(() -> Field.parse("Title:text")).isInstanceOf(CliException.class);
 		}
 	}
+
+	/** 2단계 편집기 (ADR-0033 §2·§3): javac와 XML 파서가 찾은 위치에 덧붙이고, 알아볼 수 없으면 실패한다 */
+	@Nested
+	class JavaMembersAndImports {
+
+		static final String FINDER = """
+				package it.cozy.app.activity.spi;
+
+				import java.util.List;
+
+				import it.cozy.app.activity.spi.dto.ActivityItem;
+
+				/** 활동 읽기. */
+				public interface ActivityFinder {
+
+					List<ActivityItem> recent(int limit);
+				}
+				""";
+
+		@Test
+		void aMemberGoesBeforeTheLastBraceOfItsType() {
+			assertThat(JavaEdits.addMember("f", FINDER, "ActivityFinder", "\tlong count();")).endsWith("""
+						List<ActivityItem> recent(int limit);
+
+						long count();
+					}
+					""");
+			String empty = "package a;\n\npublic interface AFacade {\n}\n";
+			assertThat(JavaEdits.addMember("f", empty, "AFacade", "\tvoid record(String message);"))
+				.isEqualTo("package a;\n\npublic interface AFacade {\n\n\tvoid record(String message);\n}\n");
+		}
+
+		@Test
+		void aMemberOfANestedTypeIsNotTheTopLevelBodyEnd() {
+			String source = "package a;\n\nclass AImpl {\n\n\trecord Inner(int x) {\n\t}\n\n\tvoid run() {\n\t\t// 본문 }\n\t}\n}\n";
+			assertThat(JavaEdits.addMember("f", source, "AImpl", "\tvoid more() {\n\t}"))
+				.endsWith("\t\t// 본문 }\n\t}\n\n\tvoid more() {\n\t}\n}\n");
+		}
+
+		@Test
+		void aTypeThatIsNotThereOrABrokenFileFails() {
+			assertThatThrownBy(() -> JavaEdits.addMember("f", FINDER, "MemoFinder", "\tlong count();"))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("최상위 타입 MemoFinder를 하나로 찾지 못했습니다");
+			assertThatThrownBy(() -> JavaEdits.addMember("f", FINDER.replace("limit);", "limit"), "ActivityFinder", "\tlong count();"))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("Java 문법 오류");
+			assertThatThrownBy(() -> JavaEdits.addMember("f", FINDER, "ActivityFinder", "\tlong count("))
+				.as("덧붙인 결과도 다시 읽어 본다")
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("Java 문법 오류");
+		}
+
+		@Test
+		void importsGoAfterTheLastImportOnlyWhenMissing() {
+			assertThat(JavaEdits.addImports("f", FINDER, List.of("java.util.List", "java.util.Optional", "it.cozy.app.activity.spi.Other")))
+				.contains("import it.cozy.app.activity.spi.dto.ActivityItem;\nimport java.util.Optional;\n\n/** 활동 읽기. */")
+				.doesNotContain("import it.cozy.app.activity.spi.Other;");
+			assertThat(JavaEdits.addImports("f", FINDER, List.of("java.util.List", "java.lang.String"))).isSameAs(FINDER);
+			String wildcard = FINDER.replace("import java.util.List;", "import java.util.*;");
+			assertThat(JavaEdits.addImports("f", wildcard, List.of("java.util.Optional"))).isSameAs(wildcard);
+			String none = "package a;\n\npublic interface AFacade {\n}\n";
+			assertThat(JavaEdits.addImports("f", none, List.of("java.time.Instant")))
+				.isEqualTo("package a;\n\nimport java.time.Instant;\n\npublic interface AFacade {\n}\n");
+		}
+
+		@Test
+		void theSameSimpleNameFromAnotherPackageFails() {
+			assertThatThrownBy(() -> JavaEdits.addImports("f", FINDER, List.of("java.awt.List")))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("이미 java.util.List를 import하고 있어 java.awt.List를 import할 수 없습니다");
+		}
+
+		@Test
+		void signaturesAreComparedWithoutBodies() {
+			JavaEdits.Parsed parsed = JavaEdits.parse("f", FINDER);
+			assertThat(parsed.presence("ActivityFinder", new JavaEdits.Signature("recent", "List<ActivityItem>", List.of("int"))))
+				.isEqualTo(JavaEdits.Presence.PRESENT);
+			assertThat(parsed.presence("ActivityFinder", new JavaEdits.Signature("recent", "List< ActivityItem >", List.of("int"))))
+				.as("공백은 비교하지 않는다")
+				.isEqualTo(JavaEdits.Presence.PRESENT);
+			assertThat(parsed.presence("ActivityFinder", new JavaEdits.Signature("recent", "List<ActivityItem>", List.of("long"))))
+				.isEqualTo(JavaEdits.Presence.CONFLICT);
+			assertThat(parsed.presence("ActivityFinder", new JavaEdits.Signature("count", "long", List.of())))
+				.isEqualTo(JavaEdits.Presence.ABSENT);
+			String impl = "package a;\n\nclass Impl {\n\n\t@Override\n\tpublic List<ActivityItem> recent(@Param(\"limit\") final int limit) {\n"
+					+ "\t\treturn List.of(); // 에이전트가 채운 본문\n\t}\n}\n";
+			assertThat(JavaEdits.parse("f", impl)
+				.presence("Impl", new JavaEdits.Signature("recent", "List<ActivityItem>", List.of("int"))))
+				.as("어노테이션, final, 본문은 시그니처가 아니다")
+				.isEqualTo(JavaEdits.Presence.PRESENT);
+		}
+	}
+
+	@Nested
+	class MapperXml {
+
+		static final String NS = "it.cozy.app.activity.internal.infra.ActivityMapper";
+
+		static final String XML = """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+				<mapper namespace="it.cozy.app.activity.internal.infra.ActivityMapper">
+
+				  <insert id="insert">
+				    INSERT INTO activity (message) VALUES (#{message})
+				  </insert>
+				</mapper>
+				""";
+
+		@Test
+		void statementsAreReadWithoutFetchingTheDtd() {
+			assertThat(XmlEdits.statements("x", XML, NS)).containsExactly(new XmlEdits.Statement("insert", "insert"));
+		}
+
+		@Test
+		void aStatementGoesBeforeTheClosingMapper() {
+			String result = XmlEdits.addStatement("x", XML, NS, "  <select id=\"recent\" resultType=\"R\">\n    SELECT 1\n  </select>");
+			assertThat(result).endsWith("""
+					  </insert>
+
+					  <select id="recent" resultType="R">
+					    SELECT 1
+					  </select>
+					</mapper>
+					""");
+			assertThat(XmlEdits.statements("x", result, NS)).extracting(XmlEdits.Statement::id).containsExactly("insert", "recent");
+		}
+
+		@Test
+		void anotherNamespaceOrABrokenFileFails() {
+			assertThatThrownBy(() -> XmlEdits.statements("x", XML, "it.cozy.app.memo.internal.infra.MemoMapper"))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("namespace(" + NS + ")가 it.cozy.app.memo.internal.infra.MemoMapper가 아닙니다");
+			assertThatThrownBy(() -> XmlEdits.statements("x", XML.replace("</insert>", ""), NS)).isInstanceOf(CliException.class)
+				.hasMessageContaining("XML 오류");
+			assertThatThrownBy(() -> XmlEdits.addStatement("x", XML.replace("</mapper>\n", "</mapper>\n<!-- 끝 -->\n"), NS, "  <select/>"))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("</mapper>로 끝나지 않습니다");
+			assertThatThrownBy(() -> XmlEdits.addStatement("x", XML, NS, "  <select id=\"x\">")).as("덧붙인 결과도 다시 읽어 본다")
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("XML 오류");
+		}
+	}
+
+	@Nested
+	class PomEvents {
+
+		static final String POM = """
+				<project>
+				  <dependencies>
+				    <dependency>
+				      <groupId>io.salvia95.cozy</groupId>
+				      <artifactId>cozy-ui</artifactId>
+				    </dependency>
+				    <!-- SQLite + MyBatis + Flyway -->
+				    <dependency>
+				      <groupId>io.salvia95.cozy</groupId>
+				      <artifactId>cozy-starter-sqlite</artifactId>
+				    </dependency>
+				    <dependency>
+				      <groupId>io.salvia95.cozy</groupId>
+				      <artifactId>cozy-test</artifactId>
+				      <scope>test</scope>
+				    </dependency>
+				  </dependencies>
+				</project>
+				""";
+
+		@Test
+		void theEventsStarterGoesRightAfterTheSqliteStarter() {
+			assertThat(XmlEdits.addEventsStarter("pom.xml", POM)).contains("""
+					      <artifactId>cozy-starter-sqlite</artifactId>
+					    </dependency>
+					    <!-- 모듈 사이 이벤트 (cozy enable events) -->
+					    <dependency>
+					      <groupId>io.salvia95.cozy</groupId>
+					      <artifactId>cozy-starter-events</artifactId>
+					    </dependency>
+					    <dependency>
+					      <groupId>io.salvia95.cozy</groupId>
+					      <artifactId>cozy-test</artifactId>
+					""");
+			String oneLine = "<project><dependencies>\n  <dependency><groupId>io.salvia95.cozy</groupId><artifactId>cozy-starter-sqlite</artifactId></dependency>\n"
+					+ "</dependencies></project>\n";
+			assertThat(XmlEdits.addEventsStarter("pom.xml", oneLine)).contains("<artifactId>cozy-starter-sqlite</artifactId></dependency>\n"
+					+ "  <dependency><groupId>io.salvia95.cozy</groupId><artifactId>cozy-starter-events</artifactId></dependency>\n");
+		}
+
+		@Test
+		void alreadyEnabledChangesNothing() {
+			String enabled = XmlEdits.addEventsStarter("pom.xml", POM);
+			assertThat(XmlEdits.addEventsStarter("pom.xml", enabled)).isSameAs(enabled);
+			String archetype = POM.replace("cozy-starter-sqlite", "cozy-starter-events");
+			assertThat(XmlEdits.addEventsStarter("pom.xml", archetype)).isSameAs(archetype);
+		}
+
+		@Test
+		void withoutExactlyOneSqliteStarterItFails() {
+			assertThatThrownBy(() -> XmlEdits.addEventsStarter("pom.xml", POM.replace("cozy-starter-sqlite", "cozy-starter-x")))
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("이벤트에는 저장(persistence)이 필요합니다");
+			String commented = POM.replace("    <!-- SQLite + MyBatis + Flyway -->\n",
+					"    <!-- <dependency><groupId>io.salvia95.cozy</groupId><artifactId>cozy-starter-sqlite</artifactId></dependency> -->\n");
+			assertThatThrownBy(() -> XmlEdits.addEventsStarter("pom.xml", commented)).as("주석 안의 블록과 헷갈리지 않는다")
+				.isInstanceOf(CliException.class)
+				.hasMessageContaining("cozy-starter-sqlite 의존 블록을 하나로 찾지 못했습니다");
+			String managed = POM.replace("<project>\n", "<project>\n  <dependencyManagement><dependencies>\n    <dependency><groupId>"
+					+ "io.salvia95.cozy</groupId><artifactId>cozy-starter-sqlite</artifactId></dependency>\n  </dependencies></dependencyManagement>\n");
+			assertThatThrownBy(() -> XmlEdits.addEventsStarter("pom.xml", managed)).isInstanceOf(CliException.class)
+				.hasMessageContaining("하나로 찾지 못했습니다");
+		}
+	}
 }

@@ -9,6 +9,8 @@
 </dependency>
 ```
 
+`events=false`로 만든 앱(`cozy-starter-sqlite`만 있는 앱)에는 `cozy enable events`가 이 의존을 더한다([cli.md](cli.md#add-link-enable)).
+
 ## 이벤트 만들기
 
 ```java

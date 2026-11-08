@@ -279,6 +279,13 @@ final class CrudRecipe {
 		void java(Role role, String typeName, String resource) {
 			String file = this.ctx.javaFile(role.layer().packageIn(this.ctx.modulePackage(this.module)),
 					role.suffix().isEmpty() ? typeName : role.typeName(typeName));
+			String current = this.ctx.plan().current(file);
+			if ((role == Role.FACADE || role == Role.FACADE_IMPL) && current != null
+					&& BasicRecipes.isEmptyFacade(this.ctx, this.module, file, current)) {
+				// listener가 만든 빈 Facade는 crud가 채운다(ADR-0033 §5.6)
+				this.ctx.plan().edit(file, render(resource), "listener가 만든 빈 Facade를 crud로 채움");
+				return;
+			}
 			this.ctx.plan().create(file, render(resource));
 		}
 

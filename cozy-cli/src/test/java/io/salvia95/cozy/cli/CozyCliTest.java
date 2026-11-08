@@ -220,7 +220,8 @@ class CozyCliTest {
 
 		@Test
 		void recipesListEveryRecipeOfTheAdrAppendix() throws IOException {
-			String appendix = Files.readString(Path.of("../docs/adr/0032-agent-cli-recipes.md"), StandardCharsets.UTF_8);
+			String appendix = Files.readString(Path.of("../docs/adr/0032-agent-cli-recipes.md"), StandardCharsets.UTF_8)
+					+ Files.readString(Path.of("../docs/adr/0033-stage-two-recipes.md"), StandardCharsets.UTF_8);
 			Result result = run("recipes");
 			assertThat(result.code()).isZero();
 			for (Recipes.Recipe recipe : Recipes.ALL) {
@@ -230,8 +231,8 @@ class CozyCliTest {
 				assertThat(appendix).as(recipe.name()).contains(command);
 			}
 			assertThat(Recipes.ALL).extracting(Recipes.Recipe::name)
-				.containsExactly("module", "link", "crud", "screen", "fragment", "event", "listener", "migration", "query",
-						"command", "field", "event-version", "enable events");
+				.containsExactly("module", "link", "crud", "screen", "fragment", "event", "listener", "migration", "dto",
+						"enable events", "query", "command", "event-version");
 		}
 
 		/** 앱의 AGENTS.md(원본 docs/AGENTS.md)는 지금 쓸 수 있는 레시피를 cozy recipes와 글자까지 같게 싣는다 (ADR-0032 §7) */
@@ -253,13 +254,6 @@ class CozyCliTest {
 			assertThat(result.out()).startsWith("{\n  \"recipes\": [\n    {\n      \"name\": \"module\",\n      \"stage\": 1,")
 				.contains("\"available\": true")
 				.contains("\"available\": false");
-		}
-
-		@Test
-		void stageTwoIsNotThereYet() {
-			Result result = run("enable", "events");
-			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
-			assertThat(result.err()).contains("2단계 레시피라 아직 만들지 않았습니다");
 		}
 
 		@Test

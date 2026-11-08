@@ -30,15 +30,20 @@
   cozy add event <모듈> <이벤트> --field 이름:종류 …
       CozyEvent record와 직렬화 샘플 v1. 빈칸: 없음(발행할 한 줄은 에이전트가 넣는다)
   cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]
-      이벤트 리스너(필요하면 link 포함). 빈칸: listener-body
+      이벤트 리스너. 자기 모듈의 {모듈}Facade를 받는다(없으면 빈 Facade와 구현을 함께 만든다). 필요하면 link 포함. 빈칸: listener-body
   cozy add migration <모듈> <설명>
       V{시각}__{모듈}_{설명}.sql. 빈칸: migration-sql
+  cozy add dto <모듈> <Record> --field 이름:종류[:설명] …
+      spi/dto의 record 하나(모듈 사이 값). 종류는 crud와 같고 같은 모듈의 record·list:record도 쓴다. 빈칸: 없음
+  cozy enable events
+      pom에 cozy-starter-events 추가(cozy-starter-sqlite가 있어야 한다). 빈칸: 없음
 ```
 
 - **이름**: 모듈은 영문 소문자와 숫자(`memo`, `voc2`). 엔티티·이벤트는 대문자로 시작한다(`Memo`, `MemoCreated`). 필드는 소문자로 시작하는 camelCase다(`dueOn`).
 - **필드** `이름:종류[!][:라벨]`: 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`다. `!`는 필수다. 라벨은 화면에 보이는 한글 이름이다. 예: `--field title:text!:제목 --field dueOn:date:마감일`
   - `crud`에는 `text!` 필드가 하나 이상 있어야 한다. 첫 `text!` 필드가 목록의 이름 칸이 된다. `instant`는 쓰지 않는다(만든 시각·수정한 시각은 명령이 넣는다).
 - **fragment 파라미터** `이름:종류` 또는 `이름:Record`(내 모듈 `spi/dto`의 record) 또는 `이름:list:Record`.
+- **dto 필드** `이름:종류[:설명]`: 종류는 위와 같고, 내 모듈 `spi/dto`의 record(`이름:Record`, `이름:list:Record`)도 쓴다. `!`는 쓰지 않는다. 설명은 record의 `@param`이 된다.
 - **아이콘**: Tabler Icons 이름(`notes`, `checklist`, `dashboard`). 없는 이름이면 명령이 실패한다. 목록은 `/cozy/dev/catalog/icons`에 있다.
 - **공백이 있는 값**은 따옴표로 감싼다: `--label "할 일"`, `--purpose "최근 활동 목록"`.
 
@@ -52,7 +57,9 @@ cozy add listener activity --on memo.MemoCreated  # 빈칸: 받았을 때 할 �
 ```
 
 - `--publish`가 없는 이벤트를 새로 만들었으면(`cozy add event`), 보내는 모듈의 `*FacadeImpl` 트랜잭션 안에 한 줄을 넣는다: `this.events.publishEvent(MemoCreated.of(...));`
-- 명령이 없는 구조(Finder에 메서드 추가, `spi/dto`의 record, 서비스)는 아래 "파일 위치" 표대로 만든다. 이것은 다음 단계 명령(`cozy add query`, `cozy add command`)이 맡을 몫이다.
+- 리스너는 자기 모듈의 `{모듈}Facade`(`activity`면 `ActivityFacade`)를 받는다. 없으면 `cozy add listener`가 빈 Facade와 구현을 함께 만든다. 리스너 본문은 그 Facade의 쓰기를 부르는 한 줄이 된다.
+- 다른 모듈에 보일 값(화면 조각의 파라미터, Finder가 돌려줄 값)은 `cozy add dto`로 만든다: `cozy add dto activity ActivityItem --field message:text:무엇이 있었는지 --field at:text:언제`
+- 명령이 없는 구조(Finder·Facade에 메서드 추가, 그 구현과 Mapper·SQL)는 아래 "파일 위치" 표대로 만든다. 이것은 다음 단계 명령(`cozy add query`, `cozy add command`)이 맡을 몫이다.
 
 ### 명령 결과 읽기
 
@@ -131,7 +138,7 @@ cozy add listener activity --on memo.MemoCreated  # 빈칸: 받았을 때 할 �
 
 ## 금지
 
-- 구조를 손으로 바꾸지 않는다. 모듈·화면·이벤트·리스너·마이그레이션·공개 fragment는 명령으로 만들고, 의존 선언은 `cozy link`로 더한다.
+- 구조를 손으로 바꾸지 않는다. 모듈·화면·이벤트·리스너·마이그레이션·공개 fragment·`spi/dto` record는 명령으로 만들고, 의존 선언은 `cozy link`로, 이벤트 스타터는 `cozy enable events`로 더한다.
 - 다른 모듈의 `spi` 밖 클래스를 쓰지 않는다. 다른 모듈의 `*Facade`(쓰기)를 부르지 않는다. 다른 모듈의 쓰기는 이벤트로 일으킨다.
 - 컨트롤러(api)에서 internal을 쓰지 않는다. 읽기 구현(query)에서 쓰기 구현(command)을 부르지 않는다. command에서 JDBC를 직접 쓰지 않는다.
 - 동적 템플릿 참조(`~{${...}}`, `th:replace="${...}"`)를 쓰지 않는다.

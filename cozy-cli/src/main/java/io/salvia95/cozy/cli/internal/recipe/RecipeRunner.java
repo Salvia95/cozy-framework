@@ -25,7 +25,7 @@ public final class RecipeRunner {
 	}
 
 	/**
-	 * @param action {@code add} 또는 {@code link}
+	 * @param action {@code add}, {@code link}, {@code enable}
 	 * @param rest 동작 뒤의 인자 (add면 첫째가 레시피 이름)
 	 */
 	public static void run(String action, List<String> rest, AppProject project, Supplier<FrameworkJar> framework,
@@ -34,6 +34,10 @@ public final class RecipeRunner {
 		List<String> args;
 		if (action.equals("link")) {
 			recipe = "link";
+			args = rest;
+		}
+		else if (action.equals("enable")) {
+			recipe = "enable " + (rest.isEmpty() ? "" : rest.getFirst());
 			args = rest;
 		}
 		else {
@@ -54,9 +58,14 @@ public final class RecipeRunner {
 			case "fragment" -> BasicRecipes.fragment(ctx, parsed);
 			case "screen" -> ScreenRecipe.run(ctx, parsed);
 			case "crud" -> CrudRecipe.run(ctx, parsed);
-			case "query", "command", "field", "event-version" -> throw new CliException("cozy add " + recipe
+			case "dto" -> StageTwoRecipes.dto(ctx, parsed);
+			case "enable events", "enable " -> StageTwoRecipes.enableEvents(ctx, parsed);
+			case "query", "command", "event-version" -> throw new CliException("cozy add " + recipe
 					+ "는 2단계 레시피라 아직 만들지 않았습니다. cozy recipes로 지금 쓸 수 있는 것을 봅니다.");
-			default -> throw new CliException("모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
+			case "field" -> throw new CliException("cozy add field는 보류한 레시피입니다(ADR-0033 §1). 필드는 손으로 더하고 cozy check와 "
+					+ "mvn verify로 확인합니다.");
+			default -> throw new CliException(recipe.startsWith("enable ") ? "cozy enable 뒤에는 events를 적습니다 (cozy enable events)."
+					: "모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
 		};
 		next = next.replaceFirst("^다음: ", "");
 		Plan plan = ctx.plan();

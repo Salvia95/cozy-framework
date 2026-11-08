@@ -317,7 +317,162 @@ class RecipeCommandTest {
 		app();
 		fails("모르는 레시피입니다: table", "add", "table", "memo");
 		fails("cozy add query는 2단계 레시피라", "add", "query", "memo", "pinned");
+		fails("cozy add field는 보류한 레시피입니다", "add", "field", "memo", "x:text");
 		fails("cozy add 뒤에 레시피 이름을 적습니다", "add");
+		fails("cozy enable 뒤에는 events를 적습니다", "enable");
+		fails("cozy enable 뒤에는 events를 적습니다", "enable", "mail");
+	}
+
+	static final String ACTIVITY = "src/main/java/it/cozy/app/activity/";
+
+	/** ADR-0033 §5.1: spi DTO record. 1단계처럼 파일 전체로 비교한다 */
+	@Test
+	void dtoCreatesASpiRecordAndRunningItAgainChangesNothing() throws IOException {
+		app();
+		fails("모듈 'activity'가 없습니다", "add", "dto", "activity", "ActivityItem", "--field", "message:text");
+		ok("add", "module", "activity");
+		fails("--field가 하나 이상 필요합니다", "add", "dto", "activity", "ActivityItem");
+		fails("record에는 필수 여부가 없어 !를 쓰지 않습니다", "add", "dto", "activity", "ActivityItem", "--field", "message:text!");
+		fails("it.cozy.app.activity.spi.dto.ActivityLine가 없습니다", "add", "dto", "activity", "ActivityPage", "--field",
+				"lines:list:ActivityLine");
+		fails("같은 이름의 필드가 둘 이상입니다", "add", "dto", "activity", "ActivityItem", "--field", "a:text", "--field", "a:int");
+		fails("Java 예약어", "add", "dto", "activity", "ActivityItem", "--field", "class:text");
+
+		Result first = ok("add", "dto", "activity", "ActivityItem", "--field", "message:text:무엇이 있었는지", "--field",
+				"at:text:언제 (yyyy-MM-dd HH:mm)");
+		assertThat(first.out()).contains("만듦  " + ACTIVITY + "spi/dto/ActivityItem.java")
+			.contains("만듦  " + ACTIVITY + "spi/dto/package-info.java")
+			.doesNotContain("빈칸");
+		assertThat(read(ACTIVITY + "spi/dto/ActivityItem.java")).isEqualTo("""
+				package it.cozy.app.activity.spi.dto;
+
+				/**
+				 * ActivityItem: activity가 다른 모듈에 내보내는 값 (모듈 사이 DTO, cozy add dto). 다른 모듈은 activity의 Finder와 공개 fragment로 받는다.
+				 *
+				 * @param message 무엇이 있었는지
+				 * @param at 언제 (yyyy-MM-dd HH:mm)
+				 */
+				public record ActivityItem(String message, String at) {
+				}
+				""");
+		assertThat(ok("add", "dto", "activity", "ActivityItem", "--field", "message:text:무엇이 있었는지", "--field",
+				"at:text:언제 (yyyy-MM-dd HH:mm)").out()).contains("[cozy] 바뀐 것 없음");
+		fails("이미 있고 내용이 다릅니다", "add", "dto", "activity", "ActivityItem", "--field", "message:text");
+
+		ok("add", "dto", "activity", "ActivitySummary", "--field", "total:long", "--field", "latest:ActivityItem", "--field",
+				"recent:list:ActivityItem", "--field", "since:date", "--field", "at:instant", "--field", "pinned:bool");
+		assertThat(read(ACTIVITY + "spi/dto/ActivitySummary.java")).contains("""
+				import java.time.Instant;
+				import java.time.LocalDate;
+				import java.util.List;
+
+				/**
+				 * ActivitySummary: activity가 다른 모듈에 내보내는 값 (모듈 사이 DTO, cozy add dto). 다른 모듈은 activity의 Finder와 공개 fragment로 받는다.
+				 */
+				public record ActivitySummary(long total, ActivityItem latest, List<ActivityItem> recent, LocalDate since, Instant at,
+						boolean pinned) {
+				""".replace("Instant at,\n\t\tboolean", "Instant at, boolean"));
+		// 공개 fragment의 파라미터로 쓸 수 있다 (M10에서 손으로 쓴 ActivityItem의 자리)
+		ok("add", "fragment", "activity", "recent-activity", "--param", "items:list:ActivityItem", "--purpose", "최근 활동 목록");
+		Result check = cozy("check");
+		assertThat(check.out()).doesNotContain("[C8]").doesNotContain("[C5]").contains("fragment-body");
+	}
+
+	/** 아키타입 persistence=true, events=false와 같은 의존의 빈 앱 */
+	void sqliteApp() throws IOException {
+		app();
+		write("pom.xml", read("pom.xml").replace("""
+				    <dependency><groupId>io.salvia95.cozy</groupId><artifactId>cozy-starter-events</artifactId></dependency>
+				""", """
+				    <!-- SQLite + MyBatis + Flyway -->
+				    <dependency>
+				      <groupId>io.salvia95.cozy</groupId>
+				      <artifactId>cozy-starter-sqlite</artifactId>
+				    </dependency>
+				"""));
+	}
+
+	/** ADR-0033 §5.5: pom에 cozy-starter-events. 이미 있으면 바뀐 것 없음 */
+	@Test
+	void enableEventsAddsTheStarterOnce() throws IOException {
+		sqliteApp();
+		ok("add", "module", "memo");
+		fails("이벤트에는 cozy-starter-events가 필요합니다", "add", "event", "memo", "MemoCreated", "--field", "memoId:long");
+		Result dry = ok("enable", "events", "--dry-run");
+		assertThat(dry.out()).contains("바꿈  pom.xml    의존 += io.salvia95.cozy:cozy-starter-events").contains("--dry-run");
+		assertThat(read("pom.xml")).doesNotContain("cozy-starter-events");
+
+		Result enabled = ok("enable", "events");
+		assertThat(enabled.out()).contains("[cozy] 적용했습니다");
+		assertThat(read("pom.xml")).contains("""
+				      <artifactId>cozy-starter-sqlite</artifactId>
+				    </dependency>
+				    <!-- 모듈 사이 이벤트 (cozy enable events) -->
+				    <dependency>
+				      <groupId>io.salvia95.cozy</groupId>
+				      <artifactId>cozy-starter-events</artifactId>
+				    </dependency>
+				""");
+		assertThat(ok("enable", "events").out()).contains("[cozy] 바뀐 것 없음");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long");
+		assertThat(ok("enable", "events", "--json").out()).contains("\"recipe\": \"enable events\"").contains("\"applied\": false");
+	}
+
+	@Test
+	void enableEventsNeedsTheSqliteStarter() throws IOException {
+		app();
+		write("pom.xml", read("pom.xml").replace(
+				"    <dependency><groupId>io.salvia95.cozy</groupId><artifactId>cozy-starter-events</artifactId></dependency>\n", ""));
+		fails("이벤트에는 저장(persistence)이 필요합니다", "enable", "events");
+	}
+
+	/**
+	 * ADR-0033 §5.6: 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 그래서 Facade가 생기기 전과 후에 같은 명령이 같은 파일을 만든다. 리스너가 만든 빈
+	 * Facade는 crud가 채운다.
+	 */
+	@Test
+	void aListenerIsTheSameBeforeAndAfterTheFacadeExists() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long");
+		ok("add", "module", "activity");
+		Result first = ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		assertThat(first.out()).contains("만듦  " + ACTIVITY + "spi/ActivityFacade.java")
+			.contains("만듦  " + ACTIVITY + "internal/app/command/ActivityFacadeImpl.java")
+			.contains("만듦  " + ACTIVITY + "internal/app/command/MemoCreatedListener.java");
+		String listener = read(ACTIVITY + "internal/app/command/MemoCreatedListener.java");
+		assertThat(listener).contains("import it.cozy.app.activity.spi.ActivityFacade;")
+			.contains("\tprivate final ActivityFacade facade;\n\n\tMemoCreatedListener(ActivityFacade facade) {")
+			.contains("자기 모듈의 ActivityFacade(this.facade)를 부르세요");
+		assertThat(read(ACTIVITY + "spi/ActivityFacade.java")).contains("public interface ActivityFacade {\n}\n");
+		assertThat(read(ACTIVITY + "internal/app/command/ActivityFacadeImpl.java"))
+			.contains("@Service\n@Transactional\nclass ActivityFacadeImpl implements ActivityFacade {\n}\n");
+		assertThat(ok("add", "listener", "activity", "--on", "memo.MemoCreated").out()).contains("[cozy] 바뀐 것 없음");
+		assertThat(cozy("check").out()).contains("오류 1건").contains("listener-body");
+
+		// 빈 Facade는 crud가 채운다. 그 뒤에도 리스너 명령은 바뀐 것이 없고, 리스너를 지우고 다시 만들어도 같은 파일이다
+		Result crud = ok("add", "crud", "activity", "--entity", "Activity", "--label", "활동", "--icon", "activity", "--field",
+				"message:text!:내용");
+		assertThat(crud.out()).contains("바꿈  " + ACTIVITY + "spi/ActivityFacade.java    listener가 만든 빈 Facade를 crud로 채움");
+		assertThat(read(ACTIVITY + "spi/ActivityFacade.java")).contains("long create(");
+		assertThat(ok("add", "listener", "activity", "--on", "memo.MemoCreated").out()).contains("[cozy] 바뀐 것 없음");
+		Files.delete(this.dir.resolve(ACTIVITY + "internal/app/command/MemoCreatedListener.java"));
+		ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		assertThat(read(ACTIVITY + "internal/app/command/MemoCreatedListener.java")).isEqualTo(listener);
+	}
+
+	/** 빈 Facade가 아니면(메서드를 더했으면) crud가 덮어쓰지 않는다 */
+	@Test
+	void crudDoesNotOverwriteAFacadeWithMethods() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long");
+		ok("add", "module", "activity");
+		ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		write(ACTIVITY + "spi/ActivityFacade.java", read(ACTIVITY + "spi/ActivityFacade.java").replace("public interface ActivityFacade {\n",
+				"public interface ActivityFacade {\n\n\tvoid record(String message);\n"));
+		fails("ActivityFacade.java가 이미 있고 내용이 다릅니다", "add", "crud", "activity", "--entity", "Activity", "--label", "활동", "--icon",
+				"activity", "--field", "message:text!:내용");
 	}
 
 	static String[] concat(String[] base, String... more) {

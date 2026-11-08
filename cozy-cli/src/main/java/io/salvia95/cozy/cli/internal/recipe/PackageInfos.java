@@ -1,24 +1,13 @@
 package io.salvia95.cozy.cli.internal.recipe;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.ToolProvider;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
-import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.NewArrayTree;
-import com.sun.source.util.JavacTask;
-import com.sun.source.util.SourcePositions;
-import com.sun.source.util.Trees;
 
 import io.salvia95.cozy.cli.internal.CliException;
 
@@ -37,9 +26,9 @@ final class PackageInfos {
 	 * @return 바뀐 내용. 이미 모두 있으면 그대로
 	 */
 	static String addDependencies(String file, String source, List<String> dependencies) {
-		Parsed parsed = parse(file, source);
-		AnnotationTree annotation = parsed.unit.getPackage() == null ? null
-				: parsed.unit.getPackage()
+		JavaEdits.Parsed parsed = JavaEdits.parse(file, source);
+		AnnotationTree annotation = parsed.unit().getPackage() == null ? null
+				: parsed.unit().getPackage()
 					.getAnnotations()
 					.stream()
 					.filter((a) -> a.getAnnotationType().toString().endsWith("ApplicationModule"))
@@ -86,14 +75,13 @@ final class PackageInfos {
 		}
 		String array = next.isEmpty() ? "{}"
 				: "{ " + String.join(", ", next.stream().map((d) -> "\"" + d + "\"").toList()) + " }";
-		SourcePositions positions = parsed.positions;
 		if (value != null) {
-			int start = (int) positions.getStartPosition(parsed.unit, value);
-			int end = (int) positions.getEndPosition(parsed.unit, value);
+			int start = parsed.start(value);
+			int end = parsed.end(value);
 			return source.substring(0, start) + array + source.substring(end);
 		}
-		int end = (int) positions.getEndPosition(parsed.unit, annotation);
-		String text = source.substring((int) positions.getStartPosition(parsed.unit, annotation), end);
+		int end = parsed.end(annotation);
+		String text = source.substring(parsed.start(annotation), end);
 		String replaced;
 		if (!text.contains("(")) {
 			replaced = text + "(allowedDependencies = " + array + ")";
@@ -104,44 +92,12 @@ final class PackageInfos {
 		else {
 			replaced = text.substring(0, text.lastIndexOf(')')) + ", allowedDependencies = " + array + ")";
 		}
-		int start = (int) positions.getStartPosition(parsed.unit, annotation);
+		int start = parsed.start(annotation);
 		return source.substring(0, start) + replaced + source.substring(end);
 	}
 
 	private static CliException unreadable(String file) {
 		return new CliException(file + "의 allowedDependencies를 읽을 수 없습니다. 글자 그대로의 문자열 배열로 적어야 cozy link가 바꿀 수 "
 				+ "있습니다 (예: allowedDependencies = { \"memo :: spi\" }).");
-	}
-
-	private record Parsed(CompilationUnitTree unit, SourcePositions positions) {
-	}
-
-	private static Parsed parse(String file, String source) {
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		if (compiler == null) {
-			throw new CliException("JDK의 javac가 없습니다. JRE가 아니라 JDK 25로 실행하세요.");
-		}
-		JavaFileObject object = new SimpleJavaFileObject(URI.create("string:///package-info.java"), JavaFileObject.Kind.SOURCE) {
-			@Override
-			public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-				return source;
-			}
-		};
-		List<String> errors = new ArrayList<>();
-		JavacTask task = (JavacTask) compiler.getTask(null, null, (d) -> {
-			if (d.getKind() == javax.tools.Diagnostic.Kind.ERROR) {
-				errors.add(d.getLineNumber() + ": " + d.getMessage(Locale.ROOT));
-			}
-		}, List.of("-proc:none"), null, List.of(object));
-		try {
-			CompilationUnitTree unit = task.parse().iterator().next();
-			if (!errors.isEmpty()) {
-				throw new CliException(file + "를 읽을 수 없습니다(Java 문법 오류: " + errors.getFirst() + ").");
-			}
-			return new Parsed(unit, Trees.instance(task).getSourcePositions());
-		}
-		catch (java.io.IOException ex) {
-			throw new CliException(file + "를 읽을 수 없습니다: " + ex.getMessage());
-		}
 	}
 }

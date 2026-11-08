@@ -177,6 +177,13 @@ cozy add event-version <m> <Ev> --field 이름:종류 …
 | M13 | `query`, `command` | §6의 activity 세 줄로 `hand/activity-item`이 사라진다. 채운 픽스처 통과 |
 | M14 | `event-version` | 필드를 더한 뒤 C6(샘플 호환)이 통과하고, 옛 `of()`를 부르는 코드가 그대로 컴파일된다 |
 
+### M12 구현 메모
+
+- **편집기**: `cozy-cli`의 `JavaEdits`(멤버·import·시그니처 비교)와 `XmlEdits`(Mapper XML 문, pom 의존)다. M10의 `package-info.java` 편집도 같은 javac 파서를 쓴다. 단위 테스트(`EditsTest`)는 알아보는 형식(빈 타입, 중첩 타입이 있는 본문, import 없음·와일드카드, 한 줄과 여러 줄 pom 블록)과 실패하는 형식(타입 없음, 문법 오류, 덧붙인 결과의 문법 오류, 단순 이름 충돌, 다른 namespace, `</mapper>` 뒤의 내용, 주석이나 `dependencyManagement` 안의 sqlite 블록)을 확인한다.
+- **`dto`**: 구성 요소 타입은 이벤트 필드와 같다(`int`, `long`, `boolean`은 원시 타입). reference-app의 `MemoSummary(long total, long pinned, String latestTitle)`과 같은 모양이다. 레시피 픽스처 `reference`, `reference-filled`에서 손으로 쓴 `ActivityItem`을 이 명령으로 바꿨다.
+- **`listener`**: 리스너가 만든 빈 Facade·구현은 같은 모듈의 `crud`가 채운다(엔티티 이름이 모듈 이름과 같을 때). 내용이 리스너가 만든 빈 파일과 글자까지 같을 때만 바꾸고, 메서드를 더했으면 1단계처럼 실패한다. 그래서 "리스너를 먼저, crud를 나중에" 순서도 동작한다(픽스처 `stage-two`).
+- **`cozy recipes`**: 글 출력은 쓸 수 있는 레시피를 먼저, 준비 중인 것을 뒤에 둔다. 보류한 `field`는 목록에서 뺐고, 실행하면 보류했다고 알린다.
+
 ## 정한 것
 
 사용자가 2026-11-08에 여섯 가지 모두 제안대로 정했다.

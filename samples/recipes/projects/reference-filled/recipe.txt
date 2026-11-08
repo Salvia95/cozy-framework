@@ -3,8 +3,8 @@ cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!
 cozy add module activity --label 활동
 cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
-# ActivityItem(spi.dto)은 1단계 레시피로 만들 수 없다(2단계 query). 손으로 쓴 것으로 친다
-hand activity-item
+# 화면 조각의 파라미터가 될 spi DTO (2단계 dto, ADR-0033)
+cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
 cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
 cozy link dashboard --uses memo,activity

@@ -39,8 +39,8 @@ source ~/.sdkman/bin/sdkman-init.sh   # JDK 25, Maven 3.10.0
 mvn verify                            # 전체 빌드 + invoker 픽스처 + 테스트
 mvn -o verify                         # 오프라인 (의존성을 한 번 받은 뒤)
 mvn -pl cozy-rules -am test           # 모듈 하나만
-mvn -o package -pl cozy-cli && java -jar cozy-cli/target/cozy-cli-*.jar check --project samples/reference-app   # cozy 명령 (describe | check | recipes | add | link)
-mvn -o verify -pl samples/recipes -am            # 레시피 픽스처: 기본 앱에 cozy add·link → mvn verify (몇 분)
+mvn -o package -pl cozy-cli && java -jar cozy-cli/target/cozy-cli-*.jar check --project samples/reference-app   # cozy 명령 (describe | check | recipes | add | link | enable)
+mvn -o verify -pl samples/recipes -am            # 레시피 픽스처: 기본 앱에 cozy add·link·enable → mvn verify (몇 분)
 mvn -o -Pe2e install                  # + 배포·업데이트 종단 검증 (몇 분, M6)
 mvn -o -Pdist package -pl samples/reference-app   # 앱 하나를 배포 패키지로 (target/dist)
 mvn -o verify -pl cozy-archetype -am             # 아키타입: 옵션 3조합 생성 → verify -Pdist (몇 분)

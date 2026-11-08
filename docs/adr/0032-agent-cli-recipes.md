@@ -190,7 +190,7 @@ cozy add listener <m> --on <보내는 모듈>.<Ev> [--name 이름]
 | 구분 | 내용 |
 | --- | --- |
 | 함께 하는 것 | 보내는 모듈이 다르면 `cozy link <m> --uses <보내는 모듈>` |
-| 만드는 파일 | `internal/app/command/{Ev}Listener.java`(이름을 주면 `{이름}Listener`): `@Component`, `@ApplicationModuleListener void on({Ev} event)`. 같은 모듈에 `{M}Facade`가 있으면 생성자로 받는다. **개정 예정 (ADR-0033 §5.6, M12)**: 늘 `{M}Facade`를 받고, 없으면 빈 Facade를 함께 만든다 |
+| 만드는 파일 | `internal/app/command/{Ev}Listener.java`(이름을 주면 `{이름}Listener`): `@Component`, `@ApplicationModuleListener void on({Ev} event)`. **개정 (ADR-0033 §5.6, M12)**: 늘 `{M}Facade`를 생성자로 받고, 없으면 빈 `{M}Facade`와 `{M}FacadeImpl`을 함께 만든다(처음에는 Facade가 정확히 하나 있을 때만 받았다) |
 | 빈칸 | `listener-body`: 받았을 때 할 일. 자기 모듈의 Facade를 부른다. 다른 모듈의 Facade는 부르지 않는다(C8) |
 | 생성 직후 | C9 1곳 |
 | 실패 | 이벤트가 없을 때. 같은 모듈에 같은 이름의 리스너가 있을 때(`--name`을 알린다) |
@@ -262,7 +262,7 @@ cozy link dashboard --uses memo,activity              # screen 빈칸에서 Find
 
   | 픽스처 | 내용 | 기대 |
   | --- | --- | --- |
-  | `reference` | 위 명령. `fragment` 앞에 `ActivityItem`(spi.dto)만 손으로 둔다. 같은 명령을 다시 실행하고, 실패해야 하는 명령 5개를 실행한다 | C9 4곳만 실패. 다시 실행하면 바뀐 것 없음. 실패한 명령은 파일을 바꾸지 않는다 |
+  | `reference` | 위 명령. `fragment` 앞에 `ActivityItem`(spi.dto)만 손으로 둔다(M12부터는 `cozy add dto`). 같은 명령을 다시 실행하고, 실패해야 하는 명령 5개를 실행한다 | C9 4곳만 실패. 다시 실행하면 바뀐 것 없음. 실패한 명령은 파일을 바꾸지 않는다 |
   | `reference-filled` | 위 명령 뒤에 빈칸을 채운다. activity는 reference-app 코드, dashboard는 생성된 `MemoFinder`에 맞춰 쓴 코드, 흐름 테스트 하나 | 통과 |
   | `crud-kinds` | 필드 종류를 모두 쓴 `crud`와 `--publish created,updated,deleted`, `module`, `link`, `event` | 통과 |
   | `screen-details` | `screen`(details·overview), 같은 모듈의 `event`·`listener`, `migration` | C9 4곳만 실패 |

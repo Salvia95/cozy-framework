@@ -2,7 +2,7 @@
 def log = new File(basedir, "build.log").getText("UTF-8")
 def expected = [
   "[C9] 채우지 않은 빈칸 4곳",
-  "[C9] src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java:17 → cozy:slot listener-body",
+  "[C9] src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java:24 → cozy:slot listener-body",
   "[C9] src/main/java/it/cozy/app/dashboard/api/DashboardController.java:20 → cozy:slot view-model",
   "[C9] src/main/resources/db/migration/V202611081001__activity_create_activity.sql:3 → cozy:slot migration-sql",
   "[C9] src/main/resources/templates/activity/spi/recent-activity.html:5 → cozy:slot fragment-body",

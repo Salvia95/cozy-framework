@@ -28,7 +28,7 @@ import io.salvia95.cozy.rules.Violation;
  * <li>{@code describe [--json]}: 앱의 지도(모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 빈칸)</li>
  * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R15, C8, C9). 최종 판단은 {@code mvn verify}</li>
  * <li>{@code recipes [--json]}: 구조를 만드는 명령 목록</li>
- * <li>{@code add <레시피>}, {@code link}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
+ * <li>{@code add <레시피>}, {@code link}, {@code enable events}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
  * </ul>
  * 종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음.
  */
@@ -45,15 +45,16 @@ public final class CozyCli {
 
 			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
 			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)
-			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link)
-			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration
+			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link, enable)
+			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
+			  cozy enable events       pom에 cozy-starter-events 더하기
 
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
 			  --repository <폴더>      cozy jar가 있는 Maven 저장소 (기본: COZY_REPOSITORY, 없으면 ~/.m2/repository)
 			  --json                   기계가 읽는 출력
-			  --dry-run                (add, link) 바꿀 파일만 보이고 쓰지 않는다
+			  --dry-run                (add, link, enable) 바꿀 파일만 보이고 쓰지 않는다
 
 			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
 			""";
@@ -108,16 +109,12 @@ public final class CozyCli {
 					out.print(json ? Json.write(Recipes.model()) : Recipes.text());
 					yield OK;
 				}
-				case "add", "link" -> {
+				case "add", "link", "enable" -> {
 					AppProject app = project(project, workDir);
 					Path repo = repository;
 					RecipeRunner.run(action, rest.subList(1, rest.size()), app, () -> framework(app, repo, "아이콘 이름"), now(),
 							dryRun, json, out);
 					yield OK;
-				}
-				case "enable" -> {
-					err.println("[cozy] enable은 2단계 레시피라 아직 만들지 않았습니다. 쓸 수 있는 레시피는 cozy recipes로 봅니다.");
-					yield UNUSABLE;
 				}
 				case "help", "--help", "-h" -> {
 					out.print(USAGE);
