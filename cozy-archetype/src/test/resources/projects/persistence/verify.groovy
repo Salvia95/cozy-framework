@@ -14,6 +14,7 @@ assert file("src/main/resources/templates/home/api/index.html").isFile() : "화�
 assert file("src/main/resources/templates/home/internal/activity.html").isFile() : "조각 템플릿(home/internal)이 없습니다"
 assert file(".gitignore").isFile() : ".gitignore가 없습니다"
 assert file("AGENTS.md").text.contains("mvn -o verify") : "AGENTS.md가 없습니다"
+assert file("AGENTS.md").text.contains("cozy add crud <모듈>") : "AGENTS.md에 레시피 목록이 없습니다 (ADR-0032 §7)"
 assert file("src/main/resources/application.yml").getText("UTF-8").contains('name: "데모 업무 도구"') : "appName이 들어가지 않았습니다"
 assert file("target/dist/demo-persistence-update.json").isFile() : "-Pdist 매니페스트가 없습니다"
 assert file("target/dist/image/demo-persistence").isDirectory() : "app-image가 없습니다"

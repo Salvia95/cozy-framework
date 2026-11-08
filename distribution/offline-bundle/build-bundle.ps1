@@ -74,7 +74,7 @@ $runtimeJar = Join-Path $Repo "io\salvia95\cozy\cozy-starter-runtime\$Version\co
   "--title=Cozy offline bundle $Version" "--maven-distribution=$MavenFile" "--fetch-sources=$SourcesRepo"
 if ($LASTEXITCODE -ne 0) { throw "[cozy] 번들 라이선스 목록을 만들지 못했습니다 (종료 코드 $LASTEXITCODE)" }
 
-# 5. Maven 배포판, 스크립트, 문서
+# 5. Maven 배포판, cozy-cli, 스크립트, 문서
 $mavenTarget = Join-Path $Bundle $MavenFile
 if ($MavenZip -match '^https?://') {
   Invoke-WebRequest -UseBasicParsing -Uri $MavenZip -OutFile $mavenTarget
@@ -83,6 +83,10 @@ else { Copy-Item $MavenZip $Bundle }
 if ((Get-FileHash -Algorithm SHA512 $mavenTarget).Hash.ToLowerInvariant() -ne $MavenSha512) {
   throw "[cozy] $MavenFile의 SHA-512가 맞지 않습니다 (다른 판이면 -MavenSha512를 주세요)"
 }
+# cozy-cli (ADR-0032): 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository\에도 있어 라이선스 목록에 든다
+$cliLib = New-Item -ItemType Directory -Force -Path (Join-Path $Bundle 'lib\cli\lib')
+Copy-Item (Join-Path $Root "cozy-cli\target\cozy-cli-$Version.jar") (Join-Path $Bundle 'lib\cli\cozy-cli.jar')
+Copy-Item (Join-Path $Root 'cozy-cli\target\lib\*.jar') $cliLib
 foreach ($file in @('cozy', 'cozy.cmd', 'cozy.ps1', 'README.md')) {
   Copy-Item (Join-Path $PSScriptRoot $file) $Bundle
 }

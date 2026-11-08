@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 오프라인 번들 수용 기준 검증 (PRD §9.7, Linux). 네트워크를 끊은 상태에서 번들만으로
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
+# 이벤트 앱에는 cozy add·link로 구조를 더한 뒤 verify한다 (ADR-0032 M11 완료 기준).
 #
 #   distribution/offline-bundle/verify-offline.sh <번들 zip>
 #
@@ -52,14 +53,45 @@ MAVEN_BIN="$(ls -d "$WORK"/cozy/apache-maven-*/bin | head -1)"
 export PATH="$WORK/cozy/bin:$MAVEN_BIN:$PATH"
 test "$(cozy version)" = "$VERSION"
 
+# cozy 명령(cozy-cli)으로 구조를 더한다. 빈칸이 남지 않는 레시피만 쓰므로 바로 verify를 통과해야 한다
+cozy_recipes() {
+  (
+    cd "$1"
+    # 출력은 변수로 받아 확인한다 (grep -q가 파이프를 먼저 닫으면 pipefail에 걸린다)
+    out="$(cozy recipes)"
+    grep -q "cozy add crud" <<< "$out"
+    cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목" --field dueOn:date:마감일 \
+      --field done:bool:완료 --publish created
+    # 하위 폴더에서도 앱을 찾는다. 같은 명령을 다시 실행하면 바뀐 것이 없다
+    out="$(cd src/main && cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목" \
+      --field dueOn:date:마감일 --field done:bool:완료 --publish created)"
+    grep -q "바뀐 것 없음" <<< "$out"
+    cozy link task --uses home
+    # 실패하는 명령은 종료 코드 2이고 아무것도 바꾸지 않는다
+    set +e
+    cozy add screen task stats --pattern details --title 통계 --nav 통계:no-such-icon > /dev/null 2>&1
+    code=$?
+    set -e
+    test "$code" = 2
+    test -z "$(find src -newer pom.xml -name '*Stats*')"
+    cozy check
+    out="$(cozy describe)"
+    grep -q "^모듈 task " <<< "$out"
+    echo "[cozy] cozy add·link 통과: $1"
+  )
+}
+
 mkdir -p "$WORK/apps"
 cd "$WORK/apps"
 for combo in basic:false:false persistence:true:false events:true:true; do
   IFS=: read -r name persistence events <<< "$combo"
   cozy new -B -DinteractiveMode=false -DgroupId=com.example -DartifactId="offline-$name" \
     -Dpackage="com.example.offline.$name" -DappName="오프라인 확인" -Dpersistence="$persistence" -Devents="$events"
+  if [ "$name" = events ]; then
+    cozy_recipes "offline-$name"
+  fi
   (cd "offline-$name" && mvn -B -ntp -o verify && mvn -B -ntp -o -Pdist package)
   test -d "offline-$name/target/dist/image/offline-$name"
   echo "[cozy] 통과: $name (persistence=$persistence, events=$events)"
 done
-echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·verify·-Pdist package"
+echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·cozy add·verify·-Pdist package"

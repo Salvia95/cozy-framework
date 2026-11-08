@@ -233,8 +233,11 @@ public final class RuleChecker {
 				String how = (module != null && !module.declaresDependencies())
 						? a + "는 allowedDependencies를 선언하지 않았습니다. "
 						: a + "의 allowedDependencies에 " + b + "가 없습니다. ";
-				error(file, line, "R3", display, how + a + "/package-info.java의 @ApplicationModule(allowedDependencies = "
-						+ "\"" + b + " :: spi\")에 추가하세요.");
+				String message = how + a + "/package-info.java의 @ApplicationModule(allowedDependencies = " + "\"" + b
+						+ " :: spi\")에 추가하세요.";
+				// 모듈이 있을 때만 cozy link가 고친다 (없으면 R1이 먼저 알린다)
+				String command = (module != null) ? "cozy link " + a + " --uses " + b : null;
+				this.violations.add(new Violation(file.location(), line, "R3", Severity.ERROR, display, message, command));
 				return true;
 			}
 			return false;

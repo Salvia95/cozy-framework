@@ -90,6 +90,9 @@
   - `package-info.java`의 의존 선언은 javac 파서로 위치를 찾아 그 부분만 바꾼다. 매니페스트는 SnakeYAML로 형식을 확인한 뒤 끝에 글자로 덧붙인다(주석과 순서를 지키기 위해서다).
   - 적용은 임시 파일에 쓰고 옮긴다(`ATOMIC_MOVE`). 쓰는 도중 실패하면 이미 바꾼 파일을 되돌린다. 계획을 세운 뒤 그사이 바뀐 파일이 있으면 적용하지 않는다.
   - 문서: [cli.md](../conventions/cli.md), 결과: [부록 §5](0032-agent-cli-recipes.md#5-reference-app을-레시피로-다시-만들기-m10-완료-기준)
+- **구현 (M11, 2026-11-08)**:
+  - 번들의 `lib/cli/`에 `cozy-cli.jar`와 그 의존(cozy-rules, AttoParser, SnakeYAML)을 담는다. `cozy install`이 `<설치 폴더>/lib/cli/`로 옮긴다. 진입점은 `java -jar lib/cli/cozy-cli.jar`이고 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 담긴 jar는 `repository/`에도 있으므로 라이선스 목록(ADR-0028)에 이미 든다.
+  - 완료 기준 검증: `verify-offline.sh`가 네트워크 없는 이름공간에서 번들을 설치하고, events 앱에 `cozy add crud`·`cozy link`·실패하는 명령·`cozy check`·`cozy describe`를 실행한 뒤 `mvn -o verify`와 `-Pdist package`를 돌린다. Windows(`cozy.cmd` → `cozy.ps1`)는 [windows-verification.md](../conventions/windows-verification.md) M11 항목으로 사용자가 확인한다.
 
 ### 6. 조회와 빠른 검사
 
@@ -102,6 +105,10 @@
 - **위반 결과 형식**: `{id, severity, file, line, target, message, command}`. `command`는 그 위반을 고치는 레시피가 있을 때만 채운다.
   - 예: R3에서 의존 선언이 빠진 경우 `cozy link voc --uses wiki`.
   - 이를 위해 `cozy-rules`의 `Violation`에 고치는 명령(선택 값)을 더한다.
+- **구현 (M11, 2026-11-08)**: 명령을 붙이는 위반은 두 가지다. 둘 다 `cozy link {내 모듈} --uses {그 모듈}`이다.
+  - R3에서 다른 모듈의 spi 템플릿을 쓰는데 의존 선언이 빠진 경우. `cozy check`와 `mvn verify`(C2)가 같은 명령을 낸다.
+  - C1에서 Modulith가 `depends on named interface(s) 'b :: spi'`로 알린 경우. `mvn verify`만 낸다. 다른 메시지(internal 사용, 순환)에는 명령을 붙이지 않는다.
+  - 글 출력은 메시지 끝에 `고치는 명령: …`을 붙인다. 형식: [cli.md](../conventions/cli.md#고치는-명령)
 
 ### 7. 앱 안의 에이전트 지침
 
@@ -111,6 +118,9 @@
   - 작업 순서: 명령 실행 → 빈칸 채우기 → `cozy check` → `mvn verify`
 - 레시피의 이름과 인자는 이 파일을 통해 작은 모델이 직접 읽는 계약이다.
 - **기존 `docs/AGENTS.md`와의 관계**: 지금 `docs/AGENTS.md`는 오프라인 번들의 `docs/`에 들어가고, 손으로 `home`을 복제해 모듈을 만드는 순서를 적고 있다. M11에서 이 문서를 앱 `AGENTS.md`의 원본으로 바꾼다. 파일 위치 표는 남기고, "새 모듈 만드는 순서"는 레시피로 바꾼다.
+- **구현 (M11, 2026-11-08)**: `docs/AGENTS.md`가 원본이고 아키타입이 앱 루트에 복사한다(전부터 그랬다). 순서는 일하는 순서 → 명령 목록 → 빈칸 → 파일 위치 → 화면 → 금지 → 검증이다.
+  - 명령 목록은 지금 쓸 수 있는 레시피만 싣는다. 2단계 레시피는 실리지 않는다. 글은 `cozy recipes`의 해당 줄과 같고, cozy-cli 테스트가 같은지 확인한다.
+  - 1단계 명령으로 만들 수 없는 구조(Finder 메서드 추가, spi DTO, 서비스)는 파일 위치 표대로 손으로 만든다고 적는다. 2단계가 생기면 고친다.
 
 ### 8. 평가
 

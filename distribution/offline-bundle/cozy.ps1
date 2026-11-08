@@ -2,10 +2,12 @@
 #
 #   .\cozy.cmd install [설치 폴더]   번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: %USERPROFILE%\cozy)
 #   cozy new ["-D이름=값" ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
+#   cozy add <레시피> ...             앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration)
+#   cozy link <모듈> --uses <모듈>    모듈 의존 선언. 그 밖에 cozy describe | check | recipes (자세히: cozy recipes, AGENTS.md)
 #   cozy version                     프레임워크 버전
 #   cozy help                        이 도움말
 #
-# 설치하면 <설치 폴더>\bin\cozy.cmd가 생긴다. PATH에 <설치 폴더>\bin을 더하면 어디서나 cozy new를 쓴다.
+# 설치하면 <설치 폴더>\bin\cozy.cmd가 생긴다. PATH에 <설치 폴더>\bin을 더하면 어디서나 cozy를 쓴다.
 # PowerShell에서는 -D 인수를 따옴표로 감싼다. 감싸지 않으면 점(.)에서 인수가 나뉜다.
 #   cozy new "-DgroupId=com.example" "-DartifactId=voc-assistant" "-Dpackage=com.example.voc" `
 #            "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=false" "-DinteractiveMode=false"
@@ -21,7 +23,7 @@ $Action = if ($args.Count -gt 0) { [string]$args[0] } else { 'help' }
 $Rest = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
 
 function Show-Usage {
-  Get-Content -Encoding UTF8 $PSCommandPath | Select-Object -First 13 | ForEach-Object { $_ -replace '^# ?', '' }
+  Get-Content -Encoding UTF8 $PSCommandPath | Select-Object -First 15 | ForEach-Object { $_ -replace '^# ?', '' }
 }
 
 function Assert-Java {
@@ -58,6 +60,7 @@ function Install-Cozy([string]$Destination) {
   $lib = New-Item -ItemType Directory -Force -Path (Join-Path $Destination 'lib')
   Copy-Item (Join-Path $Root 'cozy.cmd'), (Join-Path $Root 'cozy') $bin
   Copy-Item (Join-Path $Root 'cozy.ps1') $lib
+  Copy-Item -Recurse (Join-Path $Root 'lib\cli') $lib
 
   $settings = @"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -88,9 +91,23 @@ function New-CozyApp([object[]]$MvnArgs) {
   exit $LASTEXITCODE
 }
 
+# describe, check, recipes, add, link, enable은 cozy-cli가 한다 (ADR-0032 §5). 번들 저장소의 cozy-ui jar를 읽는다
+function Invoke-CozyCli([object[]]$CliArgs) {
+  $jar = Join-Path $Root 'lib\cli\cozy-cli.jar'
+  if (-not (Test-Path $jar)) {
+    Write-Host "[cozy] $jar가 없습니다. 번들을 다시 설치하세요."
+    exit 2
+  }
+  Assert-Java
+  if (-not $env:COZY_REPOSITORY) { $env:COZY_REPOSITORY = Join-Path $Root 'repository' }
+  & java -jar $jar @CliArgs
+  exit $LASTEXITCODE
+}
+
 switch ($Action) {
   'install' { Install-Cozy ($(if ($Rest.Count -gt 0) { [string]$Rest[0] } else { $null })) }
   'new' { New-CozyApp $Rest }
+  { $_ -in @('describe', 'check', 'recipes', 'add', 'link', 'enable') } { Invoke-CozyCli (@($Action) + $Rest) }
   { $_ -in @('version', '--version', '-v') } { Write-Output $Version }
   { $_ -in @('help', '--help', '-h') } { Show-Usage }
   default {

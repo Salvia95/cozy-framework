@@ -2,14 +2,18 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, 목록은 `recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것(M10)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`
+- **지금 쓸 수 있는 것(M11)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`
 - **아직 없는 것**: 2단계 레시피(`add query|command|field|event-version`, `enable events`)는 종료 코드 2로 알린다.
-- **번들 반입**: 오프라인 번들의 `cozy` 진입점에 붙이는 일은 M11이다. 그 전까지는 jar로 실행한다.
+- **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`가 작업 순서와 명령 목록을 싣는다.
+- **레포에서 실행**: jar로 실행한다.
 
 ```bash
-mvn -o package -pl cozy-cli                         # target/cozy-cli-*.jar + target/lib/
+cd my-app && cozy add module voc                    # 번들을 설치한 PC
+mvn -o package -pl cozy-cli                         # 레포: target/cozy-cli-*.jar + target/lib/
 cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar check
 ```
+
+- **JDK**: Java 소스를 JDK의 javac 파서로 읽으므로 JRE가 아니라 JDK 25로 실행한다. 번들 명령은 `java`가 25 이상인지 확인한다.
 
 ## 형식
 
@@ -116,8 +120,24 @@ cozy <동작> [옵션]
 | `file` | 고칠 파일의 프로젝트 기준 경로. C8의 타입은 그 소스 파일, 패키지는 그 폴더. 프레임워크 jar 안이면 `null` |
 | `line` | 줄 번호. 모르면 0 |
 | `target` | 문제가 된 참조. 위치 자체가 문제면 `null` |
-| `command` | 이 위반을 고치는 cozy 명령. 지금은 항상 `null`이다(M11에서 채운다) |
+| `command` | 이 위반을 고치는 cozy 명령. 고치는 레시피가 없으면 `null`. 아래 표 |
 | `text` | 글 출력과 같은 한 줄 |
+
+### 고치는 명령
+
+위반을 고치는 레시피가 있으면 위반에 명령을 붙인다(ADR-0032 §6). 글 출력은 메시지 끝에 `고치는 명령: …`을 붙이고, `--json`은 `command`에 넣는다. 에이전트는 그 명령을 그대로 실행한다. `mvn verify`의 같은 검사도 같은 명령을 낸다(cozy-rules의 `Violation.command`).
+
+| 위반 | 명령 | 어디서 |
+| --- | --- | --- |
+| R3: 다른 모듈의 spi 템플릿을 참조하는데 allowedDependencies에 그 모듈이 없다 | `cozy link {내 모듈} --uses {그 모듈}` | `cozy check`, `mvn verify`(C2) |
+| C1: 다른 모듈의 spi 클래스를 쓰는데 선언하지 않았다(Modulith의 `depends on named interface(s) 'b :: spi'`) | `cozy link {내 모듈} --uses {그 모듈}` | `mvn verify`만 (컴파일이 필요하다) |
+
+```text
+[R3] templates/voc/api/list.html:1 → wiki/spi/card :: card(1개 인자) — voc의 allowedDependencies에 wiki가 없습니다. voc/package-info.java의 @ApplicationModule(allowedDependencies = "wiki :: spi")에 추가하세요. 고치는 명령: cozy link voc --uses wiki
+```
+
+- 다른 모듈의 internal이나 api를 쓴 위반은 명령이 없다. 의존을 선언해도 고쳐지지 않기 때문이다. spi를 쓰도록 바꾼다.
+- 명령을 실행해도 실패할 수 있다(순환, 그 모듈에 spi 없음). 그때는 `cozy link`의 실패 이유를 따른다.
 
 ## 판단할 수 없는 것
 

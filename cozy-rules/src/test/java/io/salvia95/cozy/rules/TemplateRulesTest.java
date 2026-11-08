@@ -169,6 +169,24 @@ class TemplateRulesTest {
 		}
 
 		@Test
+		void aMissingDependencyComesWithTheCommandThatAddsIt() {
+			Fixture f = fixture();
+			f.app("wiki/spi/card.html", "<div th:fragment=\"card(title)\">c</div>");
+			f.app("memo/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>");
+			Violation v = f.check().getFirst();
+			assertThat(v.command()).isEqualTo("cozy link memo --uses wiki");
+			assertThat(v.format()).endsWith("에 추가하세요. 고치는 명령: cozy link memo --uses wiki");
+		}
+
+		@Test
+		void otherModulesInternalTemplatesHaveNoCommand() {
+			Fixture f = fixture();
+			f.app("wiki/api/detail.html", "<div th:fragment=\"body\">b</div>");
+			f.app("voc/api/list.html", "<div th:replace=\"~{wiki/api/detail :: body}\"></div>");
+			assertThat(f.check()).extracting(Violation::command).containsOnlyNulls();
+		}
+
+		@Test
 		void oldApiDependencyDoesNotOpenSpi() {
 			Fixture f = fixture();
 			f.modules = ModuleModel.of(new ModuleModel.Module("wiki", List.of(), Set.of("spi")),

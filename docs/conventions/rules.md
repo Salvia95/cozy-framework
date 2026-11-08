@@ -104,7 +104,7 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
         allowSameLayer));
 ```
 
-- `check`는 예외를 던지지 않고 위반 목록(`Violation`: 위치, 줄, 규칙 ID, 심각도, 참조, 메시지)만 돌려준다.
+- `check`는 예외를 던지지 않고 위반 목록(`Violation`: 위치, 줄, 규칙 ID, 심각도, 참조, 메시지, 고치는 명령)만 돌려준다.
 - `TemplateFile.fromDirectory(root, origin, prefix)`는 디렉터리 아래의 `.html`을 모두 읽는다.
 - `TemplateRules.declaredFragments(file)`는 그 템플릿이 선언한 fragment 이름을 돌려준다.
 - 모듈 이름은 Modulith 규칙을 따른다. 메인 패키지 바로 아래 패키지의 단순 이름이고, `@ApplicationModule(id = ...)`이 있으면 그 이름이다.
@@ -126,3 +126,4 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
 
 - **자리 표와 검사가 같은지**: `LayerRulesTest`가 `Role`의 모든 역할을 표대로 만든 타입으로 바꿔 C8을 통과하는지 확인한다. 역할을 더하거나 검사를 바꾸면 이 테스트가 어긋남을 잡는다.
 - **`Violation`의 참조**: C8의 배치 위반처럼 위치 자체가 문제면 `reference`가 `null`이다. 이때 `format()`은 `→ 참조` 없이 `[C8] 위치 — 메시지`를 낸다.
+- **`Violation`의 고치는 명령** (M11, ADR-0032 §6): 위반을 고치는 cozy 명령이 있으면 `command`에 담고, `format()`이 메시지 끝에 `고치는 명령: cozy …`를 붙인다. 없으면 `null`이다. 지금은 R3의 의존 선언 누락만 `cozy link {내 모듈} --uses {그 모듈}`을 낸다. 목록은 [cli.md](cli.md#고치는-명령)에 있다. 6개 인자 생성자는 명령 없는 위반을 만든다.

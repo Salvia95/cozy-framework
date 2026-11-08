@@ -3,10 +3,12 @@
 #
 #   ./cozy install [설치 폴더]     번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: ~/cozy)
 #   cozy new [-D이름=값 ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
+#   cozy add <레시피> ...           앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration)
+#   cozy link <모듈> --uses <모듈>  모듈 의존 선언. 그 밖에 cozy describe | check | recipes (자세히: cozy recipes, AGENTS.md)
 #   cozy version                   프레임워크 버전
 #   cozy help                      이 도움말
 #
-# 설치하면 <설치 폴더>/bin/cozy가 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy new를 쓴다.
+# 설치하면 <설치 폴더>/bin/cozy가 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy를 쓴다.
 # new의 옵션: groupId, artifactId, package, appId(기본 artifactId), appName(한글 가능), persistence(기본 true),
 # events(기본 false, persistence 필요).
 #   cozy new -DgroupId=com.example -DartifactId=voc-assistant -Dpackage=com.example.voc \
@@ -19,7 +21,7 @@ if [ -f "$SELF/COZY_VERSION" ]; then ROOT="$SELF"; else ROOT="$(dirname "$SELF")
 VERSION="$(cat "$ROOT/COZY_VERSION" 2>/dev/null || true)"
 
 usage() {
-  sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 need_java() {
@@ -54,6 +56,7 @@ install() {
   mkdir -p "$dest/bin" "$dest/lib"
   cp "$ROOT/cozy" "$ROOT/cozy.cmd" "$dest/bin/"
   cp "$ROOT/cozy.ps1" "$dest/lib/"
+  cp -r "$ROOT/lib/cli" "$dest/lib/"
   chmod +x "$dest/bin/cozy"
 
   cat > "$maven_dir/conf/settings.xml" <<XML
@@ -84,11 +87,23 @@ new_app() {
     -Dversion=1.0.0-SNAPSHOT "$@"
 }
 
+# describe, check, recipes, add, link, enable은 cozy-cli가 한다 (ADR-0032 §5). 번들 저장소의 cozy-ui jar를 읽는다
+cli() {
+  local jar="$ROOT/lib/cli/cozy-cli.jar"
+  if [ ! -f "$jar" ]; then
+    echo "[cozy] $jar가 없습니다. 번들을 다시 설치하세요." >&2
+    exit 2
+  fi
+  need_java
+  COZY_REPOSITORY="${COZY_REPOSITORY:-$ROOT/repository}" exec java -jar "$jar" "$@"
+}
+
 ACTION="${1:-help}"
 [ "$#" -gt 0 ] && shift
 case "$ACTION" in
   install) install "$@" ;;
   new) new_app "$@" ;;
+  describe|check|recipes|add|link|enable) cli "$ACTION" "$@" ;;
   version|--version|-v) echo "${VERSION:-unknown}" ;;
   help|--help|-h) usage ;;
   *)

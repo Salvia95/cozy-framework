@@ -296,6 +296,22 @@ class RecipeCommandTest {
 				"메모 카드").out()).contains("[cozy] 바뀐 것 없음");
 	}
 
+	/** 위반 → 명령 (ADR-0032 §6): check가 알려 준 명령을 그대로 실행하면 그 위반이 사라진다 */
+	@Test
+	void checkNamesTheCommandThatFixesAMissingDependency() throws IOException {
+		app();
+		ok("add", "module", "voc");
+		ok("add", "module", "wiki");
+		ok("add", "fragment", "wiki", "card", "--param", "title:text", "--purpose", "위키 카드");
+		write("src/main/resources/templates/voc/api/list.html", "<div th:replace=\"~{wiki/spi/card :: card('x')}\"></div>\n");
+		Result json = cozy("check", "--json");
+		assertThat(json.out()).contains("\"id\": \"R3\"").contains("\"command\": \"cozy link voc --uses wiki\"");
+		assertThat(cozy("check").out()).contains("에 추가하세요. 고치는 명령: cozy link voc --uses wiki");
+
+		ok("link", "voc", "--uses", "wiki");
+		assertThat(cozy("check").out()).doesNotContain("[R3]").contains("[C9]");
+	}
+
 	@Test
 	void unknownAndStageTwoRecipes() throws IOException {
 		app();

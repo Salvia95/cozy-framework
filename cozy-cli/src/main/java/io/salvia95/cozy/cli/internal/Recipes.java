@@ -68,11 +68,22 @@ public final class Recipes {
 			out.append('\n').append(stage).append("단계\n");
 			for (Recipe r : ALL) {
 				if (r.stage() == stage) {
-					out.append("  ").append(r.usage()).append(r.available() ? "" : "  (준비 중)").append('\n');
-					out.append("      ").append(r.does()).append(". 빈칸: ").append(r.slots()).append('\n');
+					append(out, r);
 				}
 			}
 		}
 		return out.toString();
+	}
+
+	/** 지금 쓸 수 있는 레시피만. 앱의 AGENTS.md에 이 글이 그대로 들어간다(docs/AGENTS.md, 테스트가 같은지 확인한다) */
+	public static String availableText() {
+		StringBuilder out = new StringBuilder();
+		ALL.stream().filter(Recipe::available).forEach((r) -> append(out, r));
+		return out.toString();
+	}
+
+	private static void append(StringBuilder out, Recipe r) {
+		out.append("  ").append(r.usage()).append(r.available() ? "" : "  (준비 중)").append('\n');
+		out.append("      ").append(r.does()).append(". 빈칸: ").append(r.slots()).append('\n');
 	}
 }

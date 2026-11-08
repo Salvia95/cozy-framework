@@ -189,7 +189,7 @@ public final class CozyCli {
 				Violation v = f.violation();
 				list.add(Describe.ordered("id", v.ruleId(), "severity", v.isError() ? "error" : "warning", "location",
 						v.location(), "file", f.file(), "line", v.line(), "target", v.reference(), "message", v.message(),
-						"command", null, "text", v.format()));
+						"command", v.command(), "text", v.format()));
 			}
 			out.print(Json.write(Describe.ordered("ok", errors == 0, "errors", errors, "warnings", warnings, "violations",
 					list)));

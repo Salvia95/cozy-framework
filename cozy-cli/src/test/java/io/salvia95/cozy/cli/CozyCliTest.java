@@ -234,6 +234,19 @@ class CozyCliTest {
 						"command", "field", "event-version", "enable events");
 		}
 
+		/** 앱의 AGENTS.md(원본 docs/AGENTS.md)는 지금 쓸 수 있는 레시피를 cozy recipes와 글자까지 같게 싣는다 (ADR-0032 §7) */
+		@Test
+		void agentsMdCarriesTheSameRecipeListAsCozyRecipes() throws IOException {
+			String agents = Files.readString(Path.of("../docs/AGENTS.md"), StandardCharsets.UTF_8);
+			assertThat(agents).contains("```text\n" + Recipes.availableText() + "```\n");
+			assertThat(run("recipes").out()).contains(Recipes.availableText());
+			for (Recipes.Recipe recipe : Recipes.ALL) {
+				if (!recipe.available()) {
+					assertThat(agents).as("아직 없는 레시피는 싣지 않는다").doesNotContain(recipe.usage());
+				}
+			}
+		}
+
 		@Test
 		void recipesJsonSaysWhatIsAvailable() {
 			Result result = run("recipes", "--json");

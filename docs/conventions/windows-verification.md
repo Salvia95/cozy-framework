@@ -181,6 +181,31 @@ mvn -o -Pdist package
 - [ ] IntelliJ로 `voc-assistant`를 열면 실행 설정 "dev 실행", "아키텍처 테스트", "mvn -o verify"가 보인다. "dev 실행"이 `/cozy/dev/catalog`를 연다.
 - [ ] 실패하면 `mvn -o verify`의 오류 앞부분과 `%USERPROFILE%\cozy\apache-maven-3.10.0\conf\settings.xml`을 기록에 남긴다.
 
+## M11 번들의 cozy 명령 (ADR-0032)
+
+M7의 오프라인 PC에서 이어서 한다. `voc-assistant` 폴더에서 PowerShell로 실행한다.
+
+```powershell
+cozy recipes
+cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목" --field "dueOn:date:마감일" --field "done:bool:완료"
+cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목" --field "dueOn:date:마감일" --field "done:bool:완료"
+cozy link task --uses home
+cozy add screen task stats --pattern details --title 통계 --nav "통계:no-such-icon"; $LASTEXITCODE
+cozy check
+cozy describe
+mvn -o verify
+```
+
+- [ ] `cozy recipes`의 한글이 깨지지 않는다(`cozy help`도 `add`, `link` 줄을 보여 준다).
+- [ ] 첫 `cozy add crud`가 `만듦  src/main/java/...` 목록과 `[cozy] 적용했습니다`를 출력한다. `--label "할 일"`처럼 공백이 있는 값이 한 인자로 넘어간다(라벨이 "할"만 남지 않는다).
+- [ ] 같은 명령을 다시 실행하면 `[cozy] 바뀐 것 없음`이다.
+- [ ] `cozy link task --uses home`이 `바꿈  src/main/java/.../task/package-info.java    allowedDependencies += "home :: spi"`를 출력한다.
+- [ ] 없는 아이콘 명령은 `아이콘 'no-such-icon'가 Tabler Icons에 없습니다`를 출력하고 `$LASTEXITCODE`가 2다. `src\main\java\...\task\api`에 `TaskStatsController.java`가 생기지 않는다.
+- [ ] `cozy check`가 `[cozy check] 이상 없음`, `cozy describe`가 `모듈 task`와 `TaskFacade`를 보여 준다.
+- [ ] 만든 파일이 UTF-8(BOM 없음)이고 줄바꿈이 LF다. 한글 라벨이 IntelliJ에서 깨지지 않는다.
+- [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다(`TaskCrudTest`, `TaskScreenTest` 포함).
+- [ ] `cmd.exe`에서 `cozy.cmd add module memo --label "메모 보관"`도 같은 결과다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |

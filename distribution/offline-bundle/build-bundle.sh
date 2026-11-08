@@ -7,7 +7,7 @@
 # 2. 아키타입으로 옵션 3조합 앱을 만들어 verify와 -Pdist package를 돌린다 → 앱 빌드에 필요한 것이 모두 받아진다
 # 3. 저장소에서 원격 저장소 표시(_remote.repositories 등)를 지운다. 사내 미러 설정과 상관없이 오프라인에서 쓸 수 있다
 # 4. 저장소의 제3자 라이선스 목록을 만든다. 약한 카피레프트만 있는 jar는 소스 jar를 받아 함께 담는다 (ADR-0028)
-# 5. Maven 배포판(SHA-512 확인), 오프라인 쪽 스크립트, 문서를 담아 zip으로 묶는다
+# 5. Maven 배포판(SHA-512 확인), cozy-cli, 오프라인 쪽 스크립트, 문서를 담아 zip으로 묶는다
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -64,7 +64,7 @@ java -cp "$REPO/io/salvia95/cozy/cozy-starter-runtime/$VERSION/cozy-starter-runt
   --overrides="$BUNDLE/licenses/license-overrides.txt" --output="$BUNDLE/licenses/THIRD-PARTY.txt" \
   --title="Cozy offline bundle $VERSION" --maven-distribution="$MAVEN_FILE" --fetch-sources="$SOURCES_REPO"
 
-# 5. Maven 배포판, 스크립트, 문서
+# 5. Maven 배포판, cozy-cli, 스크립트, 문서
 case "$MAVEN_ZIP" in
   http://*|https://*) curl -fsSL -o "$BUNDLE/$MAVEN_FILE" "$MAVEN_ZIP" ;;
   *) cp "$MAVEN_ZIP" "$BUNDLE/" ;;
@@ -73,6 +73,10 @@ if [ "$(sha512sum "$BUNDLE/$MAVEN_FILE" | cut -d' ' -f1)" != "$MAVEN_SHA512" ]; 
   echo "[cozy] $MAVEN_FILE의 SHA-512가 맞지 않습니다 (다른 판이면 MAVEN_SHA512를 주세요)" >&2
   exit 1
 fi
+# cozy-cli (ADR-0032): 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository/에도 있어 라이선스 목록에 든다
+mkdir -p "$BUNDLE/lib/cli/lib"
+cp "$ROOT/cozy-cli/target/cozy-cli-$VERSION.jar" "$BUNDLE/lib/cli/cozy-cli.jar"
+cp "$ROOT"/cozy-cli/target/lib/*.jar "$BUNDLE/lib/cli/lib/"
 cp "$ROOT/distribution/offline-bundle/cozy" "$ROOT/distribution/offline-bundle/cozy.cmd" \
    "$ROOT/distribution/offline-bundle/cozy.ps1" "$ROOT/distribution/offline-bundle/README.md" "$BUNDLE/"
 chmod +x "$BUNDLE/cozy"

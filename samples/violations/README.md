@@ -32,7 +32,7 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 
 | 폴더 | 검사 | 위반 |
 | --- | --- | --- |
-| `C1-modulith` | C1 모듈 검증 | a 모듈의 쓰기 구현이 b 모듈의 internal 클래스를 쓴다 |
+| `C1-modulith` | C1 모듈 검증 | a 모듈의 쓰기 구현이 b 모듈의 internal 클래스와, 선언하지 않은 b의 spi DTO를 쓴다. spi 쪽에만 고치는 명령 `cozy link a --uses b`가 붙는다 |
 | `C2-rules` | C2 템플릿 규칙 | voc 화면이 wiki의 화면(api) 템플릿을 참조한다 (R3) |
 | `C3-spec-type` | C3 스펙 렌더링 | fixture 필드 이름이 화면 DTO와 다르다 |
 | `C3-spec-states` | C3 스펙 형식 | 스펙에 empty 상태가 없다 |

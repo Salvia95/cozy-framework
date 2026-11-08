@@ -62,4 +62,4 @@ if (!events) {
 }
 
 println "[cozy] ${appName} (${appId}) 생성: persistence=${persistence}, events=${events}"
-println "[cozy] 다음: cd ${request.artifactId} && mvn verify. 규칙은 AGENTS.md에 있습니다."
+println "[cozy] 다음: cd ${request.artifactId} && mvn verify. 구조는 cozy add·cozy link로 만든다. 규칙은 AGENTS.md에 있습니다."

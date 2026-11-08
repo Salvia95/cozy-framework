@@ -26,7 +26,7 @@ class RenderingTest extends CozyRenderingTest {
 
 | ID | 검사 | 어디서 | 실패 조건 |
 | --- | --- | --- | --- |
-| C1 | 모듈 구조 | `CozyArchitectureTest.modulesAreVerified` | `ApplicationModules.of(앱).verify()` 위반 |
+| C1 | 모듈 구조 | `CozyArchitectureTest.modulesAreVerified` | `ApplicationModules.of(앱).verify()` 위반. 다른 모듈의 spi를 선언 없이 쓰면 `고치는 명령: cozy link {내 모듈} --uses {그 모듈}`을 덧붙인다 |
 | C2 | 템플릿 경계 | `CozyArchitectureTest.templatesFollowBoundaryRules` | R1~R15 오류([rules.md](rules.md)). 경고는 출력만 한다 |
 | C3 | 렌더링 | `CozyRenderingTest.everyScreenStateRendersAsValidHtml`, `everyManifestFragmentRendersAsValidHtml` | 스펙 형식 오류, fixture가 DTO 타입과 맞지 않음, 렌더링 예외, 200이 아닌 응답 |
 | C4 | HTML | 위의 두 테스트 | 렌더링 결과의 vnu 오류. 경고는 출력만 한다 |
