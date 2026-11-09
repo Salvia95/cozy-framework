@@ -1,0 +1,4 @@
+# 배포한 프레임워크 마이그레이션의 Flyway 체크섬 (ShippedMigrationsTest).
+# 한 번 배포한 파일은 고치지 않는다. 바꿀 것이 있으면 새 버전 파일을 더하고 여기에 한 줄을 더한다.
+# 형식: <레포 기준 경로> <체크섬>
+cozy-starter-events/src/main/resources/db/cozy/events/V2_1__events_create.sql -1986151891
