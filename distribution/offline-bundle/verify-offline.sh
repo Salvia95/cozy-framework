@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 오프라인 번들 수용 기준 검증 (Linux). 네트워크를 끊은 상태에서 번들만으로
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
-# 이벤트 앱에는 cozy add·link로 구조를 더한 뒤 verify한다.
+# 앱마다 에이전트 문서를 확인하고, persistence 앱에는 cozy enable events, 이벤트 앱에는 cozy add·link·2단계 명령으로 구조를 더한 뒤 verify한다.
 #
 #   distribution/offline-bundle/verify-offline.sh <번들 zip>
 #
@@ -67,6 +67,15 @@ cozy_recipes() {
       --field dueOn:date:마감일 --field done:bool:완료 --publish created)"
     grep -q "바뀐 것 없음" <<< "$out"
     cozy link task --uses home
+    # 2단계: spi DTO, 읽기(빈칸 SQL은 에이전트가 채운다), 채운 뒤 다시 실행, 이벤트 필드 추가
+    cozy add dto task TaskSummary --field total:long:전체 --field done:long:완료
+    cozy add query task summary --returns TaskSummary
+    sed -i 's#<!-- cozy:slot query-sql[^>]*-->#SELECT count(*) AS total, coalesce(sum(done), 0) AS done FROM task#' \
+      src/main/resources/mapper/task/TaskMapper.xml
+    out="$(cozy add query task summary --returns TaskSummary)"
+    grep -q "바뀐 것 없음" <<< "$out"
+    cozy add event-version task TaskCreated --field dueOn:date
+    test -f src/test/resources/events/TaskCreated/v2.json
     # 실패하는 명령은 종료 코드 2이고 아무것도 바꾸지 않는다
     set +e
     cozy add screen task stats --pattern details --title 통계 --nav 통계:no-such-icon > /dev/null 2>&1
@@ -81,17 +90,36 @@ cozy_recipes() {
   )
 }
 
+cozy_enable_events() {
+  (
+    cd "$1"
+    out="$(cozy enable events)"
+    grep -q "적용했습니다" <<< "$out"
+    out="$(cozy enable events)"
+    grep -q "바뀐 것 없음" <<< "$out"
+    grep -q "<artifactId>cozy-starter-events</artifactId>" pom.xml
+    echo "[cozy] cozy enable events 통과: $1"
+  )
+}
+
 mkdir -p "$WORK/apps"
 cd "$WORK/apps"
 for combo in basic:false:false persistence:true:false events:true:true; do
   IFS=: read -r name persistence events <<< "$combo"
   cozy new -B -DinteractiveMode=false -DgroupId=com.example -DartifactId="offline-$name" \
     -Dpackage="com.example.offline.$name" -DappName="오프라인 확인" -Dpersistence="$persistence" -Devents="$events"
+  # 에이전트 문서: 가벼운 AGENTS.md와 cozy-helper 스킬
+  grep -q "cozy-helper" "offline-$name/AGENTS.md"
+  test -f "offline-$name/.agents/skills/cozy-helper/SKILL.md"
+  test -f "offline-$name/.agents/skills/cozy-helper/references/add-crud/PLAYBOOK.md"
   if [ "$name" = events ]; then
     cozy_recipes "offline-$name"
+  fi
+  if [ "$name" = persistence ]; then
+    cozy_enable_events "offline-$name"
   fi
   (cd "offline-$name" && mvn -B -ntp -o verify && mvn -B -ntp -o -Pdist package)
   test -d "offline-$name/target/dist/image/offline-$name"
   echo "[cozy] 통과: $name (persistence=$persistence, events=$events)"
 done
-echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·cozy add·verify·-Pdist package"
+echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·에이전트 문서·cozy add·enable·verify·-Pdist package"
