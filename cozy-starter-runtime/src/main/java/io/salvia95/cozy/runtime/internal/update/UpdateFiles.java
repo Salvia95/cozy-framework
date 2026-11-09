@@ -3,7 +3,7 @@ package io.salvia95.cozy.runtime.internal.update;
 import java.nio.file.Path;
 
 /**
- * {@code {dataDir}/update/} 안의 파일 (PRD §9.4). 앱, 교체 스크립트, 테스트가 같은 이름을 쓴다.
+ * {@code {dataDir}/update/} 안의 파일. 앱, 교체 스크립트, 테스트가 같은 이름을 쓴다.
  */
 public record UpdateFiles(Path directory) {
 

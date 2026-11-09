@@ -13,10 +13,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Nu Html Checker(vnu)로 렌더링 결과를 검사한다 (PRD §6.5 검사 4). 네트워크 없이 jar 안의 스키마만 쓴다.
+ * Nu Html Checker(vnu)로 렌더링 결과를 검사한다 (C4). 네트워크 없이 jar 안의 스키마만 쓴다.
  *
  * <p>htmx 속성은 HTML 표준 밖이라 vnu가 오류로 본다. Cozy가 쓰는 htmx 속성 이름만 허용 목록으로 걸러낸다. 목록에 없는
- * {@code hx-*}(오타, 인라인 스크립트인 {@code hx-on})는 그대로 오류다 (docs/adr/0022).
+ * {@code hx-*}(오타, 인라인 스크립트인 {@code hx-on})는 그대로 오류다.
  */
 public final class CozyHtmlValidator {
 

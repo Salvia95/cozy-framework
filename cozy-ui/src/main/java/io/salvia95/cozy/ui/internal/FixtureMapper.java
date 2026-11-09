@@ -4,7 +4,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 매니페스트 샘플과 화면 스펙 fixture를 선언된 타입으로 바꾼다 (PRD §6.5: 타입과 어긋나면 실패).
+ * 매니페스트 샘플과 화면 스펙 fixture를 선언된 타입으로 바꾼다 (타입과 어긋나면 실패).
  *
  * <p>앱의 JsonMapper와 분리한 엄격한 설정이다. 모르는 필드, 빠진 생성자(record) 필드, primitive의 null은 모두 실패한다.
  */

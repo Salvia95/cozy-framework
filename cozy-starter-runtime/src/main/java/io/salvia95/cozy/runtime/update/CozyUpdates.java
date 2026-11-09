@@ -3,7 +3,7 @@ package io.salvia95.cozy.runtime.update;
 import java.util.Optional;
 
 /**
- * 자체 업데이트 상태 (PRD §9.4). layout 배너가 이 값을 그린다. 문서: docs/conventions/distribution.md
+ * 자체 업데이트 상태. layout 배너가 이 값을 그린다. 문서: docs/conventions/distribution.md
  */
 public interface CozyUpdates {
 

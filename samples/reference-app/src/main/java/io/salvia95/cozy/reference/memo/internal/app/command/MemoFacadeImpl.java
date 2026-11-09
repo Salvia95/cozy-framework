@@ -41,7 +41,7 @@ class MemoFacadeImpl implements MemoFacade {
 		row.setCreatedAt(now);
 		row.setUpdatedAt(now);
 		this.mapper.insert(row);
-		// 같은 트랜잭션에 발행 기록이 남는다. 커밋되면 다른 모듈의 리스너가 비동기로 받는다 (PRD §8)
+		// 같은 트랜잭션에 발행 기록이 남는다. 커밋되면 다른 모듈의 리스너가 비동기로 받는다
 		this.events.publishEvent(MemoCreated.of(row.getId(), title));
 		return row.getId();
 	}

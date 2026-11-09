@@ -16,7 +16,7 @@ import io.salvia95.cozy.reference.memo.spi.MemoFinder;
 import io.salvia95.cozy.reference.memo.spi.dto.MemoItem;
 
 /**
- * M2 완료 기준: reference-app memo CRUD가 SQLite + MyBatis로 동작한다.
+ * reference-app memo CRUD가 SQLite + MyBatis로 동작한다.
  */
 @SpringBootTest(properties = "cozy.data-dir=target/test-data/memo-crud-${random.uuid}")
 class MemoCrudTest {

@@ -16,7 +16,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import io.salvia95.cozy.runtime.internal.CozyRuntimeEnvironmentPostProcessor;
 
 /**
- * SQLite, Hikari, Flyway, MyBatis의 기본값을 정한다 (PRD §6.3).
+ * SQLite, Hikari, Flyway, MyBatis의 기본값을 정한다.
  *
  * <p>런타임 EnvironmentPostProcessor가 데이터 루트를 정한 다음에 실행된다. 기본값은 가장 낮은 우선순위라 앱 설정으로 바꿀 수 있다.
  */

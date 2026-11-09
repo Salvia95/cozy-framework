@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
 /**
- * AttoParser로 요소와 속성을 순회하며 fragment 선언과 참조를 모은다 (PRD §6.2: 정규식만으로 HTML을 훑지 않는다).
+ * AttoParser로 요소와 속성을 순회하며 fragment 선언과 참조를 모은다 (정규식만으로 HTML을 훑지 않는다).
  *
  * <ul>
  * <li>추출 대상: {@code th:replace}, {@code th:insert}, {@code th:include}(경고), 모든 속성 값 안의 {@code ~{...}}.

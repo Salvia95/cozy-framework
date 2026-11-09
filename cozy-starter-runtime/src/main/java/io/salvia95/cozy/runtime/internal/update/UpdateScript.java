@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 /**
- * 앱 폴더 교체 스크립트 (PRD §9.4). Windows는 PowerShell, 그 외(개발·테스트용 Linux)는 bash다.
+ * 앱 폴더 교체 스크립트. Windows는 PowerShell, 그 외(개발·테스트용 Linux)는 bash다.
  *
  * <ol>
  * <li>{@code script-started}를 쓴다. 앱은 이것을 확인하고서야 종료한다.</li>

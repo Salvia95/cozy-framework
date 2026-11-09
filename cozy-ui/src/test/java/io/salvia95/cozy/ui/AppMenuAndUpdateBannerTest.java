@@ -25,7 +25,7 @@ import io.salvia95.cozy.runtime.update.CozyUpdates;
 import io.salvia95.cozy.ui.testapp.UiTestApp;
 
 /**
- * app-shell의 앱 메뉴(진단 내보내기, 종료)와 업데이트 배너 (PRD §9.2, §9.4, §9.5).
+ * app-shell의 앱 메뉴(진단 내보내기, 종료)와 업데이트 배너.
  */
 @SpringBootTest(classes = UiTestApp.class, properties = "cozy.data-dir=target/test-data/ui-app-menu")
 @AutoConfigureMockMvc

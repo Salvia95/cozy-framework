@@ -13,7 +13,7 @@
 
   <artifactId>cozy-violations</artifactId>
   <name>Cozy :: Samples :: Violations</name>
-  <description>규칙별 의도적 위반 픽스처 (PRD §6.2, §6.5). 배포하지 않는다.</description>
+  <description>규칙별 의도적 위반 픽스처. 배포하지 않는다.</description>
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

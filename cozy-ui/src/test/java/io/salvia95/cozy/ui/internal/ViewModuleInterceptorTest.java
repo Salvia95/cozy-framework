@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import io.salvia95.cozy.ui.internal.viewmodule.memo.MemoHandler;
 import io.salvia95.cozy.ui.internal.viewmodule.renamed.RenamedHandler;
 
-/** 컨트롤러·뷰 모듈 일치 (PRD §6.5 검사 7). */
+/** 컨트롤러·뷰 모듈 일치 (C7). */
 class ViewModuleInterceptorTest {
 
 	final ViewModuleInterceptor interceptor = new ViewModuleInterceptor(

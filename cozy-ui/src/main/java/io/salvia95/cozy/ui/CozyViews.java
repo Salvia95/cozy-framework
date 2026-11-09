@@ -4,7 +4,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * 화면 컨트롤러의 반환값 도우미 (PRD §6.4, §10).
+ * 화면 컨트롤러의 반환값 도우미.
  *
  * <pre>{@code
  * @GetMapping

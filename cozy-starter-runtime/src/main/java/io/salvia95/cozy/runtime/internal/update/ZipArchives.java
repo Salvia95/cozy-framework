@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * 배포 zip 만들기와 풀기 (PRD §9.4, §9.6).
+ * 배포 zip 만들기와 풀기.
  *
  * <p>Linux app-image의 런처와 런타임은 실행 권한이 있어야 하므로 POSIX 권한을 zip에 담고 풀 때 되살린다.
  * Windows에서는 권한을 무시한다. 파일의 수정 시각도 보존한다(AOT 캐시가 jar의 시각을 대조한다). 풀 때는 모든 항목이 하나의 최상위 폴더 아래에 있어야 하고,

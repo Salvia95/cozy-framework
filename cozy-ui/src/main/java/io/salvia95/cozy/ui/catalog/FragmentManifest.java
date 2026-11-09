@@ -26,7 +26,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
- * fragment 매니페스트 {@code cozy/fragments.yml} (PRD §6.4). 프레임워크(cozy-ui jar)와 앱이 같은 경로에 각자 둔다.
+ * fragment 매니페스트 {@code cozy/fragments.yml}. 프레임워크(cozy-ui jar)와 앱이 같은 경로에 각자 둔다.
  *
  * <p>형식 오류는 고치는 방법이 담긴 메시지로 즉시 실패한다. 공개 형식이며 문서는 docs/conventions/ui.md에 있다. cozy-test가
  * 규칙 R8 검사에 같은 파서를 쓴다.

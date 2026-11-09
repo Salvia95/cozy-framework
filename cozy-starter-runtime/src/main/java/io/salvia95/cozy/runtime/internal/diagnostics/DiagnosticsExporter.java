@@ -37,7 +37,7 @@ import io.salvia95.cozy.runtime.internal.update.AppImage;
 import io.salvia95.cozy.runtime.update.CozyUpdates;
 
 /**
- * 진단 내보내기 (PRD §9.5). {@code {dataDir}/diagnostics/diagnostics-{appId}-{시각}.zip}을 만든다.
+ * 진단 내보내기. {@code {dataDir}/diagnostics/diagnostics-{appId}-{시각}.zip}을 만든다.
  *
  * <ul>
  * <li>{@code summary.txt}: 앱·Cozy 버전, JVM, OS, 경로, 업데이트 상태</li>

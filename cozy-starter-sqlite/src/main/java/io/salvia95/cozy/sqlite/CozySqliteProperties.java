@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * {@code cozy.sqlite.*} (PRD §6.3). 문서: docs/conventions/sqlite.md
+ * {@code cozy.sqlite.*}. 문서: docs/conventions/sqlite.md
  *
  * @param file DB 파일. 비우면 {@code {dataDir}/data/app.db}, 상대 경로면 데이터 루트 기준이다.
  * @param backup 마이그레이션 전 백업

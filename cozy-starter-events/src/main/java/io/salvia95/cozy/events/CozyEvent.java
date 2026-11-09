@@ -3,7 +3,7 @@ package io.salvia95.cozy.events;
 import java.util.UUID;
 
 /**
- * 모듈 사이의 이벤트 (PRD §8.2). 모든 {@code @ApplicationModuleListener}의 파라미터는 이것을 구현해야 한다(cozy-test가
+ * 모듈 사이의 이벤트. 모든 {@code @ApplicationModuleListener}의 파라미터는 이것을 구현해야 한다(cozy-test가
  * 검사한다).
  *
  * <pre>

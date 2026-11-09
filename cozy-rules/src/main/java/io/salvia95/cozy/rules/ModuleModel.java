@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Java 모듈 구조. 템플릿 경계의 허용 의존은 여기서만 읽는다 (PRD §7). cozy-test가 Spring Modulith의
+ * Java 모듈 구조. 템플릿 경계의 허용 의존은 여기서만 읽는다. cozy-test가 Spring Modulith의
  * {@code ApplicationModules}에서 만든다.
  *
  * @param modules 모듈 이름 → 모듈

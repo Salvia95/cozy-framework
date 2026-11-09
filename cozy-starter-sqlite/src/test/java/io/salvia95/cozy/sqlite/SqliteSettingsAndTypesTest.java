@@ -29,7 +29,7 @@ import io.salvia95.cozy.sqlite.testapp.SampleItem;
 import io.salvia95.cozy.sqlite.testapp.SampleMapper;
 
 /**
- * 연결 설정과 시간·UUID·boolean 왕복 변환 (PRD §6.3 수용 기준).
+ * 연결 설정과 시간·UUID·boolean 왕복 변환.
  */
 class SqliteSettingsAndTypesTest {
 

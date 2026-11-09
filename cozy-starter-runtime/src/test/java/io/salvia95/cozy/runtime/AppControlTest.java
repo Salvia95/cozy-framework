@@ -22,7 +22,7 @@ import io.salvia95.cozy.runtime.internal.InstanceLock;
 import io.salvia95.cozy.runtime.testapp.TestApp;
 
 /**
- * 실제로 띄운 앱의 종료, 준비 신호, 훈련 실행 (PRD §9.2, §9.4, §9.6).
+ * 실제로 띄운 앱의 종료, 준비 신호, 훈련 실행.
  * JVM 종료는 테스트 JVM을 끝내므로 {@code cozy.runtime.exit-jvm=false}로 컨텍스트 종료까지만 본다.
  */
 class AppControlTest {

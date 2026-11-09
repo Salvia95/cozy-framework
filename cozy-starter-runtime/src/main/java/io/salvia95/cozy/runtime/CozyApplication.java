@@ -11,7 +11,7 @@ import io.salvia95.cozy.runtime.internal.CozyShutdown;
 import io.salvia95.cozy.runtime.internal.DesktopLauncher;
 
 /**
- * Cozy 앱의 진입점 (PRD §9). 앱의 main은 한 줄이다.
+ * Cozy 앱의 진입점. 앱의 main은 한 줄이다.
  *
  * <pre>{@code
  * public static void main(String[] args) {

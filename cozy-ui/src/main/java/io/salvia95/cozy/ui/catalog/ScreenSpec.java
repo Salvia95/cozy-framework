@@ -18,7 +18,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
- * 화면 스펙 {@code specs/{module}-{screen}.yml} (PRD §10). 패턴 카탈로그 미리보기와 빌드 렌더링 테스트(cozy-test)가 같이
+ * 화면 스펙 {@code specs/{module}-{screen}.yml}. 패턴 카탈로그 미리보기와 빌드 렌더링 테스트(cozy-test)가 같이
  * 쓴다.
  *
  * <pre>

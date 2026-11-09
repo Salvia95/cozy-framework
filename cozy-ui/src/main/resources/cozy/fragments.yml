@@ -1,4 +1,4 @@
-# Cozy 프레임워크 fragment 매니페스트 (PRD §6.4). 형식: docs/conventions/ui.md
+# Cozy 프레임워크 fragment 매니페스트. 형식: docs/conventions/ui.md
 # 앱은 자기 resources/cozy/fragments.yml에 templates/fragments/ 아래 fragment를 같은 형식으로 적는다.
 # 계층: layout → pattern → component → icon (R4). 디자인 원칙(폭, 버튼 순서, 색 tone): docs/conventions/design.md
 fragments:

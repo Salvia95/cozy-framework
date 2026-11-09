@@ -12,7 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.SerializationFeature;
 
 /**
- * 업데이트 매니페스트 (PRD §9.4). {@code -Pdist}가 만들고, 앱이 {@code cozy.update.manifest-url}에서 읽는다.
+ * 업데이트 매니페스트. {@code -Pdist}가 만들고, 앱이 {@code cozy.update.manifest-url}에서 읽는다.
  *
  * <pre>{@code
  * {
@@ -78,7 +78,7 @@ public record UpdateManifest(String appId, String version, @Nullable String mini
 				(notes != null) ? notes : "");
 	}
 
-	/** {@code -Pdist}가 쓰는 JSON. 필드 순서는 PRD §9.4의 예와 같다. */
+	/** {@code -Pdist}가 쓰는 JSON. 필드 순서는 고정이다. */
 	public String toJson() {
 		Map<String, Object> fields = new LinkedHashMap<>();
 		fields.put("appId", this.appId);

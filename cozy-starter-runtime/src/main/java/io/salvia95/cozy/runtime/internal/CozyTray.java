@@ -20,7 +20,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 시스템 트레이 아이콘: 열기, 종료 (PRD §9.2).
+ * 시스템 트레이 아이콘: 열기, 종료.
  *
  * <p>headless이거나 OS가 트레이를 지원하지 않으면 아무것도 하지 않는다. 그때는 화면 메뉴의 종료를 쓴다.
  * 디스플레이 서버에 연결할 수 없으면 AWT가 {@link AWTError}(Error)를 던진다. 이것도 잡아서 트레이 없이 돈다.

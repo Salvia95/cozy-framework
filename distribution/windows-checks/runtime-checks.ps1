@@ -1,4 +1,4 @@
-# M1 runtime checks on Windows 11 (docs/conventions/windows-verification.md)
+# Runtime checks on Windows 11 (docs/conventions/windows-verification.md)
 # ASCII only: Windows PowerShell 5.1 misreads non-BOM UTF-8 scripts.
 param(
     [Parameter(Mandatory = $true)][string]$Jar,

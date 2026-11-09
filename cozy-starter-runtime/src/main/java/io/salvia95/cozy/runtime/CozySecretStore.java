@@ -3,10 +3,10 @@ package io.salvia95.cozy.runtime;
 import java.util.Optional;
 
 /**
- * 비밀 값은 이 인터페이스로만 읽는다 (PRD §9.1).
+ * 비밀 값은 이 인터페이스로만 읽는다.
  *
  * <p>기본 구현은 {@code {dataDir}/config/secrets.properties}를 읽는다. OS 암호화 저장소 등으로 바꿀 때는
- * 이 타입의 빈을 등록하면 기본 구현이 물러난다(PRD §13 미결). 값은 로그와 진단 파일에 절대 쓰지 않는다.
+ * 이 타입의 빈을 등록하면 기본 구현이 물러난다. 값은 로그와 진단 파일에 절대 쓰지 않는다.
  */
 public interface CozySecretStore {
 

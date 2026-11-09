@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import io.salvia95.cozy.ui.testapp.UiTestApp;
 
 /**
- * 레이아웃, 내비, htmx 부분 갱신, PRG, 로컬 자산 (PRD §6.4, M3 완료 기준).
+ * 레이아웃, 내비, htmx 부분 갱신, PRG, 로컬 자산.
  */
 @SpringBootTest(classes = UiTestApp.class, properties = "cozy.data-dir=target/test-data/ui-screens")
 @AutoConfigureMockMvc

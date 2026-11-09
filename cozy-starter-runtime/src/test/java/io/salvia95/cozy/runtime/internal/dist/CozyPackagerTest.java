@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 /**
- * 패키징의 순수 함수 부분 (PRD §9.6). 실제 jpackage·훈련 실행은 samples/dist-e2e가 검증한다.
+ * 패키징의 순수 함수 부분. 실제 jpackage·훈련 실행은 samples/dist-e2e가 검증한다.
  */
 class CozyPackagerTest {
 

@@ -12,7 +12,7 @@ import org.springframework.test.context.MergedContextConfiguration;
 
 /**
  * cozy-test가 클래스패스에 있으면 앱의 모든 Spring 테스트에서 컨트롤러·뷰 모듈 일치 검사(C7)를 실패 모드로 켠다
- * (PRD §6.5 검사 7). 운영에서는 경고 로그만 남긴다. 앱 설정의 값이 있으면 그것이 먼저다.
+ * 운영에서는 경고 로그만 남긴다. 앱 설정의 값이 있으면 그것이 먼저다.
  */
 class CozyTestContextCustomizerFactory implements ContextCustomizerFactory {
 

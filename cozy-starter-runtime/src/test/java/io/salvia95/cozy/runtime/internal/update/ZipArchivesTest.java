@@ -20,7 +20,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * 배포 zip (PRD §9.4, §9.6): 최상위 폴더 하나, 실행 권한 보존, 풀 위치 밖으로 나가는 항목 거부.
+ * 배포 zip: 최상위 폴더 하나, 실행 권한 보존, 풀 위치 밖으로 나가는 항목 거부.
  */
 class ZipArchivesTest {
 

@@ -30,7 +30,7 @@ import io.salvia95.cozy.reference.memo.spi.MemoFacade;
 import io.salvia95.cozy.reference.memo.spi.MemoFinder;
 
 /**
- * M3 완료 기준: memo 화면이 패턴만으로 구성되고, 외부 자원 없이 그대로 그려진다.
+ * memo 화면이 패턴만으로 구성되고, 외부 자원 없이 그대로 그려진다.
  */
 @SpringBootTest(properties = "cozy.data-dir=target/test-data/memo-screen-${random.uuid}")
 @AutoConfigureMockMvc

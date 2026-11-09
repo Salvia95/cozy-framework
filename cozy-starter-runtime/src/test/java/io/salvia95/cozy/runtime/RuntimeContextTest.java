@@ -38,7 +38,7 @@ import io.salvia95.cozy.runtime.autoconfigure.CozySecurityAutoConfiguration;
 import io.salvia95.cozy.runtime.testapp.TestApp;
 
 /**
- * 자동 설정이 테스트 컨텍스트에도 그대로 적용되는지 (PRD §9.1, §9.3, §9.5).
+ * 자동 설정이 테스트 컨텍스트에도 그대로 적용되는지.
  */
 @SpringBootTest(classes = TestApp.class,
 		properties = { "cozy.data-dir=" + RuntimeContextTest.DATA_DIR, "server.address=0.0.0.0"})

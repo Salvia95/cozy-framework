@@ -3,7 +3,7 @@ package io.salvia95.cozy.reference.memo.api.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/** 메모 등록·수정 입력. 화면 입력은 getter/setter가 있는 폼 클래스로 받는다 (PRD §10). */
+/** 메모 등록·수정 입력. 화면 입력은 getter/setter가 있는 폼 클래스로 받는다. */
 public class MemoForm {
 
 	@NotBlank(message = "제목을 입력하세요")

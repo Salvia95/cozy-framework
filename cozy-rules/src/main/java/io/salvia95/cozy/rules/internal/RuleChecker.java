@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
 /**
- * R1~R15 검사 (PRD §7). 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
+ * R1~R15 검사. 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
  *
  * <p>모듈 템플릿은 {@code {모듈}/api/}(컨트롤러가 렌더링하는 화면), {@code {모듈}/spi/}(다른 모듈이 부르는 fragment),
  * {@code {모듈}/internal/}(모듈 안의 재료 조각)로 나눈다. api는 같은 모듈의 spi·internal과 허용된 모듈의 spi를, spi는

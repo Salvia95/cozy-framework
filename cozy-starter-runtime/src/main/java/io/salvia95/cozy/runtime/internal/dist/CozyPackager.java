@@ -35,7 +35,7 @@ import io.salvia95.cozy.runtime.internal.update.Versions;
 import io.salvia95.cozy.runtime.internal.update.ZipArchives;
 
 /**
- * {@code mvn -Pdist package}의 패키징 (PRD §9.6). cozy-parent의 dist 프로필이 앱의 런타임 클래스패스로 실행한다.
+ * {@code mvn -Pdist package}의 패키징. cozy-parent의 dist 프로필이 앱의 런타임 클래스패스로 실행한다.
  *
  * <ol>
  * <li>Boot jar를 풀어(jarmode tools extract) 일반 클래스패스 jar로 만든다. AOT 캐시는 풀린 jar에서만 효과가 있다.</li>

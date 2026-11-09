@@ -33,7 +33,7 @@ import io.salvia95.cozy.events.CozyEvent;
 import io.salvia95.cozy.events.CozyEventMapper;
 
 /**
- * 검사 C6 (PRD §8.2, §8.4). cozy-starter-events가 클래스패스에 있을 때만 불린다.
+ * 검사 C6. cozy-starter-events가 클래스패스에 있을 때만 불린다.
  *
  * <ul>
  * <li>모든 {@code @ApplicationModuleListener}의 파라미터는 {@link CozyEvent}를 구현한다.</li>

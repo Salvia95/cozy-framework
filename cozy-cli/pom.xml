@@ -101,7 +101,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
-          <!-- java -jar target/cozy-cli-*.jar 로 실행할 수 있게 실행 의존성을 target/lib에 둔다 (번들 반입은 M11) -->
+          <!-- java -jar target/cozy-cli-*.jar 로 실행할 수 있게 실행 의존성을 target/lib에 둔다 -->
           <execution>
             <id>cozy-cli-lib</id>
             <phase>package</phase>

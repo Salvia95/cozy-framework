@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * 업데이트 채널: 매니페스트와 패키지를 읽는 곳 (PRD §9.4).
+ * 업데이트 채널: 매니페스트와 패키지를 읽는 곳.
  *
  * <p>{@code file:}(공유 폴더 UNC 경로 포함)과 {@code http(s):}만 지원한다. 설정값이 경로({@code \\server\share\…},
  * {@code C:\…}, {@code /srv/…})이면 {@code file:} 주소로 바꾼다. 다른 형식은 기동할 때 실패한다.

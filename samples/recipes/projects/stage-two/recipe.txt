@@ -1,4 +1,4 @@
-# 2단계 M12·M14: sqlite만 있는 앱에 enable events, dto, 리스너가 만든 빈 Facade를 crud가 채움, event-version. 빈칸을 채우면 통과해야 한다
+# 2단계 레시피: sqlite만 있는 앱에 enable events, dto, 리스너가 만든 빈 Facade를 crud가 채움, event-version. 빈칸을 채우면 통과해야 한다
 cozy! add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목 --publish created
 cozy enable events
 cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목 --publish created
@@ -13,7 +13,7 @@ rerun
 cozy! add dto board BoardPage --field title:text!
 cozy! add dto board BoardPage --field lines:list:BoardRow
 cozy! add dto board BoardLine --field title:text
-# crud가 발행하는 MemoCreated에 필드를 더한다(M14). crud의 MemoFacadeImpl은 옛 of()를 그대로 부르고, C6(샘플 v1·v2·v3)가 통과해야 한다
+# crud가 발행하는 MemoCreated에 필드를 더한다. crud의 MemoFacadeImpl은 옛 of()를 그대로 부르고, C6(샘플 v1·v2·v3)가 통과해야 한다
 cozy add event-version memo MemoCreated --field pinned:bool --field "dueOn:date"
 cozy add event-version memo MemoCreated --field note:text
 rerun event-version

@@ -12,7 +12,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 import io.salvia95.cozy.runtime.internal.CozyRuntimeEnvironmentPostProcessor;
 
-/** dev 프로필이면 패턴 카탈로그를 기본으로 켠다 (PRD §6.4). 운영에서는 꺼져 있다. */
+/** dev 프로필이면 패턴 카탈로그를 기본으로 켠다. 운영에서는 꺼져 있다. */
 public class CozyUiEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
 
 	@Override

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cozy 오프라인 번들 만들기 (PRD §9.7). 인터넷이 되는 PC에서 프레임워크 레포 루트를 기준으로 실행한다.
+# Cozy 오프라인 번들 만들기. 인터넷이 되는 PC에서 프레임워크 레포 루트를 기준으로 실행한다.
 #
 #   distribution/offline-bundle/build-bundle.sh [출력 폴더] [Maven 배포판 zip 경로 또는 URL]
 #

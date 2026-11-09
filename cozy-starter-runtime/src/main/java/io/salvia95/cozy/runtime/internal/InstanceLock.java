@@ -10,7 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 /**
- * {@code {dataDir}/app.lock}에 대한 단일 인스턴스 잠금 (PRD §9.2).
+ * {@code {dataDir}/app.lock}에 대한 단일 인스턴스 잠금.
  *
  * <p>OS 파일 잠금이라 프로세스가 비정상 종료해도 OS가 풀어 준다. 같은 JVM 안에서 이미 잡은 잠금은
  * {@link OverlappingFileLockException}으로 드러나므로 이것도 "다른 인스턴스가 실행 중"으로 본다.

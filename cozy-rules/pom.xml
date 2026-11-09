@@ -50,7 +50,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
-          <!-- 모듈 의존 규칙 (PRD §5, docs/adr/0019) -->
+          <!-- 모듈 의존 규칙 -->
           <execution>
             <id>cozy-module-boundary</id>
             <goals>
@@ -59,7 +59,7 @@
             <configuration>
               <rules>
                 <bannedDependencies>
-                  <message>cozy-rules는 JDK와 AttoParser에만 의존합니다 (PRD §5, §6.2). Spring이나 다른 cozy 모듈을 쓰지 마세요.</message>
+                  <message>cozy-rules는 JDK와 AttoParser에만 의존합니다. Spring이나 다른 cozy 모듈을 쓰지 마세요.</message>
                   <excludes>
                     <exclude>*:*:*:*:compile</exclude>
                     <exclude>*:*:*:*:runtime</exclude>

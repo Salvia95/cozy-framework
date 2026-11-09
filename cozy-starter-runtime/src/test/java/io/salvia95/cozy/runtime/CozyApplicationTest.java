@@ -16,7 +16,7 @@ import io.salvia95.cozy.runtime.testapp.RawHttp;
 import io.salvia95.cozy.runtime.testapp.TestApp;
 
 /**
- * 실제 웹 서버로 띄우는 CozyApplication.run (PRD §9.2, M1 완료 기준).
+ * 실제 웹 서버로 띄우는 CozyApplication.run.
  */
 class CozyApplicationTest {
 

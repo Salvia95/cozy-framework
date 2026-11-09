@@ -1,4 +1,4 @@
-// Cozy 아키타입 생성 후처리 (PRD §6.6): 옵션 검사, 옵션별 파일 제거.
+// Cozy 아키타입 생성 후처리: 옵션 검사, 옵션별 파일 제거.
 // 옵션이 맞지 않으면 생성한 폴더를 지우고 실패한다.
 import java.nio.file.Files
 import java.nio.file.Path

@@ -20,7 +20,7 @@ import io.salvia95.cozy.reference.activity.spi.ActivityFinder;
 import io.salvia95.cozy.reference.memo.spi.MemoFacade;
 
 /**
- * M5 흐름: memo가 MemoCreated를 발행 → activity가 받아 기록 → dashboard가 memo·activity의 spi fragment로 보여 준다.
+ * 이벤트 흐름: memo가 MemoCreated를 발행 → activity가 받아 기록 → dashboard가 memo·activity의 spi fragment로 보여 준다.
  */
 @SpringBootTest(properties = "cozy.data-dir=target/test-data/dashboard-${random.uuid}")
 @AutoConfigureMockMvc

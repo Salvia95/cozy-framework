@@ -8,7 +8,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 실행 중인 jpackage app-image의 위치 (PRD §9.6).
+ * 실행 중인 jpackage app-image의 위치.
  *
  * <p>jpackage 런처는 {@code jpackage.app-path} 시스템 속성에 런처 파일 경로를 넣는다.
  * Windows는 {@code {앱 폴더}\{이름}.exe}, Linux는 {@code {앱 폴더}/bin/{이름}}이다.

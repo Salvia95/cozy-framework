@@ -17,7 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 import io.salvia95.cozy.ui.CozyViews;
 
 /**
- * 컨트롤러와 뷰의 모듈 일치 (PRD §6.5 검사 7, §10 컨트롤러 규약).
+ * 컨트롤러와 뷰의 모듈 일치 (C7).
  *
  * <p>핸들러 클래스의 모듈(메인 패키지 바로 아래 패키지, 또는 {@code @ApplicationModule(id)})과 반환한 뷰 이름의 첫 경로가
  * 다르면 위반이다. 둘째 경로는 {@code api}(화면)나 {@code spi}(공개 fragment, htmx 갱신용)여야 한다. {@code internal}은 화면과

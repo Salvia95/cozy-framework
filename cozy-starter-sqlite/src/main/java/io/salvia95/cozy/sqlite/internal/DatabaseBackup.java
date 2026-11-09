@@ -21,7 +21,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * 마이그레이션 전 DB 백업 (PRD §6.3).
+ * 마이그레이션 전 DB 백업.
  *
  * <p>{@code VACUUM INTO}로 일관된 사본을 만든다. 열린 연결과 WAL 파일이 있어도 안전하다.
  * 파일 이름은 {@code {db이름}-{yyyyMMdd-HHmmss-SSS}.db}이고, 이름순으로 최근 {@code keep}개만 남긴다.

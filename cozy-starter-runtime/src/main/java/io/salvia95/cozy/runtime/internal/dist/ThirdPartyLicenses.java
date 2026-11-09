@@ -20,7 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * 배포물의 제3자 라이선스 목록 (PRD §11).
+ * 배포물의 제3자 라이선스 목록.
  *
  * <ul>
  * <li>의존성: license-maven-plugin(add-third-party)이 만든 {@code THIRD-PARTY.txt}를 다시 읽어, 모든 의존성에 허용

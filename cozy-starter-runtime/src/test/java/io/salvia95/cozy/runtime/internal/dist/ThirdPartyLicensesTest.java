@@ -14,7 +14,7 @@ import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** 제3자 라이선스 목록 검사와 반입 (PRD §11) */
+/** 제3자 라이선스 목록 검사와 반입 */
 class ThirdPartyLicensesTest {
 
 	static final Set<String> ALLOWED = ThirdPartyLicenses.allowedSet("Apache-2.0|MIT|EPL-2.0");

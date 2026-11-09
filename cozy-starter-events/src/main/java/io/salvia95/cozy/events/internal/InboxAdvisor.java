@@ -22,7 +22,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import io.salvia95.cozy.events.CozyEvent;
 
 /**
- * 인박스 (PRD §8.3). {@code CozyEvent}를 받는 모든 {@code @ApplicationModuleListener}에 적용한다.
+ * 인박스. {@code CozyEvent}를 받는 모든 {@code @ApplicationModuleListener}에 적용한다.
  *
  * <p>리스너 트랜잭션 안에서 먼저 {@code cozy_inbox}에 (이벤트 id, 리스너 id)를 넣는다. 이미 있으면 본문을 건너뛰고 정상 완료로
  * 처리한다. 본문이 예외를 던지면 트랜잭션이 롤백되어 인박스 행도 사라지고, 발행 기록은 미완료로 남아 재시도된다.

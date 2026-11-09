@@ -22,7 +22,7 @@ import io.salvia95.cozy.sqlite.testapp.SampleMapper;
 import io.salvia95.cozy.sqlite.testapp.SampleService;
 
 /**
- * 스레드 8개가 동시에 써도 데이터가 사라지지 않는다 (PRD §6.3 수용 기준).
+ * 스레드 8개가 동시에 써도 데이터가 사라지지 않는다.
  */
 class ConcurrentWriteTest {
 

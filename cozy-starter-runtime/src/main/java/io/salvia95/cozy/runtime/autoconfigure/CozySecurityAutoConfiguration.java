@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 보안 최소선 (PRD §9.3).
+ * 보안 최소선.
  *
  * <p>로그인은 없다. 모든 요청을 허용하고, CSRF와 보안 헤더만 켠다.
  * CSP는 자기 출처만 허용하고 인라인 스크립트를 막는다. Tabler CSS가 쓰는 data: 이미지는 허용한다.
@@ -32,7 +32,7 @@ public class CozySecurityAutoConfiguration {
 		http.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll())
 			.headers((headers) -> headers.frameOptions((frame) -> frame.deny())
 				.contentSecurityPolicy((csp) -> csp.policyDirectives(CONTENT_SECURITY_POLICY)));
-		// CSRF는 기본값(켜짐, 세션 저장소)을 그대로 쓴다. htmx는 layout의 meta 태그에서 토큰을 읽는다(M3).
+		// CSRF는 기본값(켜짐, 세션 저장소)을 그대로 쓴다. htmx는 layout의 meta 태그에서 토큰을 읽는다.
 		return http.build();
 	}
 

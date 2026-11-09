@@ -18,7 +18,7 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
- * SQLite 저장 형식을 고정하는 MyBatis TypeHandler (PRD §6.3).
+ * SQLite 저장 형식을 고정하는 MyBatis TypeHandler.
  *
  * <ul>
  * <li>{@link Instant}: UTC ISO-8601 TEXT, 소수점 9자리 고정 ({@code 2026-11-06T01:02:03.000000000Z})</li>

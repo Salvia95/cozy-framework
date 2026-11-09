@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
-/** 화면 스펙 형식 (PRD §10). default, empty가 없으면 실패한다. */
+/** 화면 스펙 형식. default, empty가 없으면 실패한다. */
 class ScreenSpecTest {
 
 	static ScreenSpec parse(String yaml, String fileName) {

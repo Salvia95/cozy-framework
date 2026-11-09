@@ -5,7 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 앱 버전 비교 (PRD §9.4). 형식은 {@code 1.2.3} 또는 {@code 1.2.3-qualifier}다.
+ * 앱 버전 비교. 형식은 {@code 1.2.3} 또는 {@code 1.2.3-qualifier}다.
  *
  * <p>숫자 부분을 차례로 비교하고, 빠진 자리는 0으로 본다({@code 1.1 = 1.1.0}).
  * 숫자 부분이 같으면 qualifier가 없는 쪽이 높다({@code 1.1.0-SNAPSHOT < 1.1.0}).

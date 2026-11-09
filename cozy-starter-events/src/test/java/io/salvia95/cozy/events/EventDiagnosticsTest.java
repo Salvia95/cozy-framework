@@ -21,7 +21,7 @@ import io.salvia95.cozy.events.testapp.sample.SampleListener;
 import io.salvia95.cozy.events.testapp.sample.SampleService;
 
 /**
- * 진단 파일의 미완료 이벤트 개수 (PRD §9.5).
+ * 진단 파일의 미완료 이벤트 개수.
  */
 class EventDiagnosticsTest {
 

@@ -28,7 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * M1 완료 기준을 실제 프로세스 두 개로 검증한다.
+ * 단일 인스턴스를 실제 프로세스 두 개로 검증한다.
  *
  * <ul>
  * <li>reference-app이 127.0.0.1의 빈 포트로 뜬다. {@code --server.address=0.0.0.0}을 줘도 바뀌지 않는다.</li>
@@ -78,7 +78,7 @@ class SingleInstanceProcessTest {
 			assertThat(Files.readString(this.dataDir.resolveSibling(this.dataDir.getFileName() + "-first.log")))
 				.contains("트레이 아이콘을 올릴 수 없습니다");
 
-			// Windows의 destroy()는 종료 훅 없이 프로세스를 끊는다. 정상 종료 경로(M6 종료 메뉴)는 Windows에서 따로 검증한다.
+			// Windows의 destroy()는 종료 훅 없이 프로세스를 끊는다. 정상 종료 경로(트레이 종료 메뉴)는 Windows에서 따로 검증한다.
 			first.destroy();
 			assertThat(first.waitFor(30, TimeUnit.SECONDS)).isTrue();
 			assertThat(this.dataDir.resolve("app.port")).doesNotExist();

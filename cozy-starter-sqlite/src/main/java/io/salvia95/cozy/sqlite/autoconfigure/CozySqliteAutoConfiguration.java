@@ -47,7 +47,7 @@ import io.salvia95.cozy.sqlite.internal.SqliteExceptionTranslator;
 import io.salvia95.cozy.sqlite.internal.TextTypeHandlers;
 
 /**
- * SQLite + MyBatis + Flyway 자동 설정 (PRD §6.3).
+ * SQLite + MyBatis + Flyway 자동 설정.
  */
 @AutoConfiguration(after = DataSourceAutoConfiguration.class,
 		before = { JdbcTemplateAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class,
@@ -100,7 +100,7 @@ public class CozySqliteAutoConfiguration {
 		return new CozyMigrations(locations.orderedStream().toList(), backup);
 	}
 
-	/** 진단 파일의 sqlite.txt: DB 파일, PRAGMA, Flyway 이력 (PRD §9.5) */
+	/** 진단 파일의 sqlite.txt: DB 파일, PRAGMA, Flyway 이력 */
 	@Bean
 	SqliteDiagnostics cozySqliteDiagnostics(DataSource dataSource, Environment environment) {
 		return new SqliteDiagnostics(dataSource, databaseFile(environment),

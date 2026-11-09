@@ -38,7 +38,7 @@ import io.salvia95.cozy.runtime.internal.PortFile;
 import io.salvia95.cozy.runtime.internal.update.ZipArchives;
 
 /**
- * M6 완료 기준 (PRD §12): reference-app v1.0.0 → v1.1.0 자동 업데이트가 데이터를 보존한 채 성공하고,
+ * reference-app v1.0.0 → v1.1.0 자동 업데이트가 데이터를 보존한 채 성공하고,
  * 실패하도록 만든 v1.1.1은 자동 롤백된다.
  *
  * <ol>
@@ -129,7 +129,7 @@ class UpdateEndToEndTest {
 		assertThat(cfg.resolveSibling("native").resolve(nativeLib)).isNotEmptyFile();
 		assertThat(Files.readString(cfg)).contains("java-options=-Dorg.sqlite.lib.path=$APPDIR/native")
 			.contains("java-options=-Dorg.sqlite.lib.name=" + nativeLib);
-		// 제3자 라이선스 목록 (PRD §11): 런타임 의존성과 웹 자산
+		// 제3자 라이선스 목록: 런타임 의존성과 웹 자산
 		assertThat(image.resolve("licenses/THIRD-PARTY.txt")).content()
 			.contains("org.xerial:sqlite-jdbc:")
 			.contains("org.springframework:spring-webmvc:")
@@ -163,7 +163,7 @@ class UpdateEndToEndTest {
 	void installedVersionStartsEvenWithMismatchedAotCache() throws Exception {
 		Path zip = onlyZip(builds.get("1.0.0"));
 		ZipArchives.extractSingleRoot(zip, appDir);
-		// 캐시가 맞지 않아도 앱은 정상 기동해야 한다 (PRD §9.6)
+		// 캐시가 맞지 않아도 앱은 정상 기동해야 한다
 		Path cache = WINDOWS ? appDir.resolve("app/" + APP_ID + ".aot") : appDir.resolve("lib/app/" + APP_ID + ".aot");
 		Files.writeString(cache, "not an aot cache");
 

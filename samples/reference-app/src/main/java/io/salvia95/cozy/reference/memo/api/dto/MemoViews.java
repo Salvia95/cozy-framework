@@ -9,7 +9,7 @@ import java.util.Locale;
 import io.salvia95.cozy.reference.memo.spi.dto.MemoItem;
 import io.salvia95.cozy.ui.CozyPage;
 
-/** 메모 화면 DTO. 템플릿에는 spi DTO를 화면에 맞게 바꾼 이 record들을 넘긴다 (PRD §10). */
+/** 메모 화면 DTO. 템플릿에는 spi DTO를 화면에 맞게 바꾼 이 record들을 넘긴다. */
 public final class MemoViews {
 
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA)

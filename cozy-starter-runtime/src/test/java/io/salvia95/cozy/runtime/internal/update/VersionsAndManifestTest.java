@@ -10,7 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * 버전 비교, 매니페스트 형식, app-image 위치 (PRD §9.4).
+ * 버전 비교, 매니페스트 형식, app-image 위치.
  */
 class VersionsAndManifestTest {
 

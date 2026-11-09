@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 오프라인 번들 수용 기준 검증 (PRD §9.7, Linux). 네트워크를 끊은 상태에서 번들만으로
+# 오프라인 번들 수용 기준 검증 (Linux). 네트워크를 끊은 상태에서 번들만으로
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
 # 이벤트 앱에는 cozy add·link로 구조를 더한 뒤 verify한다.
 #
@@ -7,7 +7,7 @@
 #
 # unshare --net으로 네트워크 장치가 루프백뿐인 이름공간에서 돌린다. 랜선을 뽑은 PC처럼 루프백(127.0.0.1)만 켠다
 # (앱은 루프백에서 뜨고, 패키징의 AOT 훈련 실행이 루프백으로 요청한다). HOME과 Maven의 user.home도 빈 폴더로 바꿔
-# 기존 ~/.m2와 설정을 쓰지 않는다. Windows는 docs/conventions/windows-verification.md의 M7 절차를 따른다.
+# 기존 ~/.m2와 설정을 쓰지 않는다. Windows는 docs/conventions/windows-verification.md의 아키타입과 오프라인 번들 절차를 따른다.
 set -euo pipefail
 
 ZIP="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"

@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.Violation;
 import io.salvia95.cozy.test.CozyProject;
 
 /**
- * PRD §6.2 수용 기준: rules/의 규칙별 픽스처가 각각 정확히 해당 규칙 ID로 검출된다.
+ * rules/의 규칙별 픽스처가 각각 정확히 해당 규칙 ID로 검출된다.
  *
  * <p>픽스처 폴더 이름은 {@code R{n}-설명}이다. 폴더 안에 {@code templates/}, 모듈 구조 {@code modules.properties}
  * ({@code 모듈=허용 의존, ...}, 선언하지 않은 모듈은 {@code open}), 앱 매니페스트 {@code fragments.yml}(선택)을 둔다.

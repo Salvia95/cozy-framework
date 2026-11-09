@@ -10,7 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 /**
- * {@code {dataDir}/app.port}: 실행 중인 인스턴스의 포트 번호 한 줄 (PRD §9.2).
+ * {@code {dataDir}/app.port}: 실행 중인 인스턴스의 포트 번호 한 줄.
  *
  * <p>두 번째 실행이 읽는 도중에 반쯤 쓴 파일을 보지 않도록 임시 파일에 쓰고 원자적으로 옮긴다.
  */

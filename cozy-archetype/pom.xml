@@ -14,7 +14,7 @@
   <artifactId>cozy-archetype</artifactId>
   <packaging>maven-archetype</packaging>
   <name>Cozy :: Archetype</name>
-  <description>오프라인 이니셜라이저: home 샘플 모듈과 규약을 갖춘 앱 (PRD §6.6, §10)</description>
+  <description>오프라인 이니셜라이저: home 샘플 모듈과 규약을 갖춘 앱</description>
   <url>https://github.com/Salvia95/cozy-framework</url>
   <licenses>
     <license>

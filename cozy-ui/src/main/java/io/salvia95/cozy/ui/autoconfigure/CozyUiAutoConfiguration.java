@@ -40,7 +40,7 @@ import io.salvia95.cozy.ui.internal.HtmxRequestArgumentResolver;
 import io.salvia95.cozy.ui.internal.ViewModuleInterceptor;
 
 /**
- * UI 자동 설정 (PRD §6.4): 레이아웃 모델, 내비, htmx 지원, 패턴 카탈로그.
+ * UI 자동 설정: 레이아웃 모델, 내비, htmx 지원, 패턴 카탈로그.
  */
 @AutoConfiguration(before = ThymeleafAutoConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)

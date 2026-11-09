@@ -35,7 +35,7 @@ import io.salvia95.cozy.events.testapp.sample.SampleListener;
 import io.salvia95.cozy.events.testapp.sample.SampleService;
 
 /**
- * PRD §8.5 계약 테스트. 컨텍스트를 직접 열고 닫아 재시작을 흉내 낸다. 같은 데이터 경로를 쓰면 같은 DB 파일이다.
+ * 이벤트 계약 테스트. 컨텍스트를 직접 열고 닫아 재시작을 흉내 낸다. 같은 데이터 경로를 쓰면 같은 DB 파일이다.
  */
 class EventContractTest {
 
@@ -193,7 +193,7 @@ class EventContractTest {
 
 	@Test
 	void repositoryImplementsEveryInterfaceMethod() {
-		// Modulith를 올렸을 때 새 메서드나 바뀐 시그니처를 기본 구현에 맡기지 않게 한다 (PRD §8.5)
+		// Modulith를 올렸을 때 새 메서드나 바뀐 시그니처를 기본 구현에 맡기지 않게 한다
 		List<String> notImplemented = new ArrayList<>();
 		for (Method method : EventPublicationRepository.class.getMethods()) {
 			if (Modifier.isStatic(method.getModifiers())) {

@@ -1,4 +1,4 @@
-﻿# Cozy 오프라인 번들 만들기 (PRD §9.7). 인터넷이 되는 Windows PC에서 프레임워크 레포 루트를 기준으로 실행한다.
+﻿# Cozy 오프라인 번들 만들기. 인터넷이 되는 Windows PC에서 프레임워크 레포 루트를 기준으로 실행한다.
 #
 #   powershell -ExecutionPolicy Bypass -File distribution\offline-bundle\build-bundle.ps1 [-Output 폴더] [-MavenZip 경로또는URL]
 #

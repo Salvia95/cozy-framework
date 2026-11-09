@@ -13,7 +13,7 @@
 
   <!--
     앱과 프레임워크 모듈이 함께 상속하는 parent.
-    버전 정책은 docs/adr/0017-version-policy.md: 구현 중에는 최신 GA를 쓴다.
+    구현 중에는 최신 GA를 쓴다.
     Spring 계열, Thymeleaf, Jackson, Flyway 등 Boot BOM이 관리하는 라이브러리는 Boot 버전을 따른다.
   -->
   <groupId>io.salvia95.cozy</groupId>
@@ -30,7 +30,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- Boot BOM 밖의 라이브러리 (최신 GA, 2026-11-06 M4 시작 때 다시 확인) -->
+    <!-- Boot BOM 밖의 라이브러리 (최신 GA) -->
     <spring-modulith.version>2.1.2</spring-modulith.version>
     <mybatis-spring-boot.version>4.1.0</mybatis-spring-boot.version>
     <sqlite-jdbc.version>3.54.1.0</sqlite-jdbc.version>
@@ -54,13 +54,13 @@
     -->
     <cozy.test.argLine>-javaagent:${org.mockito:mockito-core:jar}</cozy.test.argLine>
 
-    <!-- mvn -Pdist package (PRD §9.6, docs/conventions/distribution.md) -->
+    <!-- mvn -Pdist package (docs/conventions/distribution.md) -->
     <cozy.dist.minimum-version></cozy.dist.minimum-version>
     <cozy.dist.notes></cozy.dist.notes>
     <cozy.dist.java-options>-Xmx512m</cozy.dist.java-options>
     <cozy.dist.training>true</cozy.dist.training>
     <!--
-      배포물에 들어가는 의존성의 허용 라이선스 (PRD §11). 이름은 dist 프로필의 licenseMerges가 맞춘 SPDX ID다.
+      배포물에 들어가는 의존성의 허용 라이선스. 이름은 dist 프로필의 licenseMerges가 맞춘 SPDX ID다.
       이중 라이선스는 하나만 있으면 된다.
     -->
     <cozy.dist.allowed-licenses>Apache-2.0|MIT|BSD-2-Clause|BSD-3-Clause|EPL-1.0|EPL-2.0</cozy.dist.allowed-licenses>
@@ -245,7 +245,7 @@
                 </requireMavenVersion>
                 <dependencyConvergence/>
                 <bannedDependencies>
-                  <message>Cozy 금지 의존성입니다 (PRD §4, docs/adr/0002, 0004, 0006). JPA·Hibernate·H2·GraalVM과 Modulith 공식 이벤트 저장소는 쓰지 않습니다. 영속성은 cozy-starter-sqlite, 이벤트 저장은 cozy-starter-events를 쓰세요.</message>
+                  <message>Cozy 금지 의존성입니다. JPA·Hibernate·H2·GraalVM과 Modulith 공식 이벤트 저장소는 쓰지 않습니다. 영속성은 cozy-starter-sqlite, 이벤트 저장은 cozy-starter-events를 쓰세요.</message>
                   <excludes>
                     <exclude>org.springframework.boot:spring-boot-starter-data-jpa</exclude>
                     <exclude>org.springframework.boot:spring-boot-data-jpa</exclude>
@@ -268,7 +268,7 @@
                   </excludes>
                 </bannedDependencies>
                 <bannedPlugins>
-                  <message>GraalVM 네이티브 이미지는 쓰지 않습니다 (docs/adr/0002). 배포는 mvn -Pdist package(jpackage)로 합니다.</message>
+                  <message>GraalVM 네이티브 이미지는 쓰지 않습니다. 배포는 mvn -Pdist package(jpackage)로 합니다.</message>
                   <excludes>
                     <exclude>org.graalvm.buildtools:native-maven-plugin</exclude>
                   </excludes>
@@ -296,7 +296,7 @@
         </executions>
       </plugin>
 
-      <!-- 금지 의존성 규칙이 실제로 빌드를 실패시키는지 픽스처 앱으로 검증한다 (docs/adr/0019) -->
+      <!-- 금지 의존성 규칙이 실제로 빌드를 실패시키는지 픽스처 앱으로 검증한다 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
@@ -335,7 +335,7 @@
       </properties>
     </profile>
 
-    <!-- 배포 패키지: app-image + AOT 캐시 + zip + 업데이트 매니페스트 (PRD §9.6) -->
+    <!-- 배포 패키지: app-image + AOT 캐시 + zip + 업데이트 매니페스트 -->
     <profile>
       <id>dist</id>
       <build>
@@ -363,7 +363,7 @@
             </executions>
           </plugin>
           <!--
-            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 본다. cozy 모듈도 목록에 들어간다(Apache-2.0).
+            제3자 라이선스 목록. 런타임 의존성만 본다. cozy 모듈도 목록에 들어간다(Apache-2.0).
             라이선스 정보가 없거나 허용 목록에 없으면 실패한다. CozyPackager가 결과를 다시 검사하고 실행 폴더의 licenses/에 담는다.
             - force: 결과 파일이 최신이면 플러그인이 검사를 건너뛰므로 매번 다시 만든다
             - useRepositoryMissingFiles=false: 원격 저장소에서 보충 파일을 찾지 않는다 (오프라인 빌드)

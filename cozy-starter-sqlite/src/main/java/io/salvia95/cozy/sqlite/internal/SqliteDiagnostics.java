@@ -13,7 +13,7 @@ import javax.sql.DataSource;
 import io.salvia95.cozy.runtime.CozyDiagnosticsContributor;
 
 /**
- * 진단 파일의 {@code sqlite.txt} (PRD §9.5): DB 파일, 실제 PRAGMA 값, Flyway 이력(프레임워크와 앱).
+ * 진단 파일의 {@code sqlite.txt}: DB 파일, 실제 PRAGMA 값, Flyway 이력(프레임워크와 앱).
  */
 public class SqliteDiagnostics implements CozyDiagnosticsContributor {
 

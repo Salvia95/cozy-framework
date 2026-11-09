@@ -24,7 +24,7 @@ import org.springframework.core.io.FileSystemResource;
 import io.salvia95.cozy.runtime.CozyDataDirectory;
 
 /**
- * 설정 파일을 읽은 직후, 로깅이 초기화되기 전에 런타임 환경을 확정한다 (PRD §9.1, §9.3, §9.5).
+ * 설정 파일을 읽은 직후, 로깅이 초기화되기 전에 런타임 환경을 확정한다.
  *
  * <ol>
  * <li>{@code cozy.app.id}를 검사하고 데이터 루트를 정해 폴더를 만든다. 정한 경로는 {@code cozy.data-dir}로 고정한다.</li>

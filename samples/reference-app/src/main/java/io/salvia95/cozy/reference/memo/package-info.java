@@ -1,5 +1,5 @@
 /**
- * 메모: SQLite + MyBatis CRUD, 목록+필터, 검증, PRG, MemoCreated 이벤트 (PRD §6.7).
+ * 메모: SQLite + MyBatis CRUD, 목록+필터, 검증, PRG, MemoCreated 이벤트.
  *
  * <ul>
  * <li>api: 화면 컨트롤러와 화면 DTO. 템플릿은 templates/memo/api/(화면)와 memo/internal/(조각)</li>

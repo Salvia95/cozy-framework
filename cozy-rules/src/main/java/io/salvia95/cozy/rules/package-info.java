@@ -1,5 +1,5 @@
 /**
- * Cozy 앱의 규칙 판단 (PRD §6.2, §7).
+ * Cozy 앱의 규칙 판단.
  *
  * <ul>
  * <li>템플릿 경계·fragment 규칙 R1~R15: {@link io.salvia95.cozy.rules.TemplateRules#check}. 입력은

@@ -30,7 +30,7 @@ import io.salvia95.cozy.sqlite.CozyMigrationLocation;
 import io.salvia95.cozy.sqlite.autoconfigure.CozySqliteAutoConfiguration;
 
 /**
- * 이벤트 발행 기록과 인박스 (PRD §8): SQLite 저장소, 전용 직렬화, 인박스, 보관 정리, 마이그레이션 위치.
+ * 이벤트 발행 기록과 인박스: SQLite 저장소, 전용 직렬화, 인박스, 보관 정리, 마이그레이션 위치.
  *
  * <p>트랜잭션 어드바이저를 {@link #TRANSACTION_ADVISOR_ORDER}로 두어 인박스 어드바이저가 리스너 트랜잭션 안쪽에서 돌게 한다
  *. Boot의 기본 트랜잭션 설정은 이것이 있으면 물러난다.
@@ -72,7 +72,7 @@ public class CozyEventsAutoConfiguration {
 		return new InboxAdvisor(() -> JdbcClient.create(jdbcTemplate.getObject()), clock.getIfAvailable(Clock::systemUTC));
 	}
 
-	/** 진단 파일의 events.txt: 상태별 발행 기록 수, 미완료 기록 (PRD §9.5) */
+	/** 진단 파일의 events.txt: 상태별 발행 기록 수, 미완료 기록 */
 	@Bean
 	EventDiagnostics cozyEventDiagnostics(JdbcTemplate jdbcTemplate) {
 		return new EventDiagnostics(JdbcClient.create(jdbcTemplate));

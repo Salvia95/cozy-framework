@@ -58,7 +58,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
-          <!-- 모듈 의존 규칙 (PRD §5, docs/adr/0019) -->
+          <!-- 모듈 의존 규칙 -->
           <execution>
             <id>cozy-module-boundary</id>
             <goals>
@@ -67,7 +67,7 @@
             <configuration>
               <rules>
                 <bannedDependencies>
-                  <message>스타터 의존은 events → sqlite → runtime 한 방향만 허용합니다 (PRD §5). cozy-starter-sqlite는 cozy-starter-runtime에만 의존합니다.</message>
+                  <message>스타터 의존은 events → sqlite → runtime 한 방향만 허용합니다. cozy-starter-sqlite는 cozy-starter-runtime에만 의존합니다.</message>
                   <excludes>
                     <exclude>io.salvia95.cozy:*</exclude>
                   </excludes>

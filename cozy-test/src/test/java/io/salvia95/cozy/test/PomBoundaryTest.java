@@ -13,7 +13,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
- * PRD §5: cozy-test는 cozy-rules를 쓰고, 다른 스타터는 optional로만 참조한다.
+ * cozy-test는 cozy-rules를 쓰고, 다른 스타터는 optional로만 참조한다.
  * enforcer는 optional 여부를 볼 수 없어 이 테스트가 POM을 직접 읽어 검사한다.
  */
 class PomBoundaryTest {

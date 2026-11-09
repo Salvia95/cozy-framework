@@ -12,13 +12,13 @@
   </parent>
 
   <!--
-    M6 완료 기준: reference-app v1.0.0 → v1.1.0 자동 업데이트(데이터 보존), 실패하는 v1.1.1 자동 롤백.
+    reference-app v1.0.0 → v1.1.0 자동 업데이트(데이터 보존), 실패하는 v1.1.1 자동 롤백.
     reference-app을 세 버전으로 -Pdist 패키징하고, 실제 app-image를 실행해 업데이트한다.
     jpackage와 훈련 실행으로 몇 분 걸리므로 e2e 프로필에서만 돈다: mvn -Pe2e install (docs/conventions/distribution.md)
   -->
   <artifactId>cozy-dist-e2e</artifactId>
   <name>Cozy :: Samples :: Dist E2E</name>
-  <description>배포·자체 업데이트 종단 검증 (PRD §9.4, §9.6, M6)</description>
+  <description>배포·자체 업데이트 종단 검증</description>
 
   <properties>
     <maven.install.skip>true</maven.install.skip>

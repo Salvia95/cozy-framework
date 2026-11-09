@@ -26,7 +26,7 @@ import io.salvia95.cozy.cli.internal.AppResources;
 import io.salvia95.cozy.cli.internal.Recipes;
 
 /**
- * M9 완료 기준: reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R15), 모듈 구조(C8), 빈칸(C9)의
+ * reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R15), 모듈 구조(C8), 빈칸(C9)의
  * 위반 픽스처를 모두 잡는다. 픽스처는 samples/violations의 것을 그대로 쓴다.
  */
 class CozyCliTest {
@@ -219,16 +219,11 @@ class CozyCliTest {
 	class OtherCommands {
 
 		@Test
-		void recipesListEveryRecipeOfTheAdrAppendix() throws IOException {
-			String appendix = Files.readString(Path.of("../docs/adr/0032-agent-cli-recipes.md"), StandardCharsets.UTF_8)
-					+ Files.readString(Path.of("../docs/adr/0033-stage-two-recipes.md"), StandardCharsets.UTF_8);
+		void recipesListEveryRecipe() {
 			Result result = run("recipes");
 			assertThat(result.code()).isZero();
 			for (Recipes.Recipe recipe : Recipes.ALL) {
 				assertThat(result.out()).contains(recipe.usage());
-				String command = recipe.usage().split(" ")[1].equals("add") ? recipe.usage().split(" ")[2]
-						: recipe.usage().split(" ")[1];
-				assertThat(appendix).as(recipe.name()).contains(command);
 			}
 			assertThat(Recipes.ALL).extracting(Recipes.Recipe::name)
 				.containsExactly("module", "link", "crud", "screen", "fragment", "event", "listener", "migration", "dto",

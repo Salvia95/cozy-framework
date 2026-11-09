@@ -25,7 +25,7 @@ import io.salvia95.cozy.runtime.internal.update.UpdateService;
 import io.salvia95.cozy.runtime.internal.update.UpdateService.UpdateException;
 
 /**
- * 화면 메뉴의 앱 제어 (PRD §9.2, §9.4, §9.5). 모두 POST이고 CSRF 토큰이 필요하다.
+ * 화면 메뉴의 앱 제어. 모두 POST이고 CSRF 토큰이 필요하다.
  *
  * <ul>
  * <li>{@code POST /cozy/shutdown}: 앱을 종료한다.</li>

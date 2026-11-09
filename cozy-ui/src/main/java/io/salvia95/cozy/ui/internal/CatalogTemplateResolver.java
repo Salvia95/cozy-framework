@@ -15,7 +15,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest.Entry;
 import io.salvia95.cozy.ui.catalog.FragmentManifest.Param;
 
 /**
- * 카탈로그 미리보기용 템플릿을 매니페스트에서 만든다 (PRD §6.4).
+ * 카탈로그 미리보기용 템플릿을 매니페스트에서 만든다.
  *
  * <p>템플릿 이름 {@code cozy-catalog:{id}|{state}}를 fragment 호출 한 개짜리 템플릿으로 바꾼다. 값 파라미터는 모델의
  * {@code cozySample}에서, fragment 파라미터는 자리 표시 fragment로 채운다. 템플릿 파일에 동적 참조를 두지 않기 위해(R7)

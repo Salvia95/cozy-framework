@@ -17,7 +17,7 @@ import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * 아키텍처 검사 (PRD §6.5 검사 1, 2). 앱은 한 줄만 쓴다.
+ * 아키텍처 검사 (C1, C2, C6, C8, C9). 앱은 한 줄만 쓴다.
  *
  * <pre>
  * class ArchitectureTest extends CozyArchitectureTest {

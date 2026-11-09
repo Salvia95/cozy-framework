@@ -29,7 +29,7 @@ import io.salvia95.cozy.runtime.update.CozyUpdates.Offer;
 import io.salvia95.cozy.runtime.update.CozyUpdates.Outcome;
 
 /**
- * 자체 업데이트 (PRD §9.4): 매니페스트 확인, SHA-256 검증, 교체 스크립트의 교체·롤백을 실제 스크립트로 검증한다.
+ * 자체 업데이트: 매니페스트 확인, SHA-256 검증, 교체 스크립트의 교체·롤백을 실제 스크립트로 검증한다.
  *
  * <p>앱 대신 가짜 app-image(런처 스크립트)를 쓴다. Linux는 bash 스크립트, Windows는 PowerShell 스크립트가 돈다.
  * 실제 reference-app으로 하는 전체 시나리오는 samples/dist-e2e에 있다.
@@ -224,7 +224,7 @@ class UpdateServiceTest {
 
 	@Test
 	void jpackageLauncherVariablesAreNotPassedToTheScript() {
-		// jpackage 런처가 넣는 변수를 새 런처가 물려받으면 cfg를 읽지 않고 실패한다 (M6 종단 검증에서 발견)
+		// jpackage 런처가 넣는 변수를 새 런처가 물려받으면 cfg를 읽지 않고 실패한다
 		ProcessBuilder builder = new ProcessBuilder("true");
 		builder.environment().put("_JPACKAGE_LAUNCHER", "x");
 		builder.environment().put("KEEP_ME", "y");

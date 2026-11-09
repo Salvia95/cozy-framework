@@ -26,7 +26,7 @@ import io.salvia95.cozy.ui.CozyPage;
 import io.salvia95.cozy.ui.CozyViews;
 
 /**
- * 메모 화면 (PRD §6.7). 쓰기는 MemoFacade, 읽기는 MemoFinder(spi)로 하고 spi DTO를 화면 DTO(api.dto)로 바꾼다.
+ * 메모 화면. 쓰기는 MemoFacade, 읽기는 MemoFinder(spi)로 하고 spi DTO를 화면 DTO(api.dto)로 바꾼다.
  * 뷰는 templates/memo/api/의 화면이다.
  */
 @Controller

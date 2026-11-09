@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import io.salvia95.cozy.runtime.CozyDiagnosticsContributor;
 
 /**
- * 진단 파일의 {@code events.txt} (PRD §9.5): 미완료 이벤트 개수, 상태별 개수, 오래된 미완료 기록.
+ * 진단 파일의 {@code events.txt}: 미완료 이벤트 개수, 상태별 개수, 오래된 미완료 기록.
  *
  * <p>이벤트 내용({@code serialized_event})은 업무 데이터가 들어 있을 수 있어 넣지 않는다. 종류와 리스너만 적는다.
  */

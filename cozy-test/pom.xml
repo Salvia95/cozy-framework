@@ -61,7 +61,7 @@
       <artifactId>spring-modulith-core</artifactId>
     </dependency>
 
-    <!-- 검사 4: vnu. 내장 검사에 필요 없는 서버·네트워크 부분과 log4j 1.x를 뺀다 (docs/adr/0022) -->
+    <!-- 검사 4: vnu. 내장 검사에 필요 없는 서버·네트워크 부분과 log4j 1.x를 뺀다 -->
     <dependency>
       <groupId>nu.validator</groupId>
       <artifactId>validator</artifactId>
@@ -90,7 +90,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
-          <!-- 모듈 의존 규칙 (PRD §5, docs/adr/0019) -->
+          <!-- 모듈 의존 규칙 -->
           <execution>
             <id>cozy-module-boundary</id>
             <goals>
@@ -99,7 +99,7 @@
             <configuration>
               <rules>
                 <bannedDependencies>
-                  <message>cozy-test는 cozy-rules에만 일반 의존하고, 다른 cozy 모듈은 optional로만 참조합니다 (PRD §5). optional 여부는 PomBoundaryTest가 검사합니다.</message>
+                  <message>cozy-test는 cozy-rules에만 일반 의존하고, 다른 cozy 모듈은 optional로만 참조합니다. optional 여부는 PomBoundaryTest가 검사합니다.</message>
                   <excludes>
                     <exclude>io.salvia95.cozy:*</exclude>
                   </excludes>

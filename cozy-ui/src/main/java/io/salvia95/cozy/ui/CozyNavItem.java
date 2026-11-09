@@ -1,7 +1,7 @@
 package io.salvia95.cozy.ui;
 
 /**
- * 사이드 내비 항목 (PRD §6.4). 모듈이 이 타입의 빈을 등록하면 app-shell이 {@code order}, {@code label} 순으로 그린다.
+ * 사이드 내비 항목. 모듈이 이 타입의 빈을 등록하면 app-shell이 {@code order}, {@code label} 순으로 그린다.
  *
  * <pre>{@code
  * @Bean

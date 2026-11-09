@@ -40,7 +40,7 @@ import io.salvia95.cozy.runtime.internal.HostHeaderFilter;
 import io.salvia95.cozy.runtime.internal.PropertiesFileSecretStore;
 
 /**
- * 런타임 기반 자동 설정 (PRD §9.1~9.5): 데이터 경로, 비밀 값, 127.0.0.1 고정, Host 필터, 종료, 업데이트, 진단.
+ * 런타임 기반 자동 설정: 데이터 경로, 비밀 값, 127.0.0.1 고정, Host 필터, 종료, 업데이트, 진단.
  */
 @AutoConfiguration
 @EnableConfigurationProperties(CozyRuntimeProperties.class)

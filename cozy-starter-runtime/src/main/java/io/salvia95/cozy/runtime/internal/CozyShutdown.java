@@ -9,7 +9,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * 앱 종료 (PRD §9.2). 화면 메뉴의 POST /cozy/shutdown, 트레이의 종료, 업데이트 설치, 훈련 실행이 쓴다.
+ * 앱 종료. 화면 메뉴의 POST /cozy/shutdown, 트레이의 종료, 업데이트 설치, 훈련 실행이 쓴다.
  *
  * <p>응답이 브라우저에 도착하도록 잠시 기다린 뒤 별도 스레드에서 컨텍스트를 닫는다.
  * {@code CozyApplication.run}으로 띄운 앱({@code cozy.runtime.exit-jvm=true})은 JVM도 끝낸다.

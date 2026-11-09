@@ -17,7 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import io.salvia95.cozy.events.CozyEventsProperties;
 
 /**
- * 보관 기간({@code cozy.events.retention})이 지난 완료 발행 기록과 인박스 행을 지운다 (PRD §8.1, §8.3). 기동 1분 뒤 처음,
+ * 보관 기간({@code cozy.events.retention})이 지난 완료 발행 기록과 인박스 행을 지운다. 기동 1분 뒤 처음,
  * 그 뒤 {@code cozy.events.cleanup-interval}마다 실행한다.
  *
  * <p>인박스 행은 같은 이벤트가 다시 오지 않을 만큼 오래된 것만 지운다. 미완료 발행 기록이 있는 이벤트는 재시도될 수 있으므로

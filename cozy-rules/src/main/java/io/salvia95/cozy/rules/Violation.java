@@ -1,7 +1,7 @@
 package io.salvia95.cozy.rules;
 
 /**
- * 규칙 위반 하나 (PRD §7 실패 메시지 형식).
+ * 규칙 위반 하나.
  *
  * <pre>
  * [R3] templates/voc/list.html:42 → wiki/detail :: body — wiki의 내부 템플릿입니다. ...

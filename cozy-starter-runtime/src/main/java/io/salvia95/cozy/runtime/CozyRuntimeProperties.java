@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * {@code cozy.*} 런타임 설정 (PRD §9.1, §9.2, §9.4, §9.6). 문서: docs/conventions/runtime.md
+ * {@code cozy.*} 런타임 설정. 문서: docs/conventions/runtime.md
  *
  * @param app 앱 식별
  * @param dataDir 데이터 루트 재정의. 비우면 OS 기본 위치를 쓴다.

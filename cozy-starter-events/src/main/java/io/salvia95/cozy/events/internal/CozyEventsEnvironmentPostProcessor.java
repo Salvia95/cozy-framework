@@ -8,7 +8,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
- * 이벤트 기본 설정 (PRD §8.1). 앱 설정이 있으면 그것이 먼저다.
+ * 이벤트 기본 설정. 앱 설정이 있으면 그것이 먼저다.
  *
  * <ul>
  * <li>재시작하면 미완료 이벤트를 다시 발행한다.</li>

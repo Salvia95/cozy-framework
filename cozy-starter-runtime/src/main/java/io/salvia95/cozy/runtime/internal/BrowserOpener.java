@@ -11,7 +11,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * 기본 브라우저로 주소를 연다 (PRD §9.2).
+ * 기본 브라우저로 주소를 연다.
  *
  * <p>{@link Desktop#browse}를 먼저 쓰고, 안 되면 OS의 기본 URL 처리기로 대체한다.
  * Windows는 {@code rundll32 url.dll,FileProtocolHandler}다. 모두 실패하면 주소를 로그로 남긴다.

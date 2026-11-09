@@ -18,7 +18,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import io.salvia95.cozy.sqlite.internal.CozyMigrations;
 
 /**
- * 프레임워크와 앱 마이그레이션의 분리, 백업, 이름 규칙, 체크섬 검증 (PRD §6.3).
+ * 프레임워크와 앱 마이그레이션의 분리, 백업, 이름 규칙, 체크섬 검증.
  */
 class MigrationTest {
 

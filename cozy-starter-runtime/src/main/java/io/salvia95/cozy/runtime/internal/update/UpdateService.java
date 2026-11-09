@@ -30,7 +30,7 @@ import io.salvia95.cozy.runtime.CozyDataDirectory;
 import io.salvia95.cozy.runtime.update.CozyUpdates;
 
 /**
- * 자체 업데이트 (PRD §9.4): 매니페스트 확인, 내려받기, 검증, 압축 해제, 교체 스크립트 실행.
+ * 자체 업데이트: 매니페스트 확인, 내려받기, 검증, 압축 해제, 교체 스크립트 실행.
  *
  * <ul>
  * <li>{@code cozy.update.manifest-url}이 없거나 앱 버전(build-info)을 모르면 확인하지 않는다.</li>

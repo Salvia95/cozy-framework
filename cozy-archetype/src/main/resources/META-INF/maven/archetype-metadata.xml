@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Cozy 앱 아키타입 (PRD §6.6, §10). 문서: docs/conventions/getting-started.md
+  Cozy 앱 아키타입. 문서: docs/conventions/getting-started.md
   옵션 조합의 검사와 옵션별 파일 제거는 META-INF/archetype-post-generate.groovy가 한다.
 -->
 <archetype-descriptor xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.2.0"

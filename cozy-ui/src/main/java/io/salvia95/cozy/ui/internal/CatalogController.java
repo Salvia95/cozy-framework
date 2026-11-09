@@ -21,11 +21,11 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest.Param;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 
 /**
- * 패턴 카탈로그 {@code /cozy/dev/catalog} (PRD §6.4). {@code cozy.dev.catalog.enabled=true}일 때만 등록된다.
+ * 패턴 카탈로그 {@code /cozy/dev/catalog}. {@code cozy.dev.catalog.enabled=true}일 때만 등록된다.
  *
  * <ul>
  * <li>{@code /render?id&state}: 매니페스트 fragment를 상태별 샘플로 그린다.</li>
- * <li>{@code /screen?spec&state[&fragment]}: 화면 스펙의 템플릿을 상태별 fixture로 그린다 (PRD §10).</li>
+ * <li>{@code /screen?spec&state[&fragment]}: 화면 스펙의 템플릿을 상태별 fixture로 그린다.</li>
  * <li>{@code /icons}: 쓸 수 있는 Tabler Icons 이름 전체 (오프라인에서 이름을 찾는 곳).</li>
  * </ul>
  * 미리보기는 iframe으로 분리해 레이아웃(완전한 문서)도 그대로 보인다. cozy-test의 렌더링 테스트가 같은 경로를 쓴다.

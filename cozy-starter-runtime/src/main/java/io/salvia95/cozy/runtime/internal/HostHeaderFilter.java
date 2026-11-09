@@ -13,7 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * DNS 리바인딩 차단 (PRD §9.3).
+ * DNS 리바인딩 차단.
  *
  * <p>Host 헤더가 {@code 127.0.0.1:{port}} 또는 {@code localhost:{port}}가 아니면 403으로 막는다.
  * {@code port}는 요청을 받은 커넥터의 실제 포트다. 포트를 생략한 Host는 80으로 본다.

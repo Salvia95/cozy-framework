@@ -11,7 +11,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * AOT 캐시 훈련 실행 (PRD §9.6, {@code cozy.runtime.training=true}).
+ * AOT 캐시 훈련 실행 ({@code cozy.runtime.training=true}).
  *
  * <p>기동이 끝나면 정해진 경로를 한 번씩 요청해 화면 렌더링에 쓰는 클래스까지 읽게 한 뒤 앱을 종료한다.
  * 요청이 하나라도 2xx가 아니면 종료 코드 1로 끝나 {@code -Pdist}가 실패한다.

@@ -8,7 +8,7 @@ WSL에서 검증할 수 없는 수용 기준을 Windows 11 x64에서 확인하�
 - WSL에서 `mvn verify`로 만든 `samples/reference-app/target/cozy-reference-app-1.0.0-SNAPSHOT.jar`
   - Windows 쪽 폴더(예: `C:\cozy-check\`)로 복사한다.
   - WSL 경로 `\\wsl$\...`에서 바로 실행하면 파일 잠금 동작이 달라질 수 있다.
-- `distribution/windows-checks/m1-runtime.ps1`도 같은 폴더로 복사한다.
+- `distribution/windows-checks/runtime-checks.ps1`도 같은 폴더로 복사한다.
 
 ## M1 런타임 기반
 
@@ -16,7 +16,7 @@ PowerShell에서 실행한다.
 
 ```powershell
 cd C:\cozy-check
-powershell -ExecutionPolicy Bypass -File .\m1-runtime.ps1 -Jar .\cozy-reference-app-1.0.0-SNAPSHOT.jar
+powershell -ExecutionPolicy Bypass -File .\runtime-checks.ps1 -Jar .\cozy-reference-app-1.0.0-SNAPSHOT.jar
 ```
 
 스크립트가 자동으로 확인하는 것:

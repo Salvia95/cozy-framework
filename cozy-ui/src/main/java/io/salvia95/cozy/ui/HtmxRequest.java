@@ -3,7 +3,7 @@ package io.salvia95.cozy.ui;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * htmx 요청 헤더 (PRD §6.4). 컨트롤러 메서드 인자로 받는다.
+ * htmx 요청 헤더. 컨트롤러 메서드 인자로 받는다.
  *
  * @param htmx {@code HX-Request: true}
  * @param boosted {@code HX-Boosted}

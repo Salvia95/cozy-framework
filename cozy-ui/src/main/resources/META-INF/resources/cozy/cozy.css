@@ -1,4 +1,4 @@
-/* Cozy: Tabler 위의 최소 보정 (PRD §6.4). 인라인 style은 CSP로 막혀 있으므로 화면 보정은 여기에 둔다. */
+/* Cozy: Tabler 위의 최소 보정. 인라인 style은 CSP로 막혀 있으므로 화면 보정은 여기에 둔다. */
 :root {
   --tblr-font-sans-serif: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI",
     "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;

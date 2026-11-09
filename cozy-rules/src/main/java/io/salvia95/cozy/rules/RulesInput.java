@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 검사 입력 (PRD §6.2).
+ * 검사 입력.
  *
  * @param templates 앱과 프레임워크의 템플릿. 같은 경로가 둘 다 있으면 참조는 앱 파일로 해석한다
  * @param modules Java 모듈 구조

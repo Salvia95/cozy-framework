@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * 벤더 자산과 vendor.lock이 일치하고, 외부 네트워크 참조가 없다 (PRD §6.4, §11).
+ * 벤더 자산과 vendor.lock이 일치하고, 외부 네트워크 참조가 없다.
  */
 class VendorAssetsTest {
 

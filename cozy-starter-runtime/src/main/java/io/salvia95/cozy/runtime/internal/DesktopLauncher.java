@@ -28,14 +28,14 @@ import io.salvia95.cozy.runtime.CozyDataDirectory;
 import io.salvia95.cozy.runtime.internal.update.UpdateService;
 
 /**
- * {@code CozyApplication.run}으로 띄운 앱의 데스크톱 동작 (PRD §9.2).
+ * {@code CozyApplication.run}으로 띄운 앱의 데스크톱 동작.
  *
  * <ul>
  * <li>환경이 준비되면, 컨텍스트를 만들기 전에 {@code app.lock}을 잡는다. 못 잡으면 기존 인스턴스 주소를 브라우저로 열고 조용히 끝낸다.</li>
  * <li>웹 서버가 뜨면 실제 포트를 {@code app.port}에 쓴다.</li>
  * <li>기동이 끝나면 업데이트 준비 신호({@code update/ready})를 쓰고, 브라우저를 열고({@code cozy.runtime.open-browser}),
  * 트레이 아이콘을 올린다({@code cozy.runtime.tray}).</li>
- * <li>훈련 실행({@code cozy.runtime.training})이면 위 대신 정해진 경로를 요청하고 종료한다(PRD §9.6).</li>
+ * <li>훈련 실행({@code cozy.runtime.training})이면 위 대신 정해진 경로를 요청하고 종료한다.</li>
  * <li>종료하면 트레이 아이콘을 내리고, 포트 파일을 지우고, 잠금을 푼다.</li>
  * </ul>
  */

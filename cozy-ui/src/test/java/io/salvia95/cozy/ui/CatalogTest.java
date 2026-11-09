@@ -20,7 +20,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.testapp.UiTestApp;
 
 /**
- * 매니페스트의 모든 fragment가 모든 상태에서 오류 없이 그려진다 (PRD §6.4 수용 기준).
+ * 매니페스트의 모든 fragment가 모든 상태에서 오류 없이 그려진다.
  */
 @SpringBootTest(classes = UiTestApp.class, properties = "cozy.data-dir=target/test-data/ui-catalog")
 @AutoConfigureMockMvc
@@ -43,7 +43,7 @@ class CatalogTest {
 
 	/**
 	 * fragment를 받는 fragment 안에서는 파라미터가 같은 이름의 모델 속성을 가린다. 예를 들어 페이지의 ${result}가
-	 * 패턴 파라미터 result로 바뀐다. 그래서 이런 fragment의 파라미터는 모두 cozy로 시작해야 한다 (docs/adr/0021).
+	 * 패턴 파라미터 result로 바뀐다. 그래서 이런 fragment의 파라미터는 모두 cozy로 시작해야 한다.
 	 */
 	@Test
 	void slotTakingFragmentsUseReservedParameterNames() {

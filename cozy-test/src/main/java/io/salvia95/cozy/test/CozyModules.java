@@ -14,7 +14,7 @@ import org.springframework.modulith.core.NamedInterface;
 
 import io.salvia95.cozy.rules.ModuleModel;
 
-/** Spring Modulith 모듈 구조를 cozy-rules의 {@link ModuleModel}로 바꾼다 (PRD §6.5 검사 2). */
+/** Spring Modulith 모듈 구조를 cozy-rules의 {@link ModuleModel}로 바꾼다. */
 public final class CozyModules {
 
 	private static final Map<Class<?>, ApplicationModules> CACHE = new ConcurrentHashMap<>();

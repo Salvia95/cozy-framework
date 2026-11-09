@@ -25,7 +25,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 
 /**
- * 렌더링 검사 (PRD §6.5 검사 3, 4, 5). 앱은 한 줄만 쓴다.
+ * 렌더링 검사 (C3, C4, C5). 앱은 한 줄만 쓴다.
  *
  * <pre>
  * class RenderingTest extends CozyRenderingTest {

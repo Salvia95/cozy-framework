@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <!-- 앱과 똑같이 cozy-parent만 상속하고 스타터에만 의존한다 (PRD §6.1 수용 기준, §6.7) -->
+  <!-- 앱과 똑같이 cozy-parent만 상속하고 스타터에만 의존한다 -->
   <parent>
     <groupId>io.salvia95.cozy</groupId>
     <artifactId>cozy-parent</artifactId>
@@ -30,7 +30,7 @@
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-ui</artifactId>
     </dependency>
-    <!-- 테스트 기반: 아키텍처·렌더링 검사, JUnit, MockMvc, Security Test (PRD §6.5) -->
+    <!-- 테스트 기반: 아키텍처·렌더링 검사, JUnit, MockMvc, Security Test -->
     <dependency>
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-test</artifactId>

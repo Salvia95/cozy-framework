@@ -1,7 +1,7 @@
 package io.salvia95.cozy.runtime;
 
 /**
- * 진단 파일에 내용을 더한다 (PRD §9.5). 이 타입의 빈마다 zip에 텍스트 파일 하나가 생긴다.
+ * 진단 파일에 내용을 더한다. 이 타입의 빈마다 zip에 텍스트 파일 하나가 생긴다.
  *
  * <pre>{@code
  * @Bean

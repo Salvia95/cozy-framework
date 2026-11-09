@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * 규칙마다 통과 예와 위반 예 (PRD §11 테스트: 규칙마다 통과·위반 픽스처 각 1개 이상).
+ * 규칙마다 통과 예와 위반 예: 규칙마다 통과·위반 픽스처가 각각 하나 이상 있다.
  */
 class TemplateRulesTest {
 

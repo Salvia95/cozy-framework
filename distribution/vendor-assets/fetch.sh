@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 인터넷 PC에서 벤더 자산을 내려받아 cozy-ui에 넣고 vendor.lock을 다시 쓴다 (PRD §6.4).
+# 인터넷 PC에서 벤더 자산을 내려받아 cozy-ui에 넣고 vendor.lock을 다시 쓴다.
 # - npm tarball은 레지스트리가 공개하는 sha512(dist.integrity)로 검증한다.
 # - 결과 파일의 SHA-256을 cozy-ui/vendor.lock에 기록한다. 빌드(VendorAssetsTest)가 이 값과 파일을 대조한다.
 # 필요: bash, curl, tar, python3, sha256sum, openssl
