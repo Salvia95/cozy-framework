@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.Violation;
 
 /**
  * {@code cozy describe}: 앱의 지도. 작은 모델이 파일을 다 읽지 않고도 모듈, 의존, 계약(spi), 이벤트, 화면, 공개 fragment, 남은 빈칸을 알
- * 수 있게 한다(ADR-0032 §6). 소스에서 읽고, 알아볼 수 없는 것은 추측하지 않고 {@code problems}에 적는다.
+ * 수 있게 한다. 소스에서 읽고, 알아볼 수 없는 것은 추측하지 않고 {@code problems}에 적는다.
  */
 public final class Describe {
 

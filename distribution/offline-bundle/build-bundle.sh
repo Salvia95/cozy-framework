@@ -6,7 +6,7 @@
 # 1. 비어 있는 로컬 저장소로 프레임워크 전체를 빌드·설치한다 (테스트 포함)
 # 2. 아키타입으로 옵션 3조합 앱을 만들어 verify와 -Pdist package를 돌린다 → 앱 빌드에 필요한 것이 모두 받아진다
 # 3. 저장소에서 원격 저장소 표시(_remote.repositories 등)를 지운다. 사내 미러 설정과 상관없이 오프라인에서 쓸 수 있다
-# 4. 저장소의 제3자 라이선스 목록을 만든다. 약한 카피레프트만 있는 jar는 소스 jar를 받아 함께 담는다 (ADR-0028)
+# 4. 저장소의 제3자 라이선스 목록을 만든다. 약한 카피레프트만 있는 jar는 소스 jar를 받아 함께 담는다
 # 5. Maven 배포판(SHA-512 확인), cozy-cli, 오프라인 쪽 스크립트, 문서를 담아 zip으로 묶는다
 set -euo pipefail
 
@@ -73,7 +73,7 @@ if [ "$(sha512sum "$BUNDLE/$MAVEN_FILE" | cut -d' ' -f1)" != "$MAVEN_SHA512" ]; 
   echo "[cozy] $MAVEN_FILE의 SHA-512가 맞지 않습니다 (다른 판이면 MAVEN_SHA512를 주세요)" >&2
   exit 1
 fi
-# cozy-cli (ADR-0032): 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository/에도 있어 라이선스 목록에 든다
+# cozy-cli: 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository/에도 있어 라이선스 목록에 든다
 mkdir -p "$BUNDLE/lib/cli/lib"
 cp "$ROOT/cozy-cli/target/cozy-cli-$VERSION.jar" "$BUNDLE/lib/cli/cozy-cli.jar"
 cp "$ROOT"/cozy-cli/target/lib/*.jar "$BUNDLE/lib/cli/lib/"
@@ -81,7 +81,7 @@ cp "$ROOT/distribution/offline-bundle/cozy" "$ROOT/distribution/offline-bundle/c
    "$ROOT/distribution/offline-bundle/cozy.ps1" "$ROOT/distribution/offline-bundle/README.md" "$BUNDLE/"
 chmod +x "$BUNDLE/cozy"
 mkdir -p "$BUNDLE/docs"
-cp -r "$ROOT/docs/conventions" "$ROOT/docs/adr" "$ROOT/docs/AGENTS.md" "$BUNDLE/docs/"
+cp -r "$ROOT/docs/conventions" "$ROOT/docs/adr" "$ROOT/docs/agents" "$BUNDLE/docs/"
 printf '%s\n' "$VERSION" > "$BUNDLE/COZY_VERSION"
 
 (cd "$OUT" && rm -f "cozy-offline-bundle-$VERSION.zip" && zip -qr "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION")

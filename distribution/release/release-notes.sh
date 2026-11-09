@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 릴리스 노트 초안 (ADR-0028). GitHub Release 초안의 본문이 된다. 게시 전에 변경 내용을 손으로 채운다.
+# 릴리스 노트 초안. GitHub Release 초안의 본문이 된다. 게시 전에 변경 내용을 손으로 채운다.
 #
 #   distribution/release/release-notes.sh <버전> <번들 zip>
 set -euo pipefail

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * 사용자 데이터 루트와 하위 폴더 (PRD §9.1, ADR-0010).
+ * 사용자 데이터 루트와 하위 폴더 (PRD §9.1).
  *
  * <p>앱 폴더 밖에 두어 업데이트로 앱 폴더를 교체해도 데이터가 남는다.
  * Windows는 {@code %LOCALAPPDATA%\{appId}}, 그 외(개발용)는 {@code ~/.local/share/{appId}}이고,

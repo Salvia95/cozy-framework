@@ -101,7 +101,7 @@ public record ScreenSpec(String screen, String template, List<String> fragments,
 		String template = text(map, "template", source);
 		String[] parts = template.split("/");
 		if (parts.length < 3 || !parts[1].equals("api")) {
-			throw invalid(source, "화면 템플릿은 {모듈}/api/ 아래에 있어야 합니다 (지금: " + template + ", ADR-0029)");
+			throw invalid(source, "화면 템플릿은 {모듈}/api/ 아래에 있어야 합니다 (지금: " + template + ")");
 		}
 		String expected = screenName(template);
 		if (!screen.equals(expected)) {

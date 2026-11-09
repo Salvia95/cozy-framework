@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 import io.salvia95.cozy.cli.internal.CliException;
 
-/** 레시피의 이름 규칙과 표기 바꾸기 (ADR-0032 부록 §1) */
+/** 레시피의 이름 규칙과 표기 바꾸기 */
 public final class Names {
 
 	private static final Pattern MODULE = Pattern.compile("[a-z][a-z0-9]*");

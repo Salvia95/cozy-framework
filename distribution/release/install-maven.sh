@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 릴리스 빌드용 Maven 3.10.0 설치 (ADR-0028). SHA-512를 확인하고 bin 폴더 경로를 출력한다.
+# 릴리스 빌드용 Maven 3.10.0 설치. SHA-512를 확인하고 bin 폴더 경로를 출력한다.
 #
 #   distribution/release/install-maven.sh <설치 폴더>     → <설치 폴더>/apache-maven-3.10.0/bin
 #

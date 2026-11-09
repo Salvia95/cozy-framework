@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 import io.salvia95.cozy.cli.internal.CliException;
 
 /**
- * 레시피의 필드 {@code 이름:종류[!][:라벨]} (ADR-0032 부록 §1). 예: {@code title:text!:제목}, {@code pinned:bool:고정}.
+ * 레시피의 필드 {@code 이름:종류[!][:라벨]}. 예: {@code title:text!:제목}, {@code pinned:bool:고정}.
  *
  * @param name camelCase 이름
  * @param kind 종류

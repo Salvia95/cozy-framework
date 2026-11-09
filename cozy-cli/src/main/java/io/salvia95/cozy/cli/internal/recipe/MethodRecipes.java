@@ -26,7 +26,7 @@ import io.salvia95.cozy.rules.Layer;
 import io.salvia95.cozy.rules.Role;
 
 /**
- * 2단계 레시피 query, command (ADR-0033 §4, §5.2, §5.3). 이미 있는 Finder·Facade, 구현, Mapper, Mapper XML에 메서드와 문을 더한다.
+ * 2단계 레시피 query, command. 이미 있는 Finder·Facade, 구현, Mapper, Mapper XML에 메서드와 문을 더한다.
  *
  * <ul>
  * <li>대상: 모듈 spi의 {@code *Finder}(또는 {@code *Facade})가 하나면 그것, 둘 이상이면 {@code --in}, 없으면 {@code {M}Finder}와 구현을
@@ -34,7 +34,7 @@ import io.salvia95.cozy.rules.Role;
  * <li>Mapper: 구현의 {@code *Mapper} 필드. 구현에 생성자와 필드가 하나도 없으면(명령이 만든 빈 구현) {@code {M}Mapper}를 받는 생성자를
  * 더한다. 이미 생성자가 있는데 Mapper가 없으면 고치지 않고 실패한다.</li>
  * <li>다시 실행: 네 곳(인터페이스, 구현, Mapper, XML)의 시그니처를 비교한다. 모두 있으면 바뀐 것 없음, 모두 없으면 더하고, 일부만 있거나 같은 이름이
- * 다른 시그니처로 있으면 실패한다(§3).</li>
+ * 다른 시그니처로 있으면 실패한다.</li>
  * </ul>
  */
 final class MethodRecipes {
@@ -199,7 +199,7 @@ final class MethodRecipes {
 			return use(ctx, module, mapper, mappers.getFirst().getKey());
 		}
 		if (!fields.isEmpty() || impl.constructors(target.impl()) > 0) {
-			throw new CliException(target.implFile() + "에 Mapper가 없습니다. 이미 있는 생성자는 고치지 않습니다(ADR-0033 §4). 생성자에 "
+			throw new CliException(target.implFile() + "에 Mapper가 없습니다. 이미 있는 생성자는 고치지 않습니다. 생성자에 "
 					+ "이 모듈의 *Mapper를 받도록 손으로 고친 뒤 다시 실행하세요.");
 		}
 		String mapper = Names.capitalize(module) + "Mapper";
@@ -235,7 +235,7 @@ final class MethodRecipes {
 	}
 
 	/**
-	 * 모두 있으면 그대로, 모두 없으면 더하고, 나머지는 실패한다 (ADR-0033 §3).
+	 * 모두 있으면 그대로, 모두 없으면 더하고, 나머지는 실패한다.
 	 *
 	 * @param what 출력에 적을 이름 ({@code query recent})
 	 */

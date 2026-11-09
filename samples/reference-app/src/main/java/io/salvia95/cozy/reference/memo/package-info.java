@@ -6,7 +6,7 @@
  * <li>spi: 다른 모듈이 쓰는 계약. MemoFacade(쓰기), MemoFinder(읽기), DTO, 이벤트. 템플릿은 templates/memo/spi/</li>
  * <li>internal: app.command(쓰기), app.query(읽기), domain, infra(MyBatis), config</li>
  * </ul>
- * 구조 규칙: docs/conventions/structure.md (ADR-0029)
+ * 구조 규칙: docs/conventions/structure.md
  */
 @ApplicationModule(allowedDependencies = {})
 package io.salvia95.cozy.reference.memo;

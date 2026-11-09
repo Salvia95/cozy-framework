@@ -65,13 +65,21 @@
           <include>archetype-resources/pom.xml</include>
         </includes>
       </resource>
-      <!-- AGENTS.md의 원본은 docs/AGENTS.md 하나다 -->
+      <!-- 에이전트 문서의 원본은 docs/agents/ 하나다: 앱 루트의 AGENTS.md와 .agents/skills/cozy-helper/ -->
       <resource>
-        <directory>${project.basedir}/../docs</directory>
+        <directory>${project.basedir}/../docs/agents</directory>
         <targetPath>archetype-resources</targetPath>
         <filtering>false</filtering>
         <includes>
           <include>AGENTS.md</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/../docs/agents/skills</directory>
+        <targetPath>archetype-resources/.agents/skills</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>cozy-helper/**</include>
         </includes>
       </resource>
     </resources>

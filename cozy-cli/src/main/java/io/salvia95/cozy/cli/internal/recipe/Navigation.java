@@ -5,7 +5,7 @@ import io.salvia95.cozy.rules.Layer;
 
 /**
  * 내비게이션 항목: 모듈의 {@code internal/config/{M}Configuration.java}에 {@code CozyNavItem} 빈을 덧붙인다. 덧붙일 자리는
- * {@code // cozy:append nav} 표시다. 파일이 없으면 만들고, 표시가 없으면 실패한다(ADR-0032 §2).
+ * {@code // cozy:append nav} 표시다. 파일이 없으면 만들고, 표시가 없으면 실패한다.
  */
 final class Navigation {
 

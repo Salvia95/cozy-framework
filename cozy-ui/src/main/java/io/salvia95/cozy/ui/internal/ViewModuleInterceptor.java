@@ -21,7 +21,7 @@ import io.salvia95.cozy.ui.CozyViews;
  *
  * <p>핸들러 클래스의 모듈(메인 패키지 바로 아래 패키지, 또는 {@code @ApplicationModule(id)})과 반환한 뷰 이름의 첫 경로가
  * 다르면 위반이다. 둘째 경로는 {@code api}(화면)나 {@code spi}(공개 fragment, htmx 갱신용)여야 한다. {@code internal}은 화면과
- * spi가 조합하는 재료라서 컨트롤러가 직접 반환하지 않는다(ADR-0029). {@code cozy.ui.view-module-check=fail}(cozy-test가 테스트에서 켠다)이면 요청을 실패시키고,
+ * spi가 조합하는 재료라서 컨트롤러가 직접 반환하지 않는다. {@code cozy.ui.view-module-check=fail}(cozy-test가 테스트에서 켠다)이면 요청을 실패시키고,
  * {@code warn}(기본값, 운영)이면 경고 로그만 남긴다.
  */
 public class ViewModuleInterceptor implements HandlerInterceptor {

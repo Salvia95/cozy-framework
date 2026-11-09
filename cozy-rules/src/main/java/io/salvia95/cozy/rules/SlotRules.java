@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * 검사 C9: 채우지 않은 빈칸 (ADR-0032 §3). cozy 명령이 만든 파일에서 에이전트가 채울 자리에는 {@value #MARKER} 표시가 있다. 표시가
+ * 검사 C9: 채우지 않은 빈칸. cozy 명령이 만든 파일에서 에이전트가 채울 자리에는 {@value #MARKER} 표시가 있다. 표시가
  * 남아 있으면 오류다. 다 채웠으면 표시를 지운다.
  *
  * <pre>

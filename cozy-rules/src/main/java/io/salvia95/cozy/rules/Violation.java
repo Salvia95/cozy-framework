@@ -15,7 +15,7 @@ package io.salvia95.cozy.rules;
  * @param severity 오류 또는 경고
  * @param reference 문제가 된 참조나 경로. 위치 자체가 문제면 {@code null}
  * @param message 무엇이 잘못됐고 어떻게 고치는지
- * @param command 이 위반을 고치는 cozy 명령(ADR-0032 §6). 고치는 레시피가 없으면 {@code null}
+ * @param command 이 위반을 고치는 cozy 명령. 고치는 레시피가 없으면 {@code null}
  */
 public record Violation(String location, int line, String ruleId, Severity severity, String reference, String message,
 		String command) {

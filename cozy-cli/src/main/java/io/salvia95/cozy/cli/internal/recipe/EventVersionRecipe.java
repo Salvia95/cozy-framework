@@ -36,7 +36,7 @@ import io.salvia95.cozy.rules.Layer;
 import io.salvia95.cozy.rules.Role;
 
 /**
- * {@code cozy add event-version} (ADR-0033 §5.4). 이벤트에 필드를 더하고 schemaVersion을 올리고 새 버전 샘플을 남긴다. 스키마 진화 규칙은
+ * {@code cozy add event-version}. 이벤트에 필드를 더하고 schemaVersion을 올리고 새 버전 샘플을 남긴다. 스키마 진화 규칙은
  * docs/conventions/events.md다.
  *
  * <ul>
@@ -102,7 +102,7 @@ final class EventVersionRecipe {
 		}
 		Current current = current(file, event, type, components);
 
-		// 다시 실행: 모두 있으면 바뀐 것 없음, 일부만 있거나 타입이 다르면 실패 (ADR-0033 §3)
+		// 다시 실행: 모두 있으면 바뀐 것 없음, 일부만 있거나 타입이 다르면 실패
 		List<String> present = new ArrayList<>();
 		List<String> absent = new ArrayList<>();
 		for (Field field : fields) {

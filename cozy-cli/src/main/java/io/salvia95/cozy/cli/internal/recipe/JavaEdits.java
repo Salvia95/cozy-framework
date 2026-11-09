@@ -25,7 +25,7 @@ import com.sun.source.util.Trees;
 import io.salvia95.cozy.cli.internal.CliException;
 
 /**
- * 이미 있는 Java 파일에 덧붙이는 편집기 (ADR-0033 §2). 표시(cozy:append) 대신 javac가 찾은 위치를 쓴다.
+ * 이미 있는 Java 파일에 덧붙이는 편집기. 표시(cozy:append) 대신 javac가 찾은 위치를 쓴다.
  *
  * <ul>
  * <li>멤버: 그 이름의 최상위 타입 본문의 마지막 {@code }} 바로 앞. 빈 줄 하나를 두고 넣는다.</li>
@@ -40,7 +40,7 @@ final class JavaEdits {
 	}
 
 	/**
-	 * 메서드 시그니처. 타입은 소스에 적힌 그대로(공백만 뺀다) 비교한다. 본문은 비교하지 않는다(ADR-0033 §3).
+	 * 메서드 시그니처. 타입은 소스에 적힌 그대로(공백만 뺀다) 비교한다. 본문은 비교하지 않는다.
 	 *
 	 * @param name 메서드 이름
 	 * @param returnType 반환 타입 ({@code void}, {@code List<ActivityItem>})
@@ -59,7 +59,7 @@ final class JavaEdits {
 		}
 	}
 
-	/** 덧붙일 메서드가 이미 있는가 (ADR-0033 §3) */
+	/** 덧붙일 메서드가 이미 있는가 */
 	enum Presence {
 
 		/** 같은 이름, 같은 시그니처 */

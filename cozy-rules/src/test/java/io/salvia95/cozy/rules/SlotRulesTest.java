@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * 검사 C9: 채우지 않은 빈칸 (ADR-0032 §3).
+ * 검사 C9: 채우지 않은 빈칸.
  */
 class SlotRulesTest {
 

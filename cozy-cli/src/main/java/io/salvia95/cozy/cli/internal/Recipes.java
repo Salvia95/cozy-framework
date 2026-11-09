@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@code cozy recipes}: 구조를 만드는 명령 목록 (ADR-0032 부록, 2단계는 ADR-0033). 에이전트는 파일을 만들거나 옮기지 않고 이 명령을 쓴다.
+ * {@code cozy recipes}: 구조를 만드는 명령 목록. 에이전트는 파일을 만들거나 옮기지 않고 이 명령을 쓴다.
  * 아직 만들지 않은 레시피는 {@code available: false}이고, 실행하면 종료 코드 2로 알린다. 보류한 {@code field}는 목록에 없다.
  */
 public final class Recipes {
@@ -17,14 +17,30 @@ public final class Recipes {
 	 * 레시피 하나.
 	 *
 	 * @param name {@code cozy add} 뒤의 이름, 또는 {@code link}
-	 * @param stage 1단계(새 파일과 의존 선언) 또는 2단계(이미 있는 파일에 덧붙임, ADR-0033)
+	 * @param stage 1단계(새 파일과 의존 선언) 또는 2단계(이미 있는 파일에 덧붙임)
 	 * @param usage 명령 형식
 	 * @param does 무엇을 만드는지
 	 * @param slots 에이전트가 채울 빈칸. 없으면 만든 직후 {@code mvn verify}가 통과한다
 	 * @param available 지금 쓸 수 있는가
 	 */
 	public record Recipe(String name, int stage, String usage, String does, String slots, boolean available) {
+
+		/** 앱의 cozy-helper 스킬에서 이 레시피의 플레이북 폴더 ({@code references/<이것>/PLAYBOOK.md}) */
+		public String playbook() {
+			return switch (this.name) {
+				case "link" -> "link";
+				case "enable events" -> "enable-events";
+				default -> "add-" + this.name;
+			};
+		}
 	}
+
+	/** 레시피가 아닌 명령의 플레이북: 형식과 폴더 */
+	public static final Map<String, String> OTHER_PLAYBOOKS = Map.of("describe", "cozy describe [--json]", "check",
+			"cozy check [--json]");
+
+	/** 명령이 아닌 주제의 플레이북 */
+	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens");
 
 	public static final List<Recipe> ALL = List.of(
 			new Recipe("module", 1, "cozy add module <모듈> [--label 라벨]", "빈 모듈(package-info.java, allowedDependencies = {})",
@@ -68,7 +84,8 @@ public final class Recipes {
 
 	/** 쓸 수 있는 것을 먼저, 준비 중인 것을 뒤에 둔다. 쓸 수 있는 부분은 {@link #availableText()}와 같다 */
 	public static String text() {
-		StringBuilder out = new StringBuilder("구조는 아래 명령으로 바꾸고, 명령이 남긴 빈칸(cozy:slot)만 채운다 (ADR-0032, ADR-0033).\n\n");
+		StringBuilder out = new StringBuilder("구조는 아래 명령으로 바꾸고, 명령이 남긴 빈칸(cozy:slot)만 채운다.\n"
+				+ "명령마다 자세한 사용법: .agents/skills/cozy-helper/references/<add-crud 같은 이름>/PLAYBOOK.md\n\n");
 		out.append(availableText());
 		if (ALL.stream().anyMatch((r) -> !r.available())) {
 			out.append("\n준비 중 (실행하면 종료 코드 2)\n");
@@ -77,7 +94,7 @@ public final class Recipes {
 		return out.toString();
 	}
 
-	/** 지금 쓸 수 있는 레시피만. 앱의 AGENTS.md에 이 글이 그대로 들어간다(docs/AGENTS.md, 테스트가 같은지 확인한다) */
+	/** 지금 쓸 수 있는 레시피만 */
 	public static String availableText() {
 		StringBuilder out = new StringBuilder();
 		ALL.stream().filter(Recipe::available).forEach((r) -> append(out, r));

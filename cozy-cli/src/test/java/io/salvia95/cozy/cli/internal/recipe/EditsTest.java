@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import io.salvia95.cozy.cli.internal.CliException;
 
-/** 레시피가 쓰는 편집기와 이름 규칙: 알아보는 형식만 바꾸고, 나머지는 추측하지 않고 실패한다 (ADR-0032 §2) */
+/** 레시피가 쓰는 편집기와 이름 규칙: 알아보는 형식만 바꾸고, 나머지는 추측하지 않고 실패한다 */
 class EditsTest {
 
 	static final String TAIL = "package it.cozy.app.board;\n\nimport org.springframework.modulith.ApplicationModule;\n";
@@ -153,7 +153,7 @@ class EditsTest {
 		}
 	}
 
-	/** 2단계 편집기 (ADR-0033 §2·§3): javac와 XML 파서가 찾은 위치에 덧붙이고, 알아볼 수 없으면 실패한다 */
+	/** 2단계 편집기: javac와 XML 파서가 찾은 위치에 덧붙이고, 알아볼 수 없으면 실패한다 */
 	@Nested
 	class JavaMembersAndImports {
 

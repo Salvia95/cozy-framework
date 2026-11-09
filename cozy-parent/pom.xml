@@ -61,7 +61,7 @@
     <cozy.dist.training>true</cozy.dist.training>
     <!--
       배포물에 들어가는 의존성의 허용 라이선스 (PRD §11). 이름은 dist 프로필의 licenseMerges가 맞춘 SPDX ID다.
-      이중 라이선스는 하나만 있으면 된다. 바꾸려면 ADR을 먼저 고친다 (ADR-0026).
+      이중 라이선스는 하나만 있으면 된다.
     -->
     <cozy.dist.allowed-licenses>Apache-2.0|MIT|BSD-2-Clause|BSD-3-Clause|EPL-1.0|EPL-2.0</cozy.dist.allowed-licenses>
     <cozy.java.executable>${java.home}/bin/java</cozy.java.executable>
@@ -363,7 +363,7 @@
             </executions>
           </plugin>
           <!--
-            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 본다. cozy 모듈도 목록에 들어간다(Apache-2.0, ADR-0027).
+            제3자 라이선스 목록 (PRD §11). 런타임 의존성만 본다. cozy 모듈도 목록에 들어간다(Apache-2.0).
             라이선스 정보가 없거나 허용 목록에 없으면 실패한다. CozyPackager가 결과를 다시 검사하고 실행 폴더의 licenses/에 담는다.
             - force: 결과 파일이 최신이면 플러그인이 검사를 건너뛰므로 매번 다시 만든다
             - useRepositoryMissingFiles=false: 원격 저장소에서 보충 파일을 찾지 않는다 (오프라인 빌드)

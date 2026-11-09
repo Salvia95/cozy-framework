@@ -3,7 +3,7 @@
 #   powershell -ExecutionPolicy Bypass -File distribution\offline-bundle\build-bundle.ps1 [-Output 폴더] [-MavenZip 경로또는URL]
 #
 # 순서는 build-bundle.sh와 같다: 빈 로컬 저장소로 프레임워크 빌드 → 아키타입 3조합 verify·-Pdist package
-# → 원격 저장소 표시 정리 → 제3자 라이선스 목록(소스 jar 포함, ADR-0028) → Maven 배포판(SHA-512 확인)·스크립트·문서와 함께 zip.
+# → 원격 저장소 표시 정리 → 제3자 라이선스 목록(소스 jar 포함) → Maven 배포판(SHA-512 확인)·스크립트·문서와 함께 zip.
 param(
   [string]$Output,
   [string]$MavenZip = 'https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.0/apache-maven-3.10.0-bin.zip',
@@ -83,7 +83,7 @@ else { Copy-Item $MavenZip $Bundle }
 if ((Get-FileHash -Algorithm SHA512 $mavenTarget).Hash.ToLowerInvariant() -ne $MavenSha512) {
   throw "[cozy] $MavenFile의 SHA-512가 맞지 않습니다 (다른 판이면 -MavenSha512를 주세요)"
 }
-# cozy-cli (ADR-0032): 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository\에도 있어 라이선스 목록에 든다
+# cozy-cli: 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository\에도 있어 라이선스 목록에 든다
 $cliLib = New-Item -ItemType Directory -Force -Path (Join-Path $Bundle 'lib\cli\lib')
 Copy-Item (Join-Path $Root "cozy-cli\target\cozy-cli-$Version.jar") (Join-Path $Bundle 'lib\cli\cozy-cli.jar')
 Copy-Item (Join-Path $Root 'cozy-cli\target\lib\*.jar') $cliLib
@@ -91,8 +91,7 @@ foreach ($file in @('cozy', 'cozy.cmd', 'cozy.ps1', 'README.md')) {
   Copy-Item (Join-Path $PSScriptRoot $file) $Bundle
 }
 $docs = New-Item -ItemType Directory -Force -Path (Join-Path $Bundle 'docs')
-Copy-Item -Recurse (Join-Path $Root 'docs\conventions'), (Join-Path $Root 'docs\adr') $docs
-Copy-Item (Join-Path $Root 'docs\AGENTS.md') $docs
+Copy-Item -Recurse (Join-Path $Root 'docs\conventions'), (Join-Path $Root 'docs\adr'), (Join-Path $Root 'docs\agents') $docs
 Set-Content -Path (Join-Path $Bundle 'COZY_VERSION') -Value $Version -Encoding ASCII
 
 $zip = Join-Path $Output "cozy-offline-bundle-$Version.zip"

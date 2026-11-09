@@ -32,7 +32,7 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
-    <!-- 앱의 package-info.java에서 @ApplicationModule을 쓰기 위한 API (ADR-0005) -->
+    <!-- 앱의 package-info.java에서 @ApplicationModule을 쓰기 위한 API -->
     <dependency>
       <groupId>org.springframework.modulith</groupId>
       <artifactId>spring-modulith-api</artifactId>
@@ -55,7 +55,7 @@
       <resource>
         <directory>src/main/resources</directory>
       </resource>
-      <!-- Cozy의 LICENSE와 NOTICE. 패키저가 앱 실행 폴더의 licenses/에 담는다 (ADR-0027) -->
+      <!-- Cozy의 LICENSE와 NOTICE. 패키저가 앱 실행 폴더의 licenses/에 담는다 -->
       <resource>
         <directory>${project.basedir}/..</directory>
         <targetPath>META-INF/cozy</targetPath>

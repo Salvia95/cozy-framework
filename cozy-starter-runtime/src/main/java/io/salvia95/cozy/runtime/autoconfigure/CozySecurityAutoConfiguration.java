@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 보안 최소선 (PRD §9.3, ADR-0015).
+ * 보안 최소선 (PRD §9.3).
  *
  * <p>로그인은 없다. 모든 요청을 허용하고, CSRF와 보안 헤더만 켠다.
  * CSP는 자기 출처만 허용하고 인라인 스크립트를 막는다. Tabler CSS가 쓰는 data: 이미지는 허용한다.

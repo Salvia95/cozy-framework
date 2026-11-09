@@ -113,7 +113,7 @@ public record FragmentManifest(List<Entry> fragments) {
 	}
 
 	/**
-	 * 매니페스트 파일 하나를 읽는다. 형식 검사를 바꾸면 cozy-cli의 {@code AppResources.manifest}도 같이 고친다 (ADR-0032 §5).
+	 * 매니페스트 파일 하나를 읽는다. 형식 검사를 바꾸면 cozy-cli의 {@code AppResources.manifest}도 같이 고친다.
 	 * @param in YAML (UTF-8)
 	 * @param source 메시지에 보일 위치
 	 */

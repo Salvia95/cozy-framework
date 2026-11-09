@@ -36,7 +36,7 @@ mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCa
 - 공개 API와 규약: [docs/conventions/](docs/conventions/README.md)
 - 모듈 구조: [docs/conventions/structure.md](docs/conventions/structure.md)
 - 결정 기록: [docs/adr/](docs/adr/README.md)
-- 코딩 에이전트용 규칙(생성 앱에 들어간다): [docs/AGENTS.md](docs/AGENTS.md)
+- 코딩 에이전트 문서(생성 앱에 들어간다): [docs/agents/](docs/agents/AGENTS.md) — `AGENTS.md`와 `cozy-helper` 스킬
 - 오프라인 번들: [distribution/offline-bundle/README.md](distribution/offline-bundle/README.md)
 - 릴리스 절차: [docs/conventions/release.md](docs/conventions/release.md)
 

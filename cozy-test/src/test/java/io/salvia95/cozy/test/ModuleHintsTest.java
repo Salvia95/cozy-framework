@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-/** C1 메시지에서 고치는 명령 찾기: 다른 모듈의 spi를 쓰는데 선언이 빠진 경우만 cozy link (ADR-0032 §6) */
+/** C1 메시지에서 고치는 명령 찾기: 다른 모듈의 spi를 쓰는데 선언이 빠진 경우만 cozy link */
 class ModuleHintsTest {
 
 	/** Modulith 2.1.2가 낸 그대로 (samples/violations/checks/C1-modulith) */

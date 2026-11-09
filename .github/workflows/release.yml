@@ -1,6 +1,6 @@
 name: release
 
-# 오프라인 번들을 만들고 검증해 GitHub Release 초안에 올린다 (ADR-0028).
+# 오프라인 번들을 만들고 검증해 GitHub Release 초안에 올린다.
 # - 태그 vX.Y.Z push: 버전 확인 → 종단 검증 → 번들 → 오프라인 검증 → 릴리스 초안(게시는 사람이 한다)
 # - 수동 실행(workflow_dispatch): 같은 빌드와 검증만 하고 번들을 실행 결과(artifact)로 남긴다. 릴리스는 만들지 않는다
 on:

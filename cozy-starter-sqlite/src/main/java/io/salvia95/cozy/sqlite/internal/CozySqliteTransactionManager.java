@@ -19,7 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import io.salvia95.cozy.sqlite.CozyDatabaseBusyException;
 
 /**
- * 쓰기 트랜잭션은 {@code BEGIN IMMEDIATE}, 읽기 전용 트랜잭션은 {@code BEGIN DEFERRED}로 시작한다 (ADR-0020).
+ * 쓰기 트랜잭션은 {@code BEGIN IMMEDIATE}, 읽기 전용 트랜잭션은 {@code BEGIN DEFERRED}로 시작한다.
  *
  * <p>SQLite 기본(DEFERRED)에서는 읽기로 시작한 트랜잭션이 쓰기로 올라갈 때 다른 연결이 먼저 썼으면
  * {@code busy_timeout}을 기다리지 않고 바로 SQLITE_BUSY로 실패한다. 조회 후 수정하는 흔한 패턴이 여기에 해당한다.

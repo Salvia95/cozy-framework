@@ -123,7 +123,7 @@ final class ThirdPartyLicenses {
 		List<String> violations = violations(dependencies, allowedSet);
 		if (!violations.isEmpty()) {
 			throw new IllegalStateException("허용 목록(" + String.join(", ", new TreeSet<>(allowedSet))
-					+ ")에 없는 라이선스의 의존성이 있습니다. 의존성을 바꾸거나, 라이선스 검토 후 ADR로 허용 목록을 고치세요:\n  "
+					+ ")에 없는 라이선스의 의존성이 있습니다. 의존성을 바꾸거나, 라이선스를 검토한 뒤 cozy-parent의 cozy.dist.allowed-licenses를 고치세요:\n  "
 					+ String.join("\n  ", violations));
 		}
 

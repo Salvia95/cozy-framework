@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 프레임워크 버전을 바꾼다 (ADR-0028). 모든 cozy 모듈이 같은 버전을 쓴다(ADR-0016).
+# 프레임워크 버전을 바꾼다. 모든 cozy 모듈이 같은 버전을 쓴다.
 #
 #   distribution/release/set-version.sh 1.0.0            # 릴리스
 #   distribution/release/set-version.sh 1.1.0-SNAPSHOT   # 릴리스 다음 개발 버전

@@ -91,7 +91,7 @@ function New-CozyApp([object[]]$MvnArgs) {
   exit $LASTEXITCODE
 }
 
-# describe, check, recipes, add, link, enable은 cozy-cli가 한다 (ADR-0032 §5). 번들 저장소의 cozy-ui jar를 읽는다
+# describe, check, recipes, add, link, enable은 cozy-cli가 한다. 번들 저장소의 cozy-ui jar를 읽는다
 function Invoke-CozyCli([object[]]$CliArgs) {
   $jar = Join-Path $Root 'lib\cli\cozy-cli.jar'
   if (-not (Test-Path $jar)) {

@@ -3,14 +3,14 @@ cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!
 cozy add module activity --label 활동
 cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
-# 화면 조각의 파라미터가 될 spi DTO (2단계 dto, ADR-0033)
+# 화면 조각의 파라미터가 될 spi DTO (2단계 dto)
 cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
-# 읽기와 쓰기 (2단계 query·command, ADR-0033 §6). 빈칸은 SELECT, 쓰기 본문, INSERT
+# 읽기와 쓰기 (2단계 query·command). 빈칸은 SELECT, 쓰기 본문, INSERT
 cozy add query activity recent --param limit:int --returns list:ActivityItem
 cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
 cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
 cozy link dashboard --uses memo,activity
 hand reference-filled
-# 빈칸을 채운 뒤에도 2단계 명령은 바뀐 것이 없다(메서드 본문과 SQL은 비교하지 않는다, ADR-0033 §3)
+# 빈칸을 채운 뒤에도 2단계 명령은 바뀐 것이 없다(메서드 본문과 SQL은 비교하지 않는다)
 rerun query command

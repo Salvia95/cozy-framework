@@ -87,7 +87,7 @@ new_app() {
     -Dversion=1.0.0-SNAPSHOT "$@"
 }
 
-# describe, check, recipes, add, link, enable은 cozy-cli가 한다 (ADR-0032 §5). 번들 저장소의 cozy-ui jar를 읽는다
+# describe, check, recipes, add, link, enable은 cozy-cli가 한다. 번들 저장소의 cozy-ui jar를 읽는다
 cli() {
   local jar="$ROOT/lib/cli/cozy-cli.jar"
   if [ ! -f "$jar" ]; then

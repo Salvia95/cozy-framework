@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Tabler Icons (MIT) 이름 목록. 화면에서는 {@code ~{cozy/icon/tabler :: icon('plus')}}로 쓴다(ADR-0030).
+ * Tabler Icons (MIT) 이름 목록. 화면에서는 {@code ~{cozy/icon/tabler :: icon('plus')}}로 쓴다.
  *
  * <p>cozy-ui jar에 든 스프라이트에서 이름을 읽는다. 템플릿에 글자로 쓴 이름은 규칙 R13이, Java에서 넘기는 이름은
  * 이 클래스를 쓰는 쪽(예: {@link CozyNavItem})이 확인한다.

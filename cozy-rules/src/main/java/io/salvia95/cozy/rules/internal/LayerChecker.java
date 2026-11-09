@@ -13,7 +13,7 @@ import io.salvia95.cozy.rules.Severity;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * 검사 C8 (ADR-0029). 모듈 안의 배치와 이름, 레이어 방향. 어긴 곳마다 위치와 고치는 방법을 한 줄로 보고한다. 예외 목록은 두지 않는다
+ * 검사 C8. 모듈 안의 배치와 이름, 레이어 방향. 어긴 곳마다 위치와 고치는 방법을 한 줄로 보고한다. 예외 목록은 두지 않는다
  * (실패로 닫는다). 같은 메시지는 한 번만 보고하고, 메시지 순서로 정렬한다.
  */
 public final class LayerChecker {

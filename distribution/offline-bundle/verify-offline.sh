@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 오프라인 번들 수용 기준 검증 (PRD §9.7, Linux). 네트워크를 끊은 상태에서 번들만으로
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
-# 이벤트 앱에는 cozy add·link로 구조를 더한 뒤 verify한다 (ADR-0032 M11 완료 기준).
+# 이벤트 앱에는 cozy add·link로 구조를 더한 뒤 verify한다.
 #
 #   distribution/offline-bundle/verify-offline.sh <번들 zip>
 #
@@ -35,7 +35,7 @@ unzip -q "$ZIP"
 BUNDLE="$(ls -d "$WORK"/cozy-offline-bundle-*/ | head -1)"
 BUNDLE="${BUNDLE%/}"
 
-# 라이선스 목록 (ADR-0028): 번들의 저장소만으로 다시 만들어 담긴 목록과 같은지 본다.
+# 라이선스 목록: 번들의 저장소만으로 다시 만들어 담긴 목록과 같은지 본다.
 # 네트워크가 없으므로 약한 카피레프트 jar의 소스 jar가 빠져 있으면 여기서 실패한다
 VERSION="$(cat "$BUNDLE/COZY_VERSION")"
 MAVEN_FILE="$(basename "$(ls "$BUNDLE"/apache-maven-*-bin.zip | head -1)")"

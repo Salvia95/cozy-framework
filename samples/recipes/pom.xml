@@ -11,7 +11,7 @@
   </parent>
   <artifactId>cozy-recipes-fixtures</artifactId>
   <name>Cozy :: Samples :: Recipes</name>
-  <description>cozy add·link 레시피 종단 검증 (ADR-0032 M10). 기본 앱에 레시피를 실행하고 mvn verify 결과를 확인한다. 배포하지 않는다.</description>
+  <description>cozy add·link·enable 레시피 종단 검증. 기본 앱에 레시피를 실행하고 mvn verify 결과를 확인한다. 배포하지 않는다.</description>
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

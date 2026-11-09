@@ -13,7 +13,7 @@
 
   <artifactId>cozy-cli</artifactId>
   <name>Cozy :: CLI</name>
-  <description>cozy 명령: 앱 구조 보기(describe), 빠른 검사(check), 레시피(ADR-0032)</description>
+  <description>cozy 명령: 앱 구조 보기(describe), 빠른 검사(check), 레시피</description>
   <url>https://github.com/Salvia95/cozy-framework</url>
   <licenses>
     <license>
@@ -79,7 +79,7 @@
             <configuration>
               <rules>
                 <bannedDependencies>
-                  <message>cozy-cli는 cozy-rules와 SnakeYAML(그리고 JDK)에만 의존합니다 (ADR-0016 개정, ADR-0032 §5). 앱이 쓰는 스타터나 cozy-ui를 쓰지 마세요.</message>
+                  <message>cozy-cli는 cozy-rules와 SnakeYAML(그리고 JDK)에만 의존합니다. 앱이 쓰는 스타터나 cozy-ui를 쓰지 마세요.</message>
                   <excludes>
                     <exclude>*:*:*:*:compile</exclude>
                     <exclude>*:*:*:*:runtime</exclude>

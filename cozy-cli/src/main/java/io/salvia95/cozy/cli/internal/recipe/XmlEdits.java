@@ -21,7 +21,7 @@ import org.xml.sax.SAXException;
 import io.salvia95.cozy.cli.internal.CliException;
 
 /**
- * 이미 있는 Mapper XML과 pom에 덧붙이는 편집기 (ADR-0033 §2). JDK의 XML 파서로 형식을 확인하고, 알아보는 형식이 아니면 추측하지 않고 실패한다.
+ * 이미 있는 Mapper XML과 pom에 덧붙이는 편집기. JDK의 XML 파서로 형식을 확인하고, 알아보는 형식이 아니면 추측하지 않고 실패한다.
  * 외부 DTD(MyBatis의 mybatis-3-mapper.dtd)는 읽지 않는다. 고친 결과는 다시 읽어 본다.
  */
 final class XmlEdits {

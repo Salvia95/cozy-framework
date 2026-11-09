@@ -1,11 +1,11 @@
-# ADR-0032 부록 §5: reference-app을 레시피로 다시 만든다. 빈칸을 채우기 전이라 C9만 실패해야 한다
+# reference-app을 레시피로 다시 만든다. 빈칸을 채우기 전이라 C9만 실패해야 한다
 cozy add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목 --field body:longtext:본문 --field pinned:bool:고정 --publish created
 cozy add module activity --label 활동
 cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
-# 화면 조각의 파라미터가 될 spi DTO (2단계 dto, ADR-0033)
+# 화면 조각의 파라미터가 될 spi DTO (2단계 dto)
 cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지" --field "at:text:언제 (yyyy-MM-dd HH:mm)"
-# 읽기와 쓰기 (2단계 query·command, ADR-0033 §6). 빈칸은 SELECT, 쓰기 본문, INSERT
+# 읽기와 쓰기 (2단계 query·command). 빈칸은 SELECT, 쓰기 본문, INSERT
 cozy add query activity recent --param limit:int --returns list:ActivityItem
 cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"

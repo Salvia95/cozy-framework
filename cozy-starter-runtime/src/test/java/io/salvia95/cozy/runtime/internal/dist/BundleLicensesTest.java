@@ -16,7 +16,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** 오프라인 번들 저장소의 라이선스 목록 (ADR-0028) */
+/** 오프라인 번들 저장소의 라이선스 목록 */
 class BundleLicensesTest {
 
 	@TempDir
@@ -62,7 +62,7 @@ class BundleLicensesTest {
 			.containsExactly("?GNU Lesser General Public License", "Apache-2.0");
 		assertThat(found.get("org.example:nolicense:1.0").licenses()).containsExactly("Apache-2.0");
 		assertThat(found.get("org.example:nolicense:1.0").from()).isEqualTo("override: 상위 저장소 LICENSE 확인");
-		// Cozy 자신은 POM에 라이선스를 두지 않는다(앱이 cozy-parent를 상속, ADR-0027)
+		// Cozy 자신은 POM에 라이선스를 두지 않는다(앱이 cozy-parent를 상속)
 		assertThat(found.get("io.salvia95.cozy:cozy-parent:1.0.0").licenses()).containsExactly("Apache-2.0");
 		assertThat(found.get("io.salvia95.cozy:cozy-parent:1.0.0").from()).isEqualTo("Cozy");
 		assertThat(BundleLicenses.problems(found.values())).isEmpty();

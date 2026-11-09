@@ -10,7 +10,7 @@
 | `apache-maven-3.10.0-bin.zip` | Maven 배포판 |
 | `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy version`, `cozy help` |
 | `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`를 맡는다(ADR-0032) |
-| `docs/` | AGENTS.md, 규약 문서(`conventions/`), 결정 기록(`adr/`) |
+| `docs/` | 앱의 에이전트 문서 원본(`agents/`: AGENTS.md, cozy-helper 스킬), 규약 문서(`conventions/`), 결정 기록(`adr/`) |
 | `COZY_VERSION` | 프레임워크 버전 |
 | `LICENSE`, `NOTICE` | Cozy의 라이선스(Apache-2.0) |
 | `licenses/THIRD-PARTY.txt` | `repository/`에 든 아티팩트 전부의 라이선스 목록(ADR-0028) |
@@ -52,7 +52,7 @@ $env:Path = "$env:USERPROFILE\cozy\bin;$env:USERPROFILE\cozy\apache-maven-3.10.0
 cd C:\work
 cozy new                                 # 값을 물어본다
 cd voc-assistant
-cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목"   # 구조 더하기 (AGENTS.md)
+cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목"   # 구조 더하기 (cozy-helper 스킬)
 mvn -o verify
 mvn -o -Pdist package
 ```
@@ -62,7 +62,7 @@ mvn -o -Pdist package
   - 로컬 저장소를 번들 저장소로 둔다.
   - `offline=true`로 둔다.
   - 이 Maven으로는 네트워크에 나가지 않는다.
-- **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, cozy-ui jar는 설치 폴더의 `repository/`에서 읽는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 명령 목록과 작업 순서는 앱의 `AGENTS.md`에, 형식은 `docs/conventions/cli.md`에 있다.
+- **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, cozy-ui jar는 설치 폴더의 `repository/`에서 읽는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:
   - `appId`: 영문 소문자·하이픈. 기본값은 artifactId다.

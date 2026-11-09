@@ -6,7 +6,7 @@ import java.util.Set;
 import io.salvia95.cozy.rules.internal.LayerChecker;
 
 /**
- * 검사 C8: 모듈 안의 배치와 이름, 레이어 방향 (ADR-0029). 자리는 {@link Layer}, 무엇을 어디에 어떤 이름으로 두는지는 {@link Role}에
+ * 검사 C8: 모듈 안의 배치와 이름, 레이어 방향. 자리는 {@link Layer}, 무엇을 어디에 어떤 이름으로 두는지는 {@link Role}에
  * 있다. 규칙과 메시지: docs/conventions/structure.md
  *
  * <p>입력은 어디서 읽었는지 모른다. cozy-test는 컴파일된 클래스(ArchUnit)에서, cozy-cli는 소스에서 {@link JavaType}을 만든다. 예외를

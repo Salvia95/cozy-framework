@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 생성 템플릿: cozy-cli jar의 {@code recipes/} 아래 텍스트에 {@code {{이름}}}을 채운다. 템플릿 엔진 의존 없이 JDK만 쓴다(ADR-0032 §2).
+ * 생성 템플릿: cozy-cli jar의 {@code recipes/} 아래 텍스트에 {@code {{이름}}}을 채운다. 템플릿 엔진 의존 없이 JDK만 쓴다.
  * 채울 값이 없는 이름이 남으면 실패한다(템플릿 오타를 조용히 넘기지 않는다).
  */
 public final class Template {

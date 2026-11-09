@@ -18,7 +18,7 @@ import io.salvia95.cozy.cli.internal.JavaSources;
 import io.salvia95.cozy.rules.Layer;
 import io.salvia95.cozy.rules.Role;
 
-/** 1단계 레시피: module, link, event, listener, migration, fragment (ADR-0032 부록 §2) */
+/** 1단계 레시피: module, link, event, listener, migration, fragment */
 final class BasicRecipes {
 
 	private BasicRecipes() {
@@ -187,7 +187,7 @@ final class BasicRecipes {
 			link(ctx, module, List.of(source));
 		}
 		String pkg = ctx.rolePackage(module, Layer.APP_COMMAND);
-		// 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 앱 상태에 따라 내용이 달라지면 다시 실행할 때 충돌한다(ADR-0033 §5.6)
+		// 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 앱 상태에 따라 내용이 달라지면 다시 실행할 때 충돌한다
 		String facade = ensureFacade(ctx, module);
 		Template t = new Template().put("pkg", pkg)
 			.put("eventImport", eventName)

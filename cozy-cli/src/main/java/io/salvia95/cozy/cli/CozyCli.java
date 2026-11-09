@@ -22,7 +22,7 @@ import io.salvia95.cozy.cli.internal.recipe.RecipeRunner;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * cozy 명령 (ADR-0032). 형식: {@code cozy <동작> [옵션]}. 문서: docs/conventions/cli.md
+ * cozy 명령. 형식: {@code cozy <동작> [옵션]}. 문서: docs/conventions/cli.md
  *
  * <ul>
  * <li>{@code describe [--json]}: 앱의 지도(모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 빈칸)</li>
@@ -41,7 +41,7 @@ public final class CozyCli {
 	public static final int UNUSABLE = 2;
 
 	static final String USAGE = """
-			cozy 명령 (ADR-0032). 앱 폴더(또는 그 아래)에서 실행한다.
+			cozy 명령. 앱 폴더(또는 그 아래)에서 실행한다.
 
 			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
 			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)

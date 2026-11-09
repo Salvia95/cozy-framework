@@ -29,7 +29,7 @@ import io.salvia95.cozy.events.CozyEvent;
  *
  * <p>트랜잭션 어드바이저보다 안쪽에서 돌아야 한다. cozy-starter-events는 트랜잭션 어드바이저 순서를
  * {@code LOWEST_PRECEDENCE - 1000}으로 두고 이 어드바이저는 {@code LOWEST_PRECEDENCE}로 둔다. 실행 중 트랜잭션이 없으면
- * 실패로 닫는다 (ADR-0023).
+ * 실패로 닫는다.
  */
 public class InboxAdvisor extends AbstractPointcutAdvisor {
 
@@ -69,7 +69,7 @@ public class InboxAdvisor extends AbstractPointcutAdvisor {
 	private Object invoke(MethodInvocation invocation) throws Throwable {
 		if (!TransactionSynchronizationManager.isActualTransactionActive()) {
 			throw new IllegalStateException("[cozy] 인박스는 리스너 트랜잭션 안에서 실행되어야 합니다 ("
-					+ invocation.getMethod() + "). 앱에서 @EnableTransactionManagement를 직접 선언했다면 지우세요 (ADR-0023).");
+					+ invocation.getMethod() + "). 앱에서 @EnableTransactionManagement를 직접 선언했다면 지우세요.");
 		}
 		CozyEvent event = (CozyEvent) invocation.getArguments()[0];
 		String listenerId = ListenerIds.of(invocation.getMethod());

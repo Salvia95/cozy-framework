@@ -20,7 +20,7 @@ import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy;
 import io.salvia95.cozy.sqlite.CozyMigrationLocation;
 
 /**
- * 마이그레이션 순서 (PRD §6.3, ADR-0011).
+ * 마이그레이션 순서 (PRD §6.3).
  *
  * <ol>
  * <li>앱 마이그레이션 파일 이름을 검사한다. 규칙과 다르면 아무것도 적용하지 않고 실패한다.</li>

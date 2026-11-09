@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import io.salvia95.cozy.ui.testapp.UiTestApp;
 
 /**
- * 디자인 원칙이 컴포넌트에 들어 있다 (ADR-0031, docs/conventions/design.md): 색은 tone으로, 주 버튼은 오른쪽 끝, 폼은 가운데 좁게,
+ * 디자인 원칙이 컴포넌트에 들어 있다 (docs/conventions/design.md): 색은 tone으로, 주 버튼은 오른쪽 끝, 폼은 가운데 좁게,
  * 삭제는 확인 창을 거친다.
  */
 @SpringBootTest(classes = UiTestApp.class, properties = "cozy.data-dir=target/test-data/ui-design")

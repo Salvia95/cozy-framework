@@ -52,7 +52,7 @@ public class CozySqliteEnvironmentPostProcessor implements EnvironmentPostProces
 		defaults.put("spring.datasource.hikari.maximum-pool-size", "4");
 		CONNECTION_PRAGMAS
 			.forEach((key, value) -> defaults.put("spring.datasource.hikari.data-source-properties[" + key + "]", value));
-		// 앱 Flyway. 프레임워크 Flyway가 먼저 테이블을 만들기 때문에, 앱 이력이 없는 비어 있지 않은 스키마를 0번 기준선에서 시작한다(ADR-0011).
+		// 앱 Flyway. 프레임워크 Flyway가 먼저 테이블을 만들기 때문에, 앱 이력이 없는 비어 있지 않은 스키마를 0번 기준선에서 시작한다.
 		defaults.put("spring.flyway.baseline-on-migrate", "true");
 		defaults.put("spring.flyway.baseline-version", "0");
 		defaults.put("mybatis.mapper-locations", "classpath*:mapper/*/*.xml");

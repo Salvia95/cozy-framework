@@ -4,7 +4,7 @@ def log = new File(basedir, "build.log").getText("UTF-8")
   assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it
 }
 assert !log.contains("[C9]") : "빈칸이 남았습니다"
-// ADR-0033 §6: 손 작업(hand/reference-filled)에는 빈칸을 채운 결과만 있다. 구조(Finder, Mapper, 행, Service, record)는 명령이 만든다
+// 손 작업(hand/reference-filled)에는 빈칸을 채운 결과만 있다. 구조(Finder, Mapper, 행, Service, record)는 명령이 만든다
 def hand = new File(recipesHome, "hand/reference-filled/src/main/java")
 def structure = []
 hand.eachFileRecurse { f -> if (f.name ==~ /.*(Finder|FinderImpl|Mapper|Row|Service|ServiceImpl|Item)\.java/) { structure << f.name } }

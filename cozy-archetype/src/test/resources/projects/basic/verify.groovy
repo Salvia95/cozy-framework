@@ -4,7 +4,7 @@ def app = new File(basedir, "project/demo-basic").isDirectory() ? new File(based
 println "[cozy] 생성된 앱: " + app
 def file = { String path -> new File(app, path) }
 def pkg = "src/main/java/com/example/demo/basic/home"
-// 모듈 구조 (ADR-0029): api(화면), spi(계약), internal(구현), 템플릿 api/internal
+// 모듈 구조: api(화면), spi(계약), internal(구현), 템플릿 api/internal
 ["api/HomeController.java", "spi/HomeFacade.java", "spi/HomeFinder.java", "spi/dto/package-info.java",
  "internal/app/command/HomeFacadeImpl.java", "internal/app/query/HomeFinderImpl.java", "internal/domain/Note.java",
  "internal/infra/NoteStore.java", "internal/config/HomeConfiguration.java"].each {
@@ -14,7 +14,9 @@ assert file("src/main/resources/templates/home/api/index.html").isFile() : "화�
 assert file("src/main/resources/templates/home/internal/activity.html").isFile() : "조각 템플릿(home/internal)이 없습니다"
 assert file(".gitignore").isFile() : ".gitignore가 없습니다"
 assert file("AGENTS.md").text.contains("mvn -o verify") : "AGENTS.md가 없습니다"
-assert file("AGENTS.md").text.contains("cozy add crud <모듈>") : "AGENTS.md에 레시피 목록이 없습니다 (ADR-0032 §7)"
+assert file("AGENTS.md").text.contains("cozy-helper") : "AGENTS.md가 cozy-helper 스킬을 가리키지 않습니다"
+assert file(".agents/skills/cozy-helper/SKILL.md").text.startsWith("---\nname: cozy-helper\n") : "cozy-helper 스킬이 없습니다"
+assert file(".agents/skills/cozy-helper/references/add-query/PLAYBOOK.md").text.contains("LIMIT #{limit}") : "플레이북이 Velocity로 바뀌었습니다"
 assert file("src/main/resources/application.yml").getText("UTF-8").contains('name: "데모 업무 도구"') : "appName이 들어가지 않았습니다"
 assert file("target/dist/demo-basic-update.json").isFile() : "-Pdist 매니페스트가 없습니다"
 assert file("target/dist/image/demo-basic").isDirectory() : "app-image가 없습니다"

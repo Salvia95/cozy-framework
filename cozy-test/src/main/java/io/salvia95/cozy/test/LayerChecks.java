@@ -19,8 +19,8 @@ import io.salvia95.cozy.rules.ModulePackage;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * 검사 C8: 모듈 안의 패키지와 레이어 규칙 (ADR-0029). 판단은 cozy-rules의 {@link LayerRules}가 하고, 여기서는 앱의 컴파일된 클래스를
- * ArchUnit으로 읽어 {@link JavaType}으로 바꾼다. 생성기(cozy-cli)도 같은 규칙과 자리 표({@code Role})를 쓴다 (ADR-0032 §4).
+ * 검사 C8: 모듈 안의 패키지와 레이어 규칙. 판단은 cozy-rules의 {@link LayerRules}가 하고, 여기서는 앱의 컴파일된 클래스를
+ * ArchUnit으로 읽어 {@link JavaType}으로 바꾼다. 생성기(cozy-cli)도 같은 규칙과 자리 표({@code Role})를 쓴다.
  */
 final class LayerChecks {
 

@@ -21,7 +21,7 @@ import io.salvia95.cozy.rules.TemplateFile;
 
 /**
  * cozy-ui jar의 프레임워크 자원: 템플릿({@code templates/cozy/}, {@code templates/error/}), 매니페스트, Tabler Icons 스프라이트.
- * cozy 명령은 cozy-ui의 클래스를 쓰지 않고 jar를 zip으로 읽는다(ADR-0032 §5: cli → rules).
+ * cozy 명령은 cozy-ui의 클래스를 쓰지 않고 jar를 zip으로 읽는다.
  */
 public final class FrameworkJar {
 

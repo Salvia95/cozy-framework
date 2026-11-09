@@ -3,7 +3,7 @@ package io.salvia95.cozy.rules;
 import java.util.Optional;
 
 /**
- * 모듈 안의 패키지 자리 (ADR-0029). 모듈 루트에는 {@code package-info.java}만 두고, 타입은 모두 이 중 한 곳에 둔다. 하위 패키지는 그
+ * 모듈 안의 패키지 자리. 모듈 루트에는 {@code package-info.java}만 두고, 타입은 모두 이 중 한 곳에 둔다. 하위 패키지는 그
  * 자리에 속한다({@code api.dto.form}은 {@link #API_DTO}).
  *
  * <pre>

@@ -37,3 +37,4 @@
 | [0031](0031-design-system.md) | 디자인 시스템: Tabler 구현 + Polaris 원칙 + Cloudscape CRUD 흐름, 색 tone, 버튼 순서(R14, R15) | 사용자 지시 |
 | [0032](0032-agent-cli.md) | 에이전트 작업 분담: 구조는 cozy 명령이, 로직은 에이전트가. 빈칸 검사 C9, cozy-cli (0016 개정). 부록: [레시피 목록](0032-agent-cli-recipes.md) | 사용자 지시 |
 | [0033](0033-stage-two-recipes.md) | 2단계 레시피: dto, query, command, event-version, enable events. 파서가 찾은 위치에 덧붙이기, 시그니처로 비교 (0032 §2 개정) | 사용자 지시 |
+| [0034](0034-agent-skill.md) | 앱의 에이전트 문서: 가벼운 AGENTS.md와 cozy-helper 스킬(명령마다 PLAYBOOK.md), 영어·lean 작성 규칙 (0032 §7 개정) | 사용자 지시 |

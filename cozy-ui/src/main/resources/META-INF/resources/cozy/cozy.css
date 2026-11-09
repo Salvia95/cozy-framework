@@ -4,7 +4,7 @@
     "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 
-/* ── 디자인 토큰 (docs/conventions/design.md, ADR-0031) ──────────────────────────────
+/* ── 디자인 토큰 (docs/conventions/design.md) ──────────────────────────────
    색은 의미로만 쓴다. 조작(파랑 primary)과 상태 tone 다섯 가지. 글자 대비는 모두 4.5:1 이상이다.
    앱 화면은 이 클래스를 직접 쓰지 않고 tone을 받는 컴포넌트(badge, alert, deleteConfirm)를 쓴다(R14). */
 :root {

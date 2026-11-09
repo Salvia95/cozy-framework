@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 릴리스 빌드의 버전 확인 (ADR-0028). GitHub Actions의 GITHUB_OUTPUT 형식(version=...)으로 출력한다.
+# 릴리스 빌드의 버전 확인. GitHub Actions의 GITHUB_OUTPUT 형식(version=...)으로 출력한다.
 #
 #   distribution/release/check-version.sh <ref 종류: tag|branch> <ref 이름>
 #

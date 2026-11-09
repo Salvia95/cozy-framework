@@ -6,7 +6,7 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 이벤트 직렬화 전용 JsonMapper (PRD §8.2, ADR-0018). 앱의 일반 JsonMapper와 분리한다.
+ * 이벤트 직렬화 전용 JsonMapper (PRD §8.2). 앱의 일반 JsonMapper와 분리한다.
  *
  * <ul>
  * <li>알 수 없는 필드는 무시한다. 새 버전이 쓴 필드를 옛 코드가 읽는 경우는 없지만, 지운 필드가 남은 기록을 읽을 수 있다.</li>

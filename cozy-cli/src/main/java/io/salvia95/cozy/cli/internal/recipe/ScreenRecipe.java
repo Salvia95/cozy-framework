@@ -9,7 +9,7 @@ import io.salvia95.cozy.cli.internal.CliException;
 import io.salvia95.cozy.rules.Layer;
 
 /**
- * {@code cozy add screen}: 읽기 화면 하나 (ADR-0032 부록 §2.4). 컨트롤러, 화면 DTO, 템플릿(overview 또는 details 패턴), 화면 스펙, 원하면
+ * {@code cozy add screen}: 읽기 화면 하나. 컨트롤러, 화면 DTO, 템플릿(overview 또는 details 패턴), 화면 스펙, 원하면
  * 내비게이션 항목을 만든다. 컨트롤러의 화면 모델 만들기가 빈칸이다.
  */
 final class ScreenRecipe {

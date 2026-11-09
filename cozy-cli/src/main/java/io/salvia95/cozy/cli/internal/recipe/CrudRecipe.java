@@ -12,7 +12,7 @@ import io.salvia95.cozy.rules.Layer;
 import io.salvia95.cozy.rules.Role;
 
 /**
- * {@code cozy add crud}: 목록·만들기·상세·수정·삭제 한 벌 (ADR-0032 부록 §2.3). reference-app의 memo와 같은 구조다. 흐름과 문구는
+ * {@code cozy add crud}: 목록·만들기·상세·수정·삭제 한 벌. reference-app의 memo와 같은 구조다. 흐름과 문구는
  * docs/conventions/design.md §2·§3을 따른다. 빈칸이 없어서 만든 직후 {@code mvn verify}가 통과한다(생성된 테스트 포함).
  */
 final class CrudRecipe {
@@ -282,7 +282,7 @@ final class CrudRecipe {
 			String current = this.ctx.plan().current(file);
 			if ((role == Role.FACADE || role == Role.FACADE_IMPL) && current != null
 					&& BasicRecipes.isEmptyFacade(this.ctx, this.module, file, current)) {
-				// listener가 만든 빈 Facade는 crud가 채운다(ADR-0033 §5.6)
+				// listener가 만든 빈 Facade는 crud가 채운다
 				this.ctx.plan().edit(file, render(resource), "listener가 만든 빈 Facade를 crud로 채움");
 				return;
 			}

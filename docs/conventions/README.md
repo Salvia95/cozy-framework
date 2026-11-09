@@ -16,6 +16,6 @@
 | [events.md](events.md) | CozyEvent, 전달 보장, 인박스, 스키마 진화 규칙과 샘플, 외부 호출 리스너 규칙, `cozy.events.*` | M5 |
 | [distribution.md](distribution.md) | `mvn -Pdist package`, `cozy.dist.*`, AOT 캐시, SQLite 네이티브 라이브러리, 설치 위치, `cozy.update.*`, 매니페스트 형식, 업데이트·롤백 흐름, 종단 검증 | M6, M7 |
 | [getting-started.md](getting-started.md) | 새 앱 만들기: 아키타입 옵션(`appId`, `appName`, `persistence`, `events`), 생성 구조, 오프라인 번들 | M7 |
-| [../AGENTS.md](../AGENTS.md) | 생성 앱에 들어가는 코딩 에이전트용 규칙: 일하는 순서, cozy 명령 목록(`cozy recipes`와 같다), 빈칸, 파일 위치, 금지, 검증 | M7, M11 |
+| [../agents/](../agents/AGENTS.md) | 생성 앱에 들어가는 코딩 에이전트 문서(영어): 가벼운 `AGENTS.md`(Cozy 앱이라는 것, 아키타입, 약속)와 `cozy-helper` 스킬(`SKILL.md`, 명령마다 `references/<명령>/PLAYBOOK.md`). ADR-0034 | M7, M11, ADR-0034 |
 | [performance.md](performance.md) | 비기능 목표(PRD §11) 측정: 기동 시간(AOT 유무), 힙, app-image 크기, 오프라인 빌드 | M7 |
 | [release.md](release.md) | 프레임워크 릴리스 절차, 버전 바꾸기, 릴리스 워크플로, 번들 라이선스 목록과 예외 목록 형식 | 릴리스 |

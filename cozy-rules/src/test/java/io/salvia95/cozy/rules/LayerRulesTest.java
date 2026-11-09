@@ -13,7 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- * 검사 C8의 판단과 자리 표 (ADR-0029, ADR-0032 §4). 생성기(cozy-cli)와 검사기(cozy-test)가 같은 {@link Role} 표를 쓰므로, 표대로 만든
+ * 검사 C8의 판단과 자리 표. 생성기(cozy-cli)와 검사기(cozy-test)가 같은 {@link Role} 표를 쓰므로, 표대로 만든
  * 타입은 C8을 통과해야 한다.
  */
 class LayerRulesTest {

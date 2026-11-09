@@ -31,7 +31,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
- * 오프라인 번들 저장소(repository/)의 제3자 라이선스 목록 (ADR-0028).
+ * 오프라인 번들 저장소(repository/)의 제3자 라이선스 목록.
  *
  * 번들은 앱 빌드에 필요한 Maven 플러그인과 의존성을 그대로 재배포한다. 그래서 저장소의 모든 아티팩트를 검사한다.
  *
@@ -224,7 +224,7 @@ public final class BundleLicenses {
 			return new Artifact(coordinates, folder, fileBase, override.licenses(), "override: " + override.reason(), jar);
 		}
 		if (groupId.equals(COZY_GROUP) || groupId.startsWith(COZY_GROUP + ".")) {
-			// cozy-parent는 앱이 상속하므로 라이선스를 선언하지 않는다(ADR-0027). Cozy 모듈은 모두 Apache-2.0이다
+			// cozy-parent는 앱이 상속하므로 라이선스를 선언하지 않는다. Cozy 모듈은 모두 Apache-2.0이다
 			return new Artifact(coordinates, folder, fileBase, List.of("Apache-2.0"), "Cozy", jar);
 		}
 		Path current = pom;

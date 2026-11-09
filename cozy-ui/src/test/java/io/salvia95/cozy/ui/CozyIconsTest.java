@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 import org.junit.jupiter.api.Test;
 
-/** 아이콘 이름 목록은 jar의 스프라이트에서 읽는다 (ADR-0030). */
+/** 아이콘 이름 목록은 jar의 스프라이트에서 읽는다. */
 class CozyIconsTest {
 
 	@Test

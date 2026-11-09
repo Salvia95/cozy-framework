@@ -7,7 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * C1(Spring Modulith) 위반에 고치는 cozy 명령을 붙인다 (ADR-0032 §6). 다른 모듈의 spi를 쓰는데 의존 선언이 빠졌으면
+ * C1(Spring Modulith) 위반에 고치는 cozy 명령을 붙인다. 다른 모듈의 spi를 쓰는데 의존 선언이 빠졌으면
  * {@code cozy link}가 고친다. 다른 모듈의 internal을 쓰거나({@code depends on module 'b' via …}) 알아볼 수 없는 메시지는 명령을
  * 붙이지 않는다(추측하지 않는다).
  */

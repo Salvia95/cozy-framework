@@ -27,7 +27,7 @@ import io.salvia95.cozy.sqlite.internal.CozySqliteTransactionManager;
 import io.salvia95.cozy.sqlite.testapp.SampleMapper;
 
 /**
- * 쓰기 트랜잭션은 IMMEDIATE, 읽기 전용은 DEFERRED (ADR-0020).
+ * 쓰기 트랜잭션은 IMMEDIATE, 읽기 전용은 DEFERRED.
  */
 class TransactionModeTest {
 

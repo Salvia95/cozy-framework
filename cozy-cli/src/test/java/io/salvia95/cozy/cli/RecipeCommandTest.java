@@ -22,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.salvia95.cozy.cli.CozyCliTest.Result;
 
 /**
- * {@code cozy add}와 {@code cozy link}: 계획·적용·멱등·원자성과 실패 이유 (ADR-0032 §2). 생성한 앱이 {@code mvn verify}를 통과하는지는
+ * {@code cozy add}와 {@code cozy link}: 계획·적용·멱등·원자성과 실패 이유. 생성한 앱이 {@code mvn verify}를 통과하는지는
  * samples/recipes가 확인한다.
  */
 class RecipeCommandTest {
@@ -296,7 +296,7 @@ class RecipeCommandTest {
 				"메모 카드").out()).contains("[cozy] 바뀐 것 없음");
 	}
 
-	/** 위반 → 명령 (ADR-0032 §6): check가 알려 준 명령을 그대로 실행하면 그 위반이 사라진다 */
+	/** 위반 → 명령: check가 알려 준 명령을 그대로 실행하면 그 위반이 사라진다 */
 	@Test
 	void checkNamesTheCommandThatFixesAMissingDependency() throws IOException {
 		app();
@@ -324,7 +324,7 @@ class RecipeCommandTest {
 
 	static final String ACTIVITY = "src/main/java/it/cozy/app/activity/";
 
-	/** ADR-0033 §5.1: spi DTO record. 1단계처럼 파일 전체로 비교한다 */
+	/** spi DTO record. 1단계처럼 파일 전체로 비교한다 */
 	@Test
 	void dtoCreatesASpiRecordAndRunningItAgainChangesNothing() throws IOException {
 		app();
@@ -391,7 +391,7 @@ class RecipeCommandTest {
 				"""));
 	}
 
-	/** ADR-0033 §5.5: pom에 cozy-starter-events. 이미 있으면 바뀐 것 없음 */
+	/** pom에 cozy-starter-events. 이미 있으면 바뀐 것 없음 */
 	@Test
 	void enableEventsAddsTheStarterOnce() throws IOException {
 		sqliteApp();
@@ -426,7 +426,7 @@ class RecipeCommandTest {
 	}
 
 	/**
-	 * ADR-0033 §5.6: 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 그래서 Facade가 생기기 전과 후에 같은 명령이 같은 파일을 만든다. 리스너가 만든 빈
+	 * 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 그래서 Facade가 생기기 전과 후에 같은 명령이 같은 파일을 만든다. 리스너가 만든 빈
 	 * Facade는 crud가 채운다.
 	 */
 	@Test
@@ -479,7 +479,7 @@ class RecipeCommandTest {
 	static final String[] COMMAND = { "add", "command", "activity", "record", "--param", "eventId:text", "--param", "message:text",
 			"--sql", "insert" };
 
-	/** reference-app의 activity: 리스너, dto, query, command (ADR-0033 §6) */
+	/** reference-app의 activity: 리스너, dto, query, command */
 	void activity() throws IOException {
 		app();
 		ok("add", "module", "memo");
@@ -489,7 +489,7 @@ class RecipeCommandTest {
 		ok("add", "dto", "activity", "ActivityItem", "--field", "message:text", "--field", "at:text");
 	}
 
-	/** ADR-0033 §5.2: Finder가 없으면 만들고, 구현·Mapper·행·select를 함께 만든다. 빈칸은 SQL 하나다 */
+	/** Finder가 없으면 만들고, 구현·Mapper·행·select를 함께 만든다. 빈칸은 SQL 하나다 */
 	@Test
 	void queryCreatesTheFinderMapperRowAndSelect() throws IOException {
 		activity();
@@ -546,7 +546,7 @@ class RecipeCommandTest {
 		assertThat(ok(QUERY).out()).contains("[cozy] 바뀐 것 없음");
 	}
 
-	/** ADR-0033 §5.3: 쓰기는 Facade로. 리스너가 만든 빈 구현에는 Mapper를 받는 생성자를 더한다 */
+	/** 쓰기는 Facade로. 리스너가 만든 빈 구현에는 Mapper를 받는 생성자를 더한다 */
 	@Test
 	void commandAddsTheFacadeMethodAndItsSql() throws IOException {
 		activity();
@@ -662,7 +662,7 @@ class RecipeCommandTest {
 
 	static final String EVENT = MEMO + "spi/event/MemoCreated.java";
 
-	/** ADR-0033 §5.4: 필드를 박싱 타입으로 더하고, 옛 of()는 위임으로 남기고, 새 샘플을 더한다 */
+	/** 필드를 박싱 타입으로 더하고, 옛 of()는 위임으로 남기고, 새 샘플을 더한다 */
 	@Test
 	void eventVersionAddsAFieldKeepsTheOldFactoryAndWritesTheNextSample() throws IOException {
 		app();

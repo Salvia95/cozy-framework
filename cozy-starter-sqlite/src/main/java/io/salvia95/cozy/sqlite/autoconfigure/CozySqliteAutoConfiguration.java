@@ -64,7 +64,7 @@ public class CozySqliteAutoConfiguration {
 		return new SqliteExceptionTranslator();
 	}
 
-	/** 쓰기 트랜잭션은 BEGIN IMMEDIATE (ADR-0020). Boot의 DataSourceTransactionManager는 이 빈이 있으면 물러난다. */
+	/** 쓰기 트랜잭션은 BEGIN IMMEDIATE. Boot의 DataSourceTransactionManager는 이 빈이 있으면 물러난다. */
 	@Bean
 	@ConditionalOnMissingBean(TransactionManager.class)
 	CozySqliteTransactionManager transactionManager(DataSource dataSource, SQLExceptionTranslator translator) {

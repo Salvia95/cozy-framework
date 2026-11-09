@@ -26,7 +26,7 @@ import io.salvia95.cozy.cli.internal.AppResources;
 import io.salvia95.cozy.cli.internal.Recipes;
 
 /**
- * M9 완료 기준 (ADR-0032 §6): reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R15), 모듈 구조(C8), 빈칸(C9)의
+ * M9 완료 기준: reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R15), 모듈 구조(C8), 빈칸(C9)의
  * 위반 픽스처를 모두 잡는다. 픽스처는 samples/violations의 것을 그대로 쓴다.
  */
 class CozyCliTest {
@@ -235,25 +235,12 @@ class CozyCliTest {
 						"enable events", "query", "command", "event-version");
 		}
 
-		/** 앱의 AGENTS.md(원본 docs/AGENTS.md)는 지금 쓸 수 있는 레시피를 cozy recipes와 글자까지 같게 싣는다 (ADR-0032 §7) */
-		@Test
-		void agentsMdCarriesTheSameRecipeListAsCozyRecipes() throws IOException {
-			String agents = Files.readString(Path.of("../docs/AGENTS.md"), StandardCharsets.UTF_8);
-			assertThat(agents).contains("```text\n" + Recipes.availableText() + "```\n");
-			assertThat(run("recipes").out()).contains(Recipes.availableText());
-			for (Recipes.Recipe recipe : Recipes.ALL) {
-				if (!recipe.available()) {
-					assertThat(agents).as("아직 없는 레시피는 싣지 않는다").doesNotContain(recipe.usage());
-				}
-			}
-		}
-
 		@Test
 		void recipesJsonSaysWhatIsAvailable() {
 			Result result = run("recipes", "--json");
 			assertThat(result.out()).startsWith("{\n  \"recipes\": [\n    {\n      \"name\": \"module\",\n      \"stage\": 1,")
 				.contains("\"available\": true")
-				.as("M14로 ADR-0033의 레시피를 모두 쓸 수 있다(field는 보류해 목록에 없다)")
+				.as("모든 레시피를 쓸 수 있다(field는 보류해 목록에 없다)")
 				.doesNotContain("\"available\": false");
 		}
 

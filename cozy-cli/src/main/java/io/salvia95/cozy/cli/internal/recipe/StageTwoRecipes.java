@@ -14,7 +14,7 @@ import io.salvia95.cozy.cli.internal.CliException;
 import io.salvia95.cozy.rules.Layer;
 import io.salvia95.cozy.rules.Role;
 
-/** 2단계 레시피: dto, enable events (ADR-0033 §5.1, §5.5). 이미 있는 파일은 파서가 찾은 위치에 덧붙인다(§2) */
+/** 2단계 레시피: dto, enable events. 이미 있는 파일은 파서가 찾은 위치에 덧붙인다 */
 final class StageTwoRecipes {
 
 	private StageTwoRecipes() {

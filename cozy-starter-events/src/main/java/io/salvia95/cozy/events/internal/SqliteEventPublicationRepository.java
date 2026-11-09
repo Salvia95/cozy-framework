@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
 
 /**
- * SQLite 발행 기록 저장소 (PRD §8.1, ADR-0006). Spring Modulith 2.1.2의 {@code JdbcEventPublicationRepositoryV2}
+ * SQLite 발행 기록 저장소 (PRD §8.1). Spring Modulith 2.1.2의 {@code JdbcEventPublicationRepositoryV2}
  * (Apache-2.0)를 옮겼다. 완료 처리는 UPDATE 방식만 지원한다(완료 기록은 보관 기간 뒤 정리 작업이 지운다).
  *
  * <p>인터페이스의 기본 메서드도 모두 구현한다. 기본 구현은 아무 일도 하지 않아서 빠뜨리면 상태 전이와 재제출이 조용히 틀린다.
