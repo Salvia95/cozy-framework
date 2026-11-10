@@ -125,6 +125,10 @@ for combo in basic:false:false persistence:true:false events:true:true; do
   IFS=: read -r name persistence events <<< "$combo"
   cozy new -B -DinteractiveMode=false -DgroupId=com.example -DartifactId="offline-$name" \
     -Dpackage="com.example.offline.$name" -DappName="오프라인 확인" -Dpersistence="$persistence" -Devents="$events"
+  # 워크벤치: 새 앱의 pom에 dev 전용 cozy-workbench가 있고, 다시 넣으면 바뀐 것이 없다
+  grep -q "<artifactId>cozy-workbench</artifactId>" "offline-$name/pom.xml"
+  out="$(cd "offline-$name" && cozy enable workbench)"
+  grep -q "바뀐 것 없음" <<< "$out"
   # 에이전트 문서: 가벼운 AGENTS.md와 cozy-helper 스킬
   grep -q "cozy-helper" "offline-$name/AGENTS.md"
   test -f "offline-$name/.agents/skills/cozy-helper/SKILL.md"
@@ -142,4 +146,4 @@ for combo in basic:false:false persistence:true:false events:true:true; do
   test -d "offline-$name/target/dist/image/offline-$name"
   echo "[cozy] 통과: $name (persistence=$persistence, events=$events)"
 done
-echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·에이전트 문서·cozy add·enable·sync·verify·-Pdist package"
+echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·워크벤치·에이전트 문서·cozy add·enable·sync·verify·-Pdist package"
