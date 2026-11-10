@@ -316,7 +316,6 @@ class RecipeCommandTest {
 	void unknownAndStageTwoRecipes() throws IOException {
 		app();
 		fails("모르는 레시피입니다: table", "add", "table", "memo");
-		fails("cozy add field는 보류한 레시피입니다", "add", "field", "memo", "x:text");
 		fails("cozy add 뒤에 레시피 이름을 적습니다", "add");
 		fails("cozy enable 뒤에는 events나 workbench를 적습니다", "enable");
 		fails("cozy enable 뒤에는 events나 workbench를 적습니다", "enable", "mail");

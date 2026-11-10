@@ -351,38 +351,63 @@ final class CrudRecipe {
 			StringBuilder decl = new StringBuilder();
 			StringBuilder access = new StringBuilder();
 			for (Field f : fields) {
-				switch (f.kind()) {
-					case TEXT, LONGTEXT -> {
-						if (f.required()) {
-							decl.append("\t@NotBlank(message = \"").append(Names.objectParticle(f.label())).append(" 입력하세요\")\n");
-						}
-						int max = (f.kind() == Field.Kind.TEXT) ? 200 : 5000;
-						decl.append("\t@Size(max = ").append(max).append(", message = \"").append(Names.topicParticle(f.label())).append(' ')
-							.append(max).append("자까지 쓸 수 있습니다\")\n");
-					}
-					case INT, LONG, DATE -> {
-						if (f.required()) {
-							decl.append("\t@NotNull(message = \"").append(Names.objectParticle(f.label())).append(" 입력하세요\")\n");
-						}
-						if (f.kind() == Field.Kind.DATE) {
-							decl.append("\t@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)\n");
-						}
-					}
-					default -> {
-					}
-				}
-				decl.append("\tprivate ").append(f.javaType()).append(' ').append(f.name()).append(";\n\n");
+				decl.append(formDeclaration(f));
 				access.append(accessors(f));
 			}
 			return (decl.toString() + access).replaceAll("\n\n$", "\n");
 		}
 
-		private static String accessors(Field f) {
+		/** 폼의 속성 하나: 검증 애너테이션과 필드 선언. 빈 줄로 끝난다 */
+		static String formDeclaration(Field f) {
+			StringBuilder decl = new StringBuilder();
+			switch (f.kind()) {
+				case TEXT, LONGTEXT -> {
+					if (f.required()) {
+						decl.append("\t@NotBlank(message = \"").append(Names.objectParticle(f.label())).append(" 입력하세요\")\n");
+					}
+					int max = (f.kind() == Field.Kind.TEXT) ? 200 : 5000;
+					decl.append("\t@Size(max = ").append(max).append(", message = \"").append(Names.topicParticle(f.label())).append(' ')
+						.append(max).append("자까지 쓸 수 있습니다\")\n");
+				}
+				case INT, LONG, DATE -> {
+					if (f.required()) {
+						decl.append("\t@NotNull(message = \"").append(Names.objectParticle(f.label())).append(" 입력하세요\")\n");
+					}
+					if (f.kind() == Field.Kind.DATE) {
+						decl.append("\t@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)\n");
+					}
+				}
+				default -> {
+				}
+			}
+			return decl.append("\tprivate ").append(f.javaType()).append(' ').append(f.name()).append(";\n\n").toString();
+		}
+
+		/** 폼의 속성 하나가 쓰는 애너테이션의 완전한 이름 */
+		static List<String> formAnnotations(Field f) {
+			List<String> names = new ArrayList<>();
+			boolean text = f.kind() == Field.Kind.TEXT || f.kind() == Field.Kind.LONGTEXT;
+			if (text) {
+				names.add("jakarta.validation.constraints.Size");
+			}
+			if (f.required() && text) {
+				names.add("jakarta.validation.constraints.NotBlank");
+			}
+			if (f.required() && !text && f.kind() != Field.Kind.BOOL) {
+				names.add("jakarta.validation.constraints.NotNull");
+			}
+			if (f.kind() == Field.Kind.DATE) {
+				names.add("org.springframework.format.annotation.DateTimeFormat");
+			}
+			return names;
+		}
+
+		static String accessors(Field f) {
 			return "\tpublic " + f.javaType() + " " + f.getter() + "() {\n\t\treturn this." + f.name() + ";\n\t}\n\n" + "\tpublic void set"
 					+ f.pascal() + "(" + f.javaType() + " " + f.name() + ") {\n\t\tthis." + f.name() + " = " + f.name() + ";\n\t}\n\n";
 		}
 
-		private static String paramValue(Field f) {
+		static String paramValue(Field f) {
 			return switch (f.kind()) {
 				case TEXT -> f.sample();
 				case LONGTEXT -> "\"첫 줄\\n둘째 줄\"";

@@ -2,8 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것(M14)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version`, `enable events`
-- **보류한 것**: `add field`(ADR-0033 §1). 실행하면 종료 코드 2로 보류했다고 알린다.
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -188,7 +187,7 @@ cozy <동작> [옵션]
 
 ## add, link, enable
 
-레시피 하나를 실행한다. 레시피마다 만드는 파일, 빈칸, 실패하는 경우는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md) §2(1단계)와 [ADR-0033](../adr/0033-stage-two-recipes.md) §5(2단계)에 있다.
+레시피 하나를 실행한다. 레시피마다 만드는 파일, 빈칸, 실패하는 경우는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md) §2(1단계)와 [ADR-0033](../adr/0033-stage-two-recipes.md) §5(2단계)에 있다. `field`는 [ADR-0037](../adr/0037-add-field.md)에 있다.
 
 ```bash
 cozy add crud memo --entity Memo --label 메모 --icon notes \
@@ -204,6 +203,8 @@ cozy add dto activity ActivityItem --field "message:text:무엇이 있었는지"
 cozy add query activity recent --param limit:int --returns list:ActivityItem
 cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy add event-version memo MemoCreated --field pinned:bool
+cozy add field memo --entity Memo --field dueOn:date:마감일
+cozy add field memo --entity Memo --field code:text!:코드 --default 없음
 cozy enable events
 cozy enable workbench
 ```
@@ -233,6 +234,29 @@ cozy enable workbench
   - 다시 실행: 필드가 모두 같은 타입으로 있고 지금의 `of()`와 가장 높은 샘플이 그 필드를 가지면 바뀐 것 없음이다. 일부만 있거나 같은 이름이 다른 타입이면 실패한다.
   - 출력의 "다음"은 이 이벤트의 리스너(`@ApplicationModuleListener`)를 나열한다. 리스너는 옛 이벤트의 새 필드가 `null`일 때도 처리해야 한다.
   - 이벤트 파일이 바뀌므로 그 뒤에 같은 `cozy add event`(또는 `--publish`가 있는 `crud`)를 다시 실행하면 "내용이 다릅니다"로 실패한다. 빈칸을 채운 뒤의 1단계 명령과 같다.
+- **field** (ADR-0037): `cozy add crud`가 만든 한 벌에 필드 하나를 더한다. 형식은 crud의 필드와 같고 `instant`는 받지 않는다. 남기는 빈칸이 없다.
+
+  | 곳 | 더하는 것 (예: `--field dueOn:date:마감일`) |
+  | --- | --- |
+  | 새 마이그레이션 `V{시각}__{모듈}_add_{테이블}_{열}.sql` | `ALTER TABLE memo ADD COLUMN due_on TEXT;` |
+  | 도메인 `{E}`, `spi/dto/{E}Item` | 구성 요소. `createdAt` 앞 |
+  | `{E}Row`, `{E}Form` | 필드와 접근자. 폼에는 검증 애너테이션도 |
+  | `{E}Views` | `Row`(`updatedAt` 앞, `longtext`는 빼고)와 `Detail`(`createdAt` 앞, `longtext`는 `List<String> {이름}Lines`)의 구성 요소, `formOf`, `unchanged` |
+  | `{E}Facade`, `{E}FacadeImpl` | `create`·`update`의 파라미터(끝), `row.set…`(`row.setCreatedAt(…)` 앞) |
+  | `{E}Mapper`, `{E}Mapper.xml` | `update`의 `@Param`(`updatedAt` 앞), `columns`·`insert`·`update`의 열 |
+  | `templates/{모듈}/internal/fields.html` | 입력 칸 한 줄. fragment `{e}Fields`의 닫는 태그 앞 |
+  | 스펙 | 모델 타입이 `{E}Views.Detail`·`{E}Views.ListResult`·`{E}Form`인 항목의 상태마다 샘플 값. 흐름 표기와 블록 표기를 그대로 따른다 |
+  | 부르는 곳 | 아래 |
+
+  - **필수 필드**: `!`면 `--default <값>`이 있어야 한다(`bool` 제외). 이미 있는 행이 그 값을 갖는다. 필수가 아니면 `--default`를 받지 않는다. 값은 종류에 맞아야 한다(숫자, `yyyy-MM-dd`, 빈 글자 아님).
+  - **부르는 곳**: `src/main/java`와 `src/test/java`에서 `{E}Facade` 타입 변수의 `create`·`update`, `{E}Mapper` 타입 변수의 `update`, `new {E}Item(…)`·`new {E}(…)`·`new Row(…)`·`new Detail(…)`을 찾아 인자를 더한다. 타입은 풀지 않고 같은 파일의 선언과 import로 찾는다.
+    - 파라미터를 더한 메서드 안에서는 새 파라미터를 넘긴다(`longtext`를 저장할 때는 `nullToEmpty(…)`).
+    - 그 밖의 `src/main`에서는 옆 인자가 `form.getTitle()`이나 `item.title()`처럼 한 객체에서 꺼낸 값이면 같은 객체에서 꺼낸다(`form.getDueOn()`, `item.dueOn()`). 아니면 실패한다.
+    - 테스트에는 샘플 값을 넣는다. `{E}ScreenTest`에서는 폼의 속성을 모두 보내는 `.param(…)` 줄 끝에 `.param("dueOn", …)`을 더한다.
+    - 인자 수가 지금 시그니처와 다른 호출이 있으면 실패한다.
+  - **확인하는 것**: 파일 열두 개가 모두 있다(없으면 crud 한 벌이 아니라고 알린다). record의 끝이 `createdAt, updatedAt`이다. `<sql id="columns">`의 열 순서가 도메인 record와 같다. 자리를 하나라도 못 찾으면 파일과 기대한 모양을 알리고 실패한다.
+  - **다시 실행**: 도메인, `Item`, 행, 폼, `Detail`, `Facade.create`, `columns` 일곱 곳을 본다. 모두 있으면 바뀐 것 없음, 모두 없으면 더한다. 일부에만 있으면 있는 곳과 없는 곳을 알리고 실패한다. 같은 이름이 다른 타입으로 있어도 실패한다.
+  - **하지 않는 것**: 목록 검색 조건(`searchCondition`)과 이벤트에는 넣지 않는다. 출력의 "다음"이 알린다. 목록의 열과 상세의 항목은 손으로 더한다.
 - **enable workbench**: `pom.xml`의 `cozy-ui` 의존 블록 바로 뒤에 dev 전용 `cozy-workbench`를 더한다([workbench.md](workbench.md)). 이미 있으면 바뀐 것 없음이다. `cozy-ui`가 없거나 cozy-parent가 1.2.0보다 낮으면 실패한다.
 - **enable events**: `pom.xml`의 `cozy-starter-sqlite` 의존 블록 바로 뒤에 `cozy-starter-events`를 더한다. 이미 있으면 바뀐 것 없음, `cozy-starter-sqlite`가 없으면 실패한다. 아키타입 `events=true`의 예시 코드는 만들지 않는다.
 - **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.

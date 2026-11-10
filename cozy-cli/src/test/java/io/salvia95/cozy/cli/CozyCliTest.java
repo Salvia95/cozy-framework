@@ -264,7 +264,7 @@ class CozyCliTest {
 			}
 			assertThat(Recipes.ALL).extracting(Recipes.Recipe::name)
 				.containsExactly("module", "link", "crud", "screen", "fragment", "event", "listener", "migration", "dto",
-						"enable events", "enable workbench", "query", "command", "event-version");
+						"enable events", "enable workbench", "query", "command", "event-version", "field");
 		}
 
 		/** 인자 구조(params)는 폼을 만드는 데 쓴다. 사용법(usage)과 어긋나면 안 된다 */

@@ -115,16 +115,16 @@ class SyncAgentsTest {
 	void theSkillFolderIsMadeIdenticalIncludingRemovingLeftovers() throws IOException {
 		run("sync", "agents");
 		write(SKILL + "SKILL.md", "old skill\n");
-		write(SKILL + "references/add-field/PLAYBOOK.md", "a playbook this cozy does not have\n");
+		write(SKILL + "references/add-table/PLAYBOOK.md", "a playbook this cozy does not have\n");
 		Files.delete(this.app.resolve(SKILL + "references/check/PLAYBOOK.md"));
 		Result result = run("sync", "agents");
 		assertThat(result.code()).isZero();
 		assertThat(result.out()).contains("바꿈  " + SKILL + "SKILL.md")
-			.contains("지움  " + SKILL + "references/add-field/PLAYBOOK.md")
+			.contains("지움  " + SKILL + "references/add-table/PLAYBOOK.md")
 			.contains("만듦  " + SKILL + "references/check/PLAYBOOK.md")
 			.contains("[cozy] 적용했습니다");
 		assertThat(actual()).isEqualTo(expected());
-		assertThat(this.app.resolve(SKILL + "references/add-field")).doesNotExist();
+		assertThat(this.app.resolve(SKILL + "references/add-table")).doesNotExist();
 	}
 
 	@Test

@@ -1,6 +1,6 @@
 ---
 name: cozy-helper
-description: Add Cozy app structure with cozy commands (module, CRUD, screen, fragment, event, listener, migration, DTO, query, command) and fix cozy check or mvn verify violations.
+description: Add Cozy app structure with cozy commands (module, CRUD, field, screen, fragment, event, listener, migration, DTO, query, command) and fix cozy check or mvn verify violations.
 ---
 
 # cozy-helper
@@ -9,7 +9,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 
 ## When to use
 
-- Use this skill to add a module, CRUD set, read-only screen, public fragment, event, listener, migration, spi DTO, Finder read, or Facade write.
+- Use this skill to add a module, CRUD set, CRUD field, read-only screen, public fragment, event, listener, migration, spi DTO, Finder read, or Facade write.
 - Use this skill to declare that one module uses another module.
 - Use this skill to fix a `cozy check` or `mvn -o verify` violation, including an unfilled `cozy:slot` marker (`[C9]`).
 
@@ -39,6 +39,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Publish a fragment for other modules' screens | [add-fragment](references/add-fragment/PLAYBOOK.md) |
 | Declare that a module uses another module | [link](references/link/PLAYBOOK.md) |
 | Add a value record that other modules see | [add-dto](references/add-dto/PLAYBOOK.md) |
+| Add a field to an existing CRUD set | [add-field](references/add-field/PLAYBOOK.md) |
 | Add a read method with its SELECT | [add-query](references/add-query/PLAYBOOK.md) |
 | Add a write method, optionally with INSERT, UPDATE, or DELETE | [add-command](references/add-command/PLAYBOOK.md) |
 | Announce that something happened (event) | [add-event](references/add-event/PLAYBOOK.md) |

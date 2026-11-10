@@ -168,6 +168,15 @@ cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--defaul
 | M22 | "꼭 고칠 곳": 마이그레이션, Java, 호출하는 곳, Mapper XML, `fields.html`, 스펙, 테스트. 다시 실행. 단위 테스트와 "같은 결과" 테스트 |
 | M23 | "보이는 곳"과 `남은 일`, 레시피 픽스처, 플레이북과 `AGENTS.md`, `cli.md`, 워크벤치 폼 확인, 화면 확인, 번들 검증 |
 
+### M22 구현 메모
+
+- **`Row`의 자리**: 필드는 `createdAt` 필드 앞의 필드 뒤에, 접근자는 `getCreatedAt()` 앞의 접근자 뒤에 넣는다(§3의 "마지막 필드 뒤, 본문 끝"은 `Form`에만 해당한다). crud가 만드는 순서와 같게 하려는 것이다.
+- **다시 실행에서 보는 곳**: 도메인, `Item`, `Row`, `Form`, `Views.Detail`, `Facade.create`의 파라미터, Mapper XML의 `columns` 일곱 곳이다.
+- **`{E}ScreenTest`**: 폼의 속성을 모두 보내는 `.param(…)` 줄에만 더한다. 이름 필드만 비워 보내는 검증 테스트 줄은 그대로 둔다. 파일이 없으면 건너뛴다.
+- **import**: `jakarta.*`는 "그 밖" 그룹이라 crud가 만든 순서(`jakarta` 다음 `org`)와 다른 자리에 들어갈 수 있다. "같은 결과" 테스트는 import 순서를 비교하지 않는다.
+- **플레이북**: `AgentDocsTest`가 레시피마다 플레이북을 요구하므로 `add-field` 플레이북을 M22에 넣었다. `AGENTS.md`에는 명령 목록이 없어서 바꾸지 않았다.
+- **레시피 픽스처**: 실제 빌드로 확인하려고 `samples/recipes/projects/field`를 M22에 넣었다.
+
 ## 정한 것
 
 사용자가 2026-11-10에 여섯 가지 모두 제안대로 정했다.

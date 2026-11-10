@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * {@code cozy recipes}: 구조를 만드는 명령 목록. 에이전트는 파일을 만들거나 옮기지 않고 이 명령을 쓴다.
- * 아직 만들지 않은 레시피는 {@code available: false}이고, 실행하면 종료 코드 2로 알린다. 보류한 {@code field}는 목록에 없다.
+ * 아직 만들지 않은 레시피는 {@code available: false}이고, 실행하면 종료 코드 2로 알린다.
  */
 public final class Recipes {
 
@@ -113,6 +113,9 @@ public final class Recipes {
 					option("returns", "돌려주는 것: long, int, bool, text (없으면 void)", false, "long"),
 					choice("sql", "쓰기 SQL 문도 만든다", false, "insert", "update", "delete"),
 					option("in", "Facade 이름 (둘 이상일 때)", false, "ActivityFacade"))),
+			Map.entry("field", List.of(MODULE, option("entity", "crud의 엔티티 이름 (PascalCase)", true, "Memo"),
+					option("field", "더할 필드: 이름:종류[!][:라벨]. 종류는 text, longtext, int, long, bool, date", true, "dueOn:date:마감일"),
+					option("default", "필수 필드(!)일 때 이미 있는 행이 가질 값", false, "2026-01-01"))),
 			Map.entry("event-version", List.of(MODULE, positional("이벤트", "이벤트 이름", "MemoCreated"),
 					repeated("field", "더할 필드: 이름:종류", true, "pinned:bool"))));
 
@@ -154,7 +157,10 @@ public final class Recipes {
 					"cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]",
 					"Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다", "command-body, (--sql이면) command-sql", true),
 			new Recipe("event-version", 2, "cozy add event-version <모듈> <이벤트> --field 이름:종류 …",
-					"이벤트 필드 추가(박싱 타입), schemaVersion 올림, 옛 of()는 새 필드를 null로 넘김, 샘플 v{n+1} 추가", "없음", true));
+					"이벤트 필드 추가(박싱 타입), schemaVersion 올림, 옛 of()는 새 필드를 null로 넘김, 샘플 v{n+1} 추가", "없음", true),
+			new Recipe("field", 2, "cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--default 값]",
+					"crud 한 벌에 필드 하나: ALTER TABLE 마이그레이션, 도메인·DTO·폼, Facade와 Mapper, SQL, 입력 칸, 스펙 값, 부르는 곳의 인자", "없음",
+					true));
 
 	public static Map<String, Object> model() {
 		List<Object> recipes = new ArrayList<>();

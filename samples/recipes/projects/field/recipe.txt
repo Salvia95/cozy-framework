@@ -1,0 +1,14 @@
+# crud를 만든 뒤 필드를 종류마다 하나씩 더한다(필수는 --default). 빈칸이 없으니 바로 통과해야 한다
+cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목 --field done:bool:완료 --publish created
+cozy add field task --entity Task --field note:text:메모
+# 에이전트가 메서드 본문을 고친 뒤에도 더할 수 있다
+hand field
+cozy add field task --entity Task --field detail:longtext:설명
+cozy add field task --entity Task --field priority:int!:우선순위 --default 0
+cozy add field task --entity Task --field "estimate:long:예상 시간"
+cozy add field task --entity Task --field due:date:마감일
+cozy add field task --entity Task --field urgent:bool:긴급
+cozy add field task --entity Task --field code:text!:코드 --default 없음
+# 필수 필드에 --default가 없으면 실패하고 아무것도 바뀌지 않는다
+cozy! add field task --entity Task --field owner:text!:담당자
+rerun field

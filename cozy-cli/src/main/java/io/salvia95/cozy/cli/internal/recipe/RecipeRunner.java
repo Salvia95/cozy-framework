@@ -63,8 +63,7 @@ public final class RecipeRunner {
 			case "query" -> MethodRecipes.query(ctx, parsed);
 			case "command" -> MethodRecipes.command(ctx, parsed);
 			case "event-version" -> EventVersionRecipe.run(ctx, parsed);
-			case "field" -> throw new CliException("cozy add field는 보류한 레시피입니다. 필드는 손으로 더하고 cozy check와 "
-					+ "mvn verify로 확인합니다.");
+			case "field" -> FieldRecipe.run(ctx, parsed);
 			default -> throw new CliException(recipe.startsWith("enable ") ? StageTwoRecipes.ENABLE_USAGE
 					: "모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
 		};
