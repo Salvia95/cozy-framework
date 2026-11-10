@@ -25,6 +25,19 @@ public final class Recipes {
 	 */
 	public record Recipe(String name, int stage, String usage, String does, String slots, boolean available) {
 
+		/** 이 레시피의 인자. 사용법({@link #usage()})과 같은 순서다 */
+		public List<Param> params() {
+			return PARAMS.getOrDefault(this.name, List.of());
+		}
+
+		/** {@code cozy} 뒤에 오는 동작: {@code [add, crud]}, {@code [link]}, {@code [enable, events]} */
+		public List<String> command() {
+			if (this.name.equals("link")) {
+				return List.of("link");
+			}
+			return this.name.startsWith("enable ") ? List.of(this.name.split(" ")) : List.of("add", this.name);
+		}
+
 		/** 앱의 cozy-helper 스킬에서 이 레시피의 플레이북 폴더 ({@code references/<이것>/PLAYBOOK.md}) */
 		public String playbook() {
 			return switch (this.name) {
@@ -33,6 +46,75 @@ public final class Recipes {
 			};
 		}
 	}
+
+	/**
+	 * 레시피의 인자 하나. 폼을 만드는 쪽(워크벤치)이 읽는다.
+	 *
+	 * @param name 옵션이면 {@code --} 뒤의 이름, 위치 인자면 자리 이름({@code 모듈})
+	 * @param label 사람에게 보일 이름
+	 * @param option 옵션({@code --이름 값})인가. 아니면 위치 인자다
+	 * @param required 꼭 있어야 하는가
+	 * @param repeatable 여러 번 쓸 수 있는가
+	 * @param choices 고를 수 있는 값. 자유롭게 적는 값이면 빈 목록
+	 * @param example 예시 값
+	 */
+	public record Param(String name, String label, boolean option, boolean required, boolean repeatable, List<String> choices,
+			String example) {
+	}
+
+	private static Param positional(String name, String label, String example) {
+		return new Param(name, label, false, true, false, List.of(), example);
+	}
+
+	private static Param option(String name, String label, boolean required, String example) {
+		return new Param(name, label, true, required, false, List.of(), example);
+	}
+
+	private static Param choice(String name, String label, boolean required, String... choices) {
+		return new Param(name, label, true, required, false, List.of(choices), choices[0]);
+	}
+
+	private static Param repeated(String name, String label, boolean required, String example) {
+		return new Param(name, label, true, required, true, List.of(), example);
+	}
+
+	private static final Param MODULE = positional("모듈", "모듈", "memo");
+
+	/** 레시피 이름 → 인자 */
+	private static final Map<String, List<Param>> PARAMS = Map.ofEntries(
+			Map.entry("module", List.of(positional("모듈", "새 모듈 이름 (소문자)", "voc"), option("label", "라벨", false, "고객의 소리"))),
+			Map.entry("link", List.of(positional("모듈", "쓰는 모듈", "dashboard"),
+					option("uses", "쓰려는 모듈 (쉼표로 여럿)", true, "memo,activity"))),
+			Map.entry("crud", List.of(MODULE, option("entity", "엔티티 이름 (PascalCase)", true, "Memo"),
+					option("label", "화면에 보일 이름", true, "메모"), option("icon", "내비게이션 아이콘 (Tabler Icons 이름)", true, "notes"),
+					repeated("field", "필드: 이름:종류[!][:라벨]. 종류는 text, longtext, int, long, bool, date, instant", true,
+							"title:text!:제목"),
+					option("publish", "발행할 이벤트 (created, updated, deleted)", false, "created"))),
+			Map.entry("screen", List.of(MODULE, positional("화면", "화면 이름 (소문자)", "index"),
+					choice("pattern", "패턴", true, "overview", "details"), option("title", "제목", true, "대시보드"),
+					repeated("field", "화면 DTO의 필드: 이름:종류[:라벨]", false, "total:long:전체"),
+					option("nav", "내비게이션: 라벨:아이콘", false, "대시보드:dashboard"))),
+			Map.entry("fragment", List.of(MODULE, positional("이름", "fragment 이름 (소문자와 -)", "recent-activity"),
+					repeated("param", "파라미터: 이름:타입 (spi/dto의 record, list:record, text 등)", true, "items:list:ActivityItem"),
+					option("purpose", "용도 한 줄", true, "최근 활동 목록"))),
+			Map.entry("event", List.of(MODULE, positional("이벤트", "이벤트 이름 (PascalCase, 과거형)", "ReportSent"),
+					repeated("field", "필드: 이름:종류", true, "reportId:long"))),
+			Map.entry("listener", List.of(positional("모듈", "받는 모듈", "activity"),
+					option("on", "받을 이벤트: 보내는 모듈.이벤트", true, "memo.MemoCreated"), option("name", "리스너 이름", false, "MemoCreatedListener"))),
+			Map.entry("migration", List.of(MODULE, positional("설명", "설명 (소문자와 _)", "create_activity"))),
+			Map.entry("dto", List.of(MODULE, positional("Record", "record 이름 (PascalCase)", "ActivityItem"),
+					repeated("field", "필드: 이름:종류[:설명]. 같은 모듈의 record와 list:record도 쓴다", true, "message:text:무엇이 있었는지"))),
+			Map.entry("query", List.of(MODULE, positional("이름", "메서드 이름", "recent"),
+					repeated("param", "파라미터: 이름:종류", false, "limit:int"),
+					option("returns", "돌려주는 것: long, int, bool, text, Record, list:Record", true, "list:ActivityItem"),
+					option("in", "Finder 이름 (둘 이상일 때)", false, "ActivityFinder"))),
+			Map.entry("command", List.of(MODULE, positional("이름", "메서드 이름", "record"),
+					repeated("param", "파라미터: 이름:종류", false, "message:text"),
+					option("returns", "돌려주는 것: long, int, bool, text (없으면 void)", false, "long"),
+					choice("sql", "쓰기 SQL 문도 만든다", false, "insert", "update", "delete"),
+					option("in", "Facade 이름 (둘 이상일 때)", false, "ActivityFacade"))),
+			Map.entry("event-version", List.of(MODULE, positional("이벤트", "이벤트 이름", "MemoCreated"),
+					repeated("field", "더할 필드: 이름:종류", true, "pinned:bool"))));
 
 	/** 레시피가 아닌 명령의 플레이북: 형식과 폴더 */
 	public static final Map<String, String> OTHER_PLAYBOOKS = Map.of("describe", "cozy describe [--json]", "check",
@@ -77,8 +159,13 @@ public final class Recipes {
 	public static Map<String, Object> model() {
 		List<Object> recipes = new ArrayList<>();
 		for (Recipe r : ALL) {
+			List<Object> params = new ArrayList<>();
+			for (Param p : r.params()) {
+				params.add(Describe.ordered("name", p.name(), "label", p.label(), "option", p.option(), "required", p.required(),
+						"repeatable", p.repeatable(), "choices", new ArrayList<Object>(p.choices()), "example", p.example()));
+			}
 			recipes.add(Describe.ordered("name", r.name(), "stage", r.stage(), "usage", r.usage(), "does", r.does(), "slots",
-					r.slots(), "available", r.available()));
+					r.slots(), "available", r.available(), "command", new ArrayList<Object>(r.command()), "params", params));
 		}
 		return Describe.ordered("recipes", recipes);
 	}

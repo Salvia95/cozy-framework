@@ -267,6 +267,50 @@ class CozyCliTest {
 						"enable events", "enable workbench", "query", "command", "event-version");
 		}
 
+		/** 인자 구조(params)는 폼을 만드는 데 쓴다. 사용법(usage)과 어긋나면 안 된다 */
+		@Test
+		void everyRecipeDescribesItsArgumentsConsistentlyWithItsUsage() {
+			for (Recipes.Recipe recipe : Recipes.ALL) {
+				String usage = recipe.usage();
+				assertThat(usage).as(recipe.name()).startsWith("cozy " + String.join(" ", recipe.command()));
+				String rest = usage.substring(("cozy " + String.join(" ", recipe.command())).length());
+				// 옵션: --이름. 대괄호 안에서 시작하면 선택이다
+				java.util.Map<String, Boolean> options = new java.util.LinkedHashMap<>();
+				java.util.regex.Matcher option = java.util.regex.Pattern.compile("(\\[)?--([a-z-]+)").matcher(rest);
+				while (option.find()) {
+					options.put(option.group(2), option.group(1) == null);
+				}
+				int firstOption = rest.indexOf("--");
+				String head = (firstOption < 0) ? rest : rest.substring(0, firstOption);
+				long positionals = head.chars().filter((c) -> c == '<').count();
+
+				assertThat(recipe.params().stream().filter((p) -> !p.option())).as(recipe.name() + "의 위치 인자")
+					.hasSize((int) positionals)
+					.allMatch(Recipes.Param::required);
+				assertThat(recipe.params().stream().filter(Recipes.Param::option).map(Recipes.Param::name))
+					.as(recipe.name() + "의 옵션")
+					.containsExactlyElementsOf(options.keySet());
+				for (Recipes.Param param : recipe.params()) {
+					if (param.option()) {
+						assertThat(param.required()).as(recipe.name() + " --" + param.name() + "의 필수 여부")
+							.isEqualTo(options.get(param.name()));
+					}
+					assertThat(param.label()).as(recipe.name() + " " + param.name()).isNotBlank();
+				}
+			}
+			assertThat(Recipes.ALL.stream()
+				.flatMap((r) -> r.params().stream().filter(Recipes.Param::repeatable).map((p) -> r.name() + " --" + p.name())))
+				.as("여러 번 쓰는 옵션")
+				.containsExactly("crud --field", "screen --field", "fragment --param", "event --field", "dto --field",
+						"query --param", "command --param", "event-version --field");
+			Result json = run("recipes", "--json");
+			assertThat(json.out()).contains("\"params\": [")
+				.contains("\"command\": [")
+				.contains("\"choices\": [")
+				.contains("\"overview\"")
+				.contains("\"repeatable\": true");
+		}
+
 		@Test
 		void recipesJsonSaysWhatIsAvailable() {
 			Result result = run("recipes", "--json");

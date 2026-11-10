@@ -93,10 +93,23 @@ public class WorkbenchEngine {
 
 	/** {@code cozy <인자> --project <프로젝트>} */
 	public Result run(String... args) {
+		return run(List.of(args));
+	}
+
+	/** 프로젝트가 필요 없는 명령({@code recipes}) */
+	private static Result runAnywhere(String... args) {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		int code = CozyCli.run(args, Path.of(""), null, new PrintStream(out, true, StandardCharsets.UTF_8),
+				new PrintStream(err, true, StandardCharsets.UTF_8));
+		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
+	}
+
+	private Result run(List<String> args) {
 		if (this.projectDir == null) {
 			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
-		List<String> all = new ArrayList<>(List.of(args));
+		List<String> all = new ArrayList<>(args);
 		all.add("--project");
 		all.add(this.projectDir.toString());
 		if (this.uiLocation != null) {
@@ -189,6 +202,123 @@ public class WorkbenchEngine {
 					v.path("line").asInt(0), text(v, "target"), v.path("message").asString(""), text(v, "command")));
 		}
 		return new Check(root.path("errors").asLong(), root.path("warnings").asLong(), List.copyOf(violations), null);
+	}
+
+	/**
+	 * 레시피의 인자 하나 ({@code cozy recipes --json}의 {@code params[]}).
+	 *
+	 * @param option 옵션({@code --이름 값})인가. 아니면 위치 인자다
+	 */
+	public record Param(String name, String label, boolean option, boolean required, boolean repeatable, List<String> choices,
+			String example) {
+
+		/** 폼의 필드 이름 */
+		public String field() {
+			return (this.option ? "opt." : "arg.") + this.name;
+		}
+	}
+
+	/**
+	 * 레시피 하나 ({@code cozy recipes --json}의 {@code recipes[]}).
+	 *
+	 * @param command {@code cozy} 뒤에 오는 동작 ({@code [add, crud]})
+	 */
+	public record Recipe(String name, int stage, String usage, String does, String slots, List<String> command,
+			List<Param> params) {
+	}
+
+	/** {@code cozy recipes --json}. 쓸 수 있는 레시피만 */
+	public List<Recipe> recipes() {
+		Result result = runAnywhere("recipes", "--json");
+		if (result.code() != CozyCli.OK) {
+			throw new IllegalStateException("[cozy] cozy recipes가 실패했습니다: " + result.err().strip());
+		}
+		List<Recipe> recipes = new ArrayList<>();
+		for (JsonNode r : JSON.readTree(result.out()).path("recipes")) {
+			if (!r.path("available").asBoolean()) {
+				continue;
+			}
+			List<Param> params = new ArrayList<>();
+			for (JsonNode p : r.path("params")) {
+				params.add(new Param(p.path("name").asString(), p.path("label").asString(), p.path("option").asBoolean(),
+						p.path("required").asBoolean(), p.path("repeatable").asBoolean(), strings(p.path("choices")),
+						p.path("example").asString("")));
+			}
+			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("usage").asString(),
+					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params)));
+		}
+		return recipes;
+	}
+
+	private static List<String> strings(JsonNode array) {
+		List<String> values = new ArrayList<>();
+		array.forEach((v) -> values.add(v.asString()));
+		return List.copyOf(values);
+	}
+
+	/**
+	 * 계획의 파일 하나.
+	 *
+	 * @param action {@code create}, {@code edit}, {@code delete}, {@code unchanged}
+	 */
+	public record Change(String action, String file, String detail) {
+
+		/** cozy 명령이 글 출력에 쓰는 이름 */
+		public String label() {
+			return switch (this.action) {
+				case "create" -> "만듦";
+				case "edit" -> "바꿈";
+				case "delete" -> "지움";
+				default -> "그대로";
+			};
+		}
+	}
+
+	/** 채울 빈칸 하나 */
+	public record Slot(String slot, String file, int line, String what) {
+	}
+
+	/**
+	 * 레시피를 실행한 결과.
+	 *
+	 * @param applied 파일을 바꿨는가
+	 * @param error 명령이 거절한 이유. 거절하지 않았으면 {@code null}
+	 */
+	public record Outcome(boolean applied, List<Change> changes, List<Slot> slots, String next, String error) {
+
+		public boolean changesNothing() {
+			return this.error == null && this.changes.stream().allMatch((c) -> c.action().equals("unchanged"));
+		}
+	}
+
+	/**
+	 * 레시피를 실행한다. 인자는 배열 그대로 넘긴다(셸을 거치지 않는다).
+	 *
+	 * @param args {@code cozy} 뒤의 인자 ({@code add crud memo --entity Memo …})
+	 * @param dryRun 계획만 세우고 쓰지 않는다
+	 */
+	public Outcome execute(List<String> args, boolean dryRun) {
+		List<String> all = new ArrayList<>(args);
+		all.add("--json");
+		if (dryRun) {
+			all.add("--dry-run");
+		}
+		Result result = run(all);
+		if (result.code() != CozyCli.OK) {
+			return new Outcome(false, List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
+		}
+		JsonNode root = JSON.readTree(result.out());
+		List<Change> changes = new ArrayList<>();
+		for (JsonNode c : root.path("plan")) {
+			changes.add(new Change(c.path("action").asString(), c.path("file").asString(), text(c, "detail")));
+		}
+		List<Slot> slots = new ArrayList<>();
+		for (JsonNode s : root.path("slots")) {
+			slots.add(new Slot(s.path("slot").asString(), s.path("file").asString(), s.path("line").asInt(),
+					s.path("what").asString("")));
+		}
+		return new Outcome(root.path("applied").asBoolean(), List.copyOf(changes), List.copyOf(slots),
+				root.path("next").asString(""), null);
 	}
 
 	/** {@code cozy describe --json} 전체: app, modules, slots, problems */

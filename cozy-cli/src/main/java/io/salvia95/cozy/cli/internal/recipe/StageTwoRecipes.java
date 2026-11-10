@@ -139,7 +139,7 @@ final class StageTwoRecipes {
 			throw new CliException("pom.xml이 없습니다.");
 		}
 		ctx.plan().edit(file, XmlEdits.addWorkbench(file, current), "의존 += " + XmlEdits.COZY_GROUP + ":cozy-workbench");
-		return "다음: dev 프로필로 앱을 실행하고 /cozy/dev/workbench를 엽니다. pom.xml을 바꿨으니 mvn verify로 의존을 받습니다";
+		return "다음: dev 프로필로 앱을 실행하고 /cozy/dev/workbench를 엽니다. 새 의존은 mvn verify가 받습니다";
 	}
 
 	private static String enableEvents(Context ctx, Args args) {
@@ -151,6 +151,6 @@ final class StageTwoRecipes {
 		}
 		ctx.plan().edit(file, XmlEdits.addEventsStarter(file, current), "의존 += " + XmlEdits.COZY_GROUP + ":cozy-starter-events");
 		return "다음: 이벤트는 cozy add event <모듈> <이벤트> --field …로 만들고, 받는 쪽은 cozy add listener <모듈> --on <모듈>.<이벤트>. "
-				+ "pom.xml을 바꿨으니 mvn verify로 의존을 받습니다";
+				+ "새 의존은 mvn verify가 받습니다";
 	}
 }

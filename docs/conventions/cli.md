@@ -171,7 +171,20 @@ cozy <동작> [옵션]
 
 ## recipes
 
-구조를 만드는 명령의 목록이다. 1단계는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md), 2단계는 [ADR-0033](../adr/0033-stage-two-recipes.md)과 같다. 글 출력은 쓸 수 있는 레시피를 먼저, "준비 중"인 레시피를 뒤에 싣는다. 글 출력 머리에 스킬의 플레이북 위치를 적는다. 레시피마다 `references/<플레이북>/PLAYBOOK.md`가 있고, 그 `## Syntax`가 `usage`와 글자까지 같다(`AgentDocsTest`가 확인한다). `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`을 낸다.
+구조를 만드는 명령의 목록이다. 1단계는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md), 2단계는 [ADR-0033](../adr/0033-stage-two-recipes.md)과 같다. 글 출력은 쓸 수 있는 레시피를 먼저, "준비 중"인 레시피를 뒤에 싣는다. 글 출력 머리에 스킬의 플레이북 위치를 적는다. 레시피마다 `references/<플레이북>/PLAYBOOK.md`가 있고, 그 `## Syntax`가 `usage`와 글자까지 같다(`AgentDocsTest`가 확인한다). `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`, `command`, `params`를 낸다.
+
+- **`command`**: `cozy` 뒤에 오는 동작이다(`["add", "crud"]`, `["link"]`, `["enable", "events"]`).
+- **`params`**: 인자의 구조다. `usage`와 같은 순서이고, 워크벤치가 폼을 만드는 데 쓴다. `CozyCliTest`가 `usage`와 어긋나지 않는지 본다.
+
+  | 키 | 뜻 |
+  | --- | --- |
+  | `name` | 옵션이면 `--` 뒤의 이름, 위치 인자면 자리 이름(`모듈`) |
+  | `label` | 사람에게 보일 이름과 형식 |
+  | `option` | 옵션(`--이름 값`)이면 `true`, 위치 인자면 `false` |
+  | `required` | 꼭 있어야 하는가 |
+  | `repeatable` | 여러 번 쓸 수 있는가 (`--field`, `--param`) |
+  | `choices` | 고를 수 있는 값. 자유롭게 적는 값이면 빈 목록 |
+  | `example` | 예시 값 |
 
 ## add, link, enable
 

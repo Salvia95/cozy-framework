@@ -18,6 +18,9 @@
              th:data-cozy-errors="${cozyErrors}">검사<span class="badge cozy-tone-critical ms-2" th:if="${cozyErrors > 0}" th:text="${cozyErrors}">0</span></a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" th:classappend="${cozyActive == 'commands'} ? 'active'" th:aria-current="${cozyActive == 'commands'} ? 'page'" th:href="@{/cozy/dev/workbench/commands}">만들기</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" th:classappend="${cozyActive == 'map'} ? 'active'" th:aria-current="${cozyActive == 'map'} ? 'page'" th:href="@{/cozy/dev/workbench/map}">지도</a>
         </li>
         <li class="nav-item"><a class="nav-link" th:href="@{/cozy/dev/catalog}">패턴 카탈로그</a></li>
