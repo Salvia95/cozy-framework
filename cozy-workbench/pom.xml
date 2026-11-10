@@ -34,6 +34,12 @@
       <artifactId>cozy-cli</artifactId>
     </dependency>
 
+    <!-- 화면 스펙 YAML에서 값의 자리를 찾는다 -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc-test</artifactId>

@@ -8,12 +8,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.thymeleaf.autoconfigure.ThymeleafAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 
 import io.salvia95.cozy.ui.autoconfigure.CozyUiAutoConfiguration;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 import io.salvia95.cozy.workbench.internal.SourceLocationDialect;
+import io.salvia95.cozy.workbench.internal.SourceScreenSpecs;
 import io.salvia95.cozy.workbench.internal.WorkbenchController;
 import io.salvia95.cozy.workbench.internal.WorkbenchEngine;
 import io.salvia95.cozy.workbench.internal.WorkbenchEnvironmentPostProcessor;
@@ -60,9 +62,15 @@ public class CozyWorkbenchAutoConfiguration {
 		return new SourceLocationDialect();
 	}
 
+	/** 화면 스펙을 소스 폴더에서 읽는다. 패턴 카탈로그의 미리보기도 이것을 쓴다 */
 	@Bean
-	WorkbenchController cozyWorkbenchController(FragmentManifest manifest, WorkbenchEngine engine) {
-		return new WorkbenchController(manifest, ScreenSpec.load(CozyWorkbenchAutoConfiguration.class.getClassLoader()),
-				engine);
+	@Primary
+	SourceScreenSpecs cozyWorkbenchScreenSpecs(WorkbenchEngine engine) {
+		return new SourceScreenSpecs(engine, ScreenSpec.load(CozyWorkbenchAutoConfiguration.class.getClassLoader()));
+	}
+
+	@Bean
+	WorkbenchController cozyWorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
+		return new WorkbenchController(manifest, specs, engine);
 	}
 }

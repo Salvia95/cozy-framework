@@ -19,6 +19,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.FragmentManifest.Entry;
 import io.salvia95.cozy.ui.catalog.FragmentManifest.Param;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
+import io.salvia95.cozy.ui.catalog.ScreenSpecs;
 
 /**
  * 패턴 카탈로그 {@code /cozy/dev/catalog}. {@code cozy.dev.catalog.enabled=true}일 때만 등록된다.
@@ -46,11 +47,11 @@ public class CatalogController {
 
 	private final FragmentManifest manifest;
 
-	private final List<ScreenSpec> specs;
+	private final ScreenSpecs specs;
 
-	public CatalogController(FragmentManifest manifest, List<ScreenSpec> specs) {
+	public CatalogController(FragmentManifest manifest, ScreenSpecs specs) {
 		this.manifest = manifest;
-		this.specs = List.copyOf(specs);
+		this.specs = specs;
 	}
 
 	/** 찾는 순서: 화면 틀(패턴) → 부품 → 아이콘 → 문서 틀 → 앱 공개 fragment (docs/conventions/design.md) */
@@ -76,7 +77,7 @@ public class CatalogController {
 		}
 		model.addAttribute("groups", groups);
 		model.addAttribute("total", this.manifest.fragments().size());
-		model.addAttribute("screens", this.specs);
+		model.addAttribute("screens", this.specs.all());
 		return "cozy/dev/catalog";
 	}
 
@@ -104,7 +105,8 @@ public class CatalogController {
 	@GetMapping("/screen")
 	String screen(@RequestParam String spec, @RequestParam String state,
 			@RequestParam(required = false) String fragment, Model model) {
-		ScreenSpec screen = this.specs.stream()
+		ScreenSpec screen = this.specs.all()
+			.stream()
 			.filter((s) -> s.screen().equals(spec))
 			.findFirst()
 			.orElseThrow(() -> new IllegalArgumentException("[cozy] 화면 스펙이 없습니다: " + spec));

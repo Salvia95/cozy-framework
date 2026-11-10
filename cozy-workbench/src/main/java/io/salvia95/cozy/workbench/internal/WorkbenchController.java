@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import io.salvia95.cozy.ui.CozyFlash;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 
@@ -33,7 +35,11 @@ import io.salvia95.cozy.ui.catalog.ScreenSpec;
  * <p>
  * {@code /check}는 {@code cozy check}의 위반과 고치는 명령을, {@code /map}은 {@code cozy describe}의 앱 지도(모듈, 의존, 계약, 이벤트, 화면,
  * 빈칸)를 보인다. 화면 목록에는 화면마다 위반 수가 붙는다. {@code /commands}는 {@code cozy recipes}의 레시피마다 폼을 보이고, 폼의 값으로 명령을
- * 만들어 계획을 보인 뒤 적용한다. 워크벤치가 파일을 쓰는 곳은 여기뿐이고, 쓰는 것은 cozy 명령이다.
+ * 만들어 계획을 보인 뒤 적용한다. 쓰는 것은 cozy 명령이다.
+ *
+ * <p>
+ * {@code view=fixture}는 화면 스펙의 상태 값을 보이고, {@code /fixture}가 고친 값을 저장한다({@link FixtureEditor}). 워크벤치가 직접 쓰는 파일은
+ * 스펙 YAML뿐이다.
  */
 @Controller
 @RequestMapping(WorkbenchController.PATH)
@@ -44,17 +50,17 @@ public class WorkbenchController {
 	/** 미리보기 폭. {@code full}은 칸 전체 */
 	static final List<String> WIDTHS = List.of("full", "1024", "768", "390");
 
-	static final List<String> VIEWS = List.of("preview", "template", "spec");
+	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec");
 
 	private final FragmentManifest manifest;
 
-	private final List<ScreenSpec> specs;
+	private final SourceScreenSpecs screenSpecs;
 
 	private final WorkbenchEngine engine;
 
-	public WorkbenchController(FragmentManifest manifest, List<ScreenSpec> specs, WorkbenchEngine engine) {
+	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
 		this.manifest = manifest;
-		this.specs = List.copyOf(specs);
+		this.screenSpecs = specs;
 		this.engine = engine;
 	}
 
@@ -71,7 +77,9 @@ public class WorkbenchController {
 		if (!VIEWS.contains(view)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] view는 " + VIEWS + " 가운데 하나입니다: " + view);
 		}
-		model.addAttribute("specs", this.specs);
+		List<ScreenSpec> specs = this.screenSpecs.all();
+		model.addAttribute("specs", specs);
+		model.addAttribute("specProblem", this.screenSpecs.problem());
 		model.addAttribute("engineAvailable", this.engine.available());
 		WorkbenchEngine.Check check = check();
 		model.addAttribute("errors", check.errors());
@@ -79,11 +87,11 @@ public class WorkbenchController {
 		model.addAttribute("widths", WIDTHS);
 		model.addAttribute("w", w);
 		model.addAttribute("view", view);
-		if (this.specs.isEmpty()) {
+		if (specs.isEmpty()) {
 			return "cozy/dev/workbench";
 		}
-		ScreenSpec screen = (spec == null) ? this.specs.getFirst()
-				: this.specs.stream()
+		ScreenSpec screen = (spec == null) ? specs.getFirst()
+				: specs.stream()
 					.filter((s) -> s.screen().equals(spec))
 					.findFirst()
 					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec));
@@ -110,6 +118,14 @@ public class WorkbenchController {
 		}
 		model.addAttribute("tree", tree);
 		model.addAttribute("specFile", specFile);
+		if (view.equals("fixture") && this.engine.available()) {
+			String text = this.engine.source(specFile(screen.screen())).orElse(null);
+			if (text != null) {
+				model.addAttribute("fixtureFile", specFile(screen.screen()));
+				model.addAttribute("fixtureHash", hash(text));
+				model.addAttribute("fixtureFields", FixtureEditor.fields(text, selectedState));
+			}
+		}
 		String sourceFile = switch (view) {
 			case "template" -> "src/main/resources/" + templateFile;
 			case "spec" -> specFile;
@@ -147,7 +163,7 @@ public class WorkbenchController {
 		if (violation.file() == null) {
 			return Optional.empty();
 		}
-		for (ScreenSpec spec : this.specs) {
+		for (ScreenSpec spec : this.screenSpecs.all()) {
 			if (violation.file().equals("src/main/resources/templates/" + spec.template() + ".html")) {
 				return Optional.of(new ScreenLink(spec.screen(), "template"));
 			}
@@ -183,6 +199,161 @@ public class WorkbenchController {
 		byFile.forEach((file, findings) -> groups.add(new FindingGroup(file, findings)));
 		model.addAttribute("groups", groups);
 		return "cozy/dev/workbench-check";
+	}
+
+	// ── 값: 화면 스펙의 상태 값을 고쳐 저장한다 ─────────────────────────────
+
+	private static String specFile(String screen) {
+		return SourceScreenSpecs.FOLDER + "/" + screen + ".yml";
+	}
+
+	/** 파일 내용의 지문. 폼을 보인 뒤 파일이 바뀌었는지 본다 */
+	static String hash(String text) {
+		try {
+			return java.util.HexFormat.of()
+				.formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+		}
+		catch (java.security.NoSuchAlgorithmException ex) {
+			throw new IllegalStateException(ex);
+		}
+	}
+
+	/** 고칠 스펙의 지금 내용. 쓰는 요청의 조건(같은 출처, 프로젝트 폴더, 아는 스펙)을 함께 본다 */
+	private String specText(String spec, HttpServletRequest request) {
+		requireSameOrigin(request);
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 스펙을 고칠 수 있습니다");
+		}
+		if (this.screenSpecs.all().stream().noneMatch((s) -> s.screen().equals(spec))) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec);
+		}
+		return this.engine.source(specFile(spec))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 스펙 파일이 없습니다: " + specFile(spec)));
+	}
+
+	/** 바꾼 스펙이 형식과 모델 타입에 맞으면 쓴다. 맞지 않으면 이유를 돌려주고 쓰지 않는다 */
+	private String writeIfValid(String spec, String changed) {
+		try (java.io.InputStream in = new java.io.ByteArrayInputStream(changed.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+			ScreenSpec.parse(in, spec + ".yml", "specs/" + spec + ".yml").verify();
+		}
+		catch (java.io.IOException | RuntimeException ex) {
+			return readable(ex.getMessage());
+		}
+		this.engine.writeSpec(spec + ".yml", changed);
+		return null;
+	}
+
+	/** 검증 메시지에서 사람에게 필요 없는 꼬리(변환기의 위치 정보와 참조 사슬)를 뗀다 */
+	static String readable(String message) {
+		String text = (message != null) ? message.replaceFirst("^\\[cozy\\] ", "") : "스펙을 읽지 못했습니다.";
+		for (String tail : List.of(" at [", " (through reference chain", "\n")) {
+			int at = text.indexOf(tail);
+			if (at > 0) {
+				text = text.substring(0, at);
+			}
+		}
+		return text;
+	}
+
+	/** 숫자와 참·거짓 자리에 그렇게 읽히지 않는 값을 적었으면 그 자리와 이유. 없으면 {@code null} */
+	private static String kindProblem(List<FixtureEditor.Field> fields, Map<String, String> values) {
+		for (FixtureEditor.Field field : fields) {
+			String value = values.get(field.path());
+			if (value == null || value.equals(field.value())) {
+				continue;
+			}
+			boolean fits = switch (field.kind()) {
+				case "bool" -> value.equals("true") || value.equals("false");
+				case "int" -> value.matches("-?\\d+");
+				case "number" -> value.matches("-?\\d+(\\.\\d+)?");
+				default -> true;
+			};
+			if (!fits) {
+				String expected = switch (field.kind()) {
+					case "bool" -> "true나 false만 씁니다";
+					case "int" -> "정수만 씁니다";
+					default -> "숫자만 씁니다";
+				};
+				return field.path() + ": " + expected + " (적은 값: " + value + ")";
+			}
+		}
+		return null;
+	}
+
+	private static String fixtureView(String spec, String state, String w) {
+		return "redirect:" + org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
+			.queryParam("spec", spec)
+			.queryParam("state", state)
+			.queryParam("w", WIDTHS.contains(w) ? w : "full")
+			.queryParam("view", "fixture")
+			.build()
+			.encode()
+			.toUriString();
+	}
+
+	@PostMapping("/fixture")
+	String saveFixture(@RequestParam String spec, @RequestParam String state, @RequestParam String hash,
+			@RequestParam(defaultValue = "full") String w, @RequestParam MultiValueMap<String, String> form,
+			HttpServletRequest request, RedirectAttributes flash) {
+		String text = specText(spec, request);
+		Map<String, String> values = new LinkedHashMap<>();
+		form.forEach((name, list) -> {
+			if (name.startsWith("v.")) {
+				values.put(name.substring(2), list.getFirst().replace("\r\n", "\n"));
+			}
+		});
+		String problem;
+		if (!hash(text).equals(hash)) {
+			problem = "폼을 연 뒤에 파일이 바뀌었습니다. 지금 값을 다시 보고 고치세요.";
+		}
+		else {
+			try {
+				problem = kindProblem(FixtureEditor.fields(text, state), values);
+				if (problem == null) {
+					String changed = FixtureEditor.set(text, state, values);
+					if (changed.equals(text)) {
+						flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.info("바뀐 값이 없습니다."));
+						return fixtureView(spec, state, w);
+					}
+					problem = writeIfValid(spec, changed);
+				}
+			}
+			catch (IllegalArgumentException ex) {
+				problem = ex.getMessage();
+			}
+		}
+		if (problem != null) {
+			// 적은 값은 다음 화면에 그대로 둔다
+			flash.addFlashAttribute("fixtureDraft", values);
+		}
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, (problem == null) ? CozyFlash.success("저장했습니다. " + specFile(spec))
+				: CozyFlash.critical("저장하지 않았습니다. " + problem));
+		return fixtureView(spec, state, w);
+	}
+
+	@PostMapping("/state")
+	String duplicateState(@RequestParam String spec, @RequestParam String from, @RequestParam String name,
+			@RequestParam String hash, @RequestParam(defaultValue = "full") String w, HttpServletRequest request,
+			RedirectAttributes flash) {
+		String text = specText(spec, request);
+		String problem;
+		if (!hash(text).equals(hash)) {
+			problem = "폼을 연 뒤에 파일이 바뀌었습니다. 지금 값을 다시 보고 고치세요.";
+		}
+		else {
+			try {
+				problem = writeIfValid(spec, FixtureEditor.duplicate(text, from, name.strip()));
+			}
+			catch (IllegalArgumentException ex) {
+				problem = ex.getMessage();
+			}
+		}
+		if (problem != null) {
+			flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.critical("상태를 만들지 않았습니다. " + problem));
+			return fixtureView(spec, from, w);
+		}
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.success("상태 " + name.strip() + "를 만들었습니다. 값을 고쳐 저장하세요."));
+		return fixtureView(spec, name.strip(), w);
 	}
 
 	// ── 만들기: 폼 → cozy 명령 → 계획 → 적용 ───────────────────────────────
@@ -305,7 +476,7 @@ public class WorkbenchController {
 		model.addAttribute("errors", check().errors());
 		model.addAttribute("map", this.engine.available() ? this.engine.describe() : null);
 		Map<String, String> screens = new LinkedHashMap<>();
-		this.specs.forEach((spec) -> screens.put(spec.template(), spec.screen()));
+		this.screenSpecs.all().forEach((spec) -> screens.put(spec.template(), spec.screen()));
 		model.addAttribute("screenNames", screens);
 		return "cozy/dev/workbench-map";
 	}

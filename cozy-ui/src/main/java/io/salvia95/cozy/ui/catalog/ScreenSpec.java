@@ -91,6 +91,17 @@ public record ScreenSpec(String screen, String template, List<String> fragments,
 		return template.replace('/', '-');
 	}
 
+	/**
+	 * 모든 상태의 fixture를 모델 타입으로 바꿔 본다. 렌더링할 때와 같은 변환이다.
+	 *
+	 * @throws IllegalStateException 값이 타입과 맞지 않을 때. 메시지에 상태와 모델 이름이 있다
+	 */
+	public void verify() {
+		this.states.forEach((state, values) -> this.model
+			.forEach((name, type) -> io.salvia95.cozy.ui.internal.FixtureMapper.convert(values.get(name), type,
+					"스펙 " + this.screen + "의 상태 '" + state + "' 모델 '" + name + "'")));
+	}
+
 	public static ScreenSpec parse(InputStream in, String fileName, String source) {
 		Object root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
 		if (!(root instanceof Map<?, ?> raw)) {

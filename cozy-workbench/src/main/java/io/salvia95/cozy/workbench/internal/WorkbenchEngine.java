@@ -87,6 +87,30 @@ public class WorkbenchEngine {
 		}
 	}
 
+	/**
+	 * 화면 스펙 파일을 바꿔 쓴다. 스펙 폴더({@code src/main/resources/specs}) 바로 아래의 이미 있는 {@code .yml} 파일만 받는다.
+	 *
+	 * @param name 파일 이름 ({@code memo-list.yml})
+	 */
+	public void writeSpec(String name, String content) {
+		if (this.projectDir == null) {
+			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 스펙을 고칠 수 있습니다");
+		}
+		Path folder = this.projectDir.resolve(SourceScreenSpecs.FOLDER);
+		Path file = folder.resolve(name).normalize();
+		if (!file.getParent().equals(folder) || !name.endsWith(".yml") || !Files.isRegularFile(file)) {
+			throw new IllegalArgumentException("[cozy] 스펙 파일이 아닙니다: " + name);
+		}
+		Path temp = file.resolveSibling(file.getFileName() + ".cozy-tmp");
+		try {
+			Files.writeString(temp, content, StandardCharsets.UTF_8);
+			Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+		}
+		catch (java.io.IOException ex) {
+			throw new java.io.UncheckedIOException(ex);
+		}
+	}
+
 	/** 명령 한 번의 결과 */
 	public record Result(int code, String out, String err) {
 	}

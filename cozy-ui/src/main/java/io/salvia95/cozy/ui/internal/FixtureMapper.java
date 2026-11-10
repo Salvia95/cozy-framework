@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>앱의 JsonMapper와 분리한 엄격한 설정이다. 모르는 필드, 빠진 생성자(record) 필드, primitive의 null은 모두 실패한다.
  */
-final class FixtureMapper {
+public final class FixtureMapper {
 
 	private static final JsonMapper MAPPER = JsonMapper.builder()
 		.enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -24,7 +24,7 @@ final class FixtureMapper {
 	 * @param typeName FQN. 중첩 클래스는 {@code Outer.Inner}와 {@code Outer$Inner} 모두 된다
 	 * @param what 메시지에 쓸 설명
 	 */
-	static Object convert(Object value, String typeName, String what) {
+	public static Object convert(Object value, String typeName, String what) {
 		Class<?> type = loadType(typeName, what);
 		try {
 			return MAPPER.convertValue(value, type);

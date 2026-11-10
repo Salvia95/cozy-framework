@@ -9,6 +9,11 @@
 <main class="container-fluid py-4">
   <div th:replace="~{cozy/dev/workbench-nav :: header('screens', ${errors}, ${'화면의 구조와 상태를 보고 소스 위치를 찾습니다. 화면 ' + specs.size() + '개'})}"></div>
 
+  <div th:replace="~{cozy/component/alert :: flash()}"></div>
+  <th:block th:if="${specProblem != null}">
+    <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 스펙을 읽지 못해 빌드된 스펙을 보입니다. ' + specProblem})}"></div>
+  </th:block>
+
   <th:block th:if="${!engineAvailable}">
     <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 보입니다.')}"></div>
   </th:block>
@@ -70,6 +75,10 @@
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}">미리보기</a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" th:classappend="${view == 'fixture'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='fixture')}">값</a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" th:classappend="${view == 'template'} ? 'active'"
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')}">템플릿</a>
             </li>
@@ -83,7 +92,7 @@
         <th:block th:if="${view == 'preview'}">
           <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3">
             <div class="d-flex align-items-center gap-2">
-              <span class="text-secondary small">상태</span>
+              <span class="text-secondary small text-nowrap">상태</span>
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
                 <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
                    th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
@@ -136,7 +145,73 @@
           </div>
         </th:block>
 
-        <th:block th:if="${view != 'preview'}">
+        <th:block th:if="${view == 'fixture'}">
+          <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-secondary small text-nowrap">상태</span>
+              <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
+                <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
+                   th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w},view='fixture')}" th:text="${name}">default</a>
+              </div>
+            </div>
+            <a class="small ms-auto" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}">이 상태의 미리보기</a>
+          </div>
+          <div class="card-body" th:if="${fixtureFields == null}">
+            <p class="text-secondary mb-0">앱 프로젝트 폴더에서 실행할 때만 값을 고칠 수 있습니다.</p>
+          </div>
+          <th:block th:if="${fixtureFields != null}">
+            <form class="card-body border-bottom" method="post" th:action="@{/cozy/dev/workbench/fixture}">
+              <input type="hidden" name="spec" th:value="${screen.screen}">
+              <input type="hidden" name="state" th:value="${state}">
+              <input type="hidden" name="hash" th:value="${fixtureHash}">
+              <input type="hidden" name="w" th:value="${w}">
+              <p class="mb-3">
+                <code class="cozy-workbench-command" th:text="${fixtureFile}">src/main/resources/specs/memo-list.yml</code>
+                <span class="text-secondary" th:text="|의 상태 ${state}. 값만 바꿔 씁니다. 주석과 다른 줄은 그대로 남습니다.|">의 상태</span>
+              </p>
+              <p class="text-secondary mb-0" th:if="${fixtureFields.isEmpty()}">이 상태에는 고칠 값이 없습니다. 값을 더하려면 스펙 파일에 키를 적습니다.</p>
+              <div class="row g-2 align-items-center mb-2" th:each="field, stat : ${fixtureFields}">
+                <label class="col-md-4 col-form-label" th:for="|fixture-${stat.index}|">
+                  <code class="cozy-workbench-command" th:text="${field.path}">result/rows/0/title</code>
+                  <span class="text-secondary small" th:text="${field.kind}">text</span>
+                </label>
+                <div class="col-md-8" th:with="shown=${fixtureDraft != null and fixtureDraft.containsKey(field.path)} ? ${fixtureDraft.get(field.path)} : ${field.value}">
+                  <select class="form-select cozy-workbench-input" th:id="|fixture-${stat.index}|" th:name="|v.${field.path}|"
+                          th:if="${field.editable and field.kind == 'bool' and (shown == 'true' or shown == 'false')}">
+                    <option value="true" th:selected="${shown == 'true'}">true</option>
+                    <option value="false" th:selected="${shown == 'false'}">false</option>
+                  </select>
+                  <input class="form-control cozy-workbench-input" type="text" autocomplete="off" th:id="|fixture-${stat.index}|"
+                         th:name="|v.${field.path}|" th:value="${shown}" placeholder="(빈 글)"
+                         th:inputmode="${field.kind == 'int' or field.kind == 'number'} ? 'decimal'"
+                         th:if="${field.editable and !(field.kind == 'bool' and (shown == 'true' or shown == 'false'))}">
+                  <input class="form-control cozy-workbench-input" type="text" disabled th:id="|fixture-${stat.index}|"
+                         th:value="${field.value}" th:unless="${field.editable}"
+                         title="여러 줄 값이거나 비어 있는 값은 스펙 파일에서 고칩니다">
+                </div>
+              </div>
+              <div class="btn-list justify-content-end mt-3" th:if="${!fixtureFields.isEmpty()}">
+                <button type="submit" class="btn btn-primary">저장</button>
+              </div>
+            </form>
+            <form class="card-body" method="post" th:action="@{/cozy/dev/workbench/state}">
+              <input type="hidden" name="spec" th:value="${screen.screen}">
+              <input type="hidden" name="from" th:value="${state}">
+              <input type="hidden" name="hash" th:value="${fixtureHash}">
+              <input type="hidden" name="w" th:value="${w}">
+              <h4 class="subheader mb-2">상태 복제</h4>
+              <p class="text-secondary" th:text="|상태 ${state}를 새 이름으로 복제합니다. 복제한 뒤 값을 고칩니다.|">상태를 복제합니다.</p>
+              <div class="row g-2 align-items-center">
+                <div class="col-md-4"><label class="col-form-label" for="fixture-state-name">새 상태 이름</label></div>
+                <div class="col-md-5"><input class="form-control cozy-workbench-input" type="text" autocomplete="off" id="fixture-state-name" name="name" placeholder="예: manyRows"></div>
+                <div class="col-md-3 text-end"><button type="submit" class="btn">복제</button></div>
+              </div>
+            </form>
+          </th:block>
+        </th:block>
+
+        <th:block th:if="${view == 'template' or view == 'spec'}">
           <div class="card-body" th:if="${sourceFile == null or sourceLines.isEmpty()}">
             <p class="text-secondary mb-0">소스를 읽지 못했습니다.</p>
           </div>

@@ -117,6 +117,9 @@ fragments:
 | 속성 | 기본값 | 설명 |
 | --- | --- | --- |
 | `cozy.dev.catalog.enabled` | dev 프로필이면 `true`, 아니면 `false` | `/cozy/dev/catalog` 등록. 매니페스트 fragment와 화면 스펙(`specs/*.yml`)을 상태별로 미리 본다 |
+
+- **화면 스펙의 원천 (`ScreenSpecs`)**: 카탈로그는 화면 미리보기를 그릴 때마다 `ScreenSpecs` 빈에 스펙을 묻는다. 기본 빈은 클래스패스의 `specs/*.yml`을 기동할 때 한 번 읽는다. 다른 `ScreenSpecs` 빈을 등록하면 그것을 쓴다(워크벤치는 소스 폴더에서 읽는다, [workbench.md](workbench.md)).
+- **`ScreenSpec.verify()`**: 모든 상태의 fixture를 모델 타입으로 바꿔 본다. 렌더링할 때와 같은 변환이고, 맞지 않으면 상태와 모델 이름을 담아 실패한다.
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
 - **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.4, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.info.BuildProperties;
@@ -35,6 +36,7 @@ import io.salvia95.cozy.ui.internal.CozyLayoutAdvice.CozyAppInfo;
 import io.salvia95.cozy.ui.internal.EmptyView;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
+import io.salvia95.cozy.ui.catalog.ScreenSpecs;
 import io.salvia95.cozy.ui.internal.HtmxRedirectInterceptor;
 import io.salvia95.cozy.ui.internal.HtmxRequestArgumentResolver;
 import io.salvia95.cozy.ui.internal.ViewModuleInterceptor;
@@ -116,9 +118,17 @@ public class CozyUiAutoConfiguration {
 			return http.build();
 		}
 
+		/** 클래스패스의 화면 스펙을 한 번 읽는다. 다른 ScreenSpecs 빈이 있으면 그것을 쓴다 */
 		@Bean
-		CatalogController cozyCatalogController(FragmentManifest manifest) {
-			return new CatalogController(manifest, ScreenSpec.load(CozyUiAutoConfiguration.class.getClassLoader()));
+		@ConditionalOnMissingBean
+		ScreenSpecs cozyScreenSpecs() {
+			List<ScreenSpec> specs = ScreenSpec.load(CozyUiAutoConfiguration.class.getClassLoader());
+			return () -> specs;
+		}
+
+		@Bean
+		CatalogController cozyCatalogController(FragmentManifest manifest, ScreenSpecs specs) {
+			return new CatalogController(manifest, specs);
 		}
 
 	}

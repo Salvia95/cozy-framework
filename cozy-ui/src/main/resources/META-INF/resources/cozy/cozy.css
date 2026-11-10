@@ -92,6 +92,7 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-box-selected { outline: 2px solid var(--tblr-primary); background: rgba(6, 111, 209, .08); }
 .cozy-workbench-context { padding: .75rem; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface-secondary); color: var(--tblr-body-color); font-size: var(--tblr-font-size-h5); white-space: pre-wrap; overflow-wrap: anywhere; }
 .cozy-workbench-text .small { overflow-wrap: anywhere; }
+.cozy-workbench-toggle { flex-wrap: wrap; }
 .cozy-workbench-toggle .btn.active { color: var(--tblr-primary-fg); background: var(--tblr-primary); border-color: var(--tblr-primary); }
 .cozy-workbench-kind-slot .cozy-workbench-label, .cozy-workbench-kind-fragment .cozy-workbench-label { font-weight: var(--tblr-font-weight-normal); }
 .cozy-workbench-line { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 1.5rem; min-height: 1.5rem; margin-left: auto; color: var(--tblr-secondary); font-family: var(--tblr-font-monospace); }
