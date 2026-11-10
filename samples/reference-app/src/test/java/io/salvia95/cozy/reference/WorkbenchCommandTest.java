@@ -156,6 +156,22 @@ class WorkbenchCommandTest {
 		}
 
 		@Test
+		void workTheCommandLeavesToDoByHandIsShownWithWhatToInsert() throws Exception {
+			Map<String, String> before = sources(project);
+			String html = body(command("field", "plan").param("arg.모듈", "memo")
+				.param("opt.entity", "Memo")
+				.param("opt.field", "dueOn:date:마감일"));
+			assertThat(html).contains("cozy add field memo --entity Memo --field dueOn:date:마감일")
+				.contains("남은 일 1곳")
+				.contains("적용한 뒤 손으로 할 일")
+				.contains("src/main/resources/templates/memo/api/detail.html")
+				.contains("상세의 datagrid에 마감일 항목을 더하세요")
+				.contains("&lt;div class=&quot;datagrid-title&quot;&gt;마감일&lt;/div&gt;");
+			assertThat(sources(project)).isEqualTo(before);
+			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+		}
+
+		@Test
 		void aRefusedCommandShowsTheReasonAndWritesNothing() throws Exception {
 			Map<String, String> before = sources(project);
 			String html = body(command("screen", "apply").param("arg.모듈", "memo")

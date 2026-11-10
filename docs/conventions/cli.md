@@ -256,7 +256,15 @@ cozy enable workbench
     - 인자 수가 지금 시그니처와 다른 호출이 있으면 실패한다.
   - **확인하는 것**: 파일 열두 개가 모두 있다(없으면 crud 한 벌이 아니라고 알린다). record의 끝이 `createdAt, updatedAt`이다. `<sql id="columns">`의 열 순서가 도메인 record와 같다. 자리를 하나라도 못 찾으면 파일과 기대한 모양을 알리고 실패한다.
   - **다시 실행**: 도메인, `Item`, 행, 폼, `Detail`, `Facade.create`, `columns` 일곱 곳을 본다. 모두 있으면 바뀐 것 없음, 모두 없으면 더한다. 일부에만 있으면 있는 곳과 없는 곳을 알리고 실패한다. 같은 이름이 다른 타입으로 있어도 실패한다.
-  - **하지 않는 것**: 목록 검색 조건(`searchCondition`)과 이벤트에는 넣지 않는다. 출력의 "다음"이 알린다. 목록의 열과 상세의 항목은 손으로 더한다.
+  - **보이는 곳**: 목록(`api/list.html`)과 상세(`api/detail.html`)는 자리를 찾으면 고치고, 못 찾으면 실패하지 않고 "남은 일"로 알린다. 나머지는 그대로 적용한다.
+
+    | 곳 | 넣는 자리 | 못 찾는 경우 |
+    | --- | --- | --- |
+    | 목록의 열 (`longtext`는 없음) | `${row.updatedAt}`을 쓰는 `td` 앞에 칸, `thead`의 같은 순서 자리에 `th` | 그 `td`가 하나가 아니다. `thead`가 하나가 아니다. `th` 수와 `td` 수가 다르다 |
+    | 상세의 항목 | 지금 있는 필드를 보이는 마지막 `datagrid-item` 뒤. 없으면 `item.createdAt` 항목 앞 | `datagrid-item`이 자기 줄에 있지 않다. 두 항목 모두 없다 |
+    | 상세의 긴 글 카드 (`longtext`) | `<div class="col-lg-8">`의 닫는 태그 앞 | 그 줄이 하나가 아니다 |
+
+  - **하지 않는 것**: 목록 검색 조건(`searchCondition`)과 이벤트에는 넣지 않는다. 출력의 "다음"이 알린다.
 - **enable workbench**: `pom.xml`의 `cozy-ui` 의존 블록 바로 뒤에 dev 전용 `cozy-workbench`를 더한다([workbench.md](workbench.md)). 이미 있으면 바뀐 것 없음이다. `cozy-ui`가 없거나 cozy-parent가 1.2.0보다 낮으면 실패한다.
 - **enable events**: `pom.xml`의 `cozy-starter-sqlite` 의존 블록 바로 뒤에 `cozy-starter-events`를 더한다. 이미 있으면 바뀐 것 없음, `cozy-starter-sqlite`가 없으면 실패한다. 아키타입 `events=true`의 예시 코드는 만들지 않는다.
 - **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.
@@ -281,6 +289,15 @@ cozy enable workbench
 ```
 
 - 줄 머리: `만듦`(새 파일), `바꿈`(덧붙임, 뒤에 무엇을), `그대로`(이미 같음).
+- **남은 일**: 명령이 고치지 못해 손으로 할 일이다(`add field`의 목록과 상세). 상태 줄에 `남은 일 N곳`이 붙고, 파일, 할 일, 넣을 마크업이 차례로 나온다. 빈칸과 달리 검사가 잡지 않는다.
+
+```text
+[cozy] 적용했습니다. 남은 일 1곳
+  src/main/resources/templates/memo/api/list.html
+    목록에 마감일 열을 더하세요. 머리 줄에 th, 행에 td입니다
+      <th class="w-1">마감일</th>
+      <td class="text-secondary text-nowrap" th:text="${row.dueOn} ?: '—'">—</td>
+```
 - 상태 줄: `적용했습니다`, `계획만 보였습니다(--dry-run)`, `바뀐 것 없음(이미 같은 내용이 있습니다)`.
 
 `--json`:
@@ -298,6 +315,7 @@ cozy enable workbench
   "slots": [
     { "slot": "listener-body", "file": "src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java", "line": 24, "what": "…" }
   ],
+  "manual": [],
   "next": "빈칸을 채우고 cozy check, 그다음 mvn verify. …"
 }
 ```
@@ -307,6 +325,7 @@ cozy enable workbench
 | `applied` | 파일을 하나라도 썼으면 `true`. `--dry-run`이거나 바뀐 것이 없으면 `false` |
 | `plan[].action` | `create`, `edit`, `unchanged` |
 | `slots[]` | 이 명령이 만들거나 바꾼 파일에 남은 빈칸(앞서 남긴 것 포함). 앱 전체의 빈칸은 `cozy check`가 본다 |
+| `manual[]` | 명령이 고치지 못해 손으로 할 일: `file`, `what`, `snippet`(넣을 내용). 없으면 빈 목록 |
 
 - **시각**: 마이그레이션 이름의 시각은 지금 시각이다. 테스트는 시스템 속성 `cozy.cli.now`(`yyyyMMddHHmm`)로 고정한다.
 - **검증**: `samples/recipes`의 픽스처가 레시피를 실제 앱에 적용하고 `mvn verify` 결과를 확인한다([ADR-0032 부록 §5](../adr/0032-agent-cli-recipes.md)).

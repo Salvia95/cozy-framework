@@ -16,7 +16,7 @@ import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * {@code cozy add <레시피>}, {@code cozy link}, {@code cozy enable events}, {@code cozy sync agents}를 실행한다. 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을
+ * {@code cozy add <레시피>}, {@code cozy link}, {@code cozy enable events}, {@code cozy sync agents}를 실행한다. 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸, 손으로 할 일, 다음 할 일을
  * 알린다. 출력 형식: docs/conventions/cli.md
  */
 public final class RecipeRunner {
@@ -67,7 +67,7 @@ public final class RecipeRunner {
 			default -> throw new CliException(recipe.startsWith("enable ") ? StageTwoRecipes.ENABLE_USAGE
 					: "모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
 		};
-		report(recipe, ctx.plan(), next.replaceFirst("^다음: ", ""), true, dryRun, json, out);
+		report(recipe, ctx.plan(), ctx.manual(), next.replaceFirst("^다음: ", ""), true, dryRun, json, out);
 	}
 
 	/** {@code cozy sync agents [--force]}: 앱의 에이전트 문서를 이 cozy 명령에 든 것과 같게 맞춘다 */
@@ -78,16 +78,17 @@ public final class RecipeRunner {
 		}
 		Plan plan = new Plan(project.dir());
 		String next = AgentDocs.sync(plan, force);
-		report("sync agents", plan, next, false, dryRun, json, out);
+		report("sync agents", plan, List.of(), next, false, dryRun, json, out);
 	}
 
 	/**
 	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
 	 *
+	 * @param manual 명령이 고치지 못해 손으로 할 일
 	 * @param withSlots 바뀐 파일의 빈칸을 알리는가 (에이전트 문서는 빈칸 표시를 설명할 뿐이라 알리지 않는다)
 	 */
-	private static void report(String recipe, Plan plan, String next, boolean withSlots, boolean dryRun, boolean json,
-			PrintStream out) {
+	private static void report(String recipe, Plan plan, List<Context.Manual> manual, String next, boolean withSlots,
+			boolean dryRun, boolean json, PrintStream out) {
 		if (!dryRun) {
 			plan.apply();
 		}
@@ -103,8 +104,10 @@ public final class RecipeRunner {
 			List<Object> slotList = new ArrayList<>();
 			slots.forEach((s) -> slotList.add(Describe.ordered("slot", s.reference().replace(SlotRules.MARKER, "").strip(), "file",
 					s.location(), "line", s.line(), "what", s.message())));
+			List<Object> manualList = new ArrayList<>();
+			manual.forEach((m) -> manualList.add(Describe.ordered("file", m.file(), "what", m.what(), "snippet", m.snippet())));
 			Map<String, Object> model = Describe.ordered("recipe", recipe, "applied", !dryRun && !plan.changesNothing(),
-					"plan", changes, "slots", slotList, "next", nextLine);
+					"plan", changes, "slots", slotList, "manual", manualList, "next", nextLine);
 			out.print(Json.write(model));
 			return;
 		}
@@ -112,10 +115,16 @@ public final class RecipeRunner {
 		for (Plan.Change change : plan.changes()) {
 			out.println("  " + change.action().label() + "  " + change.file() + ((change.detail() != null) ? "    " + change.detail() : ""));
 		}
-		out.println("[cozy] " + status + (slots.isEmpty() ? "" : ". 빈칸 " + slots.size() + "곳"));
+		out.println("[cozy] " + status + (slots.isEmpty() ? "" : ". 빈칸 " + slots.size() + "곳")
+				+ (manual.isEmpty() ? "" : ". 남은 일 " + manual.size() + "곳"));
 		for (Violation slot : slots) {
 			out.println("  " + slot.location() + ":" + slot.line());
 			out.println("    " + slot.reference().replace(SlotRules.MARKER, "").strip() + " — " + slot.message());
+		}
+		for (Context.Manual m : manual) {
+			out.println("  " + m.file());
+			out.println("    " + m.what());
+			m.snippet().lines().forEach((line) -> out.println("      " + line));
 		}
 		out.println("[cozy] 다음: " + nextLine);
 	}

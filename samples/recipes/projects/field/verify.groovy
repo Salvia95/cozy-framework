@@ -12,4 +12,10 @@ assert item.contains("public record TaskItem(long id, String title, boolean done
     + "LocalDate due, boolean urgent, String code, Instant createdAt, Instant updatedAt)")
 def impl = new File(basedir, "src/main/java/it/cozy/app/task/internal/app/command/TaskFacadeImpl.java").getText("UTF-8")
 assert impl.contains("title.strip()") : "손으로 고친 본문이 남아 있어야 합니다"
+def list = new File(basedir, "src/main/resources/templates/task/api/list.html").getText("UTF-8")
+["메모", "우선순위", "예상 시간", "마감일", "긴급", "코드"].each { assert list.contains('<th class="w-1">' + it + "</th>") : "목록에 열이 없습니다: " + it }
+assert !list.contains("설명") : "긴 글은 목록에 넣지 않습니다"
+def detail = new File(basedir, "src/main/resources/templates/task/api/detail.html").getText("UTF-8")
+assert detail.contains('<h3 class="card-title">설명</h3>') && detail.contains('<div class="datagrid-title">코드</div>')
+assert !new File(basedir, "recipes.log").getText("UTF-8").contains("남은 일") : "목록과 상세에 손으로 할 일이 남지 않아야 합니다"
 return true

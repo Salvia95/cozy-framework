@@ -76,6 +76,14 @@ cozy_recipes() {
     grep -q "바뀐 것 없음" <<< "$out"
     cozy add event-version task TaskCreated --field dueOn:date
     test -f src/test/resources/events/TaskCreated/v2.json
+    # crud에 필드 하나 더하기: 목록과 상세까지 고치고 손으로 할 일이 남지 않는다
+    out="$(cozy add field task --entity Task --field note:text:비고)"
+    grep -q "적용했습니다" <<< "$out"
+    if grep -q "남은 일" <<< "$out"; then
+      echo "$out"
+      exit 1
+    fi
+    grep -q '<th class="w-1">비고</th>' src/main/resources/templates/task/api/list.html
     # 실패하는 명령은 종료 코드 2이고 아무것도 바꾸지 않는다
     set +e
     cozy add screen task stats --pattern details --title 통계 --nav 통계:no-such-icon > /dev/null 2>&1

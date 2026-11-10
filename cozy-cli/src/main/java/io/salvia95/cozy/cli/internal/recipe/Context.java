@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,6 +56,26 @@ public final class Context {
 
 	public AppProject project() {
 		return this.project;
+	}
+
+	/**
+	 * 명령이 고치지 못해 손으로 할 일.
+	 *
+	 * @param file 고칠 파일
+	 * @param what 무엇을 할지
+	 * @param snippet 넣을 내용
+	 */
+	public record Manual(String file, String what, String snippet) {
+	}
+
+	private final List<Manual> manual = new ArrayList<>();
+
+	public void manual(String file, String what, String snippet) {
+		this.manual.add(new Manual(file, what, snippet));
+	}
+
+	public List<Manual> manual() {
+		return List.copyOf(this.manual);
 	}
 
 	public Plan plan() {

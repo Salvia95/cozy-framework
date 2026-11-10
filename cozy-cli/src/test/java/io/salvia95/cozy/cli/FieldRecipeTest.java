@@ -155,10 +155,10 @@ class FieldRecipeTest {
 	 * 비교에서 빼는 것: 마이그레이션(더한 쪽은 ALTER TABLE 파일이 따로 있다), 목록과 상세 템플릿(배치는 따로 확인한다), import의 순서, 그리고 글
 	 * 필드의 검색 조건과 검색 문구(더한 필드는 검색에 넣지 않는다).
 	 */
-	Map<String, String> comparable(boolean searchable) {
+	Map<String, String> comparable(boolean searchable, boolean detail) {
 		Map<String, String> result = new TreeMap<>();
 		files().forEach((path, text) -> {
-			if (path.contains("db/migration/") || path.endsWith("api/list.html") || path.endsWith("api/detail.html")) {
+			if (path.contains("db/migration/") || (!detail && path.endsWith("api/detail.html"))) {
 				return;
 			}
 			if (path.endsWith(".java")) {
@@ -169,7 +169,8 @@ class FieldRecipeTest {
 			}
 			if (searchable) {
 				text = text.lines()
-					.filter((l) -> !l.contains(" LIKE ") && !l.contains("q는 ") && !l.contains("{@code query}가 들어간"))
+					.filter((l) -> !l.contains(" LIKE ") && !l.contains("q는 ") && !l.contains("{@code query}가 들어간")
+							&& !l.contains("placeholder="))
 					.collect(Collectors.joining("\n"));
 			}
 			result.put(path, text);
@@ -178,15 +179,19 @@ class FieldRecipeTest {
 	}
 
 	void sameAsCrud(String field, String... more) throws IOException {
+		sameAsCrud(CRUD, !field.contains(":longtext"), field, more);
+	}
+
+	void sameAsCrud(String[] crud, boolean detail, String field, String... more) throws IOException {
 		boolean searchable = field.contains(":text") || field.contains(":longtext");
-		app("whole-" + field.hashCode() + more.length);
-		ok(concat(CRUD, "--field", field));
-		Map<String, String> whole = comparable(searchable);
-		app("added-" + field.hashCode() + more.length);
-		ok(CRUD);
+		app("whole-" + crud.length + field.hashCode() + more.length);
+		ok(concat(crud, "--field", field));
+		Map<String, String> whole = comparable(searchable, detail);
+		app("added-" + crud.length + field.hashCode() + more.length);
+		ok(crud);
 		Result added = field(field, more);
-		assertThat(added.out()).contains("[cozy] 적용했습니다");
-		Map<String, String> result = comparable(searchable);
+		assertThat(added.out()).contains("[cozy] 적용했습니다\n");
+		Map<String, String> result = comparable(searchable, detail);
 		assertThat(result.keySet()).as(field).isEqualTo(whole.keySet());
 		whole.forEach((path, text) -> assertThat(result.get(path)).as(field + " " + path).isEqualTo(text));
 		assertThat(field(field, more).out()).as("다시 실행").contains("[cozy] 바뀐 것 없음");
@@ -203,7 +208,58 @@ class FieldRecipeTest {
 		sameAsCrud("code:text!:코드", "--default", "없음");
 		sameAsCrud("amount:int!:수량", "--default", "0");
 		sameAsCrud("dueOn:date!:마감일", "--default", "2026-01-01");
+		// 긴 글이 이미 있는 crud는 상세 배치도 같다. 첫 긴 글은 넓은 칸의 끝에 카드로 더한다
+		String[] withBody = concat(CRUD, "--field", "body:longtext:본문");
+		sameAsCrud(withBody, true, "remark:longtext:비고");
+		sameAsCrud(withBody, true, "dueOn:date:마감일");
 	}
+
+	@Test
+	void theFirstLongTextBecomesACardAtTheEndOfTheWideColumn() throws IOException {
+		memo();
+		field("body:longtext:본문");
+		assertThat(read(RESOURCES + "templates/memo/api/detail.html")).contains("""
+				          </div>
+				        </div>
+				        <div class="card">
+				          <div class="card-header"><h3 class="card-title">본문</h3></div>
+				          <div class="card-body">
+				            <th:block th:if="${item.bodyLines.isEmpty()}"><p class="text-secondary mb-0">본문이 없습니다.</p></th:block>
+				            <p class="mb-2" th:each="line : ${item.bodyLines}" th:text="${line}">본문</p>
+				          </div>
+				        </div>
+				      </div>
+				      <div class="col-lg-4">
+				""");
+		assertThat(read(RESOURCES + "templates/memo/api/list.html")).doesNotContain("row.body").doesNotContain("본문");
+	}
+
+	@Test
+	void aListOrDetailTheCommandCannotReadIsLeftAsWorkToDoByHand() throws IOException {
+		memo();
+		change(RESOURCES + "templates/memo/api/list.html", "th:text=\"${row.updatedAt}\"", "th:text=\"${#strings.substring(row.updatedAt, 0, 10)}\"");
+		change(RESOURCES + "templates/memo/api/detail.html", "<div class=\"col-lg-8\">", "<div class=\"col-12\">");
+		String list = read(RESOURCES + "templates/memo/api/list.html");
+		Result dueOn = field("dueOn:date:마감일");
+		assertThat(dueOn.out()).contains("[cozy] 적용했습니다. 남은 일 1곳\n").contains("""
+				  src/main/resources/templates/memo/api/list.html
+				    목록에 마감일 열을 더하세요. 머리 줄에 th, 행에 td입니다
+				      <th class="w-1">마감일</th>
+				      <td class="text-secondary text-nowrap" th:text="${row.dueOn} ?: '—'">—</td>
+				""");
+		assertThat(read(RESOURCES + "templates/memo/api/list.html")).isEqualTo(list);
+		assertThat(read(RESOURCES + "templates/memo/api/detail.html")).contains("<div class=\"datagrid-title\">마감일</div>");
+		Result body = field("body:longtext:본문", "--json");
+		assertThat(body.out()).contains("""
+				  "manual": [
+				    {
+				      "file": "src/main/resources/templates/memo/api/detail.html",
+				      "what": "상세에 본문 카드를 더하세요",
+				""").contains("\"snippet\": \"<div class=\\\"card\\\">\\n");
+		assertThat(field("dueOn:date:마감일").out()).contains("[cozy] 바뀐 것 없음");
+		assertThat(ok("add", "module", "voc", "--json").out()).contains("\"manual\": [],\n");
+	}
+
 
 	@Test
 	void theMigrationAddsOneColumnAndTheListSearchIsLeftAlone() throws IOException {

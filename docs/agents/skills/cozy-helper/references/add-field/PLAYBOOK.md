@@ -30,6 +30,7 @@ cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--defaul
 - The column in `columns`, `insert`, and `update` of `{E}Mapper.xml`.
 - The input in `templates/{module}/internal/fields.html`, and a sample value in every spec that uses `{E}Views` or `{E}Form`.
 - One more argument in every call of `create`, `update`, and the record constructors, in main code and in tests.
+- A column in `templates/{module}/api/list.html` and an item in `templates/{module}/api/detail.html`; a `longtext` field gets a detail card and no list column.
 
 ## Slots
 
@@ -55,5 +56,5 @@ cozy add field memo --entity Memo --field code:text!:코드 --default 없음
 
 ## Next
 
-- Add the list column in `templates/{module}/api/list.html` and the item in `templates/{module}/api/detail.html` by hand; the command does not edit those two screens.
+- If the output says `남은 일 N곳`, insert the printed markup into each listed file by hand; the command could not find the place in that screen.
 - Run `mvn -o verify`.

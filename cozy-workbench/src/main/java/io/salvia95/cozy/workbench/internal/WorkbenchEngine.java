@@ -303,12 +303,21 @@ public class WorkbenchEngine {
 	}
 
 	/**
+	 * 명령이 고치지 못해 손으로 할 일 하나.
+	 *
+	 * @param snippet 넣을 내용
+	 */
+	public record Manual(String file, String what, String snippet) {
+	}
+
+	/**
 	 * 레시피를 실행한 결과.
 	 *
 	 * @param applied 파일을 바꿨는가
+	 * @param manual 명령이 고치지 못해 손으로 할 일
 	 * @param error 명령이 거절한 이유. 거절하지 않았으면 {@code null}
 	 */
-	public record Outcome(boolean applied, List<Change> changes, List<Slot> slots, String next, String error) {
+	public record Outcome(boolean applied, List<Change> changes, List<Slot> slots, List<Manual> manual, String next, String error) {
 
 		public boolean changesNothing() {
 			return this.error == null && this.changes.stream().allMatch((c) -> c.action().equals("unchanged"));
@@ -329,7 +338,7 @@ public class WorkbenchEngine {
 		}
 		Result result = run(all);
 		if (result.code() != CozyCli.OK) {
-			return new Outcome(false, List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
+			return new Outcome(false, List.of(), List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
 		}
 		JsonNode root = JSON.readTree(result.out());
 		List<Change> changes = new ArrayList<>();
@@ -341,7 +350,11 @@ public class WorkbenchEngine {
 			slots.add(new Slot(s.path("slot").asString(), s.path("file").asString(), s.path("line").asInt(),
 					s.path("what").asString("")));
 		}
-		return new Outcome(root.path("applied").asBoolean(), List.copyOf(changes), List.copyOf(slots),
+		List<Manual> manual = new ArrayList<>();
+		for (JsonNode m : root.path("manual")) {
+			manual.add(new Manual(m.path("file").asString(), m.path("what").asString(""), m.path("snippet").asString("")));
+		}
+		return new Outcome(root.path("applied").asBoolean(), List.copyOf(changes), List.copyOf(slots), List.copyOf(manual),
 				root.path("next").asString(""), null);
 	}
 

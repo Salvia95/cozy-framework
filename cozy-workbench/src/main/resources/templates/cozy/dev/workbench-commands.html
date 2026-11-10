@@ -100,6 +100,7 @@
               <span class="text-secondary" th:if="${outcome.changesNothing()}">· 같은 구조가 이미 있습니다.</span>
               <span class="text-secondary" th:if="${!outcome.changesNothing() and dryRun}">· 아직 아무 파일도 바뀌지 않았습니다.</span>
               <span th:if="${!outcome.slots.isEmpty()}" th:text="|· 빈칸 ${outcome.slots.size()}곳|">· 빈칸 1곳</span>
+              <span th:if="${!outcome.manual.isEmpty()}" th:text="|· 남은 일 ${outcome.manual.size()}곳|">· 남은 일 1곳</span>
             </div>
             <div class="table-responsive">
               <table class="table card-table cozy-workbench-plan">
@@ -121,6 +122,14 @@
               <div class="mb-2" th:each="slot : ${outcome.slots}">
                 <code class="cozy-workbench-command" th:text="|${slot.file}:${slot.line}|">파일:줄</code>
                 <div><span class="fw-medium" th:text="${slot.slot}">listener-body</span> <span class="text-secondary" th:text="|— ${slot.what}|">— 무엇을</span></div>
+              </div>
+            </div>
+            <div class="card-body border-top" th:if="${!outcome.manual.isEmpty()}">
+              <h4 class="subheader mb-2" th:text="${dryRun} ? '적용한 뒤 손으로 할 일' : '손으로 할 일'">손으로 할 일</h4>
+              <div class="mb-3" th:each="todo : ${outcome.manual}">
+                <code class="cozy-workbench-command" th:text="${todo.file}">파일</code>
+                <div th:text="${todo.what}">무엇을</div>
+                <pre class="cozy-workbench-context mt-1 mb-0" th:text="${todo.snippet}">넣을 내용</pre>
               </div>
             </div>
             <div class="card-body border-top">

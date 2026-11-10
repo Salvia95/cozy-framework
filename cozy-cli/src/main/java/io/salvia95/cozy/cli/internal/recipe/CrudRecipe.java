@@ -293,14 +293,15 @@ final class CrudRecipe {
 			return this.t.render(resource);
 		}
 
-		private static String cell(String object, Field f) {
+		static String cell(String object, Field f) {
 			String ref = object + "." + f.name();
 			if (f.kind() == Field.Kind.BOOL) {
 				return "<td class=\"text-nowrap\">\n                  <th:block th:if=\"${" + ref + "}\"><span th:replace=\"~{cozy/component/badge :: badge('"
 						+ f.label() + "', 'neutral')}\"></span></th:block>\n                  <span class=\"text-secondary\" th:unless=\"${" + ref
 						+ "}\">—</span>\n                </td>";
 			}
-			return "<td class=\"text-secondary text-nowrap\" th:text=\"${" + ref + "} ?: '—'\">—</td>";
+			// 빈 글자로 저장된 글도 —로 보인다
+			return "<td class=\"text-secondary text-nowrap\" th:text=\"" + ScreenRecipe.display(object, f) + "\">—</td>";
 		}
 
 		private static String detailBody(List<Field> longtexts, List<Field> others) {
@@ -310,10 +311,7 @@ final class CrudRecipe {
 				out.append(ScreenRecipe.card(null, "정보", grid(others, "            "), "        "));
 			}
 			for (Field f : longtexts) {
-				String items = "            <th:block th:if=\"${item." + f.name() + "Lines.isEmpty()}\"><p class=\"text-secondary mb-0\">"
-						+ Names.subjectParticle(f.label()) + " 없습니다.</p></th:block>\n"
-						+ "            <p class=\"mb-2\" th:each=\"line : ${item." + f.name() + "Lines}\" th:text=\"${line}\">" + f.label() + "</p>\n";
-				out.append(ScreenRecipe.card(null, f.label(), items, "        "));
+				out.append(longtextCard(f, "        "));
 			}
 			out.append("      </div>\n      <div class=\"col-lg-4\">\n");
 			List<Field> side = longtexts.isEmpty() ? List.of() : others;
@@ -332,6 +330,14 @@ final class CrudRecipe {
 			return out.toString();
 		}
 
+		/** 상세의 긴 글 카드 하나: 줄마다 문단 */
+		static String longtextCard(Field f, String indent) {
+			String items = indent + "    <th:block th:if=\"${item." + f.name() + "Lines.isEmpty()}\"><p class=\"text-secondary mb-0\">"
+					+ Names.subjectParticle(f.label()) + " 없습니다.</p></th:block>\n" + indent + "    <p class=\"mb-2\" th:each=\"line : ${item."
+					+ f.name() + "Lines}\" th:text=\"${line}\">" + f.label() + "</p>\n";
+			return ScreenRecipe.card(null, f.label(), items, indent);
+		}
+
 		private static String grid(List<Field> fields, String indent) {
 			if (fields.isEmpty()) {
 				return indent + "<p class=\"text-secondary mb-0\">더 볼 정보가 없습니다.</p>\n";
@@ -342,9 +348,13 @@ final class CrudRecipe {
 		}
 
 		private static String gridItem(Field f) {
-			return "              <div class=\"datagrid-item\">\n                <div class=\"datagrid-title\">" + f.label() + "</div>\n"
-					+ "                <div class=\"datagrid-content\" th:text=\"" + ScreenRecipe.display("item", f) + "\">—</div>\n"
-					+ "              </div>\n";
+			return gridItem(f, "              ");
+		}
+
+		/** 상세의 값 하나 (datagrid 항목) */
+		static String gridItem(Field f, String indent) {
+			return indent + "<div class=\"datagrid-item\">\n" + indent + "  <div class=\"datagrid-title\">" + f.label() + "</div>\n" + indent
+					+ "  <div class=\"datagrid-content\" th:text=\"" + ScreenRecipe.display("item", f) + "\">—</div>\n" + indent + "</div>\n";
 		}
 
 		private static String formProperties(List<Field> fields) {

@@ -226,6 +226,9 @@ final class FieldRecipe {
 
 		private final Map<Call, Integer> arity = new java.util.EnumMap<>(Call.class);
 
+		/** 고치기 전에 있던 필드 이름 (id와 시각은 빼고) */
+		private List<String> existing = List.of();
+
 		private final String domainFile;
 
 		private final String itemFile;
@@ -294,6 +297,10 @@ final class FieldRecipe {
 			}
 			String xml = this.ctx.plan().current(this.xmlFile);
 			String table = table(xml);
+			this.existing = components(source(this.domainFile).parsed.type(this.entity)).stream()
+				.map((c) -> c.getName().toString())
+				.filter((n) -> !Set.of("id", "createdAt", "updatedAt").contains(n))
+				.toList();
 			records();
 			row();
 			mapper();
@@ -326,6 +333,7 @@ final class FieldRecipe {
 			this.ctx.plan().edit(this.xmlFile, newXml, column + " 열");
 			this.ctx.plan().edit(this.fieldsFile, newFields, this.field.label() + " 입력 칸");
 			specs.forEach((file, content) -> this.ctx.plan().edit(file, content, this.field.name() + " 값"));
+			screens();
 
 			StringBuilder next = new StringBuilder("다음: mvn verify로 확인합니다. 검증과 기본값 같은 업무 규칙은 만든 코드를 고칩니다");
 			if (this.field.kind() == Field.Kind.TEXT || this.field.kind() == Field.Kind.LONGTEXT) {
@@ -948,6 +956,161 @@ final class FieldRecipe {
 			String indent = lines.get(close).substring(0, lines.get(close).indexOf('<'));
 			lines.add(close, indent + "  <div th:replace=\"~{cozy/component/field :: field('" + this.field.name() + "', '" + this.field.label()
 					+ "', '" + this.field.input() + "')}\"></div>");
+			return String.join("\n", lines) + (html.endsWith("\n") ? "\n" : "");
+		}
+
+		// ---- 목록과 상세 (보이는 곳)
+
+		/** 목록의 열과 상세의 항목. 자리를 찾지 못하면 실패하지 않고 손으로 할 일로 남긴다 */
+		private void screens() {
+			String templates = "src/main/resources/templates/" + this.module + "/api/";
+			String label = this.field.label();
+			String list = this.ctx.plan().current(templates + "list.html");
+			if (list != null && this.field.kind() != Field.Kind.LONGTEXT) {
+				String result = listColumn(list);
+				if (result != null) {
+					this.ctx.plan().edit(templates + "list.html", result, label + " 열");
+				}
+				else {
+					this.ctx.manual(templates + "list.html", "목록에 " + label + " 열을 더하세요. 머리 줄에 th, 행에 td입니다",
+							"<th class=\"w-1\">" + label + "</th>\n" + unindent(CrudRecipe.Model.cell("row", this.field)));
+				}
+			}
+			String detail = this.ctx.plan().current(templates + "detail.html");
+			if (detail != null) {
+				boolean longtext = this.field.kind() == Field.Kind.LONGTEXT;
+				String result = longtext ? detailCard(detail) : detailItem(detail);
+				if (result != null) {
+					this.ctx.plan().edit(templates + "detail.html", result, label + (longtext ? " 카드" : " 항목"));
+				}
+				else {
+					this.ctx.manual(templates + "detail.html",
+							longtext ? "상세에 " + label + " 카드를 더하세요" : "상세의 datagrid에 " + label + " 항목을 더하세요",
+							(longtext ? CrudRecipe.Model.longtextCard(this.field, "") : CrudRecipe.Model.gridItem(this.field, "")).stripTrailing());
+				}
+			}
+		}
+
+		/** 여러 줄 마크업의 공통 들여쓰기를 뺀다 (첫 줄은 들여쓰지 않은 조각) */
+		private static String unindent(String markup) {
+			List<String> lines = markup.lines().toList();
+			int common = lines.stream().skip(1).mapToInt((l) -> l.length() - l.stripLeading().length()).min().orElse(0);
+			int base = Math.max(0, common - 2);
+			StringBuilder out = new StringBuilder(lines.getFirst());
+			lines.stream().skip(1).forEach((l) -> out.append('\n').append(l.substring(Math.min(base, l.length()))));
+			return out.toString();
+		}
+
+		/** 수정한 시각 칸 앞에 칸을, 머리 줄의 같은 자리에 th를 넣는다. 모양을 알아볼 수 없으면 {@code null} */
+		private String listColumn(String html) {
+			Matcher stamp = Pattern.compile("<td\\b[^>]*\\$\\{\\s*([A-Za-z_][A-Za-z0-9_]*)\\.updatedAt\\s*}[^>]*>").matcher(html);
+			if (!stamp.find()) {
+				return null;
+			}
+			int cell = stamp.start();
+			String row = stamp.group(1);
+			if (stamp.find()) {
+				return null;
+			}
+			int rowStart = html.lastIndexOf("<tr", cell);
+			int rowEnd = html.indexOf("</tr>", cell);
+			int headStart = html.indexOf("<thead");
+			int headEnd = html.indexOf("</thead>");
+			if (rowStart < 0 || rowEnd < 0 || headStart < 0 || headEnd < headStart || html.indexOf("<thead", headStart + 1) >= 0) {
+				return null;
+			}
+			List<Integer> cells = starts(html, "<td\\b", rowStart, rowEnd);
+			List<Integer> heads = starts(html, "<th\\b", headStart, headEnd);
+			int index = cells.indexOf(cell);
+			if (index < 0 || heads.size() != cells.size()) {
+				return null;
+			}
+			int lineStart = html.lastIndexOf('\n', cell - 1) + 1;
+			String indent = html.substring(lineStart, cell);
+			String added = CrudRecipe.Model.cell(row, this.field);
+			StringBuilder out = new StringBuilder(html);
+			out.insert(cell, indent.isBlank() ? reindent(added, indent) + "\n" + indent : added);
+			out.insert(heads.get(index), "<th class=\"w-1\">" + this.field.label() + "</th>");
+			return out.toString();
+		}
+
+		/** crud가 쓰는 들여쓰기(16칸)로 만든 칸을 그 줄의 들여쓰기에 맞춘다 */
+		private static String reindent(String cell, String indent) {
+			List<String> lines = cell.lines().toList();
+			StringBuilder out = new StringBuilder(lines.getFirst());
+			for (String line : lines.subList(1, lines.size())) {
+				out.append('\n').append(indent).append(line.startsWith(" ".repeat(16)) ? line.substring(16) : line.stripLeading());
+			}
+			return out.toString();
+		}
+
+		private static List<Integer> starts(String text, String regex, int from, int to) {
+			List<Integer> result = new ArrayList<>();
+			Matcher matcher = Pattern.compile(regex).matcher(text).region(from, to);
+			while (matcher.find()) {
+				result.add(matcher.start());
+			}
+			return result;
+		}
+
+		/** 줄 {@code open}에서 시작한 요소를 닫는 줄: 같은 들여쓰기의 {@code </div>}. 없으면 -1 */
+		private static int closing(List<String> lines, int open) {
+			String indent = lines.get(open).substring(0, lines.get(open).indexOf('<'));
+			for (int i = open + 1; i < lines.size(); i++) {
+				if (lines.get(i).equals(indent + "</div>")) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		/** 마지막 필드 항목 뒤(없으면 만든 시각 항목 앞)에 datagrid 항목을 넣는다. 모양을 알아볼 수 없으면 {@code null} */
+		private String detailItem(String html) {
+			List<String> lines = new ArrayList<>(html.lines().toList());
+			Pattern mine = Pattern.compile("\\bitem\\.(" + String.join("|", this.existing) + ")\\b");
+			int after = -1;
+			int before = -1;
+			for (int i = 0; i < lines.size(); i++) {
+				if (!lines.get(i).strip().equals("<div class=\"datagrid-item\">")) {
+					continue;
+				}
+				int close = closing(lines, i);
+				if (close < 0) {
+					return null;
+				}
+				String block = String.join("\n", lines.subList(i, close + 1));
+				if (!this.existing.isEmpty() && mine.matcher(block).find()) {
+					after = close;
+				}
+				else if (block.contains("item.createdAt") && before < 0) {
+					before = i;
+				}
+			}
+			int at = (after >= 0) ? after + 1 : before;
+			if (at < 0) {
+				return null;
+			}
+			String anchor = lines.get((after >= 0) ? after : before);
+			String indent = anchor.substring(0, anchor.indexOf('<'));
+			lines.addAll(at, CrudRecipe.Model.gridItem(this.field, indent).lines().toList());
+			return String.join("\n", lines) + (html.endsWith("\n") ? "\n" : "");
+		}
+
+		/** 넓은 칸({@code col-lg-8})의 끝에 긴 글 카드를 넣는다. 모양을 알아볼 수 없으면 {@code null} */
+		private String detailCard(String html) {
+			List<String> lines = new ArrayList<>(html.lines().toList());
+			List<Integer> wide = new ArrayList<>();
+			for (int i = 0; i < lines.size(); i++) {
+				if (lines.get(i).strip().equals("<div class=\"col-lg-8\">")) {
+					wide.add(i);
+				}
+			}
+			int close = (wide.size() == 1) ? closing(lines, wide.getFirst()) : -1;
+			if (close < 0) {
+				return null;
+			}
+			String indent = lines.get(close).substring(0, lines.get(close).indexOf('<')) + "  ";
+			lines.addAll(close, CrudRecipe.Model.longtextCard(this.field, indent).lines().toList());
 			return String.join("\n", lines) + (html.endsWith("\n") ? "\n" : "");
 		}
 

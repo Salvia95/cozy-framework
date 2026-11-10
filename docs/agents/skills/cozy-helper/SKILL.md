@@ -57,6 +57,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | --- | --- | --- |
 | `[cozy] 적용했습니다. 빈칸 N곳` | The command wrote files and N slots remain. | Fill each listed `file:line`. |
 | `[cozy] 바뀐 것 없음` | The same structure already exists. | Do nothing; rerunning a command is safe. |
+| `[cozy] 적용했습니다. 남은 일 N곳` | The command wrote files but could not edit N screens. | Insert the printed markup into each listed file. |
 | Exit code 2 | The command was refused and no file changed. | Read stderr, fix the arguments, and rerun. |
 
 - A plan line starting with `만듦` is a new file, `바꿈` is an edited file, and `그대로` is an unchanged file.
