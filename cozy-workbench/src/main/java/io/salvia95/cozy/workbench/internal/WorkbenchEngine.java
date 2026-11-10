@@ -28,11 +28,28 @@ public class WorkbenchEngine {
 
 	private final Path projectDir;
 
+	private final Path uiLocation;
+
 	/**
 	 * @param start 찾기 시작할 폴더. 여기서 위로 올라가며 앱 프로젝트를 찾는다
+	 * @param uiLocation 실행 중인 cozy-ui의 jar나 클래스 폴더. 모르면 {@code null}(cozy 명령이 Maven 저장소에서 찾는다)
 	 */
-	public WorkbenchEngine(Path start) {
-		this.projectDir = find(start.toAbsolutePath().normalize());
+	public WorkbenchEngine(Path start, Path uiLocation) {
+		this(find(start.toAbsolutePath().normalize()), uiLocation, true);
+	}
+
+	private WorkbenchEngine(Path projectDir, Path uiLocation, boolean resolved) {
+		this.projectDir = projectDir;
+		this.uiLocation = uiLocation;
+	}
+
+	/**
+	 * 위로 찾지 않고 이 폴더만 본다. 앱 프로젝트가 아니면 쓸 수 없는 엔진이 된다.
+	 */
+	public static WorkbenchEngine at(Path projectDir, Path uiLocation) {
+		Path dir = projectDir.toAbsolutePath().normalize();
+		boolean project = Files.isRegularFile(dir.resolve("pom.xml")) && Files.isDirectory(dir.resolve("src/main/java"));
+		return new WorkbenchEngine(project ? dir : null, uiLocation, true);
 	}
 
 	private static Path find(Path start) {
@@ -82,6 +99,10 @@ public class WorkbenchEngine {
 		List<String> all = new ArrayList<>(List.of(args));
 		all.add("--project");
 		all.add(this.projectDir.toString());
+		if (this.uiLocation != null) {
+			all.add("--ui");
+			all.add(this.uiLocation.toString());
+		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		ByteArrayOutputStream err = new ByteArrayOutputStream();
 		int code = CozyCli.run(all.toArray(String[]::new), this.projectDir, System.getenv("COZY_REPOSITORY"),
@@ -127,6 +148,57 @@ public class WorkbenchEngine {
 			}
 		}
 		return screens;
+	}
+
+	/**
+	 * 위반 하나 ({@code cozy check --json}의 {@code violations[]}).
+	 *
+	 * @param id 규칙이나 검사 ({@code R3}, {@code C9})
+	 * @param error 오류인가 (아니면 경고)
+	 * @param file 프로젝트 기준 파일. 모르면 {@code null}
+	 * @param line 줄. 모르면 0
+	 * @param target 문제가 된 것
+	 * @param message 고치는 법
+	 * @param command 고치는 명령. 없으면 {@code null}
+	 */
+	public record Violation(String id, boolean error, String file, int line, String target, String message, String command) {
+	}
+
+	/**
+	 * {@code cozy check}의 결과.
+	 *
+	 * @param failure 검사하지 못한 이유. 검사했으면 {@code null}
+	 */
+	public record Check(long errors, long warnings, List<Violation> violations, String failure) {
+
+		public boolean clean() {
+			return this.failure == null && this.errors == 0 && this.warnings == 0;
+		}
+	}
+
+	/** {@code cozy check --json}. 판단할 수 없으면(종료 코드 2) 이유를 담아 돌려준다 */
+	public Check check() {
+		Result result = run("check", "--json");
+		if (result.code() == CozyCli.UNUSABLE) {
+			return new Check(0, 0, List.of(), result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
+		}
+		JsonNode root = JSON.readTree(result.out());
+		List<Violation> violations = new ArrayList<>();
+		for (JsonNode v : root.path("violations")) {
+			violations.add(new Violation(v.path("id").asString(), "error".equals(v.path("severity").asString()), text(v, "file"),
+					v.path("line").asInt(0), text(v, "target"), v.path("message").asString(""), text(v, "command")));
+		}
+		return new Check(root.path("errors").asLong(), root.path("warnings").asLong(), List.copyOf(violations), null);
+	}
+
+	/** {@code cozy describe --json} 전체: app, modules, slots, problems */
+	@SuppressWarnings("unchecked")
+	public java.util.Map<String, Object> describe() {
+		Result result = run("describe", "--json");
+		if (result.code() != CozyCli.OK) {
+			throw new IllegalStateException("[cozy] cozy describe가 실패했습니다: " + result.err().strip());
+		}
+		return JSON.readValue(result.out(), java.util.Map.class);
 	}
 
 	private static String text(JsonNode node, String field) {

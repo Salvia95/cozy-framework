@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--/* 워크벤치의 머리: 제목, 한 줄 설명, 화면·검사·지도 사이의 이동. cozyErrors는 cozy check의 오류 수다. */-->
+<html lang="ko">
+<body>
+<div class="page-header mt-0 mb-4" th:fragment="header(cozyActive, cozyErrors, cozyLead)">
+  <div class="row align-items-center g-3">
+    <div class="col-12 col-md">
+      <h2 class="page-title">워크벤치</h2>
+      <p class="text-secondary mt-1 mb-0" th:text="${cozyLead}">설명</p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <ul class="nav nav-pills cozy-workbench-nav" aria-label="워크벤치">
+        <li class="nav-item">
+          <a class="nav-link" th:classappend="${cozyActive == 'screens'} ? 'active'" th:aria-current="${cozyActive == 'screens'} ? 'page'" th:href="@{/cozy/dev/workbench}">화면</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:classappend="${cozyActive == 'check'} ? 'active'" th:aria-current="${cozyActive == 'check'} ? 'page'" th:href="@{/cozy/dev/workbench/check}"
+             th:data-cozy-errors="${cozyErrors}">검사<span class="badge cozy-tone-critical ms-2" th:if="${cozyErrors > 0}" th:text="${cozyErrors}">0</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:classappend="${cozyActive == 'map'} ? 'active'" th:aria-current="${cozyActive == 'map'} ? 'page'" th:href="@{/cozy/dev/workbench/map}">지도</a>
+        </li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/cozy/dev/catalog}">패턴 카탈로그</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+</html>

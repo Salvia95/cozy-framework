@@ -7,13 +7,7 @@
 <html th:replace="~{cozy/layout/base :: base('워크벤치', ~{::main})}">
 <body>
 <main class="container-fluid py-4">
-  <div class="page-header mt-0 mb-4">
-    <h2 class="page-title">워크벤치</h2>
-    <p class="text-secondary mt-1 mb-0">
-      화면의 구조와 상태를 보고 소스 위치를 찾습니다. 화면 <span th:text="${specs.size()}">0</span>개 ·
-      <a th:href="@{/cozy/dev/catalog}">패턴 카탈로그</a>
-    </p>
-  </div>
+  <div th:replace="~{cozy/dev/workbench-nav :: header('screens', ${errors}, ${'화면의 구조와 상태를 보고 소스 위치를 찾습니다. 화면 ' + specs.size() + '개'})}"></div>
 
   <th:block th:if="${!engineAvailable}">
     <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 보입니다.')}"></div>
@@ -28,10 +22,15 @@
       <nav class="card mb-4" aria-label="화면">
         <div class="card-header"><h3 class="card-title">화면</h3></div>
         <div class="list-group list-group-flush">
-          <a class="list-group-item list-group-item-action" th:each="item : ${specs}"
+          <a class="list-group-item list-group-item-action d-flex align-items-center" th:each="item : ${specs}"
              th:classappend="${item.screen == screen.screen} ? 'active'"
              th:aria-current="${item.screen == screen.screen} ? 'page'"
-             th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w},view=${view})}" th:text="${item.screen}">memo-list</a>
+             th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w},view=${view})}">
+            <span th:text="${item.screen}">memo-list</span>
+            <span class="badge cozy-tone-critical ms-auto" th:if="${violationCounts.containsKey(item.screen)}"
+                  th:data-cozy-violations="|${item.screen}:${violationCounts.get(item.screen)}|"
+                  th:text="|위반 ${violationCounts.get(item.screen)}|">위반 1</span>
+          </a>
         </div>
       </nav>
 

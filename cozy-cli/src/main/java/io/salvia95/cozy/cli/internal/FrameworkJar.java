@@ -9,10 +9,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -21,7 +24,7 @@ import io.salvia95.cozy.rules.TemplateFile;
 
 /**
  * cozy-ui jar의 프레임워크 자원: 템플릿({@code templates/cozy/}, {@code templates/error/}), 매니페스트, Tabler Icons 스프라이트.
- * cozy 명령은 cozy-ui의 클래스를 쓰지 않고 jar를 zip으로 읽는다.
+ * cozy 명령은 cozy-ui의 클래스를 쓰지 않고 jar를 zip으로(또는 풀어 놓은 폴더를) 읽는다.
  */
 public final class FrameworkJar {
 
@@ -53,43 +56,72 @@ public final class FrameworkJar {
 		return repository.resolve("io/salvia95/cozy/cozy-ui/" + version + "/cozy-ui-" + version + ".jar");
 	}
 
-	public static FrameworkJar read(Path jar) {
+	/**
+	 * @param location cozy-ui jar, 또는 그 내용을 풀어 놓은 폴더(빌드의 {@code target/classes})
+	 */
+	public static FrameworkJar read(Path location) {
 		FrameworkJar result = new FrameworkJar();
-		try (ZipFile zip = new ZipFile(jar.toFile())) {
-			Enumeration<? extends ZipEntry> entries = zip.entries();
-			List<ZipEntry> sorted = new ArrayList<>();
-			while (entries.hasMoreElements()) {
-				sorted.add(entries.nextElement());
+		Map<String, String> entries = Files.isDirectory(location) ? folder(location) : zip(location);
+		entries.forEach((name, content) -> {
+			if ((name.startsWith("templates/cozy/") || name.startsWith("templates/error/")) && name.endsWith(".html")) {
+				String path = name.substring("templates/".length());
+				result.templates.add(new TemplateFile(path, Origin.FRAMEWORK, "[cozy-ui] " + name, content));
 			}
-			sorted.sort((a, b) -> a.getName().compareTo(b.getName()));
-			for (ZipEntry entry : sorted) {
-				String name = entry.getName();
-				if (entry.isDirectory()) {
-					continue;
-				}
-				if ((name.startsWith("templates/cozy/") || name.startsWith("templates/error/")) && name.endsWith(".html")) {
-					String path = name.substring("templates/".length());
-					result.templates.add(new TemplateFile(path, Origin.FRAMEWORK, "[cozy-ui] " + name, read(zip, entry)));
-				}
-				else if (name.equals("cozy/fragments.yml")) {
-					result.manifest = read(zip, entry);
-				}
-				else {
-					Matcher sprite = SPRITE.matcher(name);
-					if (sprite.matches()) {
-						boolean filled = sprite.group(1) != null;
-						Matcher symbol = (filled ? FILLED : OUTLINE).matcher(read(zip, entry));
-						while (symbol.find()) {
-							(filled ? result.filledIcons : result.icons).add(symbol.group(1));
-						}
+			else if (name.equals("cozy/fragments.yml")) {
+				result.manifest = content;
+			}
+			else {
+				Matcher sprite = SPRITE.matcher(name);
+				if (sprite.matches()) {
+					boolean filled = sprite.group(1) != null;
+					Matcher symbol = (filled ? FILLED : OUTLINE).matcher(content);
+					while (symbol.find()) {
+						(filled ? result.filledIcons : result.icons).add(symbol.group(1));
 					}
+				}
+			}
+		});
+		return result;
+	}
+
+	/** 읽을 자원인가: 프레임워크 템플릿, 매니페스트, 아이콘 스프라이트 */
+	private static boolean wanted(String name) {
+		return ((name.startsWith("templates/cozy/") || name.startsWith("templates/error/")) && name.endsWith(".html"))
+				|| name.equals("cozy/fragments.yml") || SPRITE.matcher(name).matches();
+	}
+
+	/** 이름 순서의 자원 이름 → 내용 */
+	private static Map<String, String> zip(Path jar) {
+		Map<String, String> entries = new TreeMap<>();
+		try (ZipFile zip = new ZipFile(jar.toFile())) {
+			Enumeration<? extends ZipEntry> all = zip.entries();
+			while (all.hasMoreElements()) {
+				ZipEntry entry = all.nextElement();
+				if (!entry.isDirectory() && wanted(entry.getName())) {
+					entries.put(entry.getName(), read(zip, entry));
 				}
 			}
 		}
 		catch (IOException ex) {
 			throw new CliException(jar + "를 읽지 못했습니다: " + ex.getMessage());
 		}
-		return result;
+		return entries;
+	}
+
+	private static Map<String, String> folder(Path root) {
+		Map<String, String> entries = new TreeMap<>();
+		try (Stream<Path> files = Files.walk(root)) {
+			for (Path file : files.filter(Files::isRegularFile).toList()) {
+				String name = root.relativize(file).toString().replace('\\', '/');
+				if (wanted(name)) {
+					entries.put(name, Files.readString(file, StandardCharsets.UTF_8));
+				}
+			}
+		}
+		catch (IOException ex) {
+			throw new CliException(root + "를 읽지 못했습니다: " + ex.getMessage());
+		}
+		return entries;
 	}
 
 	public List<TemplateFile> templates() {

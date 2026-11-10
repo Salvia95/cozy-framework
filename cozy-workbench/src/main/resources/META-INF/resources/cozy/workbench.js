@@ -1,8 +1,23 @@
-/* 워크벤치(/cozy/dev/workbench): 미리보기의 요소와 구조 트리를 잇는다.
+/* 워크벤치(/cozy/dev/workbench): 복사 버튼, 그리고 미리보기의 요소와 구조 트리를 잇는다.
    미리보기의 요소에는 data-cozy-src="템플릿:줄"이 있고(SourceLocationDialect), 구조 트리의 줄에는 시작·끝 줄과 삽입 대상이 있다.
    요소를 누르면 화면 템플릿에서의 위치, 감싸는 구조, 에이전트에게 넘길 글을 보인다. */
 (function () {
   'use strict';
+
+  function copied() {
+    if (window.Cozy && window.Cozy.toast) {
+      window.Cozy.toast('복사했습니다', 'success');
+    }
+  }
+
+  // 검사 화면의 고치는 명령 등: data-cozy-copy의 값을 복사한다
+  document.querySelectorAll('[data-cozy-copy]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(button.dataset.cozyCopy).then(copied, function () {});
+      }
+    });
+  });
 
   var frame = document.querySelector('[data-cozy-workbench-frame]');
   var panel = document.querySelector('[data-cozy-workbench-selection]');
@@ -350,13 +365,8 @@
   copyButtons.forEach(function (button) {
     button.addEventListener('click', function () {
       var text = copies[button.dataset.cozyWorkbenchCopy];
-      var done = function () {
-        if (window.Cozy && window.Cozy.toast) {
-          window.Cozy.toast('복사했습니다', 'success');
-        }
-      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, showText);
+        navigator.clipboard.writeText(text).then(copied, showText);
       }
       else {
         showText();

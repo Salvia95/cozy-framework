@@ -13,6 +13,7 @@ mvn -o package -pl cozy-cli                         # 레포: target/cozy-cli-*.
 cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar check
 ```
 
+- **`--ui <jar나 폴더>`**: `check`와 아이콘을 확인하는 레시피는 cozy-ui의 프레임워크 자원(템플릿, 매니페스트, 아이콘)을 읽는다. 기본은 `--repository`에서 앱의 cozy 버전으로 jar를 찾는다. `--ui`를 주면 저장소를 찾지 않고 그 jar나 풀어 놓은 폴더(`target/classes`)를 읽는다. 워크벤치가 실행 중인 cozy-ui를 넘기는 데 쓴다. 없는 경로면 종료 코드 2다.
 - **JDK**: Java 소스를 JDK의 javac 파서로 읽으므로 JRE가 아니라 JDK 25로 실행한다. 번들 명령은 `java`가 25 이상인지 확인한다.
 
 ## 형식

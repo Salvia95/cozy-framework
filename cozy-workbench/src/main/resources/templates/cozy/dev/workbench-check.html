@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--/*
+  워크벤치의 검사 (/cozy/dev/workbench/check). cozy check의 결과를 그대로 보인다: 파일마다 위반, 고치는 법, 고치는 명령.
+  화면 템플릿이나 스펙의 위반은 워크벤치의 소스 보기 그 줄로 이어진다.
+*/-->
+<html th:replace="~{cozy/layout/base :: base('워크벤치 검사', ~{::main})}">
+<body>
+<main class="container-fluid py-4">
+  <div th:replace="~{cozy/dev/workbench-nav :: header('check', ${errors}, '컴파일 없이 하는 빠른 검사(cozy check)의 결과입니다. 최종 판단은 mvn -o verify가 합니다.')}"></div>
+
+  <th:block th:if="${!engineAvailable}">
+    <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 검사할 수 없습니다.')}"></div>
+  </th:block>
+
+  <th:block th:if="${engineAvailable and check.failure != null}">
+    <div th:replace="~{cozy/component/alert :: alert('critical', ${'검사하지 못했습니다. ' + check.failure})}"></div>
+  </th:block>
+
+  <th:block th:if="${engineAvailable and check.clean()}">
+    <div class="card"><div class="card-body">
+      <div th:replace="~{cozy/component/empty-state :: emptyState('circle-check', '이상 없음', '템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9에서 찾은 위반이 없습니다. 컴파일과 렌더링 검사(C1, C3~C7)는 mvn -o verify가 합니다.')}"></div>
+    </div></div>
+  </th:block>
+
+  <th:block th:if="${engineAvailable and check.failure == null and !check.clean()}">
+    <p class="mb-3">
+      <strong th:text="|오류 ${check.errors}건|">오류 0건</strong><span th:if="${check.warnings > 0}" th:text="|, 경고 ${check.warnings}건|">, 경고 0건</span>
+      <span class="text-secondary">· 고치는 명령이 있으면 그대로 실행합니다.</span>
+    </p>
+    <section class="card mb-4" th:each="group : ${groups}">
+      <div class="card-header"><h3 class="card-title cozy-workbench-file"><code th:text="${group.file}">src/main/resources/templates/memo/api/list.html</code></h3></div>
+      <div class="table-responsive">
+        <table class="table card-table cozy-workbench-findings">
+          <thead><tr><th>규칙</th><th>줄</th><th>내용</th><th>고치는 명령</th></tr></thead>
+          <tbody>
+            <tr th:each="finding : ${group.findings}" th:with="v=${finding.violation}">
+              <td>
+                <span class="badge" th:classappend="${v.error} ? 'cozy-tone-critical' : 'cozy-tone-warning'" th:text="${v.id}">R3</span>
+              </td>
+              <td class="text-nowrap">
+                <a th:if="${finding.link != null and v.line > 0}" th:text="${v.line}"
+                   th:href="@{/cozy/dev/workbench(spec=${finding.link.screen},view=${finding.link.view})} + '#L' + ${v.line}">9</a>
+                <span th:if="${finding.link == null and v.line > 0}" th:text="${v.line}">9</span>
+                <span class="text-secondary" th:if="${v.line <= 0}">—</span>
+              </td>
+              <td>
+                <div th:text="${v.message}">고치는 법</div>
+                <code class="small" th:if="${v.target != null}" th:text="${v.target}">대상</code>
+              </td>
+              <td>
+                <div class="d-flex align-items-start gap-2" th:if="${v.command != null}">
+                  <code class="cozy-workbench-command" th:text="${v.command}">cozy link dashboard --uses memo</code>
+                  <button type="button" class="btn btn-sm" th:data-cozy-copy="${v.command}">복사</button>
+                </div>
+                <span class="text-secondary" th:if="${v.command == null}">손으로 고칩니다</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </th:block>
+  <script th:src="@{/cozy/workbench.js}" defer></script>
+</main>
+</body>
+</html>

@@ -118,6 +118,41 @@ class CozyCliTest {
 			assertThat(result.out()).startsWith("[cozy check] 이상 없음");
 		}
 
+		/** --ui: 저장소에서 찾지 않고 cozy-ui의 jar나 풀어 놓은 폴더를 직접 읽는다 (워크벤치가 실행 중인 cozy-ui를 넘긴다) */
+		@Test
+		void theUiResourcesCanBeGivenAsAJarOrAFolder(@TempDir Path dir) throws IOException {
+			Path jar = Path.of(REPOSITORY, "io/salvia95/cozy/cozy-ui", VERSION, "cozy-ui-" + VERSION + ".jar");
+			Path emptyRepository = Files.createDirectories(dir.resolve("empty-repository"));
+			Result fromJar = run("check", "--project", REFERENCE_APP.toString(), "--repository", emptyRepository.toString(),
+					"--ui", jar.toString());
+			assertThat(fromJar.err()).isEmpty();
+			assertThat(fromJar.out()).startsWith("[cozy check] 이상 없음");
+
+			Path folder = Files.createDirectories(dir.resolve("classes"));
+			try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(jar.toFile())) {
+				for (java.util.zip.ZipEntry entry : java.util.Collections.list(zip.entries())) {
+					Path target = folder.resolve(entry.getName());
+					if (entry.isDirectory()) {
+						Files.createDirectories(target);
+					}
+					else {
+						Files.createDirectories(target.getParent());
+						try (java.io.InputStream in = zip.getInputStream(entry)) {
+							Files.copy(in, target);
+						}
+					}
+				}
+			}
+			Result fromFolder = run("check", "--project", REFERENCE_APP.toString(), "--repository", emptyRepository.toString(),
+					"--ui", folder.toString());
+			assertThat(fromFolder.err()).isEmpty();
+			assertThat(fromFolder.out()).startsWith("[cozy check] 이상 없음");
+
+			Result missing = run("check", "--project", REFERENCE_APP.toString(), "--ui", dir.resolve("no-such").toString());
+			assertThat(missing.code()).isEqualTo(CozyCli.UNUSABLE);
+			assertThat(missing.err()).contains("--ui").contains("no-such");
+		}
+
 		/** C8은 바이트코드로 보는 cozy-test와 같은 7건을 같은 메시지로 낸다 */
 		@Test
 		void layerFixtureReportsTheSameSevenViolationsAsCozyTest(@TempDir Path dir) throws IOException {
