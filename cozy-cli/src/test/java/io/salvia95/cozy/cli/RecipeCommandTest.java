@@ -318,8 +318,8 @@ class RecipeCommandTest {
 		fails("모르는 레시피입니다: table", "add", "table", "memo");
 		fails("cozy add field는 보류한 레시피입니다", "add", "field", "memo", "x:text");
 		fails("cozy add 뒤에 레시피 이름을 적습니다", "add");
-		fails("cozy enable 뒤에는 events를 적습니다", "enable");
-		fails("cozy enable 뒤에는 events를 적습니다", "enable", "mail");
+		fails("cozy enable 뒤에는 events나 workbench를 적습니다", "enable");
+		fails("cozy enable 뒤에는 events나 workbench를 적습니다", "enable", "mail");
 	}
 
 	static final String ACTIVITY = "src/main/java/it/cozy/app/activity/";
@@ -389,6 +389,31 @@ class RecipeCommandTest {
 				      <artifactId>cozy-starter-sqlite</artifactId>
 				    </dependency>
 				"""));
+	}
+
+	/** pom에 dev 전용 cozy-workbench. cozy-ui 블록 바로 뒤에 넣고, 이미 있으면 바뀐 것 없음 */
+	@Test
+	void enableWorkbenchAddsTheDevModuleOnce() throws IOException {
+		app();
+		Result dry = ok("enable", "workbench", "--dry-run");
+		assertThat(dry.out()).contains("바꿈  pom.xml    의존 += io.salvia95.cozy:cozy-workbench");
+		assertThat(read("pom.xml")).doesNotContain("cozy-workbench");
+
+		Result enabled = ok("enable", "workbench");
+		assertThat(enabled.out()).contains("[cozy] 적용했습니다").contains("/cozy/dev/workbench");
+		assertThat(read("pom.xml")).contains("<artifactId>cozy-workbench</artifactId>");
+		assertThat(read("pom.xml").indexOf("cozy-workbench")).isGreaterThan(read("pom.xml").indexOf("<artifactId>cozy-ui<"));
+		assertThat(ok("enable", "workbench").out()).contains("[cozy] 바뀐 것 없음");
+		assertThat(ok("enable", "workbench", "--json").out()).contains("\"recipe\": \"enable workbench\"");
+	}
+
+	@Test
+	void enableWorkbenchNeedsAParentThatManagesIt() throws IOException {
+		app();
+		String pom = read("pom.xml");
+		write("pom.xml", pom.replace("<version>" + CozyCliTest.VERSION + "</version>", "<version>1.1.0</version>"));
+		assertThat(read("pom.xml")).isNotEqualTo(pom);
+		fails("워크벤치는 cozy 1.2.0부터 있습니다", "enable", "workbench");
 	}
 
 	/** pom에 cozy-starter-events. 이미 있으면 바뀐 것 없음 */

@@ -272,7 +272,7 @@ fragments:
   - id: icon/tabler
     template: cozy/icon/tabler
     signature: icon(name)
-    purpose: Tabler Icons 외곽선 아이콘 (5,203개). 이름은 /cozy/dev/catalog/icons에서 찾는다.
+    purpose: Tabler Icons 외곽선 아이콘 (5,233개). 이름은 /cozy/dev/catalog/icons에서 찾는다.
     params:
       - { name: name, type: String, required: true, description: "아이콘 이름 (예: plus, notes, trash)" }
     samples:

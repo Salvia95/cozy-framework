@@ -90,25 +90,46 @@ final class XmlEdits {
 	 * {@code cozy-starter-sqlite} 의존 블록 바로 뒤에 {@code cozy-starter-events}를 더한다. 이미 있으면 그대로 돌려준다.
 	 */
 	static String addEventsStarter(String file, String source) {
+		return addCozyDependency(file, source, "cozy-starter-events", "cozy-starter-sqlite", "모듈 사이 이벤트 (cozy enable events)",
+				"이벤트에는 저장(persistence)이 필요합니다. " + file + "의 <dependencies>에 cozy-starter-sqlite가 없습니다. "
+						+ "cozy-starter-sqlite를 먼저 더하세요(아키타입 persistence=true와 같은 의존).");
+	}
+
+	/**
+	 * {@code cozy-ui} 의존 블록 바로 뒤에 {@code cozy-workbench}를 더한다. 이미 있으면 그대로 돌려준다.
+	 */
+	static String addWorkbench(String file, String source) {
+		return addCozyDependency(file, source, "cozy-workbench", "cozy-ui",
+				"dev 전용 워크벤치 /cozy/dev/workbench (cozy enable workbench). 배포 패키지에는 들어가지 않는다",
+				"워크벤치는 화면(cozy-ui)이 있는 앱에 넣습니다. " + file + "의 <dependencies>에 cozy-ui가 없습니다.");
+	}
+
+	/**
+	 * cozy 의존 {@code after}의 블록 바로 뒤에 {@code artifact}를 더한다. 이미 있으면 그대로 돌려준다.
+	 *
+	 * @param comment 더하는 블록 위의 주석
+	 * @param missing {@code after}가 없을 때의 메시지
+	 */
+	private static String addCozyDependency(String file, String source, String artifact, String after, String comment,
+			String missing) {
 		Document pom = read(file, source);
-		if (cozyDependencies(pom, "cozy-starter-events") > 0) {
+		if (cozyDependencies(pom, artifact) > 0) {
 			return source;
 		}
-		int sqlite = cozyDependencies(pom, "cozy-starter-sqlite");
-		if (sqlite == 0) {
-			throw new CliException("이벤트에는 저장(persistence)이 필요합니다. " + file + "의 <dependencies>에 cozy-starter-sqlite가 없습니다. "
-					+ "cozy-starter-sqlite를 먼저 더하세요(아키타입 persistence=true와 같은 의존).");
+		int anchors = cozyDependencies(pom, after);
+		if (anchors == 0) {
+			throw new CliException(missing);
 		}
 		List<int[]> blocks = new ArrayList<>();
 		Matcher m = DEPENDENCY.matcher(source);
 		while (m.find()) {
-			if (m.group().matches("(?s).*<artifactId>\\s*cozy-starter-sqlite\\s*</artifactId>.*")) {
+			if (m.group().matches("(?s).*<artifactId>\\s*" + Pattern.quote(after) + "\\s*</artifactId>.*")) {
 				blocks.add(new int[] { m.start(), m.end() });
 			}
 		}
-		if (sqlite != 1 || blocks.size() != 1) {
-			throw new CliException(file + "에서 cozy-starter-sqlite 의존 블록을 하나로 찾지 못했습니다. <dependency>를 손으로 더하세요: "
-					+ COZY_GROUP + ":cozy-starter-events");
+		if (anchors != 1 || blocks.size() != 1) {
+			throw new CliException(file + "에서 " + after + " 의존 블록을 하나로 찾지 못했습니다. <dependency>를 손으로 더하세요: "
+					+ COZY_GROUP + ":" + artifact);
 		}
 		int start = blocks.getFirst()[0];
 		int end = blocks.getFirst()[1];
@@ -121,15 +142,16 @@ final class XmlEdits {
 		if (text.contains("\n")) {
 			Matcher child = Pattern.compile("\n([ \t]*)<").matcher(text);
 			String inner = child.find() ? child.group(1) : indent + "  ";
-			added = "\n" + indent + "<!-- 모듈 사이 이벤트 (cozy enable events) -->\n" + indent + "<dependency>\n" + inner + "<groupId>"
-					+ COZY_GROUP + "</groupId>\n" + inner + "<artifactId>cozy-starter-events</artifactId>\n" + indent + "</dependency>";
+			added = "\n" + indent + "<!-- " + comment + " -->\n" + indent + "<dependency>\n" + inner + "<groupId>" + COZY_GROUP
+					+ "</groupId>\n" + inner + "<artifactId>" + artifact + "</artifactId>\n" + indent + "</dependency>";
 		}
 		else {
-			added = "\n" + indent + "<dependency><groupId>" + COZY_GROUP + "</groupId><artifactId>cozy-starter-events</artifactId></dependency>";
+			added = "\n" + indent + "<dependency><groupId>" + COZY_GROUP + "</groupId><artifactId>" + artifact
+					+ "</artifactId></dependency>";
 		}
 		String result = source.substring(0, end) + added + source.substring(end);
-		if (cozyDependencies(read(file, result), "cozy-starter-events") != 1) {
-			throw new CliException(file + "에 cozy-starter-events를 더하지 못했습니다. <dependency>를 손으로 더하세요.");
+		if (cozyDependencies(read(file, result), artifact) != 1) {
+			throw new CliException(file + "에 " + artifact + "를 더하지 못했습니다. <dependency>를 손으로 더하세요.");
 		}
 		return result;
 	}

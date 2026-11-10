@@ -86,7 +86,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 | `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm` |
 | `component/toast` | `toast('success', '복사했습니다')` | 사소한 확인만. 중립 바탕, critical만 빨강. 스크립트는 `Cozy.toast(message, kind)` |
 | `component/loading` | `loading()` | `htmx-indicator` |
-| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.50.0 전체 (외곽선 5,203개, 채운 1,054개) |
+| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.51.0 전체 (외곽선 5,233개, 채운 1,054개) |
 
 ## 매니페스트 `cozy/fragments.yml`
 
@@ -119,8 +119,8 @@ fragments:
 | `cozy.dev.catalog.enabled` | dev 프로필이면 `true`, 아니면 `false` | `/cozy/dev/catalog` 등록. 매니페스트 fragment와 화면 스펙(`specs/*.yml`)을 상태별로 미리 본다 |
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
-- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.3, Tabler Icons 3.50.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
-- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.50.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
+- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.4, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
+- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
 - **아이콘 목록**: `/cozy/dev/catalog/icons`(카탈로그가 켜진 앱)에서 이름으로 찾고, 칸을 누르면 `icon('이름')`이 복사된다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
 - **app-shell의 앱 메뉴**: 사이드 내비 아래에 "진단 내보내기"와 "종료"가 내비 항목 모양으로 있다. 런타임의 `POST /cozy/diagnostics`, `POST /cozy/shutdown`을 부른다([runtime.md](runtime.md)).

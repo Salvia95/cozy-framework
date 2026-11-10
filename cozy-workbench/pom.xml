@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.salvia95.cozy</groupId>
+    <artifactId>cozy-parent</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+    <relativePath>../cozy-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>cozy-workbench</artifactId>
+  <name>Cozy :: Workbench</name>
+  <description>dev 전용 워크벤치: 앱 안에서 화면의 구조·상태·소스를 보고 cozy 명령으로 만든다. 배포 패키지에는 들어가지 않는다</description>
+  <url>https://github.com/Salvia95/cozy-framework</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-ui</artifactId>
+    </dependency>
+    <!-- 엔진: 에이전트가 쓰는 것과 같은 cozy 명령을 같은 프로세스에서 부른다 -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-cli</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <!-- 모듈 의존 규칙 -->
+          <execution>
+            <id>cozy-module-boundary</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <message>cozy-workbench는 cozy-ui와 cozy-cli(와 그 둘이 가져오는 cozy-starter-runtime, cozy-rules)에만 의존합니다.</message>
+                  <excludes>
+                    <exclude>io.salvia95.cozy:*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>io.salvia95.cozy:cozy-ui</include>
+                    <include>io.salvia95.cozy:cozy-cli</include>
+                    <include>io.salvia95.cozy:cozy-starter-runtime</include>
+                    <include>io.salvia95.cozy:cozy-rules</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

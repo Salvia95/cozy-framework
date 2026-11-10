@@ -25,3 +25,9 @@
 - 새 모듈 `cozy-cli`를 더한다. 실행 jar이고, 앱은 이 모듈에 의존하지 않는다.
 - 모듈 의존 방향에 `cli → rules`를 더한다. 바깥 의존은 SnakeYAML(Boot BOM)만 허용한다.
 - 각 모듈의 enforcer(`cozy-module-boundary`)와 `PomBoundaryTest`에는 모듈을 만드는 M9에서 이 방향을 더한다.
+
+## 개정 (2026-11-10, ADR-0036)
+
+- 새 모듈 `cozy-workbench`를 더한다. dev 전용이고, 앱은 의존으로 갖지만 실행 jar에는 넣지 않는다.
+- 모듈 의존 방향에 `workbench → ui, cli`를 더한다. `cozy-cli`는 실행 jar이면서 워크벤치의 라이브러리다. `ui`와 `cli`는 워크벤치를 모른다.
+- `cozy-workbench`의 enforcer(`cozy-module-boundary`)가 이 방향을 검사한다.

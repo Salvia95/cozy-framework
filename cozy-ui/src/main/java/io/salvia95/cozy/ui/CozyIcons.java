@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public final class CozyIcons {
 
 	/** Tabler Icons 버전 (cozy-ui 벤더 자산) */
-	public static final String VERSION = "3.50.0";
+	public static final String VERSION = "3.51.0";
 
 	/** 외곽선 아이콘 스프라이트의 정적 경로 */
 	public static final String OUTLINE_SPRITE = "/cozy/vendor/tabler-icons/" + VERSION + "/tabler-sprite.svg";

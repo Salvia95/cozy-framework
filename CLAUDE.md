@@ -30,7 +30,7 @@ Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레�
 
 - groupId와 패키지는 `io.salvia95.cozy`다. 모든 모듈은 `cozy-parent`를 상속한다.
 - 루트 `pom.xml`은 aggregator(`cozy-build`)다.
-- 모듈 의존 방향: events → sqlite → runtime, ui → runtime, test → rules (나머지 cozy 모듈은 optional로만), cli → rules (+ SnakeYAML, ADR-0032). rules는 JDK와 AttoParser에만 의존한다.
+- 모듈 의존 방향: events → sqlite → runtime, ui → runtime, test → rules (나머지 cozy 모듈은 optional로만), cli → rules (+ SnakeYAML, ADR-0032), workbench → ui, cli (dev 전용, ADR-0036). rules는 JDK와 AttoParser에만 의존한다.
 - 이 규칙은 각 모듈의 enforcer(`cozy-module-boundary`)와 `PomBoundaryTest`가 검사한다.
 - 앱 모듈 안의 구조(api · spi · internal, Java와 템플릿)는 ADR-0029와 `docs/conventions/structure.md`를 따른다. reference-app과 아키타입 `home`이 기준 예시다.
 

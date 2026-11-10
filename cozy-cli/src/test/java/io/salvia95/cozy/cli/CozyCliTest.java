@@ -229,7 +229,7 @@ class CozyCliTest {
 			}
 			assertThat(Recipes.ALL).extracting(Recipes.Recipe::name)
 				.containsExactly("module", "link", "crud", "screen", "fragment", "event", "listener", "migration", "dto",
-						"enable events", "query", "command", "event-version");
+						"enable events", "enable workbench", "query", "command", "event-version");
 		}
 
 		@Test

@@ -29,8 +29,7 @@ public final class Recipes {
 		public String playbook() {
 			return switch (this.name) {
 				case "link" -> "link";
-				case "enable events" -> "enable-events";
-				default -> "add-" + this.name;
+				default -> this.name.startsWith("enable ") ? this.name.replace(' ', '-') : "add-" + this.name;
 			};
 		}
 	}
@@ -64,6 +63,8 @@ public final class Recipes {
 					"spi/dto의 record 하나(모듈 사이 값). 종류는 crud와 같고 같은 모듈의 record·list:record도 쓴다", "없음", true),
 			new Recipe("enable events", 2, "cozy enable events", "pom에 cozy-starter-events 추가(cozy-starter-sqlite가 있어야 한다)", "없음",
 					true),
+			new Recipe("enable workbench", 2, "cozy enable workbench",
+					"pom에 dev 전용 cozy-workbench 추가(cozy-ui가 있어야 한다). dev 실행에서 /cozy/dev/workbench가 열린다", "없음", true),
 			new Recipe("query", 2,
 					"cozy add query <모듈> <이름> [--param 이름:종류 …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]",
 					"Finder 메서드와 구현, Mapper 메서드, 행 record, <select>. Finder가 없으면 만든다", "query-sql", true),

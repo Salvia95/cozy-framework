@@ -31,6 +31,15 @@ assert file("src/main/resources/db/migration").exists() == true
 assert file("$pkg/spi/event/NoteAdded.java").exists() == true
 assert file("src/test/resources/events/NoteAdded/v1.json").exists() == true
 def pom = file("pom.xml").text
+assert pom.contains("<artifactId>cozy-workbench</artifactId>") : "워크벤치 의존이 없습니다"
+// dev 전용 도구는 실행 jar와 라이선스 목록에 없다
+def devOnly = ["cozy-workbench", "cozy-cli", "cozy-rules"]
+def bootJar = new File(app, "target").listFiles().find { it.name ==~ /demo-events-.*\.jar/ }
+assert bootJar != null : "실행 jar가 없습니다"
+def libs = new java.util.zip.ZipFile(bootJar).withCloseable { zip -> zip.entries().collect { it.name }.findAll { it.startsWith("BOOT-INF/lib/") } }
+assert libs.any { it.contains("cozy-ui-") } : "실행 jar에 cozy-ui가 없습니다"
+devOnly.each { name -> assert !libs.any { it.contains("/" + name + "-") } : "실행 jar에 dev 전용 " + name + "가 들어 있습니다" }
+devOnly.each { name -> assert !thirdParty.getText("UTF-8").contains(":" + name + ":") : "라이선스 목록에 dev 전용 " + name + "가 있습니다" }
 assert pom.contains("cozy-starter-events") == true
 assert pom.contains("cozy-starter-sqlite") == (true && !true)
 return true

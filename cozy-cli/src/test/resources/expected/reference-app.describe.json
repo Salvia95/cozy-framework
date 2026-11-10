@@ -72,6 +72,126 @@
           "states": [
             "default",
             "empty"
+          ],
+          "outline": [
+            {
+              "line": 3,
+              "depth": 0,
+              "kind": "replace",
+              "target": "cozy/layout/base",
+              "fragment": "appShell",
+              "id": null,
+              "args": [
+                "'대시보드'",
+                "~{::main}"
+              ]
+            },
+            {
+              "line": 6,
+              "depth": 1,
+              "kind": "replace",
+              "target": "cozy/pattern/overview",
+              "fragment": "overview",
+              "id": null,
+              "args": [
+                "'대시보드'",
+                "~{::#dashboard-actions}",
+                "~{::#memo-summary}",
+                "~{::#activity-panel}"
+              ]
+            },
+            {
+              "line": 7,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "dashboard-actions",
+              "args": []
+            },
+            {
+              "line": 7,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'plus'"
+              ]
+            },
+            {
+              "line": 8,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memo-summary",
+              "args": []
+            },
+            {
+              "line": 9,
+              "depth": 3,
+              "kind": "replace",
+              "target": "memo/spi/summary",
+              "fragment": "memoSummary",
+              "id": null,
+              "args": [
+                "${dashboard.memo}"
+              ]
+            },
+            {
+              "line": 11,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "activity-panel",
+              "args": []
+            },
+            {
+              "line": 12,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/pattern/polling-panel",
+              "fragment": "pollingPanel",
+              "id": null,
+              "args": [
+                "'최근 활동'",
+                "'/dashboard/activity'",
+                "10",
+                "~{::#activity}"
+              ]
+            },
+            {
+              "line": 13,
+              "depth": 4,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "activity",
+              "args": []
+            },
+            {
+              "line": 13,
+              "depth": 5,
+              "kind": "fragment",
+              "target": "",
+              "fragment": "activity",
+              "id": "activity",
+              "args": []
+            },
+            {
+              "line": 14,
+              "depth": 6,
+              "kind": "replace",
+              "target": "activity/spi/recent-activity",
+              "fragment": "recentActivity",
+              "id": null,
+              "args": [
+                "${dashboard.activities}"
+              ]
+            }
           ]
         }
       ],
@@ -153,6 +273,90 @@
           "states": [
             "default",
             "empty"
+          ],
+          "outline": [
+            {
+              "line": 6,
+              "depth": 0,
+              "kind": "replace",
+              "target": "cozy/layout/base",
+              "fragment": "appShell",
+              "id": null,
+              "args": [
+                "${memo.title}",
+                "~{::main}"
+              ]
+            },
+            {
+              "line": 9,
+              "depth": 1,
+              "kind": "replace",
+              "target": "cozy/pattern/details",
+              "fragment": "details",
+              "id": null,
+              "args": [
+                "${memo.title}",
+                "'메모'",
+                "'/memo'",
+                "~{::#memo-actions}",
+                "~{::#memo-body}"
+              ]
+            },
+            {
+              "line": 10,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memo-actions",
+              "args": []
+            },
+            {
+              "line": 11,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/component/delete-confirm",
+              "fragment": "deleteConfirm",
+              "id": null,
+              "args": [
+                "'memo-delete'",
+                "'메모'",
+                "${memo.title}",
+                "'/memo/' + ${memo.id} + '/delete'"
+              ]
+            },
+            {
+              "line": 12,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'pencil'"
+              ]
+            },
+            {
+              "line": 15,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memo-body",
+              "args": []
+            },
+            {
+              "line": 33,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/component/badge",
+              "fragment": "badge",
+              "id": null,
+              "args": [
+                "'고정'",
+                "'neutral'"
+              ]
+            }
           ]
         },
         {
@@ -162,6 +366,74 @@
             "default",
             "empty",
             "invalid"
+          ],
+          "outline": [
+            {
+              "line": 4,
+              "depth": 0,
+              "kind": "replace",
+              "target": "cozy/layout/base",
+              "fragment": "appShell",
+              "id": null,
+              "args": [
+                "'메모 수정'",
+                "~{::main}"
+              ]
+            },
+            {
+              "line": 7,
+              "depth": 1,
+              "kind": "replace",
+              "target": "cozy/pattern/form-page",
+              "fragment": "formPage",
+              "id": null,
+              "args": [
+                "'메모 수정'",
+                "${memo.title}",
+                "'/memo/' + ${memo.id}",
+                "~{::#memoForm}"
+              ]
+            },
+            {
+              "line": 8,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memoForm",
+              "args": []
+            },
+            {
+              "line": 8,
+              "depth": 3,
+              "kind": "fragment",
+              "target": "",
+              "fragment": "memoForm",
+              "id": "memoForm",
+              "args": []
+            },
+            {
+              "line": 10,
+              "depth": 4,
+              "kind": "replace",
+              "target": "memo/internal/fields",
+              "fragment": "memoFields",
+              "id": null,
+              "args": []
+            },
+            {
+              "line": 11,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/form-actions",
+              "fragment": "formActions",
+              "id": null,
+              "args": [
+                "'/memo/' + ${memo.id}",
+                "'device-floppy'",
+                "'저장'"
+              ]
+            }
           ]
         },
         {
@@ -171,6 +443,74 @@
             "default",
             "empty",
             "invalid"
+          ],
+          "outline": [
+            {
+              "line": 4,
+              "depth": 0,
+              "kind": "replace",
+              "target": "cozy/layout/base",
+              "fragment": "appShell",
+              "id": null,
+              "args": [
+                "'메모 만들기'",
+                "~{::main}"
+              ]
+            },
+            {
+              "line": 7,
+              "depth": 1,
+              "kind": "replace",
+              "target": "cozy/pattern/form-page",
+              "fragment": "formPage",
+              "id": null,
+              "args": [
+                "'메모 만들기'",
+                "'메모'",
+                "'/memo'",
+                "~{::#memoForm}"
+              ]
+            },
+            {
+              "line": 8,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memoForm",
+              "args": []
+            },
+            {
+              "line": 8,
+              "depth": 3,
+              "kind": "fragment",
+              "target": "",
+              "fragment": "memoForm",
+              "id": "memoForm",
+              "args": []
+            },
+            {
+              "line": 10,
+              "depth": 4,
+              "kind": "replace",
+              "target": "memo/internal/fields",
+              "fragment": "memoFields",
+              "id": null,
+              "args": []
+            },
+            {
+              "line": 11,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/form-actions",
+              "fragment": "formActions",
+              "id": null,
+              "args": [
+                "'/memo'",
+                "'plus'",
+                "'메모 만들기'"
+              ]
+            }
           ]
         },
         {
@@ -181,6 +521,193 @@
             "empty",
             "noResults",
             "paged"
+          ],
+          "outline": [
+            {
+              "line": 4,
+              "depth": 0,
+              "kind": "replace",
+              "target": "cozy/layout/base",
+              "fragment": "appShell",
+              "id": null,
+              "args": [
+                "'메모'",
+                "~{::main}"
+              ]
+            },
+            {
+              "line": 7,
+              "depth": 1,
+              "kind": "replace",
+              "target": "cozy/pattern/list-with-filter",
+              "fragment": "listWithFilter",
+              "id": null,
+              "args": [
+                "'메모'",
+                "~{::#memo-actions}",
+                "~{::#filter}",
+                "~{::#result}"
+              ]
+            },
+            {
+              "line": 8,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memo-actions",
+              "args": []
+            },
+            {
+              "line": 8,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'plus'"
+              ]
+            },
+            {
+              "line": 10,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "filter",
+              "args": []
+            },
+            {
+              "line": 15,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'search'"
+              ]
+            },
+            {
+              "line": 17,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/component/loading",
+              "fragment": "loading",
+              "id": null,
+              "args": []
+            },
+            {
+              "line": 28,
+              "depth": 2,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "result",
+              "args": []
+            },
+            {
+              "line": 28,
+              "depth": 3,
+              "kind": "fragment",
+              "target": "",
+              "fragment": "result",
+              "id": "result",
+              "args": []
+            },
+            {
+              "line": 31,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/empty-state",
+              "fragment": "noResults",
+              "id": null,
+              "args": [
+                "'/memo'"
+              ]
+            },
+            {
+              "line": 34,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/empty-state",
+              "fragment": "emptyStateAction",
+              "id": null,
+              "args": [
+                "'notes'",
+                "'메모가 없습니다'",
+                "'첫 메모를 만들어 보세요.'",
+                "~{::#empty-action}"
+              ]
+            },
+            {
+              "line": 35,
+              "depth": 5,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "empty-action",
+              "args": []
+            },
+            {
+              "line": 35,
+              "depth": 6,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'plus'"
+              ]
+            },
+            {
+              "line": 40,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/data-table",
+              "fragment": "dataTable",
+              "id": null,
+              "args": [
+                "~{::#memo-head}",
+                "~{::.memo-row}"
+              ]
+            },
+            {
+              "line": 42,
+              "depth": 5,
+              "kind": "slot",
+              "target": "",
+              "fragment": null,
+              "id": "memo-head",
+              "args": []
+            },
+            {
+              "line": 47,
+              "depth": 5,
+              "kind": "replace",
+              "target": "cozy/component/badge",
+              "fragment": "badge",
+              "id": null,
+              "args": [
+                "'고정'",
+                "'neutral'"
+              ]
+            },
+            {
+              "line": 55,
+              "depth": 4,
+              "kind": "replace",
+              "target": "cozy/component/pagination",
+              "fragment": "pagination",
+              "id": null,
+              "args": [
+                "${result.page}",
+                "'/memo'",
+                "'#result'",
+                "'#filter'"
+              ]
+            }
           ]
         }
       ],

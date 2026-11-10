@@ -23,6 +23,11 @@
       <groupId>io.salvia95.cozy</groupId>
       <artifactId>cozy-ui</artifactId>
     </dependency>
+    <!-- dev 전용 워크벤치 /cozy/dev/workbench. 배포 패키지에는 들어가지 않는다 -->
+    <dependency>
+      <groupId>io.salvia95.cozy</groupId>
+      <artifactId>cozy-workbench</artifactId>
+    </dependency>
 #if( $events == "true" )
     <!-- 모듈 사이 이벤트 + SQLite·MyBatis·Flyway -->
     <dependency>

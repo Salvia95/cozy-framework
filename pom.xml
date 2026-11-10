@@ -20,6 +20,7 @@
     <module>cozy-ui</module>
     <module>cozy-test</module>
     <module>cozy-cli</module>
+    <module>cozy-workbench</module>
     <module>cozy-archetype</module>
     <module>samples/reference-app</module>
     <module>samples/violations</module>

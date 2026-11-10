@@ -28,7 +28,7 @@ import io.salvia95.cozy.rules.Violation;
  * <li>{@code describe [--json]}: 앱의 지도(모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 빈칸)</li>
  * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R15, C8, C9). 최종 판단은 {@code mvn verify}</li>
  * <li>{@code recipes [--json]}: 구조를 만드는 명령 목록</li>
- * <li>{@code add <레시피>}, {@code link}, {@code enable events}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
+ * <li>{@code add <레시피>}, {@code link}, {@code enable events|workbench}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
  * <li>{@code sync agents [--force]}: 앱의 AGENTS.md와 cozy-helper 스킬을 이 cozy 명령에 든 것과 같게 맞춘다</li>
  * </ul>
  * 종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음.
@@ -50,6 +50,7 @@ public final class CozyCli {
 			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
 			  cozy enable events       pom에 cozy-starter-events 더하기
+			  cozy enable workbench    pom에 dev 전용 워크벤치(/cozy/dev/workbench) 더하기
 			  cozy sync agents [--force]   AGENTS.md와 cozy-helper 스킬을 이 cozy 명령의 것으로 맞추기
 
 			옵션

@@ -69,6 +69,23 @@ cozy <동작> [옵션]
 - **발행하는 파일**: 소스에서 `이벤트.of(`나 `new 이벤트(`를 찾는다. 이 목록이 비면 아직 발행하지 않는 이벤트다.
 - **모듈 판정**: Spring Modulith와 같다. 메인 클래스 패키지 바로 아래 패키지가 모듈이고, `@ApplicationModule(id)`가 있으면 그 이름을 쓴다. 의존 선언(`allowedDependencies`)이 없으면 open이다.
 
+### 화면의 구조 (`--json`의 `screens[].outline`)
+
+화면 템플릿마다 fragment 선언과 삽입을 문서 순서대로 싣는다. 글 출력에는 없다. 워크벤치의 구조 트리가 이것을 쓴다.
+
+| 키 | 뜻 |
+| --- | --- |
+| `line` | 요소가 시작하는 줄 (1부터) |
+| `depth` | 이 마디를 감싸는 마디의 수 |
+| `kind` | `replace`, `insert`, `fragment`(선언), `slot`(감싸는 삽입이 `~{::#id}`로 넘기는 요소) |
+| `target` | 삽입하는 템플릿. 같은 템플릿이면 빈 문자열, 읽을 수 없는 표현식이면 원문 |
+| `fragment` | fragment 이름. 템플릿 전체를 넣거나 읽을 수 없으면 `null` |
+| `id` | 요소의 `id`. 없으면 `null` |
+| `args` | 선언이면 파라미터 이름, 삽입이면 넘기는 인자의 원문 |
+
+- 한 요소가 자리이면서 선언이나 삽입이면 마디가 여럿 나오고, 뒤의 것이 한 단계 깊다.
+- 클래스나 요소 이름으로 넘기는 인자(`~{::.row}`, `~{::main}`)는 자리로 읽지 않는다.
+
 ## check
 
 `mvn verify` 전에 몇 초 안에 끝나는 검사다. 판단은 cozy-test와 같은 cozy-rules가 한다. 그래서 같은 위반은 같은 메시지로 나온다.
@@ -173,6 +190,7 @@ cozy add query activity recent --param limit:int --returns list:ActivityItem
 cozy add command activity record --param eventId:text --param message:text --sql insert
 cozy add event-version memo MemoCreated --field pinned:bool
 cozy enable events
+cozy enable workbench
 ```
 
 - **필드**: `이름:종류[!][:라벨]`. 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`이고 `!`는 필수다. 라벨에 공백이 있으면 따옴표로 묶는다(`--field "dueOn:date:마감 날짜"`).
@@ -200,6 +218,7 @@ cozy enable events
   - 다시 실행: 필드가 모두 같은 타입으로 있고 지금의 `of()`와 가장 높은 샘플이 그 필드를 가지면 바뀐 것 없음이다. 일부만 있거나 같은 이름이 다른 타입이면 실패한다.
   - 출력의 "다음"은 이 이벤트의 리스너(`@ApplicationModuleListener`)를 나열한다. 리스너는 옛 이벤트의 새 필드가 `null`일 때도 처리해야 한다.
   - 이벤트 파일이 바뀌므로 그 뒤에 같은 `cozy add event`(또는 `--publish`가 있는 `crud`)를 다시 실행하면 "내용이 다릅니다"로 실패한다. 빈칸을 채운 뒤의 1단계 명령과 같다.
+- **enable workbench**: `pom.xml`의 `cozy-ui` 의존 블록 바로 뒤에 dev 전용 `cozy-workbench`를 더한다([workbench.md](workbench.md)). 이미 있으면 바뀐 것 없음이다. `cozy-ui`가 없거나 cozy-parent가 1.2.0보다 낮으면 실패한다.
 - **enable events**: `pom.xml`의 `cozy-starter-sqlite` 의존 블록 바로 뒤에 `cozy-starter-events`를 더한다. 이미 있으면 바뀐 것 없음, `cozy-starter-sqlite`가 없으면 실패한다. 아키타입 `events=true`의 예시 코드는 만들지 않는다.
 - **동작 순서**: 인자와 앱을 읽어 계획을 세운다 → 하나라도 안 되면 아무것도 쓰지 않고 종료 코드 2 → 계획을 출력 → 적용(`--dry-run`이면 건너뛴다) → 만든 파일에 남은 빈칸과 다음 할 일을 출력.
 - **같은 명령 두 번**: 파일마다 같은 내용이면 `그대로`, 다른 내용이면 덮어쓰지 않고 실패한다. 모든 파일이 `그대로`면 "바뀐 것 없음"이다.

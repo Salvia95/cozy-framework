@@ -20,7 +20,10 @@ import com.sun.source.tree.VariableTree;
 
 import io.salvia95.cozy.rules.JavaType;
 import io.salvia95.cozy.rules.Layer;
+import io.salvia95.cozy.rules.Origin;
 import io.salvia95.cozy.rules.SlotRules;
+import io.salvia95.cozy.rules.TemplateFile;
+import io.salvia95.cozy.rules.TemplateOutline;
 import io.salvia95.cozy.rules.Violation;
 
 /**
@@ -218,6 +221,7 @@ public final class Describe {
 				AppResources.Spec spec = specs.stream().filter((s) -> template.equals(s.template())).findFirst().orElse(null);
 				screen.put("spec", (spec != null) ? spec.file() : null);
 				screen.put("states", (spec != null) ? spec.states() : List.of());
+				screen.put("outline", outline(file, template));
 				screens.add(screen);
 			}
 		}
@@ -225,6 +229,18 @@ public final class Describe {
 			throw new java.io.UncheckedIOException(ex);
 		}
 		return screens;
+	}
+
+	/** 화면 템플릿의 구조: fragment 선언과 삽입을 겹친 깊이와 줄 번호로. 글 출력에는 싣지 않는다 */
+	private static List<Object> outline(Path file, String template) throws IOException {
+		String content = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
+		List<Object> outline = new ArrayList<>();
+		for (TemplateOutline.Node node : TemplateOutline
+			.of(new TemplateFile(template + ".html", Origin.APP, "templates/" + template + ".html", content))) {
+			outline.add(ordered("line", node.line(), "depth", node.depth(), "kind", node.kind(), "target", node.target(),
+					"fragment", node.fragment(), "id", node.id(), "args", new ArrayList<Object>(node.args())));
+		}
+		return outline;
 	}
 
 	// ── 글 출력 ─────────────────────────────────────────────────

@@ -104,10 +104,45 @@ final class StageTwoRecipes {
 
 	// ── enable events ─────────────────────────────────────────
 
-	static String enableEvents(Context ctx, Args args) {
-		if (args.positionalCount() == 0 || !args.positional(0, "켤 기능").equals("events")) {
-			throw new CliException("cozy enable 뒤에는 events를 적습니다 (cozy enable events).");
+	static final String ENABLE_USAGE = "cozy enable 뒤에는 events나 workbench를 적습니다 (cozy enable events, cozy enable workbench).";
+
+	/** {@code cozy enable events}, {@code cozy enable workbench} */
+	static String enable(Context ctx, Args args) {
+		String feature = (args.positionalCount() == 0) ? "" : args.positional(0, "켤 기능");
+		return switch (feature) {
+			case "events" -> enableEvents(ctx, args);
+			case "workbench" -> enableWorkbench(ctx, args);
+			default -> throw new CliException(ENABLE_USAGE);
+		};
+	}
+
+	/** 워크벤치를 관리하는 첫 cozy-parent 버전 */
+	private static final int[] WORKBENCH_SINCE = { 1, 2 };
+
+	private static String enableWorkbench(Context ctx, Args args) {
+		args.only("enable workbench", 1);
+		String version = ctx.project().cozyVersion();
+		java.util.regex.Matcher m = Pattern.compile("(\\d+)\\.(\\d+)\\..*").matcher((version != null) ? version : "");
+		if (!m.matches()) {
+			throw new CliException("앱이 cozy-parent를 상속하지 않아 cozy 버전을 알 수 없습니다. pom.xml의 parent를 "
+					+ XmlEdits.COZY_GROUP + ":cozy-parent로 두세요.");
 		}
+		int major = Integer.parseInt(m.group(1));
+		int minor = Integer.parseInt(m.group(2));
+		if (major < WORKBENCH_SINCE[0] || (major == WORKBENCH_SINCE[0] && minor < WORKBENCH_SINCE[1])) {
+			throw new CliException("워크벤치는 cozy " + WORKBENCH_SINCE[0] + "." + WORKBENCH_SINCE[1] + ".0부터 있습니다. 이 앱은 cozy "
+					+ version + "입니다. pom.xml의 cozy-parent 버전을 먼저 올리세요.");
+		}
+		String file = "pom.xml";
+		String current = ctx.plan().current(file);
+		if (current == null) {
+			throw new CliException("pom.xml이 없습니다.");
+		}
+		ctx.plan().edit(file, XmlEdits.addWorkbench(file, current), "의존 += " + XmlEdits.COZY_GROUP + ":cozy-workbench");
+		return "다음: dev 프로필로 앱을 실행하고 /cozy/dev/workbench를 엽니다. pom.xml을 바꿨으니 mvn verify로 의존을 받습니다";
+	}
+
+	private static String enableEvents(Context ctx, Args args) {
 		args.only("enable events", 1);
 		String file = "pom.xml";
 		String current = ctx.plan().current(file);

@@ -100,6 +100,16 @@
         <artifactId>cozy-test</artifactId>
         <version>${cozy.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-cli</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.salvia95.cozy</groupId>
+        <artifactId>cozy-workbench</artifactId>
+        <version>${cozy.version}</version>
+      </dependency>
 
       <!-- Spring Modulith (Boot BOM 밖) -->
       <dependency>
@@ -171,6 +181,23 @@
               <goals>
                 <goal>repackage</goal>
               </goals>
+              <!-- dev 전용 도구(워크벤치와 그 엔진)는 실행 jar에 넣지 않는다. spring-boot:run에는 그대로 있다 -->
+              <configuration>
+                <excludes>
+                  <exclude>
+                    <groupId>io.salvia95.cozy</groupId>
+                    <artifactId>cozy-workbench</artifactId>
+                  </exclude>
+                  <exclude>
+                    <groupId>io.salvia95.cozy</groupId>
+                    <artifactId>cozy-cli</artifactId>
+                  </exclude>
+                  <exclude>
+                    <groupId>io.salvia95.cozy</groupId>
+                    <artifactId>cozy-rules</artifactId>
+                  </exclude>
+                </excludes>
+              </configuration>
             </execution>
           </executions>
         </plugin>
@@ -382,6 +409,8 @@
                   <outputDirectory>${project.build.directory}/dist-licenses</outputDirectory>
                   <addOutputDirectoryAsResourceDir>false</addOutputDirectoryAsResourceDir>
                   <excludedScopes>test,provided,system</excludedScopes>
+                  <!-- dev 전용 도구는 실행 jar에 넣지 않으므로 목록에서도 뺀다 -->
+                  <excludedArtifacts>cozy-workbench|cozy-cli|cozy-rules</excludedArtifacts>
                   <useRepositoryMissingFiles>false</useRepositoryMissingFiles>
                   <deployMissingFile>false</deployMissingFile>
                   <failOnMissing>true</failOnMissing>

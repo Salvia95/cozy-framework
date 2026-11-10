@@ -169,7 +169,7 @@ class MemoScreenTest {
 			for (String asset : distinct) {
 				this.mvc.perform(get(asset)).andExpect(status().isOk());
 			}
-			assertThat(distinct).as(path).hasSize(8).contains("/cozy/vendor/tabler-icons/3.50.0/tabler-sprite.svg");
+			assertThat(distinct).as(path).hasSize(8).contains("/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg");
 		}
 	}
 

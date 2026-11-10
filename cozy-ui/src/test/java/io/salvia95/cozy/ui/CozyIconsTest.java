@@ -10,7 +10,7 @@ class CozyIconsTest {
 
 	@Test
 	void namesComeFromTheSprites() {
-		assertThat(CozyIcons.outline()).contains("plus", "notes", "layout-dashboard").hasSize(5202);
+		assertThat(CozyIcons.outline()).contains("plus", "notes", "layout-dashboard").hasSize(5232);
 		assertThat(CozyIcons.filled()).contains("star", "pin").hasSize(1054);
 	}
 

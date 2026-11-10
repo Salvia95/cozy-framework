@@ -59,13 +59,13 @@ public final class RecipeRunner {
 			case "screen" -> ScreenRecipe.run(ctx, parsed);
 			case "crud" -> CrudRecipe.run(ctx, parsed);
 			case "dto" -> StageTwoRecipes.dto(ctx, parsed);
-			case "enable events", "enable " -> StageTwoRecipes.enableEvents(ctx, parsed);
+			case "enable events", "enable workbench", "enable " -> StageTwoRecipes.enable(ctx, parsed);
 			case "query" -> MethodRecipes.query(ctx, parsed);
 			case "command" -> MethodRecipes.command(ctx, parsed);
 			case "event-version" -> EventVersionRecipe.run(ctx, parsed);
 			case "field" -> throw new CliException("cozy add field는 보류한 레시피입니다. 필드는 손으로 더하고 cozy check와 "
 					+ "mvn verify로 확인합니다.");
-			default -> throw new CliException(recipe.startsWith("enable ") ? "cozy enable 뒤에는 events를 적습니다 (cozy enable events)."
+			default -> throw new CliException(recipe.startsWith("enable ") ? StageTwoRecipes.ENABLE_USAGE
 					: "모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
 		};
 		report(recipe, ctx.plan(), next.replaceFirst("^다음: ", ""), true, dryRun, json, out);

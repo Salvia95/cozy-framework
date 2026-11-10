@@ -79,7 +79,7 @@ voc-assistant/
 
 ## 개발
 
-- **dev 실행**: IntelliJ에서 "dev 실행"(`-Dspring.profiles.active=dev`)을 실행한다. 브라우저가 열리고 패턴 카탈로그 `/cozy/dev/catalog`가 켜진다.
+- **dev 실행**: IntelliJ에서 "dev 실행"(`-Dspring.profiles.active=dev`)을 실행한다. 브라우저가 열리고 패턴 카탈로그 `/cozy/dev/catalog`와 워크벤치 `/cozy/dev/workbench`([workbench.md](workbench.md))가 켜진다.
 - **새 모듈**: `cozy add module`(빈 모듈) 또는 `cozy add crud`(목록·만들기·상세·수정·삭제 한 벌)로 만든다. 화면·이벤트·리스너·마이그레이션·공개 fragment도 `cozy add`, 모듈 의존은 `cozy link`로 더한다. 명령 목록은 `cozy recipes`에, 명령별 사용법은 cozy-helper 스킬에, 형식은 [cli.md](cli.md)에 있다. 명령이 남긴 빈칸(`cozy:slot`)을 채우고 `cozy check` → `mvn -o verify` 순서로 확인한다.
 - **검사**: 작업을 마치면 `mvn -o verify`(IntelliJ "mvn -o verify")를 돌린다. 실패 메시지의 ID(`[R3]`, `[C5]` 등)로 [rules.md](rules.md)와 [testing.md](testing.md)를 찾는다.
 

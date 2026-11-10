@@ -53,8 +53,8 @@ class UiScreensTest {
 			this.mvc.perform(get(asset)).andExpect(status().isOk());
 		}
 		assertThat(assets).containsExactlyInAnyOrder("/cozy/vendor/pretendard/1.3.9/pretendardvariable.css",
-				"/cozy/vendor/tabler/1.7.3/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.3/js/tabler.min.js",
-				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/tabler-icons/3.50.0/tabler-sprite.svg",
+				"/cozy/vendor/tabler/1.7.4/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.4/js/tabler.min.js",
+				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg",
 				"/cozy/favicon.svg");
 		assertThat(html).doesNotContainPattern("(?:href|src)=\"(?:https?:)?//");
 	}
