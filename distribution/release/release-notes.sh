@@ -33,8 +33,8 @@ cat <<MD
 오프라인 번들 하나에 다음이 들어 있습니다.
 
 - Maven 저장소(\`repository/\`): Cozy 모듈 전체와, 앱 빌드·검사·패키징에 필요한 라이브러리와 플러그인
-- Maven 3.10.0 배포판, Cozy 명령(\`cozy.cmd\`·\`cozy\`: \`install\`, \`new\`, \`version\`, \`help\`)
-- 문서(\`docs/\`: 규약, 결정 기록, AGENTS.md)
+- Maven 3.10.0 배포판, Cozy 명령(\`cozy.cmd\`·\`cozy\`: \`install\`, \`new\`, \`describe\`, \`check\`, \`recipes\`, \`add\`, \`link\`, \`enable\`, \`sync\`, \`version\`, \`help\`)과 \`lib/cli/cozy-cli.jar\`
+- 문서(\`docs/\`: 규약, 결정 기록, 에이전트 문서 원본 \`agents/\`)
 - 라이선스: Cozy는 Apache-2.0(\`LICENSE\`, \`NOTICE\`). 저장소의 아티팩트 ${ARTIFACTS}개의 라이선스 목록은 \`licenses/THIRD-PARTY.txt\`에 있습니다. 약한 카피레프트 라이선스만 있는 jar ${SOURCES}개는 소스 jar를 함께 담았습니다.
 
 ## 설치
@@ -48,6 +48,6 @@ cat <<MD
 ## 확인한 것
 
 - 빌드: 프레임워크 전체 테스트, 배포·업데이트 종단 검증(Linux)
-- 번들: 옵션 3조합(없음 / persistence / persistence+events)을 네트워크 장치가 루프백뿐인 상태에서 생성·\`verify\`·\`-Pdist package\`
+- 번들: 옵션 3조합(없음 / persistence / persistence+events)을 네트워크 장치가 루프백뿐인 상태에서 생성·\`cozy add\`·\`enable\`·\`sync\`·\`verify\`·\`-Pdist package\`
 - Windows 확인 기록: \`docs/conventions/windows-verification.md\`
 MD
