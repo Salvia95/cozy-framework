@@ -40,13 +40,13 @@
 | maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
 | maven-dependency-plugin | 3.11.0 (Boot 기본 3.10.0) | cozy-parent |
 | maven-archetype-plugin | 3.4.1 | cozy-parent |
-| exec-maven-plugin | 3.6.4 | cozy-parent |
-| license-maven-plugin | 2.8.0 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
+| exec-maven-plugin | 3.7.0 | cozy-parent |
+| license-maven-plugin | 2.9.0 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
 | GitHub Actions: checkout 7.0.1, setup-java 6.2.0, upload-artifact 7.0.2, download-artifact 8.0.2 | 커밋 SHA로 고정 | 릴리스 워크플로 (ADR-0028, 제안) |
-| Tabler | 1.7.3 | cozy-ui 벤더 자산 |
+| Tabler | 1.7.3 (1.7.4는 화면 확인과 함께 올린다) | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
-| Tabler Icons (`@tabler/icons-sprite`) | 3.50.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
+| Tabler Icons (`@tabler/icons-sprite`) | 3.50.0 (3.51.0은 화면 확인과 함께 올린다) | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
 | agent-browser | 0.41.2 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
 
 ## 근거
@@ -62,3 +62,4 @@
 - 2026-11-06(M7): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, maven-archetype-plugin 3.4.1, Maven 3.10.0, sqlite-jdbc 3.54.1.0).
 - 2026-11-06(릴리스 준비): 다시 확인했다. 바뀐 GA는 없다. 1.0.0부터는 최신 GA를 릴리스 준비 때 확인하고, 이 표가 그 릴리스의 고정 버전 세트가 된다(ADR-0028, 제안).
 - 2026-11-08(M8): 시작할 때 다시 확인했다. license-maven-plugin이 2.8.0 GA로 나와 올렸다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 다른 플러그인, Tabler 1.7.3, htmx 2.0.11, Tabler Icons 3.50.0, Pretendard 1.3.9, agent-browser 0.41.2).
+- 2026-11-10(릴리스 1.1.0): 다시 확인했다. exec-maven-plugin 3.7.0과 license-maven-plugin 2.9.0을 올렸다. Tabler 1.7.4와 Tabler Icons 3.51.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다.

@@ -18,13 +18,13 @@
   -->
   <groupId>io.salvia95.cozy</groupId>
   <artifactId>cozy-parent</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.1.0</version>
   <packaging>pom</packaging>
   <name>Cozy :: Parent</name>
 
   <properties>
     <!-- 앱이 상속해도 프레임워크 버전을 가리키도록 리터럴로 둔다. project.version과의 일치는 enforcer가 검사한다. -->
-    <cozy.version>1.1.0-SNAPSHOT</cozy.version>
+    <cozy.version>1.1.0</cozy.version>
 
     <java.version>25</java.version>
     <maven.compiler.release>25</maven.compiler.release>
@@ -45,8 +45,8 @@
     <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
     <!-- Boot가 관리하지 않는 플러그인 -->
     <maven-archetype-plugin.version>3.4.1</maven-archetype-plugin.version>
-    <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
-    <license-maven-plugin.version>2.8.0</license-maven-plugin.version>
+    <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
+    <license-maven-plugin.version>2.9.0</license-maven-plugin.version>
 
     <!--
       테스트 JVM 옵션. Mockito를 실행 중에 붙이지 않고 -javaagent로 올린다 (JDK가 동적 에이전트를 막을 예정).

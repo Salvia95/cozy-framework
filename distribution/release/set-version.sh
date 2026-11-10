@@ -23,7 +23,7 @@ if [ "$OLD" = "$NEW" ]; then
 fi
 OLD_RE="${OLD//./\\.}"
 
-FIXTURES='/(src/it|archetype-resources)/|^samples/violations/checks/'
+FIXTURES='/(src/it|archetype-resources)/|^samples/violations/checks/|^samples/recipes/(projects|hand)/'
 mapfile -t POMS < <(git ls-files '*pom.xml' | grep -vE "$FIXTURES")
 for pom in "${POMS[@]}"; do
   sed -i "s|<version>$OLD_RE</version>|<version>$NEW</version>|g; s|<cozy.version>$OLD_RE</cozy.version>|<cozy.version>$NEW</cozy.version>|g" "$pom"

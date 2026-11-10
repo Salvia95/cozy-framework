@@ -23,7 +23,7 @@ while read -r pom; do
     echo "[cozy] $pom에 버전 $VERSION이 없습니다 (set-version.sh로 바꾸세요)" >&2
     status=1
   fi
-done < <(git ls-files '*pom.xml' | grep -vE '/(src/it|archetype-resources)/|^samples/violations/checks/')
+done < <(git ls-files '*pom.xml' | grep -vE '/(src/it|archetype-resources)/|^samples/violations/checks/|^samples/recipes/(projects|hand)/')
 
 if [ "$REF_TYPE" = "tag" ]; then
   if [ "$REF_NAME" != "v$VERSION" ]; then

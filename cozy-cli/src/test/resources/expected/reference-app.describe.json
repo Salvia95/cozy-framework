@@ -2,7 +2,7 @@
   "app": {
     "basePackage": "io.salvia95.cozy.reference",
     "mainClass": "ReferenceApp",
-    "cozyVersion": "1.1.0-SNAPSHOT",
+    "cozyVersion": "{cozyVersion}",
     "starters": [
       "cozy-starter-events",
       "cozy-ui"

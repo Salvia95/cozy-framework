@@ -51,8 +51,10 @@ class CozyCliTest {
 		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
 	}
 
+	/** 기대 파일의 {@code {cozyVersion}}은 지금 빌드하는 프레임워크 버전이다 */
 	static String expected(String name) throws IOException {
-		return Files.readString(Path.of("src/test/resources/expected", name), StandardCharsets.UTF_8);
+		return Files.readString(Path.of("src/test/resources/expected", name), StandardCharsets.UTF_8)
+			.replace("{cozyVersion}", VERSION);
 	}
 
 	@Nested

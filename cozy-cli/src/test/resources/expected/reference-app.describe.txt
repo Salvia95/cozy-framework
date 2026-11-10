@@ -1,4 +1,4 @@
-앱 io.salvia95.cozy.reference (메인 ReferenceApp, cozy 1.1.0-SNAPSHOT)
+앱 io.salvia95.cozy.reference (메인 ReferenceApp, cozy {cozyVersion})
 스타터: cozy-starter-events, cozy-ui
 
 모듈 activity (io.salvia95.cozy.reference.activity)
