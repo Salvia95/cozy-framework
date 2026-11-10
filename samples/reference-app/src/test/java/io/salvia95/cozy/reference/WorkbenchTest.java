@@ -123,7 +123,7 @@ class WorkbenchTest {
 			String html = page("?spec=memo-list&state=paged");
 			assertThat(html).contains("/cozy/dev/catalog/screen?spec=memo-list&amp;state=paged&amp;inspect=1")
 				.contains("src=\"/cozy/workbench.js\"")
-				.contains("요소 고르기")
+				.contains("요소 선택")
 				.contains("에이전트용 복사")
 				.contains("data-template=\"memo/api/list\"")
 				.contains("data-spec-file=\"src/main/resources/specs/memo-list.yml\"")

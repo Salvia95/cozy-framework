@@ -4,47 +4,52 @@
 fragments:
   # ── layout ───────────────────────────────────────────────
   - id: layout/base
+    label: 빈 레이아웃
     template: cozy/layout/base
     signature: base(cozyTitle, cozyContent)
     purpose: 내비 없는 완전한 HTML 문서. 오류 화면, 카탈로그처럼 앱 껍데기가 필요 없는 화면에 쓴다.
     document: true
     params:
       - { name: cozyTitle, type: String, required: true, description: 브라우저 제목 앞부분 }
-      - { name: cozyContent, type: fragment, required: true, description: 본문 (화면의 <main>) }
+      - { name: cozyContent, type: fragment, label: 본문, required: true, description: 본문 (화면의 <main>) }
     samples:
       default: { cozyTitle: 샘플 화면 }
   - id: layout/app-shell
+    label: 기본 레이아웃
     template: cozy/layout/base
     signature: appShell(cozyTitle, cozyContent)
     purpose: 앱 화면의 기본 레이아웃. Tabler 세로 내비(CozyNavItem의 아이콘·이름), 앱 메뉴(진단 내보내기·종료), 푸터 버전.
     document: true
     params:
       - { name: cozyTitle, type: String, required: true, description: 브라우저 제목 앞부분 }
-      - { name: cozyContent, type: fragment, required: true, description: 본문 (화면의 <main>) }
+      - { name: cozyContent, type: fragment, label: 본문, required: true, description: 본문 (화면의 <main>) }
     samples:
       default: { cozyTitle: 샘플 화면 }
   - id: layout/shell-body
+    label: 기본 레이아웃 본문
     template: cozy/layout/base
     signature: shellBody(cozyShellContent)
     purpose: appShell 내부 구성. 화면에서 직접 쓰지 않는다.
     params:
-      - { name: cozyShellContent, type: fragment, required: true, description: 본문 }
+      - { name: cozyShellContent, type: fragment, label: 본문, required: true, description: 본문 }
     samples:
       default: {}
 
   # ── pattern ──────────────────────────────────────────────
   - id: pattern/list-with-filter
+    label: 목록 탐색
     template: cozy/pattern/list-with-filter
     signature: listWithFilter(cozyHeading, cozyActions, cozyFilter, cozyResult)
     purpose: 목록. 오른쪽 위에 만들기(주 버튼), 카드 위쪽에 필터, 아래에 표와 페이지 이동. 필터가 hx-get으로 result만 바꾼다. 비었으면 emptyStateAction, 조건에 맞는 게 없으면 noResults.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
-      - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
-      - { name: cozyFilter, type: fragment, required: true, description: 필터 <form> }
-      - { name: cozyResult, type: fragment, required: true, description: '결과 영역 (th:fragment="result", id 있음)' }
+      - { name: cozyActions, type: fragment, label: 제목 버튼, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyFilter, type: fragment, label: 필터, required: true, description: 필터 <form> }
+      - { name: cozyResult, type: fragment, label: 결과, required: true, description: '결과 영역 (th:fragment="result", id 있음)' }
     samples:
       default: { cozyHeading: 메모, cozyActions: sampleAction, cozyFilter: sampleFilter }
   - id: pattern/form-page
+    label: 입력폼
     template: cozy/pattern/form-page
     signature: formPage(cozyHeading, cozyBackLabel, cozyBackUrl, cozyForm)
     purpose: 만들기·수정 화면. 가운데 좁은 폭(48rem), 제목 위 경로, <form class="card"> 아래 오른쪽에 [취소] [주 버튼](component/form-actions).
@@ -52,10 +57,11 @@ fragments:
       - { name: cozyHeading, type: String, required: true, description: "화면 제목 (예: 메모 만들기, 메모 수정)" }
       - { name: cozyBackLabel, type: String, required: false, description: "상위 화면 이름 (없으면 null)" }
       - { name: cozyBackUrl, type: String, required: false, description: "상위 화면 주소 (없으면 null)" }
-      - { name: cozyForm, type: fragment, required: true, description: '<form class="card" th:object>: card-body + formActions' }
+      - { name: cozyForm, type: fragment, label: 폼, required: true, description: '<form class="card" th:object>: card-body + formActions' }
     samples:
       default: { cozyHeading: 메모 만들기, cozyBackLabel: 메모, cozyBackUrl: /memo, cozyForm: sampleForm }
   - id: pattern/details
+    label: 상세 정보 확인
     template: cozy/pattern/details
     signature: details(cozyHeading, cozyBackLabel, cozyBackUrl, cozyActions, cozyBody)
     purpose: 상세(읽기 전용). 오른쪽 위에 [삭제] [수정(주 버튼)], 본문은 넓은 칸, 속성(datagrid)은 옆 칸. 수정은 form-page 화면으로 간다.
@@ -63,32 +69,35 @@ fragments:
       - { name: cozyHeading, type: String, required: true, description: 대상 이름 }
       - { name: cozyBackLabel, type: String, required: false, description: "상위 화면 이름 (없으면 null)" }
       - { name: cozyBackUrl, type: String, required: false, description: "상위 화면 주소 (없으면 null)" }
-      - { name: cozyActions, type: fragment, required: false, description: '<div class="btn-list">: deleteConfirm(…) 다음 수정 버튼' }
-      - { name: cozyBody, type: fragment, required: true, description: "카드들 (row row-cards)" }
+      - { name: cozyActions, type: fragment, label: 제목 버튼, required: false, description: '<div class="btn-list">: deleteConfirm(…) 다음 수정 버튼' }
+      - { name: cozyBody, type: fragment, label: 본문, required: true, description: "카드들 (row row-cards)" }
     samples:
       default: { cozyHeading: 회의록 정리, cozyBackLabel: 메모, cozyBackUrl: /memo, cozyActions: sampleDetailActions, cozyBody: sampleDetailBody }
   - id: pattern/master-detail
+    label: 목록·상세 분할
     template: cozy/pattern/master-detail
     signature: masterDetail(cozyHeading, cozyMaster, cozyDetail)
     purpose: 왼쪽 목록 + 오른쪽 상세. 목록(list-group list-group-flush)의 링크가 hx-get으로 #detail을 바꾼다.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
-      - { name: cozyMaster, type: fragment, required: true, description: 목록 }
-      - { name: cozyDetail, type: fragment, required: true, description: 처음 보일 상세 }
+      - { name: cozyMaster, type: fragment, label: 목록, required: true, description: 목록 }
+      - { name: cozyDetail, type: fragment, label: 상세, required: true, description: 처음 보일 상세 }
     samples:
       default: { cozyHeading: 목록 }
   - id: pattern/overview
+    label: 대시보드
     template: cozy/pattern/overview
     signature: overview(cozyHeading, cozyActions, cozyStats, cozyBody)
     purpose: 개요(대시보드). 숫자 카드 줄(component/stat, 색 없음)과 그 아래 카드들.
     params:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
-      - { name: cozyActions, type: fragment, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
-      - { name: cozyStats, type: fragment, required: true, description: '<div class="row row-deck row-cards"> 안의 col과 stat' }
-      - { name: cozyBody, type: fragment, required: true, description: 숫자 카드 아래 본문 }
+      - { name: cozyActions, type: fragment, label: 제목 버튼, required: false, description: "제목 오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyStats, type: fragment, label: 통계 카드, required: true, description: '<div class="row row-deck row-cards"> 안의 col과 stat' }
+      - { name: cozyBody, type: fragment, label: 본문, required: true, description: 숫자 카드 아래 본문 }
     samples:
       default: { cozyHeading: 대시보드, cozyActions: sampleAction, cozyStats: sampleStats, cozyBody: sampleCard }
   - id: pattern/polling-panel
+    label: 자동 갱신 패널
     template: cozy/pattern/polling-panel
     signature: pollingPanel(cozyHeading, cozyUrl, cozySeconds, cozyBody)
     purpose: 주기적으로 본문을 다시 받아 오는 카드. 본문은 list-group list-group-flush나 card-body로 감싼다.
@@ -96,12 +105,13 @@ fragments:
       - { name: cozyHeading, type: String, required: true, description: 패널 제목 }
       - { name: cozyUrl, type: String, required: true, description: 본문 fragment를 돌려주는 주소 }
       - { name: cozySeconds, type: int, required: true, description: 갱신 간격(초) }
-      - { name: cozyBody, type: fragment, required: true, description: 처음 보일 본문 }
+      - { name: cozyBody, type: fragment, label: 본문, required: true, description: 처음 보일 본문 }
     samples:
       default: { cozyHeading: 최근 활동, cozyUrl: /cozy/dev/catalog, cozySeconds: 3600, cozyBody: sampleList }
 
   # ── component ────────────────────────────────────────────
   - id: component/field
+    label: 입력 필드
     template: cozy/component/field
     signature: field(name, label, type)
     purpose: 입력 하나와 검증 오류. <form th:object> 안에서 쓴다.
@@ -116,15 +126,17 @@ fragments:
       checkbox: { name: pinned, label: 고정, type: checkbox, _form: { pinned: true } }
       switch: { name: pinned, label: 목록 위에 고정, type: switch, _form: { pinned: true } }
   - id: component/data-table
+    label: 표
     template: cozy/component/data-table
     signature: dataTable(cozyHead, cozyBody)
     purpose: Tabler 표. 머리행과 행들을 fragment로 넘긴다.
     params:
-      - { name: cozyHead, type: fragment, required: true, description: "<tr> 머리행" }
-      - { name: cozyBody, type: fragment, required: true, description: "<tr> 행들 (th:each)" }
+      - { name: cozyHead, type: fragment, label: 머리행, required: true, description: "<tr> 머리행" }
+      - { name: cozyBody, type: fragment, label: 행, required: true, description: "<tr> 행들 (th:each)" }
     samples:
       default: { cozyHead: sampleTableHead, cozyBody: sampleTableRows }
   - id: component/pagination
+    label: 페이지네이션
     template: cozy/component/pagination
     signature: pagination(page, url, target, include)
     purpose: 이전·다음, 페이지 번호(최대 5개)와 전체 건수.
@@ -137,6 +149,7 @@ fragments:
       default: { page: { number: 2, size: 10, totalElements: 45 }, url: /memo, target: "#result", include: "#filter" }
       first: { page: { number: 1, size: 10, totalElements: 3 }, url: /memo, target: "#result", include: "#filter" }
   - id: component/badge
+    label: 배지
     template: cozy/component/badge
     signature: badge(text, tone)
     purpose: 상태나 분류를 짧게 표시한다. 분류는 neutral, 상태만 색 tone을 쓴다.
@@ -149,6 +162,7 @@ fragments:
       warning: { text: 대기, tone: warning }
       critical: { text: 실패, tone: critical }
   - id: component/alert
+    label: 알림
     template: cozy/component/alert
     signature: alert(kind, message)
     purpose: 아이콘이 붙은 알림(색만으로 뜻을 전하지 않는다). 만들기·수정·삭제 결과는 플래시(CozyFlash)로, 패턴이 flash()로 그린다.
@@ -161,6 +175,7 @@ fragments:
       warning: { kind: warning, message: 저장하지 않은 입력이 있습니다 }
       critical: { kind: critical, message: 저장하지 못했습니다 }
   - id: component/flash
+    label: 처리 결과 알림
     template: cozy/component/alert
     signature: flash()
     purpose: 컨트롤러가 남긴 플래시(CozyFlash)를 alert로 그린다. 패턴이 page-body 맨 위에 둔다.
@@ -168,6 +183,7 @@ fragments:
     samples:
       default: {}
   - id: component/page-header
+    label: 페이지 제목
     template: cozy/component/page-header
     signature: pageHeader(cozyHeading, cozyBackLabel, cozyBackUrl, cozyActions)
     purpose: 화면 머리. 왼쪽 위 제목(경로), 오른쪽 위 버튼 묶음(주 버튼은 맨 오른쪽). 패턴이 쓴다.
@@ -175,11 +191,12 @@ fragments:
       - { name: cozyHeading, type: String, required: true, description: 화면 제목 }
       - { name: cozyBackLabel, type: String, required: false, description: "상위 화면 이름 (없으면 null)" }
       - { name: cozyBackUrl, type: String, required: false, description: "상위 화면 주소 (없으면 null)" }
-      - { name: cozyActions, type: fragment, required: false, description: "오른쪽 버튼 (없으면 ~{})" }
+      - { name: cozyActions, type: fragment, label: 제목 버튼, required: false, description: "오른쪽 버튼 (없으면 ~{})" }
     samples:
       default: { cozyHeading: 메모, cozyBackLabel: null, cozyBackUrl: null, cozyActions: sampleAction }
       back: { cozyHeading: 회의록 정리, cozyBackLabel: 메모, cozyBackUrl: /memo, cozyActions: sampleDetailActions }
   - id: component/form-actions
+    label: 버튼 그룹
     template: cozy/component/form-actions
     signature: formActions(cozyCancelUrl, cozySubmitIcon, cozySubmitLabel)
     purpose: 폼 카드의 아래 버튼 줄. 오른쪽 아래에 [취소] [주 버튼].
@@ -190,6 +207,7 @@ fragments:
     samples:
       default: { cozyCancelUrl: /memo, cozySubmitIcon: plus, cozySubmitLabel: 메모 만들기 }
   - id: component/delete-confirm
+    label: 삭제 확인 모달
     template: cozy/component/delete-confirm
     signature: deleteConfirm(cozyId, cozyResource, cozyName, cozyUrl)
     purpose: 삭제 버튼과 확인 창(제목 "{대상} 삭제", 대상 이름, 되돌릴 수 없음, [취소] [삭제]). 상세 머리에 [삭제] [수정] 순서로 둔다.
@@ -201,6 +219,7 @@ fragments:
     samples:
       default: { cozyId: sample-delete, cozyResource: 메모, cozyName: 회의록 정리, cozyUrl: /memo/1/delete }
   - id: component/stat
+    label: 통계 카드
     template: cozy/component/stat
     signature: stat(icon, value, label)
     purpose: 숫자 하나를 보여 주는 작은 카드 (개요 화면). 색 없이 중립 아이콘.
@@ -211,6 +230,7 @@ fragments:
     samples:
       default: { icon: notes, value: 12개, label: 전체 메모 }
   - id: component/empty-state
+    label: 빈 상태 안내
     template: cozy/component/empty-state
     signature: emptyState(icon, title, description)
     purpose: 아직 아무것도 없을 때 (버튼 없이). 만들 수 있으면 emptyStateAction, 조건 때문이면 noResults.
@@ -222,6 +242,7 @@ fragments:
       default: { icon: notes, title: 메모가 없습니다, description: 첫 메모를 만들어 보세요. }
       titleOnly: { icon: activity, title: 아직 활동이 없습니다 }
   - id: component/empty-state-action
+    label: 빈 상태 안내 (버튼 포함)
     template: cozy/component/empty-state
     signature: emptyStateAction(cozyIcon, cozyTitle, cozyDescription, cozyAction)
     purpose: 아직 아무것도 없을 때 만들기 버튼까지 보여 준다 (목록의 빈 상태).
@@ -229,10 +250,11 @@ fragments:
       - { name: cozyIcon, type: String, required: true, description: Tabler Icons 이름 }
       - { name: cozyTitle, type: String, required: true, description: 한 줄 제목 }
       - { name: cozyDescription, type: String, required: false, description: 다음에 할 일 }
-      - { name: cozyAction, type: fragment, required: true, description: 버튼 }
+      - { name: cozyAction, type: fragment, label: 버튼, required: true, description: 버튼 }
     samples:
       default: { cozyIcon: notes, cozyTitle: 메모가 없습니다, cozyDescription: 첫 메모를 만들어 보세요., cozyAction: sampleAction }
   - id: component/no-results
+    label: 검색 결과 없음
     template: cozy/component/empty-state
     signature: noResults(cozyClearUrl)
     purpose: 검색·필터 조건에 맞는 결과가 없을 때. "조건 지우기" 버튼이 조건 없는 목록으로 간다.
@@ -241,16 +263,18 @@ fragments:
     samples:
       default: { cozyClearUrl: /memo }
   - id: component/modal
+    label: 모달
     template: cozy/component/modal
     signature: modal(cozyId, cozyTitle, cozyBody)
     purpose: 일반 확인 창. 버튼의 data-bs-target으로 연다. 삭제 확인은 delete-confirm을 쓴다.
     params:
       - { name: cozyId, type: String, required: true, description: 모달 요소 id }
       - { name: cozyTitle, type: String, required: true, description: 제목 }
-      - { name: cozyBody, type: fragment, required: true, description: 본문 }
+      - { name: cozyBody, type: fragment, label: 본문, required: true, description: 본문 }
     samples:
       default: { cozyId: sample-modal, cozyTitle: "삭제할까요?" }
   - id: component/toast
+    label: 토스트
     template: cozy/component/toast
     signature: toast(kind, message)
     purpose: 짧은 확인(복사함 등). 중립 바탕, critical만 빨강. 만들기·수정·삭제 결과는 플래시(alert)로 알린다.
@@ -261,6 +285,7 @@ fragments:
       default: { kind: success, message: 복사했습니다 }
       critical: { kind: critical, message: 서버에 연결할 수 없습니다 }
   - id: component/loading
+    label: 스피너
     template: cozy/component/loading
     signature: loading()
     purpose: htmx 요청 중 표시 (htmx-indicator).
@@ -270,6 +295,7 @@ fragments:
 
   # ── icon ─────────────────────────────────────────────────
   - id: icon/tabler
+    label: 아이콘
     template: cozy/icon/tabler
     signature: icon(name)
     purpose: Tabler Icons 외곽선 아이콘 (5,233개). 이름은 /cozy/dev/catalog/icons에서 찾는다.
@@ -279,6 +305,7 @@ fragments:
       default: { name: notes }
       plus: { name: plus }
   - id: icon/tabler-filled
+    label: 아이콘 (채움)
     template: cozy/icon/tabler
     signature: iconFilled(name)
     purpose: Tabler Icons 채운 아이콘 (1,054개).

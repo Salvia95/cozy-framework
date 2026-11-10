@@ -199,6 +199,11 @@ public class WorkbenchEngine {
 	 * @param command 고치는 명령. 없으면 {@code null}
 	 */
 	public record Violation(String id, boolean error, String file, int line, String target, String message, String command) {
+
+		/** 규칙의 이름. 모르는 규칙이면 빈 문자열 */
+		public String name() {
+			return io.salvia95.cozy.rules.RuleNames.of(this.id);
+		}
 	}
 
 	/**
@@ -245,10 +250,17 @@ public class WorkbenchEngine {
 	/**
 	 * 레시피 하나 ({@code cozy recipes --json}의 {@code recipes[]}).
 	 *
+	 * @param title 목록에 보일 제목 ({@code CRUD 화면})
+	 * @param group 목록에서 묶는 분류 ({@code 화면})
 	 * @param command {@code cozy} 뒤에 오는 동작 ({@code [add, crud]})
 	 */
-	public record Recipe(String name, int stage, String usage, String does, String slots, List<String> command,
-			List<Param> params) {
+	public record Recipe(String name, int stage, String title, String group, String usage, String does, String slots,
+			List<String> command, List<Param> params) {
+
+		/** 화면에 보일 명령 ({@code cozy add crud}) */
+		public String commandText() {
+			return "cozy " + String.join(" ", this.command);
+		}
 	}
 
 	/** {@code cozy recipes --json}. 쓸 수 있는 레시피만 */
@@ -268,10 +280,20 @@ public class WorkbenchEngine {
 						p.path("required").asBoolean(), p.path("repeatable").asBoolean(), strings(p.path("choices")),
 						p.path("example").asString("")));
 			}
-			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("usage").asString(),
+			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("title").asString(),
+					r.path("group").asString(), r.path("usage").asString(),
 					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params)));
 		}
 		return recipes;
+	}
+
+	/** 레시피의 분류. 목록을 이 순서로 묶는다 ({@code cozy recipes --json}의 {@code groups}) */
+	public List<String> recipeGroups() {
+		Result result = runAnywhere("recipes", "--json");
+		if (result.code() != CozyCli.OK) {
+			throw new IllegalStateException("[cozy] cozy recipes가 실패했습니다: " + result.err().strip());
+		}
+		return strings(JSON.readTree(result.out()).path("groups"));
 	}
 
 	private static List<String> strings(JsonNode array) {
@@ -287,13 +309,13 @@ public class WorkbenchEngine {
 	 */
 	public record Change(String action, String file, String detail) {
 
-		/** cozy 명령이 글 출력에 쓰는 이름 */
+		/** 화면에 보일 동작 이름 */
 		public String label() {
 			return switch (this.action) {
-				case "create" -> "만듦";
-				case "edit" -> "바꿈";
-				case "delete" -> "지움";
-				default -> "그대로";
+				case "create" -> "생성";
+				case "edit" -> "수정";
+				case "delete" -> "삭제";
+				default -> "변경 없음";
 			};
 		}
 	}

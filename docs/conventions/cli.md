@@ -172,6 +172,7 @@ cozy <동작> [옵션]
 
 구조를 만드는 명령의 목록이다. 1단계는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md), 2단계는 [ADR-0033](../adr/0033-stage-two-recipes.md)과 같다. 글 출력은 쓸 수 있는 레시피를 먼저, "준비 중"인 레시피를 뒤에 싣는다. 글 출력 머리에 스킬의 플레이북 위치를 적는다. 레시피마다 `references/<플레이북>/PLAYBOOK.md`가 있고, 그 `## Syntax`가 `usage`와 글자까지 같다(`AgentDocsTest`가 확인한다). `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`, `command`, `params`를 낸다.
 
+- **`title`, `group`**: 사람에게 보일 제목(`CRUD 화면`)과 분류(`화면`)다. 워크벤치가 생성 항목 목록에 쓴다. 최상위 `groups`는 분류를 표시할 순서다(화면, 모듈, 비즈니스 로직, 이벤트, 데이터베이스, 설정). 글 출력에는 없다.
 - **`command`**: `cozy` 뒤에 오는 동작이다(`["add", "crud"]`, `["link"]`, `["enable", "events"]`).
 - **`params`**: 인자의 구조다. `usage`와 같은 순서이고, 워크벤치가 폼을 만드는 데 쓴다. `CozyCliTest`가 `usage`와 어긋나지 않는지 본다.
 

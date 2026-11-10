@@ -312,6 +312,16 @@ class CozyCliTest {
 		}
 
 		@Test
+		void everyRecipeHasATitleAndAKnownGroup() {
+			for (Recipes.Recipe recipe : Recipes.ALL) {
+				assertThat(recipe.title()).as(recipe.name()).isNotBlank().matches(".*[가-힣A-Z].*");
+				assertThat(Recipes.GROUPS).as(recipe.name()).contains(recipe.group());
+			}
+			assertThat(Recipes.ALL).extracting(Recipes.Recipe::title).as("제목은 겹치지 않는다").doesNotHaveDuplicates();
+			assertThat(run("recipes", "--json").out()).contains("\"title\": \"CRUD 화면\"").contains("\"group\": \"비즈니스 로직\"");
+		}
+
+		@Test
 		void recipesJsonSaysWhatIsAvailable() {
 			Result result = run("recipes", "--json");
 			assertThat(result.out()).startsWith("{\n  \"recipes\": [\n    {\n      \"name\": \"module\",\n      \"stage\": 1,")

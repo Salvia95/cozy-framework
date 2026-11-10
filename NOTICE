@@ -10,6 +10,11 @@ This product includes the following third-party web assets in cozy-ui
   htmx 2.0.11         Zero-Clause BSD (0BSD)  https://htmx.org
   Pretendard 1.3.9    SIL Open Font License 1.1  https://github.com/orioncactus/pretendard
 
+The workbench wordmark (cozy-workbench, templates/cozy/dev/workbench-nav.html)
+is drawn from glyph outlines of the Courgette typeface by Karolina Lach,
+SIL Open Font License 1.1, https://fonts.google.com/specimen/Courgette.
+The font file itself is not included.
+
 Library dependencies are not included in this source repository. Applications
 packaged with Cozy (mvn -Pdist package) carry the full dependency license list
 in licenses/THIRD-PARTY.txt.

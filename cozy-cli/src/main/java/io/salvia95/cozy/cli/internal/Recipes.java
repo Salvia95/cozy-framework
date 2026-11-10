@@ -25,6 +25,16 @@ public final class Recipes {
 	 */
 	public record Recipe(String name, int stage, String usage, String does, String slots, boolean available) {
 
+		/** 사람에게 보일 제목 ({@code CRUD 화면}). 폼을 만드는 쪽(워크벤치)이 목록에 쓴다 */
+		public String title() {
+			return TITLES.get(this.name).get(0);
+		}
+
+		/** 목록에서 묶는 분류 ({@link #GROUPS} 가운데 하나) */
+		public String group() {
+			return TITLES.get(this.name).get(1);
+		}
+
 		/** 이 레시피의 인자. 사용법({@link #usage()})과 같은 순서다 */
 		public List<Param> params() {
 			return PARAMS.getOrDefault(this.name, List.of());
@@ -79,6 +89,20 @@ public final class Recipes {
 	}
 
 	private static final Param MODULE = positional("모듈", "모듈", "memo");
+
+	/** 분류. 목록은 이 순서로 묶는다 */
+	public static final List<String> GROUPS = List.of("화면", "모듈", "비즈니스 로직", "이벤트", "데이터베이스", "설정");
+
+	/** 레시피 이름 → 제목, 분류 */
+	private static final Map<String, List<String>> TITLES = Map.ofEntries(Map.entry("crud", List.of("CRUD 화면", "화면")),
+			Map.entry("screen", List.of("조회 화면", "화면")), Map.entry("field", List.of("필드 추가", "화면")),
+			Map.entry("fragment", List.of("공개 프래그먼트", "화면")), Map.entry("module", List.of("모듈", "모듈")),
+			Map.entry("link", List.of("모듈 의존성", "모듈")), Map.entry("query", List.of("조회 메서드", "비즈니스 로직")),
+			Map.entry("command", List.of("명령 메서드", "비즈니스 로직")), Map.entry("dto", List.of("DTO", "비즈니스 로직")),
+			Map.entry("event", List.of("이벤트", "이벤트")), Map.entry("listener", List.of("이벤트 리스너", "이벤트")),
+			Map.entry("event-version", List.of("이벤트 버전", "이벤트")), Map.entry("migration", List.of("마이그레이션", "데이터베이스")),
+			Map.entry("enable events", List.of("이벤트 기능 활성화", "설정")),
+			Map.entry("enable workbench", List.of("워크벤치 활성화", "설정")));
 
 	/** 레시피 이름 → 인자 */
 	private static final Map<String, List<Param>> PARAMS = Map.ofEntries(
@@ -170,10 +194,11 @@ public final class Recipes {
 				params.add(Describe.ordered("name", p.name(), "label", p.label(), "option", p.option(), "required", p.required(),
 						"repeatable", p.repeatable(), "choices", new ArrayList<Object>(p.choices()), "example", p.example()));
 			}
-			recipes.add(Describe.ordered("name", r.name(), "stage", r.stage(), "usage", r.usage(), "does", r.does(), "slots",
+			recipes.add(Describe.ordered("name", r.name(), "stage", r.stage(), "title", r.title(), "group", r.group(), "usage",
+					r.usage(), "does", r.does(), "slots",
 					r.slots(), "available", r.available(), "command", new ArrayList<Object>(r.command()), "params", params));
 		}
-		return Describe.ordered("recipes", recipes);
+		return Describe.ordered("recipes", recipes, "groups", new ArrayList<Object>(GROUPS));
 	}
 
 	/** 쓸 수 있는 것을 먼저, 준비 중인 것을 뒤에 둔다. 쓸 수 있는 부분은 {@link #availableText()}와 같다 */

@@ -102,6 +102,8 @@ public class WorkbenchController {
 		}
 		model.addAttribute("screen", screen);
 		model.addAttribute("state", selectedState);
+		model.addAttribute("stateLabels", WorkbenchTerms.states(screen.states().keySet()));
+		model.addAttribute("kindLabels", WorkbenchTerms.KINDS);
 
 		String templateFile = "templates/" + screen.template() + ".html";
 		List<ScreenTree.Item> tree = List.of();
@@ -427,10 +429,15 @@ public class WorkbenchController {
 				: recipes.stream()
 					.filter((r) -> r.name().equals(recipe))
 					.findFirst()
-					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 레시피가 없습니다: " + recipe));
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 생성 항목이 없습니다: " + recipe));
 		model.addAttribute("engineAvailable", this.engine.available());
 		model.addAttribute("errors", check().errors());
 		model.addAttribute("recipes", recipes);
+		Map<String, List<WorkbenchEngine.Recipe>> groups = new LinkedHashMap<>();
+		this.engine.recipeGroups().forEach((group) -> groups.put(group, new ArrayList<>()));
+		recipes.forEach((r) -> groups.computeIfAbsent(r.group(), (group) -> new ArrayList<>()).add(r));
+		groups.values().removeIf(List::isEmpty);
+		model.addAttribute("recipeGroups", groups);
 		model.addAttribute("selected", selected);
 		model.addAttribute("values", values);
 		model.addAttribute("missing", List.of());

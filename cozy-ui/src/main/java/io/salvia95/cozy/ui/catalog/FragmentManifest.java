@@ -45,18 +45,24 @@ public record FragmentManifest(List<Entry> fragments) {
 	 * @param template 템플릿 경로 ({@code cozy/component/badge})
 	 * @param signature {@code badge(text, color)}
 	 * @param purpose 용도 한 줄
+	 * @param label 사람에게 보일 이름 ({@code 배지}). 적지 않았으면 빈 문자열
 	 * @param params 파라미터 (signature와 같은 순서)
 	 * @param samples 상태 이름 → 파라미터 값
 	 * @param document 완전한 HTML 문서를 그리는 fragment인가 (레이아웃)
 	 * @param source 이 항목을 읽은 파일
 	 * @param line 이 항목이 시작하는 줄 (1부터)
 	 */
-	public record Entry(String id, String template, String signature, String purpose, List<Param> params,
+	public record Entry(String id, String template, String signature, String purpose, String label, List<Param> params,
 			Map<String, Map<String, Object>> samples, boolean document, String source, int line) {
 
 		public String fragmentName() {
 			Matcher m = SIGNATURE.matcher(this.signature);
 			return m.matches() ? m.group(1) : this.signature;
+		}
+
+		/** 화면에 보일 이름. {@code label}이 없으면 id의 마지막 마디({@code badge}) */
+		public String displayName() {
+			return this.label.isBlank() ? this.id.substring(this.id.lastIndexOf('/') + 1) : this.label;
 		}
 
 		public boolean isFramework() {
@@ -75,8 +81,14 @@ public record FragmentManifest(List<Entry> fragments) {
 	 * @param type {@code String}, {@code boolean}, {@code int}, {@code fragment}, 또는 클래스 FQN
 	 * @param required 필수 여부
 	 * @param description 설명
+	 * @param label 사람에게 보일 이름 ({@code 필터}). 적지 않았으면 빈 문자열
 	 */
-	public record Param(String name, String type, boolean required, String description) {
+	public record Param(String name, String type, boolean required, String description, String label) {
+
+		/** 화면에 보일 이름. {@code label}이 없으면 파라미터 이름 */
+		public String displayName() {
+			return this.label.isBlank() ? this.name : this.label;
+		}
 
 		public boolean isFragment() {
 			return FRAGMENT_TYPE.equals(this.type);
@@ -157,7 +169,8 @@ public record FragmentManifest(List<Entry> fragments) {
 				for (Object p : rawParams) {
 					Map<String, Object> param = (Map<String, Object>) p;
 					params.add(new Param(text(param, "name", source, id), text(param, "type", source, id),
-							Boolean.TRUE.equals(param.get("required")), String.valueOf(param.getOrDefault("description", ""))));
+							Boolean.TRUE.equals(param.get("required")), String.valueOf(param.getOrDefault("description", "")),
+							String.valueOf(param.getOrDefault("label", ""))));
 				}
 			}
 			List<String> declared = params.stream().map(Param::name).toList();
@@ -172,7 +185,7 @@ public record FragmentManifest(List<Entry> fragments) {
 			if (samples.isEmpty()) {
 				throw invalid(source, id + ": samples에 상태가 하나 이상 있어야 합니다 (예: default)");
 			}
-			entries.add(new Entry(id, template, signature, purpose, List.copyOf(params), samples,
+			entries.add(new Entry(id, template, signature, purpose, String.valueOf(fragment.getOrDefault("label", "")), List.copyOf(params), samples,
 					Boolean.TRUE.equals(fragment.get("document")), source, line));
 		}
 		return entries;

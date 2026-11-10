@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <!--/*
-  워크벤치의 지도 (/cozy/dev/workbench/map). cozy describe의 결과를 그대로 보인다: 앱, 남은 빈칸, 모듈마다 의존·계약·이벤트·화면.
+  워크벤치의 모듈 (/cozy/dev/workbench/map). cozy describe의 결과를 보인다: 앱, 미구현 항목, 모듈마다 의존 모듈·공개 API·이벤트·화면.
 */-->
-<html th:replace="~{cozy/layout/base :: base('워크벤치 지도', ~{::main})}">
+<html th:replace="~{cozy/layout/base :: base('워크벤치 모듈', ~{::main})}">
 <body>
 <main class="container-fluid py-4">
-  <div th:replace="~{cozy/dev/workbench-nav :: header('map', ${errors}, '앱의 모듈, 의존, 계약(spi), 이벤트, 화면, 남은 빈칸입니다(cozy describe).')}"></div>
+  <div th:replace="~{cozy/dev/workbench-nav :: header('map', ${errors}, '모듈의 의존성, 공개 API, 이벤트, 화면, 미구현 항목입니다(cozy describe).')}"></div>
 
   <th:block th:if="${!engineAvailable}">
-    <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 지도를 읽을 수 없습니다.')}"></div>
+    <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 모듈 정보를 읽을 수 없습니다.')}"></div>
   </th:block>
 
   <th:block th:if="${map != null}">
     <p class="mb-3">
       <code th:text="${map.app.basePackage}">io.salvia95.cozy.reference</code>
-      <span class="text-secondary" th:text="|· 메인 ${map.app.mainClass} · cozy ${map.app.cozyVersion} · ${#strings.listJoin(map.app.starters, ', ')}|">· 메인 App</span>
+      <span class="text-secondary" th:text="|· 메인 클래스 ${map.app.mainClass} · cozy ${map.app.cozyVersion} · ${#strings.listJoin(map.app.starters, ', ')}|">· 메인 클래스 App</span>
     </p>
 
     <th:block th:each="problem : ${map.problems}">
@@ -23,9 +23,9 @@
 
     <section class="card mb-4">
       <div class="card-header">
-        <h3 class="card-title" th:text="${map.slots.isEmpty()} ? '빈칸' : |빈칸 ${map.slots.size()}곳|">빈칸</h3>
+        <h3 class="card-title" th:text="${map.slots.isEmpty()} ? '미구현 항목' : |미구현 항목 ${map.slots.size()}건|">미구현 항목</h3>
       </div>
-      <div class="card-body" th:if="${map.slots.isEmpty()}"><p class="text-secondary mb-0">빈칸이 없습니다. 명령이 남긴 자리를 모두 채웠습니다.</p></div>
+      <div class="card-body" th:if="${map.slots.isEmpty()}"><p class="text-secondary mb-0">미구현 항목이 없습니다.</p></div>
       <div class="list-group list-group-flush" th:if="${!map.slots.isEmpty()}">
         <div class="list-group-item" th:each="slot : ${map.slots}">
           <code th:text="|${slot.file}:${slot.line}|">파일:줄</code>
@@ -45,36 +45,36 @@
           </div>
           <div class="card-body">
             <dl class="cozy-workbench-map mb-0">
-              <dt>의존</dt>
+              <dt>의존 모듈</dt>
               <dd>
                 <span class="text-secondary" th:if="${m.dependsOn.isEmpty()}">없음</span>
-                <span class="badge cozy-tone-neutral me-1" th:each="d : ${m.dependsOn}" th:text="${d}">memo :: spi</span>
+                <span class="badge cozy-tone-neutral me-1" th:each="d : ${m.dependsOn}" th:title="${d}" th:text="${#strings.substringBefore(d + ' ::', ' ::')}">memo</span>
               </dd>
               <th:block th:each="contract : ${m.facades}">
-                <dt th:text="|쓰기 ${contract.type}|">쓰기 MemoFacade</dt>
+                <dt>명령 인터페이스 <code th:text="${contract.type}">MemoFacade</code></dt>
                 <dd><code class="d-block small" th:each="method : ${contract.methods}" th:text="${method}">long create(...)</code></dd>
               </th:block>
               <th:block th:each="contract : ${m.finders}">
-                <dt th:text="|읽기 ${contract.type}|">읽기 MemoFinder</dt>
+                <dt>조회 인터페이스 <code th:text="${contract.type}">MemoFinder</code></dt>
                 <dd><code class="d-block small" th:each="method : ${contract.methods}" th:text="${method}">List list()</code></dd>
               </th:block>
               <th:block th:if="${!m.dtos.isEmpty()}">
-                <dt>값</dt>
+                <dt>DTO</dt>
                 <dd><code class="d-block small" th:each="dto : ${m.dtos}" th:text="|${dto.type}(${#strings.listJoin(dto.fields, ', ')})|">MemoItem(long id)</code></dd>
               </th:block>
               <th:block th:each="event : ${m.events}">
-                <dt th:text="|이벤트 ${event.type}|">이벤트 MemoCreated</dt>
+                <dt>이벤트 <code th:text="${event.type}">MemoCreated</code></dt>
                 <dd>
                   <code class="d-block small" th:text="${#strings.listJoin(event.fields, ', ')}">long memoId</code>
-                  <span class="text-secondary small" th:if="${event.publishedIn.isEmpty()}">아직 발행하지 않음</span>
+                  <span class="text-secondary small" th:if="${event.publishedIn.isEmpty()}">발행 위치 없음</span>
                   <th:block th:if="${!event.publishedIn.isEmpty()}">
-                    <span class="text-secondary small">발행하는 곳</span>
+                    <span class="text-secondary small">발행 위치</span>
                     <code class="d-block small" th:each="file : ${event.publishedIn}" th:text="${file}">src/main/java/…/MemoFacadeImpl.java</code>
                   </th:block>
                 </dd>
               </th:block>
               <th:block th:if="${!m.listeners.isEmpty()}">
-                <dt>리스너</dt>
+                <dt>이벤트 리스너</dt>
                 <dd><code class="d-block small" th:each="listener : ${m.listeners}" th:text="|${listener.type} ← ${listener.on}|">MemoCreatedListener ← memo.MemoCreated</code></dd>
               </th:block>
               <th:block th:if="${!m.screens.isEmpty()}">
@@ -84,13 +84,13 @@
                     <a class="d-block" th:if="${screenNames.containsKey(screen.template)}" th:text="${screen.template}"
                        th:href="@{/cozy/dev/workbench(spec=${screenNames.get(screen.template)})}">memo/api/list</a>
                     <span class="d-block" th:unless="${screenNames.containsKey(screen.template)}">
-                      <span th:text="${screen.template}">memo/api/list</span> <span class="text-secondary small">스펙 없음</span>
+                      <span th:text="${screen.template}">memo/api/list</span> <span class="text-secondary small">화면 명세 없음</span>
                     </span>
                   </th:block>
                 </dd>
               </th:block>
               <th:block th:if="${!m.fragments.isEmpty()}">
-                <dt>공개 fragment</dt>
+                <dt>공개 프래그먼트</dt>
                 <dd><code class="d-block small" th:each="fragment : ${m.fragments}" th:text="|${fragment.id} :: ${fragment.signature}|">memo/summary :: memoSummary(summary)</code></dd>
               </th:block>
             </dl>

@@ -81,7 +81,7 @@ class WorkbenchCheckTest {
 		@Test
 		void theCheckPageSaysNothingIsWrong() throws Exception {
 			String html = page("/cozy/dev/workbench/check");
-			assertThat(html).contains("이상 없음").contains("mvn -o verify").doesNotContain("고치는 명령");
+			assertThat(html).contains("위반 없음").contains("mvn -o verify").doesNotContain("수정 명령");
 		}
 
 		@Test
@@ -108,11 +108,11 @@ class WorkbenchCheckTest {
 				.contains("MemoCreated")
 				.contains("MemoCreatedListener")
 				.contains("memo.MemoCreated")
-				.contains("발행하는 곳")
+				.contains("발행 위치")
 				.contains("src/main/java/io/salvia95/cozy/reference/memo/internal/app/command/MemoFacadeImpl.java")
 				.as("화면은 워크벤치의 그 화면으로 이어진다")
 				.contains("/cozy/dev/workbench?spec=memo-list")
-				.contains("빈칸이 없습니다");
+				.contains("미구현 항목이 없습니다");
 		}
 
 		@Test
@@ -150,7 +150,8 @@ class WorkbenchCheckTest {
 		void theCheckPageShowsEveryViolationWithItsFixCommand() throws Exception {
 			String html = page("/cozy/dev/workbench/check");
 			assertThat(html).contains("오류 4건")
-				.contains("R3")
+				.contains("오류 R3")
+				.contains("다른 모듈 템플릿 참조")
 				.contains("dashboard의 allowedDependencies에 memo가 없습니다")
 				.contains("cozy link dashboard --uses memo")
 				.contains("cozy link dashboard --uses activity")
@@ -178,7 +179,7 @@ class WorkbenchCheckTest {
 		@Test
 		void theMapListsOpenSlots() throws Exception {
 			String html = page("/cozy/dev/workbench/map");
-			assertThat(html).contains("빈칸 1곳")
+			assertThat(html).contains("미구현 항목 1건")
 				.contains("src/main/resources/templates/memo/spi/summary.html")
 				.contains("fragment-body")
 				.contains("본문을 채우세요");
@@ -204,7 +205,7 @@ class WorkbenchCheckTest {
 					.andReturn()
 					.getResponse()
 					.getContentAsString();
-				assertThat(html).as(path).contains("앱 프로젝트 폴더").doesNotContain("이상 없음");
+				assertThat(html).as(path).contains("앱 프로젝트 폴더").doesNotContain("위반 없음");
 			}
 		}
 	}

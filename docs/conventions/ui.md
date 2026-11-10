@@ -95,6 +95,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 ```yaml
 fragments:
   - id: component/badge                 # 고유 이름
+    label: 배지                          # 사람에게 보일 이름 (선택). 워크벤치의 구조 트리가 쓴다
     template: cozy/component/badge      # 템플릿 경로
     signature: badge(text, tone)        # th:fragment와 같게
     purpose: 상태나 분류를 짧게 표시한다   # 용도 한 줄
@@ -106,6 +107,7 @@ fragments:
       default: { text: 고정, tone: neutral }
 ```
 
+- **label**: 항목과 파라미터에 적을 수 있다(선택). 항목의 `label`은 워크벤치가 식별자 앞에 표시하는 이름이다. 프레임워크 항목은 범정부 UI/UX 디자인 시스템(KRDS)에 같은 역할의 컴포넌트가 있으면 그 명칭을 쓴다. fragment를 받는 파라미터의 `label`(`필터`)은 구조 트리에 "필터 영역"으로 표시된다. 없으면 종류와 식별자로 표시된다.
 - **type**: `String`, `boolean`, `int`, `long`, `fragment` 또는 클래스 FQN이다. FQN이면 샘플 맵을 그 타입으로 변환한다.
 - **fragment 파라미터의 샘플 값**: fragment 이름을 쓴다. `template :: selector` 형식이고, 템플릿을 생략하면 `cozy/dev/catalog`에서 찾는다. 샘플 값이 없으면 자리 표시가 들어간다.
 - **폼 샘플**: `_form` 맵은 `th:object`가 되고, `_errors` 맵(필드 → 메시지)은 검증 오류가 된다.

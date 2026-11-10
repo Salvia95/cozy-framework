@@ -190,24 +190,27 @@
       innermost.scrollIntoView({ block: 'nearest' });
     }
     var where = (line !== null) ? templateFile + ':' + line
-        : 'templates/' + framework.template + '.html:' + framework.line + ' (이 화면의 템플릿 밖)';
+        : 'templates/' + framework.template + '.html:' + framework.line + ' (화면 템플릿 외부)';
     var names = chain.map(function (row) {
       return row.dataset.cozyName;
+    });
+    var codes = chain.map(function (row) {
+      return row.dataset.cozyCode;
     });
     var rendered = framework ? 'templates/' + framework.template + '.html:' + framework.line : '';
     hint.hidden = true;
     locationText.textContent = where;
     locationText.hidden = false;
-    chainText.textContent = (names.length ? names.join(' › ') : '구조 밖')
-        + (rendered ? ' · 그린 템플릿 ' + rendered : '') + (guessed ? ' · 넣은 곳은 추정' : '');
+    chainText.textContent = (names.length ? names.join(' › ') : '구조에 없는 요소')
+        + (rendered ? ' · 렌더링한 템플릿 ' + rendered : '') + (guessed ? ' · 삽입 위치는 추정' : '');
 
     var lines = ['Screen: ' + panel.dataset.screen + ' (state: ' + panel.dataset.state + ')'];
     if (description) {
       lines.push('Element: ' + description);
     }
     lines.push('Source: ' + where);
-    if (names.length) {
-      lines.push('Inside: ' + names.join(' > '));
+    if (codes.length) {
+      lines.push('Inside: ' + codes.join(' > '));
     }
     if (rendered) {
       lines.push('Rendered by: ' + rendered + ' (framework or another module; edit Source, not this file)');
@@ -295,7 +298,7 @@
     locationText.hidden = true;
     hint.hidden = false;
     chainText.textContent = message || '';
-    contextText.textContent = '요소를 고르면 여기에 채워집니다.';
+    contextText.textContent = '요소를 선택하면 여기에 표시됩니다.';
     copies = { location: '', context: '' };
     copyButtons.forEach(function (button) {
       button.disabled = true;

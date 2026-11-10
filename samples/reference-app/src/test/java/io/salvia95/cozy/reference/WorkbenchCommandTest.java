@@ -136,10 +136,10 @@ class WorkbenchCommandTest {
 			Map<String, String> before = sources(project);
 			String html = body(command("module", "plan").param("arg.모듈", "voc").param("opt.label", "고객의 소리"));
 			assertThat(html).contains("cozy add module voc --label &quot;고객의 소리&quot;")
-				.contains("만듦")
+				.contains("생성")
 				.contains("src/main/java/io/salvia95/cozy/reference/voc/package-info.java")
-				.contains("계획만 보였습니다")
-				.contains("적용하면 위의 파일 1개를 만들거나 바꿉니다.");
+				.contains("적용 전입니다")
+				.contains("적용하면 파일 1개가 생성되거나 수정됩니다.");
 			assertThat(html.split("name=\"step\" value=\"apply\"", -1)).as("적용 버튼은 하나다").hasSize(2);
 			assertThat(html).as("폼은 적은 값을 그대로 가진다").contains("value=\"voc\"").contains("value=\"고객의 소리\"");
 			assertThat(sources(project)).isEqualTo(before);
@@ -150,7 +150,7 @@ class WorkbenchCommandTest {
 		void aRecipeWithSlotsListsThemAfterApplying() throws Exception {
 			String html = body(command("migration", "apply").param("arg.모듈", "memo").param("arg.설명", "add_due_date"));
 			assertThat(html).contains("적용했습니다")
-				.contains("빈칸 1곳")
+				.contains("미구현 항목 1건")
 				.contains("src/main/resources/db/migration/V202611100900__memo_add_due_date.sql")
 				.contains("migration-sql");
 		}
@@ -162,8 +162,8 @@ class WorkbenchCommandTest {
 				.param("opt.entity", "Memo")
 				.param("opt.field", "dueOn:date:마감일"));
 			assertThat(html).contains("cozy add field memo --entity Memo --field dueOn:date:마감일")
-				.contains("남은 일 1곳")
-				.contains("적용한 뒤 손으로 할 일")
+				.contains("수동 수정 항목 1건")
+				.contains("적용 후 수동 수정 항목")
 				.contains("src/main/resources/templates/memo/api/detail.html")
 				.contains("상세의 datagrid에 마감일 항목을 더하세요")
 				.contains("&lt;div class=&quot;datagrid-title&quot;&gt;마감일&lt;/div&gt;");
@@ -179,7 +179,7 @@ class WorkbenchCommandTest {
 				.param("opt.pattern", "details")
 				.param("opt.title", "통계")
 				.param("opt.nav", "통계:no-such-icon"));
-			assertThat(html).contains("no-such-icon").contains("아무 파일도 바꾸지 않았습니다").doesNotContain("적용했습니다");
+			assertThat(html).contains("no-such-icon").contains("파일은 변경되지 않았습니다").doesNotContain("적용했습니다");
 			assertThat(sources(project)).isEqualTo(before);
 		}
 
@@ -187,8 +187,8 @@ class WorkbenchCommandTest {
 		void requiredFieldsAreCheckedBeforeCallingTheCommand() throws Exception {
 			String html = body(command("crud", "plan").param("arg.모듈", "task").param("opt.entity", " "));
 			assertThat(html).contains("엔티티 이름 (PascalCase)")
-				.contains("값을 적습니다")
-				.doesNotContain("계획만 보였습니다");
+				.contains("필수 항목을 입력하세요")
+				.doesNotContain("적용 전입니다");
 		}
 
 		@Test
@@ -272,7 +272,7 @@ class WorkbenchCommandTest {
 				.param("opt.icon", "checklist")
 				.param("opt.field", "title:text!:제목\ndueOn:date:마감일\ndone:bool:완료")
 				.param("opt.publish", "created"));
-			assertThat(again).contains("바뀐 것 없음");
+			assertThat(again).contains("변경 사항 없음");
 			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
 		}
 	}

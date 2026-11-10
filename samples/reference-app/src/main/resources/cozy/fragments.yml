@@ -1,6 +1,7 @@
 # reference-app 매니페스트 (docs/conventions/ui.md). 모듈 공개 fragment(templates/{모듈}/spi/)와 앱 공용 fragment를 적는다.
 fragments:
   - id: memo/summary
+    label: 메모 요약
     template: memo/spi/summary
     signature: memoSummary(summary)
     purpose: 메모 수·고정 수·최근 메모 숫자 카드 줄. dashboard가 overview 패턴의 stats 자리에 쓴다.
@@ -10,6 +11,7 @@ fragments:
       default: { summary: { total: 12, pinned: 3, latestTitle: 회의록 정리 } }
       empty: { summary: { total: 0, pinned: 0, latestTitle: null } }
   - id: activity/recent-activity
+    label: 최근 활동
     template: activity/spi/recent-activity
     signature: recentActivity(items)
     purpose: 최근 활동 목록. dashboard가 polling-panel 안에서 쓴다.
