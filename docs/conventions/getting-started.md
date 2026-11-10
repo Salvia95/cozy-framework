@@ -4,7 +4,7 @@
 
 ```bash
 mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCatalog=local \
-  -DarchetypeGroupId=io.salvia95.cozy -DarchetypeArtifactId=cozy-archetype -DarchetypeVersion=1.1.0 \
+  -DarchetypeGroupId=io.salvia95.cozy -DarchetypeArtifactId=cozy-archetype -DarchetypeVersion=1.2.0-SNAPSHOT \
   -DgroupId=com.example -DartifactId=voc-assistant -Dpackage=com.example.voc \
   -DappName="VOC 도우미" -Dpersistence=true -Devents=false
 cd voc-assistant
