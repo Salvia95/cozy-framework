@@ -28,6 +28,7 @@ public final class TemplateOutline {
 	 * 구조의 마디 하나.
 	 *
 	 * @param line 요소가 시작하는 줄 (1부터)
+	 * @param endLine 요소가 끝나는 줄 (닫는 태그가 있는 줄. 닫는 태그가 없으면 시작하는 줄)
 	 * @param depth 이 마디를 감싸는 마디의 수
 	 * @param kind {@code fragment}(선언), {@code replace}, {@code insert}, {@code slot}(감싸는 삽입이 {@code ~{::#id}}로 넘기는 요소)
 	 * @param target 삽입하는 템플릿 이름. 같은 템플릿이면 빈 문자열. 읽을 수 없는 표현식이면 원문
@@ -35,7 +36,12 @@ public final class TemplateOutline {
 	 * @param id 요소의 {@code id} (없으면 {@code null})
 	 * @param args 선언이면 파라미터 이름, 삽입이면 넘기는 인자의 원문
 	 */
-	public record Node(int line, int depth, String kind, String target, String fragment, String id, List<String> args) {
+	public record Node(int line, int endLine, int depth, String kind, String target, String fragment, String id,
+			List<String> args) {
+
+		Node endingAt(int endLine) {
+			return new Node(this.line, endLine, this.depth, this.kind, this.target, this.fragment, this.id, this.args);
+		}
 	}
 
 	private static final MarkupParser PARSER = new MarkupParser(ParseConfiguration.htmlConfiguration());
@@ -107,6 +113,9 @@ public final class TemplateOutline {
 		/** 감싸는 삽입들이 {@code ~{::#id}}로 넘기는 id */
 		private final Deque<String> slotIds = new ArrayDeque<>();
 
+		/** 열린 요소마다 이 요소의 첫 마디 번호 */
+		private final Deque<Integer> openFirstNode = new ArrayDeque<>();
+
 		/** 열린 요소마다 이 요소가 더한 slot id의 수 */
 		private final Deque<Integer> openSlots = new ArrayDeque<>();
 
@@ -123,8 +132,10 @@ public final class TemplateOutline {
 
 		@Override
 		public void handleOpenElementEnd(char[] buffer, int nameOffset, int nameLen, int line, int col) {
+			int first = this.nodes.size();
 			int added = element();
 			this.open.push(added);
+			this.openFirstNode.push(first);
 			this.openSlots.push(this.addedSlots);
 			this.depth += added;
 		}
@@ -144,12 +155,12 @@ public final class TemplateOutline {
 
 		@Override
 		public void handleCloseElementStart(char[] buffer, int nameOffset, int nameLen, int line, int col) {
-			close();
+			close(line);
 		}
 
 		@Override
 		public void handleAutoCloseElementStart(char[] buffer, int nameOffset, int nameLen, int line, int col) {
-			close();
+			close(line);
 		}
 
 		@Override
@@ -165,9 +176,14 @@ public final class TemplateOutline {
 			this.line = line;
 		}
 
-		private void close() {
+		private void close(int line) {
 			if (!this.open.isEmpty()) {
-				this.depth -= this.open.pop();
+				int added = this.open.pop();
+				int first = this.openFirstNode.pop();
+				for (int i = first; i < first + added; i++) {
+					this.nodes.set(i, this.nodes.get(i).endingAt(line));
+				}
+				this.depth -= added;
 				dropSlots(this.openSlots.pop());
 			}
 		}
@@ -184,14 +200,14 @@ public final class TemplateOutline {
 			int added = 0;
 			this.addedSlots = 0;
 			if (id != null && this.slotIds.contains(id)) {
-				this.nodes.add(new Node(this.line, this.depth, "slot", "", null, id, List.of()));
+				this.nodes.add(new Node(this.line, this.line, this.depth, "slot", "", null, id, List.of()));
 				added++;
 			}
 			String declared = th("fragment");
 			if (declared != null) {
 				Matcher m = SIGNATURE.matcher(declared);
 				if (m.matches()) {
-					this.nodes.add(new Node(this.line, this.depth + added, "fragment", "", m.group(1), id,
+					this.nodes.add(new Node(this.line, this.line, this.depth + added, "fragment", "", m.group(1), id,
 							(m.group(2) != null) ? splitArguments(m.group(2)) : List.of()));
 					added++;
 				}
@@ -222,10 +238,10 @@ public final class TemplateOutline {
 			}
 			Matcher m = REFERENCE.matcher(text);
 			if (text.startsWith("${") || text.startsWith("*{") || !m.matches()) {
-				return new Node(this.line, depth, kind, value.strip(), null, id, List.of());
+				return new Node(this.line, this.line, depth, kind, value.strip(), null, id, List.of());
 			}
 			String target = m.group(1).equals("this") ? "" : m.group(1);
-			return new Node(this.line, depth, kind, target, m.group(2), id,
+			return new Node(this.line, this.line, depth, kind, target, m.group(2), id,
 					(m.group(3) != null) ? splitArguments(m.group(3)) : List.of());
 		}
 

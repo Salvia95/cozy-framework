@@ -47,13 +47,15 @@
         </div>
         <ul class="list-unstyled cozy-workbench-tree mb-0" th:if="${!tree.isEmpty()}">
           <li class="cozy-workbench-node" th:each="item : ${tree}"
-              th:classappend="|cozy-workbench-depth-${item.depth} cozy-workbench-kind-${item.kind}|" th:title="${item.location}">
+              th:classappend="|cozy-workbench-depth-${item.depth} cozy-workbench-kind-${item.kind}|" th:title="${item.location}"
+              th:data-cozy-line="${item.line}" th:data-cozy-end="${item.endLine}" th:data-cozy-kind="${item.kind}"
+              th:data-cozy-target="${item.target}" th:data-cozy-name="|${item.label} (${item.detail})|">
             <span class="cozy-workbench-text">
-              <span class="cozy-workbench-label" th:text="${item.label}">list-with-filter</span>
+              <button type="button" class="cozy-workbench-label" data-cozy-workbench-node th:text="${item.label}">list-with-filter</button>
               <span class="text-secondary small" th:text="${item.detail}">패턴</span>
             </span>
-            <a class="cozy-workbench-line small" th:text="${item.line()}" th:aria-label="|${item.location} 소스 보기|"
-               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line()}">7</a>
+            <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"
+               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line}">7</a>
             <span class="visually-hidden" th:text="${item.location}">templates/memo/api/list.html:7</span>
           </li>
         </ul>
@@ -101,10 +103,37 @@
                  th:href="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}">새 창에서 보기</a>
             </div>
           </div>
+          <div class="card-body border-bottom" data-cozy-workbench-selection
+               th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
+               th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+              <label class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" checked data-cozy-workbench-pick>
+                <span class="form-check-label">요소 고르기</span>
+              </label>
+              <span class="text-secondary" data-cozy-workbench-hint>미리보기나 구조에서 요소를 누르면 소스 위치가 보입니다.</span>
+              <code class="cozy-workbench-location" data-cozy-workbench-location hidden>src/main/resources/templates/memo/api/list.html:7</code>
+              <div class="btn-list ms-auto">
+                <button type="button" class="btn btn-sm" data-cozy-workbench-copy="location" disabled>위치 복사</button>
+                <button type="button" class="btn btn-sm" data-cozy-workbench-copy="context" disabled>에이전트용 복사</button>
+              </div>
+            </div>
+            <p class="cozy-workbench-chain text-secondary small mt-2 mb-0" data-cozy-workbench-chain
+               data-left="미리보기 밖으로 나가는 이동은 여기서 볼 수 없어 처음 화면으로 되돌렸습니다. 이어지는 화면은 화면 목록에서 고르거나 새 창에서 봅니다."></p>
+            <details class="mt-2" data-cozy-workbench-context-details>
+              <summary class="text-secondary small">에이전트에게 넘길 글</summary>
+              <pre class="cozy-workbench-context mt-2 mb-0" data-cozy-workbench-context>요소를 고르면 여기에 채워집니다.</pre>
+            </details>
+          </div>
           <div class="card-body cozy-workbench-stage">
-            <iframe class="cozy-workbench-frame" th:classappend="${w != 'full'} ? |cozy-workbench-frame-${w}|"
-                    th:src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}"
-                    th:title="|${screen.screen} ${state}|"></iframe>
+            <div class="cozy-workbench-canvas">
+              <iframe class="cozy-workbench-frame" th:classappend="${w != 'full'} ? |cozy-workbench-frame-${w}|"
+                      data-cozy-workbench-frame
+                      th:src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state},inspect=1)}"
+                      th:title="|${screen.screen} ${state}|"></iframe>
+              <div class="cozy-workbench-box cozy-workbench-box-hover" data-cozy-workbench-hover hidden></div>
+              <div class="cozy-workbench-box cozy-workbench-box-selected" data-cozy-workbench-selected hidden></div>
+            </div>
           </div>
         </th:block>
 
@@ -129,6 +158,7 @@
       </section>
     </div>
   </div>
+  <script th:src="@{/cozy/workbench.js}" defer></script>
 </main>
 </body>
 </html>

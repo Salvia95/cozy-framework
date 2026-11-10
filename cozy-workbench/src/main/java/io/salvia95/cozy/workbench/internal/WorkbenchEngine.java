@@ -94,7 +94,8 @@ public class WorkbenchEngine {
 	 *
 	 * @param kind {@code fragment}, {@code replace}, {@code insert}, {@code slot}
 	 */
-	public record OutlineNode(int line, int depth, String kind, String target, String fragment, String id, List<String> args) {
+	public record OutlineNode(int line, int endLine, int depth, String kind, String target, String fragment, String id,
+			List<String> args) {
 	}
 
 	/**
@@ -119,7 +120,7 @@ public class WorkbenchEngine {
 				for (JsonNode n : screen.path("outline")) {
 					List<String> args = new ArrayList<>();
 					n.path("args").forEach((a) -> args.add(a.asString()));
-					outline.add(new OutlineNode(n.path("line").asInt(), n.path("depth").asInt(), n.path("kind").asString(),
+					outline.add(new OutlineNode(n.path("line").asInt(), n.path("endLine").asInt(), n.path("depth").asInt(), n.path("kind").asString(),
 							n.path("target").asString(""), text(n, "fragment"), text(n, "id"), List.copyOf(args)));
 				}
 				screens.add(new Screen(screen.path("template").asString(), text(screen, "spec"), List.copyOf(outline)));

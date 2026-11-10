@@ -21,7 +21,8 @@ import io.salvia95.cozy.ui.catalog.ScreenSpec;
  * <p>
  * 화면 하나를 고르면 왼쪽에 구조(패턴 → 자리 → fragment, 줄 번호), 오른쪽에 상태별 미리보기나 소스(템플릿, 스펙)를 보인다. 미리보기는 패턴
  * 카탈로그의 {@code /cozy/dev/catalog/screen}을 그대로 쓴다. 고른 것은 모두 주소의 파라미터({@code spec}, {@code state}, {@code w},
- * {@code view})에 있다.
+ * {@code view})에 있다. 미리보기는 {@code inspect} 파라미터로 요소마다 소스 위치를 받아, 요소를 누르면 그 위치와 감싸는 구조를 보인다
+ * ({@code /cozy/workbench.js}).
  */
 @Controller
 @RequestMapping(WorkbenchController.PATH)
@@ -94,6 +95,7 @@ public class WorkbenchController {
 			}
 		}
 		model.addAttribute("tree", tree);
+		model.addAttribute("specFile", specFile);
 		String sourceFile = switch (view) {
 			case "template" -> "src/main/resources/" + templateFile;
 			case "spec" -> specFile;

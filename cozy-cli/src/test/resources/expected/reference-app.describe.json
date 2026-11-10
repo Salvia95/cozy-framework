@@ -76,6 +76,7 @@
           "outline": [
             {
               "line": 3,
+              "endLine": 21,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -88,6 +89,7 @@
             },
             {
               "line": 6,
+              "endLine": 18,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/overview",
@@ -102,6 +104,7 @@
             },
             {
               "line": 7,
+              "endLine": 7,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -111,6 +114,7 @@
             },
             {
               "line": 7,
+              "endLine": 7,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/icon/tabler",
@@ -122,6 +126,7 @@
             },
             {
               "line": 8,
+              "endLine": 10,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -131,6 +136,7 @@
             },
             {
               "line": 9,
+              "endLine": 9,
               "depth": 3,
               "kind": "replace",
               "target": "memo/spi/summary",
@@ -142,6 +148,7 @@
             },
             {
               "line": 11,
+              "endLine": 17,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -151,6 +158,7 @@
             },
             {
               "line": 12,
+              "endLine": 16,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/pattern/polling-panel",
@@ -165,6 +173,7 @@
             },
             {
               "line": 13,
+              "endLine": 15,
               "depth": 4,
               "kind": "slot",
               "target": "",
@@ -174,6 +183,7 @@
             },
             {
               "line": 13,
+              "endLine": 15,
               "depth": 5,
               "kind": "fragment",
               "target": "",
@@ -183,6 +193,7 @@
             },
             {
               "line": 14,
+              "endLine": 14,
               "depth": 6,
               "kind": "replace",
               "target": "activity/spi/recent-activity",
@@ -277,6 +288,7 @@
           "outline": [
             {
               "line": 6,
+              "endLine": 53,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -289,6 +301,7 @@
             },
             {
               "line": 9,
+              "endLine": 50,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/details",
@@ -304,6 +317,7 @@
             },
             {
               "line": 10,
+              "endLine": 13,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -313,6 +327,7 @@
             },
             {
               "line": 11,
+              "endLine": 11,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/component/delete-confirm",
@@ -327,6 +342,7 @@
             },
             {
               "line": 12,
+              "endLine": 12,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/icon/tabler",
@@ -338,6 +354,7 @@
             },
             {
               "line": 15,
+              "endLine": 49,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -347,6 +364,7 @@
             },
             {
               "line": 33,
+              "endLine": 33,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/component/badge",
@@ -370,6 +388,7 @@
           "outline": [
             {
               "line": 4,
+              "endLine": 16,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -382,6 +401,7 @@
             },
             {
               "line": 7,
+              "endLine": 13,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/form-page",
@@ -396,6 +416,7 @@
             },
             {
               "line": 8,
+              "endLine": 12,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -405,6 +426,7 @@
             },
             {
               "line": 8,
+              "endLine": 12,
               "depth": 3,
               "kind": "fragment",
               "target": "",
@@ -414,6 +436,7 @@
             },
             {
               "line": 10,
+              "endLine": 10,
               "depth": 4,
               "kind": "replace",
               "target": "memo/internal/fields",
@@ -423,6 +446,7 @@
             },
             {
               "line": 11,
+              "endLine": 11,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/form-actions",
@@ -447,6 +471,7 @@
           "outline": [
             {
               "line": 4,
+              "endLine": 16,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -459,6 +484,7 @@
             },
             {
               "line": 7,
+              "endLine": 13,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/form-page",
@@ -473,6 +499,7 @@
             },
             {
               "line": 8,
+              "endLine": 12,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -482,6 +509,7 @@
             },
             {
               "line": 8,
+              "endLine": 12,
               "depth": 3,
               "kind": "fragment",
               "target": "",
@@ -491,6 +519,7 @@
             },
             {
               "line": 10,
+              "endLine": 10,
               "depth": 4,
               "kind": "replace",
               "target": "memo/internal/fields",
@@ -500,6 +529,7 @@
             },
             {
               "line": 11,
+              "endLine": 11,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/form-actions",
@@ -525,6 +555,7 @@
           "outline": [
             {
               "line": 4,
+              "endLine": 61,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -537,6 +568,7 @@
             },
             {
               "line": 7,
+              "endLine": 58,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/list-with-filter",
@@ -551,6 +583,7 @@
             },
             {
               "line": 8,
+              "endLine": 8,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -560,6 +593,7 @@
             },
             {
               "line": 8,
+              "endLine": 8,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/icon/tabler",
@@ -571,6 +605,7 @@
             },
             {
               "line": 10,
+              "endLine": 26,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -580,6 +615,7 @@
             },
             {
               "line": 15,
+              "endLine": 15,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/icon/tabler",
@@ -591,6 +627,7 @@
             },
             {
               "line": 17,
+              "endLine": 17,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/component/loading",
@@ -600,6 +637,7 @@
             },
             {
               "line": 28,
+              "endLine": 57,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -609,6 +647,7 @@
             },
             {
               "line": 28,
+              "endLine": 57,
               "depth": 3,
               "kind": "fragment",
               "target": "",
@@ -618,6 +657,7 @@
             },
             {
               "line": 31,
+              "endLine": 31,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/empty-state",
@@ -629,6 +669,7 @@
             },
             {
               "line": 34,
+              "endLine": 36,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/empty-state",
@@ -643,6 +684,7 @@
             },
             {
               "line": 35,
+              "endLine": 35,
               "depth": 5,
               "kind": "slot",
               "target": "",
@@ -652,6 +694,7 @@
             },
             {
               "line": 35,
+              "endLine": 35,
               "depth": 6,
               "kind": "replace",
               "target": "cozy/icon/tabler",
@@ -663,6 +706,7 @@
             },
             {
               "line": 40,
+              "endLine": 54,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/data-table",
@@ -675,6 +719,7 @@
             },
             {
               "line": 42,
+              "endLine": 42,
               "depth": 5,
               "kind": "slot",
               "target": "",
@@ -684,6 +729,7 @@
             },
             {
               "line": 47,
+              "endLine": 47,
               "depth": 5,
               "kind": "replace",
               "target": "cozy/component/badge",
@@ -696,6 +742,7 @@
             },
             {
               "line": 55,
+              "endLine": 55,
               "depth": 4,
               "kind": "replace",
               "target": "cozy/component/pagination",

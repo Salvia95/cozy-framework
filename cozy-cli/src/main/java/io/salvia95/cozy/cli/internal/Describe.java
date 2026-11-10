@@ -237,7 +237,7 @@ public final class Describe {
 		List<Object> outline = new ArrayList<>();
 		for (TemplateOutline.Node node : TemplateOutline
 			.of(new TemplateFile(template + ".html", Origin.APP, "templates/" + template + ".html", content))) {
-			outline.add(ordered("line", node.line(), "depth", node.depth(), "kind", node.kind(), "target", node.target(),
+			outline.add(ordered("line", node.line(), "endLine", node.endLine(), "depth", node.depth(), "kind", node.kind(), "target", node.target(),
 					"fragment", node.fragment(), "id", node.id(), "args", new ArrayList<Object>(node.args())));
 		}
 		return outline;

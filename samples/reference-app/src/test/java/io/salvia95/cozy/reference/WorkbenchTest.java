@@ -89,6 +89,52 @@ class WorkbenchTest {
 			assertThat(spec).contains("src/main/resources/specs/memo-list.yml").contains("screen: memo-list");
 		}
 
+		String body(String url) throws Exception {
+			return this.mvc.perform(get(url)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+		}
+
+		@Test
+		void thePreviewCarriesSourceLocationsOnlyWhenTheWorkbenchAsks() throws Exception {
+			String plain = body("/cozy/dev/catalog/screen?spec=memo-list&state=default");
+			String inspected = body("/cozy/dev/catalog/screen?spec=memo-list&state=default&inspect=1");
+			assertThat(plain).doesNotContain("data-cozy-src");
+			assertThat(inspected).as("앱 템플릿의 요소: 필터 폼(10번 줄), 결과 영역(28번 줄)")
+				.contains("data-cozy-src=\"memo/api/list:10\"")
+				.contains("data-cozy-src=\"memo/api/list:28\"")
+				.as("프레임워크 템플릿의 요소도 자기 위치를 가진다")
+				.contains("data-cozy-src=\"cozy/pattern/list-with-filter:")
+				.contains("data-cozy-src=\"cozy/layout/base:");
+			// CSRF 토큰은 요청마다 다르게 가려져 나온다
+			String token = "(name=\"_csrf\" (?:content|value)=\")[^\"]*";
+			assertThat(inspected.replaceAll(" data-cozy-src=\"[^\"]*\"", "").replaceAll(token, "$1"))
+				.as("위치 표시 말고는 한 글자도 다르지 않다")
+				.isEqualTo(plain.replaceAll(token, "$1"));
+		}
+
+		@Test
+		void appPagesAreNeverStamped() throws Exception {
+			assertThat(body("/memo?inspect=1")).doesNotContain("data-cozy-src");
+			assertThat(body("/cozy/dev/catalog/render?id=component/badge&state=default&inspect=1"))
+				.doesNotContain("data-cozy-src");
+		}
+
+		@Test
+		void theWorkbenchAsksForLocationsAndGivesTheScriptWhatItNeeds() throws Exception {
+			String html = page("?spec=memo-list&state=paged");
+			assertThat(html).contains("/cozy/dev/catalog/screen?spec=memo-list&amp;state=paged&amp;inspect=1")
+				.contains("src=\"/cozy/workbench.js\"")
+				.contains("요소 고르기")
+				.contains("에이전트용 복사")
+				.contains("data-template=\"memo/api/list\"")
+				.contains("data-spec-file=\"src/main/resources/specs/memo-list.yml\"")
+				.contains("data-playbook=\".agents/skills/cozy-helper/references/screens/PLAYBOOK.md\"");
+			assertThat(html).as("구조의 줄마다 시작·끝 줄과 삽입 대상")
+				.contains("data-cozy-line=\"7\"")
+				.contains("data-cozy-end=\"58\"")
+				.contains("data-cozy-target=\"cozy/pattern/list-with-filter\"");
+			assertThat(body("/cozy/workbench.js")).contains("data-cozy-src");
+		}
+
 		@Test
 		void everyViewIsValidHtml() throws Exception {
 			CozyHtmlValidator validator = new CozyHtmlValidator();
@@ -135,6 +181,15 @@ class WorkbenchTest {
 
 		@Autowired
 		MockMvc mvc;
+
+		@Test
+		void previewsAreNotStampedWithoutTheWorkbench() throws Exception {
+			assertThat(this.mvc.perform(get("/cozy/dev/catalog/screen?spec=memo-list&state=default&inspect=1"))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString()).doesNotContain("data-cozy-src");
+		}
 
 		@Test
 		void thePropertyTurnsItOff() throws Exception {

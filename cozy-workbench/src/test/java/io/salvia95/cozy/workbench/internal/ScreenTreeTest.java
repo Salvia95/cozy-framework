@@ -25,7 +25,7 @@ class ScreenTreeTest {
 					false, "test", 1)));
 
 	static OutlineNode node(int line, int depth, String kind, String target, String fragment, String id, String... args) {
-		return new OutlineNode(line, depth, kind, target, fragment, id, List.of(args));
+		return new OutlineNode(line, line + 2, depth, kind, target, fragment, id, List.of(args));
 	}
 
 	@Test
@@ -47,6 +47,9 @@ class ScreenTreeTest {
 					org.assertj.core.groups.Tuple.tuple("badge", "컴포넌트", 3),
 					org.assertj.core.groups.Tuple.tuple("card", "memo/spi/card", 3));
 		assertThat(items.get(0).location()).isEqualTo("templates/memo/api/list.html:7");
+		assertThat(items.get(0)).extracting(Item::line, Item::endLine, Item::target)
+			.containsExactly(7, 9, "cozy/pattern/list-with-filter");
+		assertThat(items.get(1).target()).as("자리와 선언은 삽입 대상이 없다").isEmpty();
 	}
 
 	@Test

@@ -84,6 +84,21 @@ class TemplateOutlineTest {
 	}
 
 	@Test
+	void everyNodeKnowsTheLineWhereItsElementEnds() {
+		List<Node> nodes = outline("""
+				<section th:replace="~{cozy/pattern/details :: details('제목', ~{::#body})}">
+				  <div id="body">
+				    <span th:replace="~{cozy/component/badge :: badge('a', 'neutral')}"></span>
+				    <input th:insert="~{memo/spi/x :: x}">
+				  </div>
+				</section>
+				""");
+		assertThat(nodes).extracting(Node::fragment, Node::line, Node::endLine)
+			.containsExactly(org.assertj.core.groups.Tuple.tuple("details", 1, 6), org.assertj.core.groups.Tuple.tuple(null, 2, 5),
+					org.assertj.core.groups.Tuple.tuple("badge", 3, 3), org.assertj.core.groups.Tuple.tuple("x", 4, 4));
+	}
+
+	@Test
 	void argumentsSplitOnlyAtTheTopLevel() {
 		assertThat(TemplateOutline.splitArguments("'a, b', ~{::#x}, ${m.get('k', 1)}, #{msg(${a}, 'b')}"))
 			.containsExactly("'a, b'", "~{::#x}", "${m.get('k', 1)}", "#{msg(${a}, 'b')}");

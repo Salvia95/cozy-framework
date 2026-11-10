@@ -37,13 +37,11 @@ final class ScreenTree {
 	 * @param label 이름
 	 * @param detail 종류나 요소 id
 	 * @param location {@code 템플릿 파일:줄}
+	 * @param line 요소가 시작하는 줄
+	 * @param endLine 요소가 끝나는 줄
+	 * @param target 삽입하는 템플릿 이름. 자리와 선언이면 빈 문자열
 	 */
-	record Item(int depth, String kind, String label, String detail, String location) {
-
-		/** 줄 번호 */
-		public int line() {
-			return Integer.parseInt(this.location.substring(this.location.lastIndexOf(':') + 1));
-		}
+	record Item(int depth, String kind, String label, String detail, String location, int line, int endLine, String target) {
 	}
 
 	/**
@@ -62,24 +60,28 @@ final class ScreenTree {
 			switch (node.kind()) {
 				case "slot" -> {
 					String parameter = parameter(enclosing, node.id(), manifest);
-					items.add((parameter != null) ? new Item(depth, "slot", parameter, "#" + node.id(), location)
-							: new Item(depth, "slot", "#" + node.id(), "자리", location));
+					items.add((parameter != null) ? item(depth, node, parameter, "#" + node.id(), location, "")
+							: item(depth, node, "#" + node.id(), "자리", location, ""));
 				}
-				case "fragment" -> items.add(new Item(depth, "fragment", node.fragment(), "fragment 선언", location));
+				case "fragment" -> items.add(item(depth, node, node.fragment(), "fragment 선언", location, ""));
 				default -> {
 					if (!ICONS.equals(node.target())) {
 						Entry entry = entry(manifest, node);
 						items.add((entry != null && entry.isFramework())
-								? new Item(depth, node.kind(), entry.id().substring(entry.id().indexOf('/') + 1),
-										GROUP_LABELS.getOrDefault(entry.group(), entry.group()), location)
-								: new Item(depth, node.kind(), (node.fragment() != null) ? node.fragment() : target(node),
-										(node.fragment() != null) ? target(node) : "템플릿", location));
+								? item(depth, node, entry.id().substring(entry.id().indexOf('/') + 1),
+										GROUP_LABELS.getOrDefault(entry.group(), entry.group()), location, node.target())
+								: item(depth, node, (node.fragment() != null) ? node.fragment() : target(node),
+										(node.fragment() != null) ? target(node) : "템플릿", location, node.target()));
 					}
 				}
 			}
 			enclosing.add(node);
 		}
 		return items;
+	}
+
+	private static Item item(int depth, OutlineNode node, String label, String detail, String location, String target) {
+		return new Item(depth, node.kind(), label, detail, location, node.line(), node.endLine(), target);
 	}
 
 	private static String target(OutlineNode node) {
