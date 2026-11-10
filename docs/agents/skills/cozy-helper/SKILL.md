@@ -47,6 +47,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Create or alter a table | [add-migration](references/add-migration/PLAYBOOK.md) |
 | Turn on events in an app without them | [enable-events](references/enable-events/PLAYBOOK.md) |
 | Edit screen markup and wording | [screens](references/screens/PLAYBOOK.md) |
+| Update `AGENTS.md` and this skill after a Cozy upgrade | [sync-agents](references/sync-agents/PLAYBOOK.md) |
 
 ## Reading results
 

@@ -37,7 +37,7 @@ public final class Recipes {
 
 	/** 레시피가 아닌 명령의 플레이북: 형식과 폴더 */
 	public static final Map<String, String> OTHER_PLAYBOOKS = Map.of("describe", "cozy describe [--json]", "check",
-			"cozy check [--json]");
+			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]");
 
 	/** 명령이 아닌 주제의 플레이북 */
 	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens");

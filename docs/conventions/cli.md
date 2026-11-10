@@ -1,10 +1,10 @@
 # cozy 명령 (cozy-cli)
 
-앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
+앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
 - **지금 쓸 수 있는 것(M14)**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version`, `enable events`
 - **보류한 것**: `add field`(ADR-0033 §1). 실행하면 종료 코드 2로 보류했다고 알린다.
-- **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
+- **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 `<설치 폴더>/repository`다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
 ```bash
@@ -252,6 +252,26 @@ cozy enable events
 
 - **시각**: 마이그레이션 이름의 시각은 지금 시각이다. 테스트는 시스템 속성 `cozy.cli.now`(`yyyyMMddHHmm`)로 고정한다.
 - **검증**: `samples/recipes`의 픽스처가 레시피를 실제 앱에 적용하고 `mvn verify` 결과를 확인한다([ADR-0032 부록 §5](../adr/0032-agent-cli-recipes.md)).
+
+## sync agents
+
+앱의 `AGENTS.md`와 `.agents/skills/cozy-helper/`를 이 cozy 명령(jar)에 든 것과 같게 맞춘다([ADR-0035](../adr/0035-sync-agents.md)). 새 번들을 설치한 뒤나, 문서가 없는 앱에서 쓴다.
+
+```bash
+cozy sync agents --dry-run   # 바뀔 파일만 본다
+cozy sync agents             # 스킬을 맞추고, AGENTS.md는 없을 때만 만든다
+cozy sync agents --force     # 내용이 다른 AGENTS.md도 바꾼다
+```
+
+| 파일 | 없을 때 | 내용이 다를 때 | 명령에 없는 파일 |
+| --- | --- | --- | --- |
+| `.agents/skills/cozy-helper/**` | `만듦` | `바꿈` | `지움` |
+| `AGENTS.md` | `만듦` | `그대로 … 내용이 달라 바꾸지 않음`. `--force`면 `바꿈` | — |
+
+- **스킬 폴더는 cozy의 것이다.** 그 안에 따로 둔 파일은 지워진다. 다른 스킬 폴더는 건드리지 않는다.
+- **`AGENTS.md`가 다르면** 그대로 두고 "다음"에서 `--force`를 알린다. 스킬은 맞추고 종료 코드는 0이다.
+- **출력**: 다른 명령과 같은 계획 형식이다. 모두 같으면 "바뀐 것 없음"이다. `--json`의 `recipe`는 `sync agents`이고 `slots`는 늘 비어 있다.
+- **인자**: `agents` 말고 다른 것을 적거나, `--force`를 다른 동작에 쓰면 종료 코드 2다.
 
 ## 의존
 

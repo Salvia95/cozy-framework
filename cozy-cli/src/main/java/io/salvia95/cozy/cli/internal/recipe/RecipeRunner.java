@@ -16,7 +16,7 @@ import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * {@code cozy add <레시피>}와 {@code cozy link}를 실행한다. 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을
+ * {@code cozy add <레시피>}, {@code cozy link}, {@code cozy enable events}, {@code cozy sync agents}를 실행한다. 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을
  * 알린다. 출력 형식: docs/conventions/cli.md
  */
 public final class RecipeRunner {
@@ -68,13 +68,34 @@ public final class RecipeRunner {
 			default -> throw new CliException(recipe.startsWith("enable ") ? "cozy enable 뒤에는 events를 적습니다 (cozy enable events)."
 					: "모르는 레시피입니다: " + recipe + ". cozy recipes로 목록을 봅니다.");
 		};
-		next = next.replaceFirst("^다음: ", "");
-		Plan plan = ctx.plan();
+		report(recipe, ctx.plan(), next.replaceFirst("^다음: ", ""), true, dryRun, json, out);
+	}
+
+	/** {@code cozy sync agents [--force]}: 앱의 에이전트 문서를 이 cozy 명령에 든 것과 같게 맞춘다 */
+	public static void sync(List<String> rest, AppProject project, boolean force, boolean dryRun, boolean json,
+			PrintStream out) {
+		if (rest.size() != 1 || !rest.getFirst().equals("agents")) {
+			throw new CliException("cozy sync 뒤에는 agents만 적습니다 (cozy sync agents [--force]).");
+		}
+		Plan plan = new Plan(project.dir());
+		String next = AgentDocs.sync(plan, force);
+		report("sync agents", plan, next, false, dryRun, json, out);
+	}
+
+	/**
+	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
+	 *
+	 * @param withSlots 바뀐 파일의 빈칸을 알리는가 (에이전트 문서는 빈칸 표시를 설명할 뿐이라 알리지 않는다)
+	 */
+	private static void report(String recipe, Plan plan, String next, boolean withSlots, boolean dryRun, boolean json,
+			PrintStream out) {
 		if (!dryRun) {
 			plan.apply();
 		}
-		List<Violation> slots = plan.slots();
-		String status = plan.changesNothing() ? "바뀐 것 없음(이미 같은 내용이 있습니다)" : dryRun ? "계획만 보였습니다(--dry-run)" : "적용했습니다";
+		List<Violation> slots = withSlots ? plan.slots() : List.of();
+		String status = plan.changesNothing()
+				? (plan.keptDifferent() ? "바뀐 것 없음" : "바뀐 것 없음(이미 같은 내용이 있습니다)")
+				: dryRun ? "계획만 보였습니다(--dry-run)" : "적용했습니다";
 		String nextLine = slots.isEmpty() ? next : "빈칸을 채우고 cozy check, 그다음 mvn verify. " + next;
 		if (json) {
 			List<Object> changes = new ArrayList<>();

@@ -57,6 +57,7 @@ mvn -o verify
 mvn -o -Pdist package
 ```
 
+- **이미 있는 앱**: 새 번들을 설치한 뒤 앱 폴더에서 `cozy sync agents`를 실행하면 `AGENTS.md`(없을 때)와 `cozy-helper` 스킬이 설치한 cozy 명령의 것으로 맞춰진다. 앱에서 고친 `AGENTS.md`는 `--force`를 줘야 바뀐다.
 - **명령 형식**: `cozy <동작> [인자...]`. Windows는 `cozy.cmd`가 `cozy.ps1`을 실행 정책과 상관없이 부른다. Linux·WSL은 `cozy`(bash)를 쓴다(`./cozy install` → `~/cozy/bin/cozy new`).
 - **`cozy install`이 하는 일**: Maven을 풀고 `bin\cozy.cmd`를 설치 폴더에 둔다. 그 Maven의 `conf\settings.xml`을 다음처럼 설정한다.
   - 로컬 저장소를 번들 저장소로 둔다.

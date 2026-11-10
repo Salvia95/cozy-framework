@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 오프라인 번들 수용 기준 검증 (Linux). 네트워크를 끊은 상태에서 번들만으로
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
-# 앱마다 에이전트 문서를 확인하고, persistence 앱에는 cozy enable events, 이벤트 앱에는 cozy add·link·2단계 명령으로 구조를 더한 뒤 verify한다.
+# 앱마다 에이전트 문서를 확인하고, basic 앱에는 cozy sync agents, persistence 앱에는 cozy enable events, 이벤트 앱에는 cozy add·link·2단계 명령으로 구조를 더한 뒤 verify한다.
 #
 #   distribution/offline-bundle/verify-offline.sh <번들 zip>
 #
@@ -90,6 +90,23 @@ cozy_recipes() {
   )
 }
 
+# 에이전트 문서가 없는 앱(옛 판으로 만든 앱)에 cozy sync agents로 넣는다. 다시 실행하면 바뀐 것이 없다
+cozy_sync_agents() {
+  (
+    cd "$1"
+    cp AGENTS.md ../AGENTS.expected
+    rm -rf AGENTS.md .agents
+    out="$(cozy sync agents)"
+    grep -q "적용했습니다" <<< "$out"
+    cmp AGENTS.md ../AGENTS.expected
+    test -f .agents/skills/cozy-helper/SKILL.md
+    test -f .agents/skills/cozy-helper/references/sync-agents/PLAYBOOK.md
+    out="$(cozy sync agents)"
+    grep -q "바뀐 것 없음" <<< "$out"
+    echo "[cozy] cozy sync agents 통과: $1"
+  )
+}
+
 cozy_enable_events() {
   (
     cd "$1"
@@ -115,6 +132,9 @@ for combo in basic:false:false persistence:true:false events:true:true; do
   if [ "$name" = events ]; then
     cozy_recipes "offline-$name"
   fi
+  if [ "$name" = basic ]; then
+    cozy_sync_agents "offline-$name"
+  fi
   if [ "$name" = persistence ]; then
     cozy_enable_events "offline-$name"
   fi
@@ -122,4 +142,4 @@ for combo in basic:false:false persistence:true:false events:true:true; do
   test -d "offline-$name/target/dist/image/offline-$name"
   echo "[cozy] 통과: $name (persistence=$persistence, events=$events)"
 done
-echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·에이전트 문서·cozy add·enable·verify·-Pdist package"
+echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·에이전트 문서·cozy add·enable·sync·verify·-Pdist package"

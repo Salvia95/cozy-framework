@@ -66,6 +66,21 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- cozy sync agents가 앱에 놓는 에이전트 문서. 원본은 docs/agents/ 하나다 -->
+      <resource>
+        <directory>${project.basedir}/../docs/agents</directory>
+        <targetPath>agents</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>AGENTS.md</include>
+          <include>skills/cozy-helper/**</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -29,6 +29,7 @@ import io.salvia95.cozy.rules.Violation;
  * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R15, C8, C9). 최종 판단은 {@code mvn verify}</li>
  * <li>{@code recipes [--json]}: 구조를 만드는 명령 목록</li>
  * <li>{@code add <레시피>}, {@code link}, {@code enable events}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
+ * <li>{@code sync agents [--force]}: 앱의 AGENTS.md와 cozy-helper 스킬을 이 cozy 명령에 든 것과 같게 맞춘다</li>
  * </ul>
  * 종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음.
  */
@@ -49,12 +50,14 @@ public final class CozyCli {
 			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
 			  cozy enable events       pom에 cozy-starter-events 더하기
+			  cozy sync agents [--force]   AGENTS.md와 cozy-helper 스킬을 이 cozy 명령의 것으로 맞추기
 
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
 			  --repository <폴더>      cozy jar가 있는 Maven 저장소 (기본: COZY_REPOSITORY, 없으면 ~/.m2/repository)
 			  --json                   기계가 읽는 출력
-			  --dry-run                (add, link, enable) 바꿀 파일만 보이고 쓰지 않는다
+			  --dry-run                (add, link, enable, sync) 바꿀 파일만 보이고 쓰지 않는다
+			  --force                  (sync agents) 앱에서 고친 AGENTS.md도 바꾼다
 
 			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
 			""";
@@ -80,10 +83,12 @@ public final class CozyCli {
 				: Path.of(System.getProperty("user.home"), ".m2", "repository");
 		boolean json = false;
 		boolean dryRun = false;
+		boolean force = false;
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i]) {
 				case "--json" -> json = true;
 				case "--dry-run" -> dryRun = true;
+				case "--force" -> force = true;
 				case "--project", "--repository" -> {
 					if (i + 1 >= args.length) {
 						err.println("[cozy] " + args[i] + " 뒤에 폴더를 적습니다.");
@@ -101,6 +106,10 @@ public final class CozyCli {
 			}
 		}
 		String action = rest.isEmpty() ? "help" : rest.getFirst();
+		if (force && !action.equals("sync")) {
+			err.println("[cozy] --force는 cozy sync agents에만 씁니다.");
+			return UNUSABLE;
+		}
 		try {
 			return switch (action) {
 				case "describe" -> describe(project(project, workDir), json, out);
@@ -114,6 +123,10 @@ public final class CozyCli {
 					Path repo = repository;
 					RecipeRunner.run(action, rest.subList(1, rest.size()), app, () -> framework(app, repo, "아이콘 이름"), now(),
 							dryRun, json, out);
+					yield OK;
+				}
+				case "sync" -> {
+					RecipeRunner.sync(rest.subList(1, rest.size()), project(project, workDir), force, dryRun, json, out);
 					yield OK;
 				}
 				case "help", "--help", "-h" -> {

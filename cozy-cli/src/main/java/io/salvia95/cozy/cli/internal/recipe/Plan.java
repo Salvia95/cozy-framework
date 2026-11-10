@@ -20,6 +20,7 @@ import io.salvia95.cozy.rules.Violation;
  * <ul>
  * <li>만들 파일: 없으면 만든다. 같은 내용이 이미 있으면 그대로 둔다. 다른 내용이 있으면 덮어쓰지 않고 실패한다.</li>
  * <li>바꿀 파일: 계획을 세울 때 읽은 내용이 그대로일 때만 바꾼다. 바꾼 결과가 지금과 같으면 그대로 둔다.</li>
+ * <li>cozy가 통째로 가지는 파일(에이전트 스킬): 없으면 만들고 다르면 바꾸고, 남는 파일은 지운다.</li>
  * </ul>
  */
 public final class Plan {
@@ -36,7 +37,10 @@ public final class Plan {
 		/** 있는 파일에 덧붙임 */
 		EDIT("바꿈"),
 
-		/** 이미 같은 내용이 있어 그대로 둠 */
+		/** 남는 파일을 지움 */
+		DELETE("지움"),
+
+		/** 이미 같은 내용이 있거나, 다르지만 바꾸지 않아 그대로 둠 */
 		UNCHANGED("그대로");
 
 		private final String label;
@@ -55,6 +59,8 @@ public final class Plan {
 	private final Map<String, Change> changes = new LinkedHashMap<>();
 
 	private final Map<String, String> readContents = new LinkedHashMap<>();
+
+	private boolean keptDifferent;
 
 	public Plan(Path project) {
 		this.project = project;
@@ -120,6 +126,33 @@ public final class Plan {
 		return this;
 	}
 
+	/** 없으면 만들고, 다른 내용이면 바꾼다 */
+	public Plan replace(String file, String content, String detail) {
+		String existing = current(file);
+		return (existing == null || existing.equals(content)) ? create(file, content) : edit(file, content, detail);
+	}
+
+	/** 있는 파일을 지운다 */
+	public Plan delete(String file, String detail) {
+		if (current(file) == null) {
+			throw new CliException(file + "가 없습니다.");
+		}
+		this.changes.put(file, new Change(Action.DELETE, file, detail, null));
+		return this;
+	}
+
+	/** 다른 내용이지만 바꾸지 않고 둔다 */
+	public Plan keep(String file, String detail) {
+		this.changes.put(file, new Change(Action.UNCHANGED, file, detail, null));
+		this.keptDifferent = true;
+		return this;
+	}
+
+	/** 다른 내용인데 그대로 둔 파일이 있는가 */
+	public boolean keptDifferent() {
+		return this.keptDifferent;
+	}
+
 	public List<Change> changes() {
 		return List.copyOf(this.changes.values());
 	}
@@ -132,6 +165,9 @@ public final class Plan {
 	public List<Violation> slots() {
 		List<Violation> slots = new ArrayList<>();
 		for (Change change : this.changes.values()) {
+			if (change.action() == Action.DELETE) {
+				continue;
+			}
 			String content = (change.content() != null) ? change.content() : current(change.file());
 			if (content != null) {
 				slots.addAll(SlotRules.scan(change.file(), content));
@@ -169,6 +205,11 @@ public final class Plan {
 				else {
 					created.add(path);
 				}
+				if (change.action() == Action.DELETE) {
+					Files.delete(path);
+					deleteIfEmpty(path.getParent());
+					continue;
+				}
 				Files.createDirectories(path.getParent());
 				Path temp = path.resolveSibling(path.getFileName() + ".cozy-tmp");
 				Files.writeString(temp, change.content(), StandardCharsets.UTF_8);
@@ -186,6 +227,7 @@ public final class Plan {
 			}
 			backups.forEach((path, text) -> {
 				try {
+					Files.createDirectories(path.getParent());
 					Files.writeString(path, text, StandardCharsets.UTF_8);
 				}
 				catch (IOException ignored) {
@@ -194,5 +236,15 @@ public final class Plan {
 			});
 			throw new CliException("파일을 쓰지 못해 되돌렸습니다: " + ex.getMessage());
 		}
+	}
+
+	/** 파일을 지워 비게 된 폴더 하나를 지운다 */
+	private static void deleteIfEmpty(Path dir) throws IOException {
+		try (java.util.stream.Stream<Path> entries = Files.list(dir)) {
+			if (entries.findAny().isPresent()) {
+				return;
+			}
+		}
+		Files.delete(dir);
 	}
 }
