@@ -39,3 +39,4 @@
 | [0033](0033-stage-two-recipes.md) | 2단계 레시피: dto, query, command, event-version, enable events. 파서가 찾은 위치에 덧붙이기, 시그니처로 비교 (0032 §2 개정) | 사용자 지시 |
 | [0034](0034-agent-skill.md) | 앱의 에이전트 문서: 가벼운 AGENTS.md와 cozy-helper 스킬(명령마다 PLAYBOOK.md), 영어·lean 작성 규칙 (0032 §7 개정) | 사용자 지시 |
 | [0035](0035-sync-agents.md) | `cozy sync agents`: 이미 있는 앱의 AGENTS.md와 cozy-helper 스킬을 설치된 cozy 명령의 것으로 맞추기 (0034 §3에 더함) | 사용자 지시 |
+| [0036](0036-workbench.md) | 워크벤치: 앱 안의 dev 도구 `/cozy/dev/workbench`, dev 전용 모듈 `cozy-workbench`, 엔진은 같은 cozy-cli (0016 개정) | 사용자 결정 |
