@@ -90,6 +90,9 @@ public class WorkbenchController {
 		model.addAttribute("widths", WIDTHS);
 		model.addAttribute("w", w);
 		model.addAttribute("view", view);
+		// 주소 뒤에 붙일 view: 기본값이면 붙이지 않는다
+		model.addAttribute("fixtureSuffix", view.equals("fixture") ? "&view=fixture" : "");
+		model.addAttribute("centerSuffix", (view.equals("fixture") || view.equals("preview")) ? "" : "&view=" + view);
 		if (specs.isEmpty()) {
 			return "cozy/dev/workbench";
 		}
@@ -488,14 +491,78 @@ public class WorkbenchController {
 		}
 	}
 
+	private static final List<String> MAP_VIEWS = List.of("diagram", "table");
+
+	/**
+	 * 모듈 화면: 의존성 다이어그램(또는 표)과 선택한 모듈의 속성.
+	 *
+	 * @param module 선택한 모듈. 없으면 앱의 정보를 보인다
+	 * @param view {@code diagram} 또는 {@code table}
+	 */
 	@GetMapping("/map")
-	String map(Model model) {
+	@SuppressWarnings("unchecked")
+	String map(@RequestParam(required = false) String module, @RequestParam(defaultValue = "diagram") String view, Model model) {
+		if (!MAP_VIEWS.contains(view)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] view는 " + MAP_VIEWS + " 가운데 하나입니다: " + view);
+		}
 		model.addAttribute("engineAvailable", this.engine.available());
 		model.addAttribute("errors", check().errors());
-		model.addAttribute("map", this.engine.available() ? this.engine.describe() : null);
+		model.addAttribute("view", view);
+		model.addAttribute("viewSuffix", view.equals("table") ? "&view=table" : "");
+		String base = PATH + "/map";
+		model.addAttribute("diagramUrl", (module != null) ? base + "?module=" + module : base);
+		model.addAttribute("tableUrl", base + "?view=table" + ((module != null) ? "&module=" + module : ""));
+		Map<String, Object> map = this.engine.available() ? this.engine.describe() : null;
+		model.addAttribute("map", map);
 		Map<String, String> screens = new LinkedHashMap<>();
 		this.screenSpecs.all().forEach((spec) -> screens.put(spec.template(), spec.screen()));
 		model.addAttribute("screenNames", screens);
+		if (map == null) {
+			return "cozy/dev/workbench-map";
+		}
+		List<Map<String, Object>> modules = new ArrayList<>();
+		if (map.get("modules") instanceof List<?> described) {
+			described.forEach((m) -> modules.add((Map<String, Object>) m));
+		}
+		Map<String, Object> selected = (module == null) ? null
+				: modules.stream()
+					.filter((m) -> module.equals(m.get("name")))
+					.findFirst()
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 모듈이 없습니다: " + module));
+		ModuleGraph graph = ModuleGraph.of(modules, module);
+		model.addAttribute("graph", graph);
+		model.addAttribute("nodeWidth", ModuleGraph.NODE_WIDTH);
+		model.addAttribute("nodeHeight", ModuleGraph.NODE_HEIGHT);
+		model.addAttribute("selectedSlots", 0L);
+		model.addAttribute("selected", selected);
+		model.addAttribute("selectedNode", graph.selectedNode());
+
+		// 이벤트를 받는 곳: "발행 모듈.이벤트" → "수신 모듈.리스너", 그리고 수신 모듈 → 발행 모듈 → 이벤트 이름
+		Map<String, List<String>> receivers = new LinkedHashMap<>();
+		Map<String, Map<String, List<String>>> listens = new LinkedHashMap<>();
+		for (Map<String, Object> m : modules) {
+			if (m.get("listeners") instanceof List<?> listeners) {
+				for (Object item : listeners) {
+					Map<?, ?> listener = (Map<?, ?>) item;
+					String on = String.valueOf(listener.get("on"));
+					receivers.computeIfAbsent(on, (k) -> new ArrayList<>()).add(m.get("name") + "." + listener.get("type"));
+					int dot = on.indexOf('.');
+					if (dot > 0) {
+						listens.computeIfAbsent(String.valueOf(m.get("name")), (k) -> new LinkedHashMap<>())
+							.computeIfAbsent(on.substring(0, dot), (k) -> new ArrayList<>())
+							.add(on.substring(dot + 1));
+					}
+				}
+			}
+		}
+		model.addAttribute("receivers", receivers);
+		model.addAttribute("listens", listens);
+		if (selected != null && map.get("slots") instanceof List<?> slots) {
+			// 미구현 항목 가운데 이 모듈의 폴더에 있는 것
+			String folder = "/" + module + "/";
+			model.addAttribute("selectedSlots",
+					slots.stream().filter((slot) -> String.valueOf(((Map<?, ?>) slot).get("file")).contains(folder)).count());
+		}
 		return "cozy/dev/workbench-map";
 	}
 

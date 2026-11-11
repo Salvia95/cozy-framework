@@ -41,7 +41,7 @@
               <a class="list-group-item list-group-item-action d-flex flex-wrap align-items-baseline column-gap-2" th:each="item : ${group.value}"
                  th:classappend="${item.screen == screen.screen} ? 'active'"
                  th:aria-current="${item.screen == screen.screen} ? 'page'"
-                 th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w},view=${view == 'fixture' ? 'fixture' : null})}">
+                 th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w})} + ${fixtureSuffix}">
                 <span th:if="${!item.title.isEmpty()}" th:text="${item.title}">메모 목록</span>
                 <code class="cozy-workbench-id" th:text="${item.screen}">memo-list</code>
                 <span class="badge cozy-tone-critical ms-auto" th:if="${violationCounts.containsKey(item.screen)}"
@@ -83,6 +83,17 @@
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='spec')}">화면 명세</a>
             </li>
           </ul>
+          <!--/* 좌우 칸을 접어 가운데를 넓힌다. 접은 상태는 브라우저가 기억한다(workbench.js) */-->
+          <div class="btn-list ms-auto flex-nowrap">
+            <button type="button" class="btn btn-icon btn-sm" data-cozy-workbench-fold="side" aria-pressed="false"
+                    aria-label="화면 목록과 구조 접기" title="화면 목록과 구조 접기">
+              <svg th:replace="~{cozy/icon/tabler :: icon('layout-sidebar')}"></svg>
+            </button>
+            <button type="button" class="btn btn-icon btn-sm" data-cozy-workbench-fold="inspector" aria-pressed="false"
+                    aria-label="속성 접기" title="속성 접기">
+              <svg th:replace="~{cozy/icon/tabler :: icon('layout-sidebar-right')}"></svg>
+            </button>
+          </div>
         </div>
 
         <th:block th:if="${view == 'preview' or view == 'fixture'}">
@@ -92,7 +103,7 @@
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
                 <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
                    th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w},view=${view == 'fixture' ? 'fixture' : null})}"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}"
                    th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
               </div>
             </div>
@@ -101,7 +112,7 @@
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="화면 너비">
                 <a class="btn btn-sm" th:each="width : ${widths}"
                    th:classappend="${width == w} ? 'active'" th:aria-current="${width == w} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width},view=${view == 'fixture' ? 'fixture' : null})}"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})} + ${fixtureSuffix}"
                    th:text="${width == 'full'} ? '전체' : ${width}">전체</a>
               </div>
             </div>
@@ -150,7 +161,7 @@
           <ul class="nav nav-tabs card-header-tabs" aria-label="오른쪽 보기">
             <li class="nav-item">
               <a class="nav-link" th:classappend="${view != 'fixture'} ? 'active'"
-                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view=${view == 'fixture' ? null : view})}">속성</a>
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})} + ${centerSuffix}">속성</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" th:classappend="${view == 'fixture'} ? 'active'"

@@ -19,6 +19,38 @@
     });
   });
 
+  // 좌우 칸 접기: 접은 상태를 브라우저에 기억해 화면을 옮겨도 유지한다
+  var panes = document.querySelector('.cozy-workbench-panes');
+  document.querySelectorAll('[data-cozy-workbench-fold]').forEach(function (button) {
+    var name = button.dataset.cozyWorkbenchFold;
+    var key = 'cozy.workbench.fold.' + name;
+    function apply(folded) {
+      panes.classList.toggle('cozy-workbench-fold-' + name, folded);
+      button.setAttribute('aria-pressed', folded ? 'true' : 'false');
+      button.classList.toggle('active', folded);
+    }
+    var stored = false;
+    try {
+      stored = window.localStorage.getItem(key) === '1';
+    }
+    catch (error) {
+      // 저장소를 쓸 수 없으면 기억하지 않는다
+    }
+    apply(stored);
+    button.addEventListener('click', function () {
+      var folded = !panes.classList.contains('cozy-workbench-fold-' + name);
+      apply(folded);
+      try {
+        window.localStorage.setItem(key, folded ? '1' : '0');
+      }
+      catch (error) {
+        // 기억하지 못해도 접기는 된다
+      }
+      // 미리보기 폭이 바뀌었으니 선택 표시를 다시 놓는다
+      window.dispatchEvent(new Event('resize'));
+    });
+  });
+
   var frame = document.querySelector('[data-cozy-workbench-frame]');
   var panel = document.querySelector('[data-cozy-workbench-selection]');
   var propsBox = panel ? panel.querySelector('[data-cozy-workbench-props]') : null;

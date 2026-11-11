@@ -95,24 +95,55 @@ class WorkbenchCheckTest {
 		}
 
 		@Test
-		void theMapShowsModulesContractsEventsAndScreens() throws Exception {
+		void theMapDrawsModulesAsADiagramWithDependenciesAndEvents() throws Exception {
 			String html = page("/cozy/dev/workbench/map");
-			assertThat(html).contains("io.salvia95.cozy.reference")
-				.contains("memo")
-				.contains("activity")
-				.contains("dashboard")
-				.contains("memo :: spi")
+			assertThat(html).contains("<svg class=\"cozy-workbench-graph\"")
+				.contains("href=\"/cozy/dev/workbench/map?module=memo\"")
+				.contains("href=\"/cozy/dev/workbench/map?module=activity\"")
+				.contains("href=\"/cozy/dev/workbench/map?module=dashboard\"")
+				.contains(">MemoCreated</text>")
+				.contains("cozy-workbench-graph-event")
+				.contains("의존: 화살표가 가리키는 모듈을 참조")
+				.as("선택한 모듈이 없으면 앱의 속성")
+				.contains("io.salvia95.cozy.reference")
+				.contains(">기본 패키지<")
+				.contains("미구현 항목이 없습니다")
+				.doesNotContain("cozy-workbench-graph-selected");
+			assertThat(html.split("cozy-workbench-graph-node\"", -1).length - 1).as("모듈마다 마디 하나").isEqualTo(3);
+			assertThat(html.split("class=\"cozy-workbench-graph-edge", -1).length - 1).as("의존 3 + 이벤트 1 + 범례 2").isEqualTo(6);
+		}
+
+		@Test
+		void selectingAModuleShowsItsContractsEventsAndScreens() throws Exception {
+			String memo = page("/cozy/dev/workbench/map?module=memo");
+			assertThat(memo).contains("cozy-workbench-graph-selected")
+				.contains("cozy-workbench-graph-on")
+				.contains(">참조하는 모듈<")
+				.contains("href=\"/cozy/dev/workbench/map?module=activity\" >activity<".replace("\" >", "\">"))
 				.contains("MemoFacade")
 				.contains("long create(String title, String body, boolean pinned)")
 				.contains("MemoFinder")
-				.contains("MemoCreated")
-				.contains("MemoCreatedListener")
-				.contains("memo.MemoCreated")
+				.contains("MemoItem(")
 				.contains("발행 위치")
 				.contains("src/main/java/io/salvia95/cozy/reference/memo/internal/app/command/MemoFacadeImpl.java")
+				.contains("activity.MemoCreatedListener")
+				.contains("memo/summary :: memoSummary(summary)")
 				.as("화면은 워크벤치의 그 화면으로 이어진다")
-				.contains("/cozy/dev/workbench?spec=memo-list")
-				.contains("미구현 항목이 없습니다");
+				.contains("/cozy/dev/workbench?spec=memo-list");
+			String activity = page("/cozy/dev/workbench/map?module=activity");
+			assertThat(activity).contains("MemoCreatedListener").contains("memo.MemoCreated").contains("cozy-workbench-graph-dim");
+		}
+
+		@Test
+		void theTableViewListsDependenciesAndReceivedEvents() throws Exception {
+			String html = page("/cozy/dev/workbench/map?view=table&module=dashboard");
+			assertThat(html).contains("cozy-workbench-matrix")
+				.contains("cozy-workbench-matrix-selected")
+				.contains(">의존<")
+				.contains("이벤트 수신: MemoCreated")
+				.doesNotContain("<svg class=\"cozy-workbench-graph\"");
+			this.mvc.perform(get("/cozy/dev/workbench/map?module=nothing")).andExpect(status().isNotFound());
+			this.mvc.perform(get("/cozy/dev/workbench/map?view=chart")).andExpect(status().isBadRequest());
 		}
 
 		@Test

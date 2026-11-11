@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!--/*
-  워크벤치의 모듈 (/cozy/dev/workbench/map). cozy describe의 결과를 보인다: 앱, 미구현 항목, 모듈마다 의존 모듈·공개 API·이벤트·화면.
+  워크벤치의 모듈 (/cozy/dev/workbench/map). cozy describe의 결과를 보인다.
+  왼쪽은 모듈 의존성 다이어그램(view=diagram)이나 의존성 표(view=table), 오른쪽은 선택한 모듈(module)의 속성이다.
+  다이어그램의 좌표는 ModuleGraph가 계산한다. 실선은 의존, 점선은 이벤트(발행 → 수신)다.
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 모듈', ~{::main})}">
 <body>
 <main>
-  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('map', ${errors}, '모듈의 의존성, 공개 API, 이벤트, 화면, 미구현 항목입니다(cozy describe).')}"></div>
+  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('map', ${errors}, '모듈의 의존성과 이벤트 흐름입니다. 모듈을 선택하면 공개 API와 화면이 표시됩니다.')}"></div>
   <div class="container-fluid py-3">
 
   <th:block th:if="${!engineAvailable}">
@@ -13,92 +15,204 @@
   </th:block>
 
   <th:block th:if="${map != null}">
-    <p class="mb-3">
-      <code th:text="${map.app.basePackage}">io.salvia95.cozy.reference</code>
-      <span class="text-secondary" th:text="|· 메인 클래스 ${map.app.mainClass} · cozy ${map.app.cozyVersion} · ${#strings.listJoin(map.app.starters, ', ')}|">· 메인 클래스 App</span>
-    </p>
-
     <th:block th:each="problem : ${map.problems}">
       <div th:replace="~{cozy/component/alert :: alert('warning', ${problem})}"></div>
     </th:block>
+    <th:block th:if="${graph.cyclic}">
+      <div th:replace="~{cozy/component/alert :: alert('warning', '모듈 의존성이 순환합니다. 순환하는 모듈은 맨 오른쪽 열에 표시했습니다.')}"></div>
+    </th:block>
 
-    <section class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title" th:text="${map.slots.isEmpty()} ? '미구현 항목' : |미구현 항목 ${map.slots.size()}건|">미구현 항목</h3>
-      </div>
-      <div class="card-body" th:if="${map.slots.isEmpty()}"><p class="text-secondary mb-0">미구현 항목이 없습니다.</p></div>
-      <div class="list-group list-group-flush" th:if="${!map.slots.isEmpty()}">
-        <div class="list-group-item" th:each="slot : ${map.slots}">
-          <code th:text="|${slot.file}:${slot.line}|">파일:줄</code>
-          <div><span class="fw-medium" th:text="${slot.slot}">listener-body</span> <span class="text-secondary" th:text="|— ${slot.what}|">— 무엇을</span></div>
+    <div class="cozy-workbench-map-panes">
+      <div class="cozy-workbench-map-main">
+      <section class="card mb-3" aria-label="모듈 의존성">
+        <div class="card-header">
+          <h3 class="card-title">모듈 의존성</h3>
+          <div class="btn-group cozy-workbench-toggle ms-auto" role="group" aria-label="보기">
+            <a class="btn btn-sm" th:classappend="${view == 'diagram'} ? 'active'" th:aria-current="${view == 'diagram'} ? 'true'"
+               th:href="${diagramUrl}">다이어그램</a>
+            <a class="btn btn-sm" th:classappend="${view == 'table'} ? 'active'" th:aria-current="${view == 'table'} ? 'true'"
+               th:href="${tableUrl}">표</a>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <div class="row g-3">
-      <div class="col-xl-4 col-lg-6" th:each="m : ${map.modules}">
-        <section class="card h-100">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title" th:text="${m.name}">memo</h3>
-              <code class="small" th:text="${m.package}">패키지</code>
-            </div>
+        <th:block th:if="${view == 'diagram'}">
+          <div class="card-body cozy-workbench-graph-stage">
+            <svg class="cozy-workbench-graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="모듈 의존성 다이어그램"
+                 th:attr="viewBox=|0 0 ${graph.width} ${graph.height}|,width=${graph.width},height=${graph.height}">
+              <defs>
+                <marker id="cozy-graph-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path class="cozy-workbench-graph-arrow" d="M0 0L10 5L0 10z"></path>
+                </marker>
+                <marker id="cozy-graph-arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path class="cozy-workbench-graph-arrow-on" d="M0 0L10 5L0 10z"></path>
+                </marker>
+              </defs>
+              <g th:each="edge : ${graph.edges}" class="cozy-workbench-graph-edge"
+                 th:classappend="|${edge.hasEvent() ? 'cozy-workbench-graph-event' : ''} ${edge.state.isEmpty() ? '' : 'cozy-workbench-graph-' + edge.state}|">
+                <path th:attr="d=${edge.path},marker-end=${edge.state == 'on'} ? 'url(#cozy-graph-arrow-on)' : 'url(#cozy-graph-arrow)'"></path>
+                <text th:if="${edge.hasEvent()}" th:attr="x=${edge.labelX},y=${edge.labelY}" th:text="${edge.event}">MemoCreated</text>
+              </g>
+              <a th:each="node : ${graph.nodes}" class="cozy-workbench-graph-node" th:classappend="${node.selected} ? 'cozy-workbench-graph-selected'"
+                 th:href="@{/cozy/dev/workbench/map(module=${node.name})}" th:attr="aria-label=|${node.name} 모듈. ${node.summary}|"
+                 th:aria-current="${node.selected} ? 'true'">
+                <rect rx="6" th:attr="x=${node.x},y=${node.y},width=${nodeWidth},height=${nodeHeight}"></rect>
+                <text class="cozy-workbench-graph-name" th:attr="x=${node.textX()},y=${node.nameY()}" th:text="${node.name}">memo</text>
+                <text class="cozy-workbench-graph-summary" th:attr="x=${node.textX()},y=${node.summaryY()}" th:text="${node.summary}">화면 4</text>
+              </a>
+            </svg>
           </div>
-          <div class="card-body">
-            <dl class="cozy-workbench-map mb-0">
-              <dt>의존 모듈</dt>
-              <dd>
-                <span class="text-secondary" th:if="${m.dependsOn.isEmpty()}">없음</span>
-                <span class="badge cozy-tone-neutral me-1" th:each="d : ${m.dependsOn}" th:title="${d}" th:text="${#strings.substringBefore(d + ' ::', ' ::')}">memo</span>
-              </dd>
-              <th:block th:each="contract : ${m.facades}">
-                <dt>명령 인터페이스 <code th:text="${contract.type}">MemoFacade</code></dt>
-                <dd><code class="d-block small" th:each="method : ${contract.methods}" th:text="${method}">long create(...)</code></dd>
-              </th:block>
-              <th:block th:each="contract : ${m.finders}">
-                <dt>조회 인터페이스 <code th:text="${contract.type}">MemoFinder</code></dt>
-                <dd><code class="d-block small" th:each="method : ${contract.methods}" th:text="${method}">List list()</code></dd>
-              </th:block>
-              <th:block th:if="${!m.dtos.isEmpty()}">
-                <dt>DTO</dt>
-                <dd><code class="d-block small" th:each="dto : ${m.dtos}" th:text="|${dto.type}(${#strings.listJoin(dto.fields, ', ')})|">MemoItem(long id)</code></dd>
-              </th:block>
-              <th:block th:each="event : ${m.events}">
-                <dt>이벤트 <code th:text="${event.type}">MemoCreated</code></dt>
-                <dd>
-                  <code class="d-block small" th:text="${#strings.listJoin(event.fields, ', ')}">long memoId</code>
-                  <span class="text-secondary small" th:if="${event.publishedIn.isEmpty()}">발행 위치 없음</span>
-                  <th:block th:if="${!event.publishedIn.isEmpty()}">
-                    <span class="text-secondary small">발행 위치</span>
-                    <code class="d-block small" th:each="file : ${event.publishedIn}" th:text="${file}">src/main/java/…/MemoFacadeImpl.java</code>
-                  </th:block>
-                </dd>
-              </th:block>
-              <th:block th:if="${!m.listeners.isEmpty()}">
-                <dt>이벤트 리스너</dt>
-                <dd><code class="d-block small" th:each="listener : ${m.listeners}" th:text="|${listener.type} ← ${listener.on}|">MemoCreatedListener ← memo.MemoCreated</code></dd>
-              </th:block>
-              <th:block th:if="${!m.screens.isEmpty()}">
-                <dt>화면</dt>
-                <dd>
-                  <th:block th:each="screen : ${m.screens}">
-                    <a class="d-block" th:if="${screenNames.containsKey(screen.template)}" th:text="${screen.template}"
-                       th:href="@{/cozy/dev/workbench(spec=${screenNames.get(screen.template)})}">memo/api/list</a>
-                    <span class="d-block" th:unless="${screenNames.containsKey(screen.template)}">
-                      <span th:text="${screen.template}">memo/api/list</span> <span class="text-secondary small">화면 명세 없음</span>
-                    </span>
-                  </th:block>
-                </dd>
-              </th:block>
-              <th:block th:if="${!m.fragments.isEmpty()}">
-                <dt>공개 프래그먼트</dt>
-                <dd><code class="d-block small" th:each="fragment : ${m.fragments}" th:text="|${fragment.id} :: ${fragment.signature}|">memo/summary :: memoSummary(summary)</code></dd>
-              </th:block>
-            </dl>
+          <div class="card-footer cozy-workbench-legend">
+            <span><svg width="36" height="10" viewBox="0 0 36 10" aria-hidden="true" class="cozy-workbench-graph-edge"><path d="M0 5L34 5" marker-end="url(#cozy-graph-arrow)"></path></svg> 의존: 화살표가 가리키는 모듈을 참조</span>
+            <span><svg width="36" height="10" viewBox="0 0 36 10" aria-hidden="true" class="cozy-workbench-graph-edge cozy-workbench-graph-event"><path d="M0 5L34 5" marker-end="url(#cozy-graph-arrow)"></path></svg> 이벤트: 발행하는 모듈에서 수신하는 모듈로</span>
           </div>
-        </section>
+        </th:block>
+
+        <th:block th:if="${view == 'table'}">
+          <div class="table-responsive">
+            <table class="table card-table cozy-workbench-matrix">
+              <caption class="visually-hidden">행의 모듈이 열의 모듈을 참조하는지와 열의 모듈이 발행한 이벤트를 수신하는지</caption>
+              <thead>
+                <tr>
+                  <th scope="col">참조하는 모듈 ＼ 참조되는 모듈</th>
+                  <th scope="col" th:each="target : ${graph.nodes}" th:text="${target.name}">memo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="row : ${graph.nodes}" th:classappend="${row.selected} ? 'cozy-workbench-matrix-selected'">
+                  <th scope="row"><a th:href="@{/cozy/dev/workbench/map(module=${row.name},view='table')}" th:text="${row.name}">dashboard</a></th>
+                  <td th:each="target : ${graph.nodes}">
+                    <span class="text-secondary" th:if="${row.name == target.name}">—</span>
+                    <th:block th:if="${row.name != target.name}">
+                      <span class="badge cozy-tone-neutral" th:if="${row.uses.contains(target.name)}">의존</span>
+                      <span class="d-block small" th:if="${listens.get(row.name) != null and listens.get(row.name).get(target.name) != null}"
+                            th:text="|이벤트 수신: ${#strings.listJoin(listens.get(row.name).get(target.name), ', ')}|">이벤트 수신: MemoCreated</span>
+                    </th:block>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </th:block>
+      </section>
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title" th:text="${map.slots.isEmpty()} ? '미구현 항목' : |미구현 항목 ${map.slots.size()}건|">미구현 항목</h3>
+        </div>
+        <div class="card-body" th:if="${map.slots.isEmpty()}"><p class="text-secondary mb-0">미구현 항목이 없습니다.</p></div>
+        <div class="list-group list-group-flush" th:if="${!map.slots.isEmpty()}">
+          <div class="list-group-item" th:each="slot : ${map.slots}">
+            <code th:text="|${slot.file}:${slot.line}|">파일:줄</code>
+            <div><span class="fw-medium" th:text="${slot.slot}">listener-body</span> <span class="text-secondary" th:text="|— ${slot.what}|">— 무엇을</span></div>
+          </div>
+        </div>
+      </section>
       </div>
+
+      <section class="card" aria-label="속성">
+        <div class="card-header"><h3 class="card-title">속성</h3></div>
+
+        <!--/* 선택한 모듈이 없을 때: 앱 */-->
+        <th:block th:if="${selected == null}">
+          <table class="table table-sm cozy-workbench-props mb-0">
+            <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+            <tbody>
+              <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">앱</th></tr>
+              <tr><th scope="row">기본 패키지</th><td><code th:text="${map.app.basePackage}">io.salvia95.cozy.reference</code></td></tr>
+              <tr><th scope="row">메인 클래스</th><td><code th:text="${map.app.mainClass}">ReferenceApp</code></td></tr>
+              <tr><th scope="row">Cozy 버전</th><td th:text="${map.app.cozyVersion}">1.2.0</td></tr>
+              <tr><th scope="row">스타터</th><td><code class="d-block" th:each="starter : ${map.app.starters}" th:text="${starter}">cozy-ui</code></td></tr>
+              <tr><th scope="row">모듈</th><td th:text="|${graph.nodes.size()}개|">3개</td></tr>
+              <tr><th scope="row">미구현 항목</th><td th:text="${map.slots.isEmpty()} ? '없음' : |${map.slots.size()}건|">없음</td></tr>
+            </tbody>
+          </table>
+          <div class="card-body border-top">
+            <p class="text-secondary small mb-0">다이어그램이나 표에서 모듈을 선택하면 의존 모듈, 공개 API, 화면이 표시됩니다.</p>
+          </div>
+        </th:block>
+
+        <th:block th:if="${selected != null}" th:with="m=${selected}">
+          <table class="table table-sm cozy-workbench-props mb-0">
+            <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+            <tbody>
+              <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">기본 정보</th></tr>
+              <tr><th scope="row">모듈</th><td><code th:text="${m.name}">memo</code></td></tr>
+              <tr><th scope="row">패키지</th><td><code th:text="${m.package}">io.salvia95.cozy.reference.memo</code></td></tr>
+              <tr><th scope="row">의존 모듈</th>
+                <td>
+                  <span class="text-secondary" th:if="${selectedNode.uses.isEmpty()}">없음</span>
+                  <a class="me-2" th:each="name : ${selectedNode.uses}" th:href="@{/cozy/dev/workbench/map(module=${name})} + ${viewSuffix}" th:text="${name}">memo</a>
+                </td></tr>
+              <tr><th scope="row">참조하는 모듈</th>
+                <td>
+                  <span class="text-secondary" th:if="${selectedNode.usedBy.isEmpty()}">없음</span>
+                  <a class="me-2" th:each="name : ${selectedNode.usedBy}" th:href="@{/cozy/dev/workbench/map(module=${name})} + ${viewSuffix}" th:text="${name}">activity</a>
+                </td></tr>
+              <tr><th scope="row">미구현 항목</th><td th:text="${selectedSlots > 0} ? |${selectedSlots}건| : '없음'">없음</td></tr>
+
+              <th:block th:if="${!m.facades.isEmpty() or !m.finders.isEmpty() or !m.dtos.isEmpty() or !m.events.isEmpty() or !m.fragments.isEmpty()}">
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">공개 API</th></tr>
+                <tr th:each="contract : ${m.facades}">
+                  <th scope="row">명령 인터페이스</th>
+                  <td><code class="d-block fw-medium" th:text="${contract.type}">MemoFacade</code>
+                    <code class="d-block" th:each="method : ${contract.methods}" th:text="${method}">long create(...)</code></td>
+                </tr>
+                <tr th:each="contract : ${m.finders}">
+                  <th scope="row">조회 인터페이스</th>
+                  <td><code class="d-block fw-medium" th:text="${contract.type}">MemoFinder</code>
+                    <code class="d-block" th:each="method : ${contract.methods}" th:text="${method}">List list()</code></td>
+                </tr>
+                <tr th:if="${!m.dtos.isEmpty()}">
+                  <th scope="row">DTO</th>
+                  <td><code class="d-block" th:each="dto : ${m.dtos}" th:text="|${dto.type}(${#strings.listJoin(dto.fields, ', ')})|">MemoItem(long id)</code></td>
+                </tr>
+                <tr th:each="event : ${m.events}">
+                  <th scope="row">이벤트</th>
+                  <td><code class="d-block fw-medium" th:text="${event.type}">MemoCreated</code>
+                    <code class="d-block" th:text="${#strings.listJoin(event.fields, ', ')}">long memoId</code>
+                    <span class="d-block text-secondary small mt-1">발행 위치</span>
+                    <span class="d-block text-secondary small" th:if="${event.publishedIn.isEmpty()}">없음</span>
+                    <code class="d-block" th:each="file : ${event.publishedIn}" th:text="${file}">src/main/java/…/MemoFacadeImpl.java</code>
+                    <span class="d-block text-secondary small mt-1">수신</span>
+                    <span class="d-block text-secondary small" th:if="${receivers.get(m.name + '.' + event.type) == null}">없음</span>
+                    <code class="d-block" th:each="receiver : ${receivers.get(m.name + '.' + event.type)}" th:text="${receiver}">activity.MemoCreatedListener</code>
+                  </td>
+                </tr>
+                <tr th:if="${!m.fragments.isEmpty()}">
+                  <th scope="row">공개 프래그먼트</th>
+                  <td><code class="d-block" th:each="fragment : ${m.fragments}" th:text="|${fragment.id} :: ${fragment.signature}|">memo/summary :: memoSummary(summary)</code></td>
+                </tr>
+              </th:block>
+
+              <th:block th:if="${!m.listeners.isEmpty()}">
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">이벤트 리스너</th></tr>
+                <tr th:each="listener : ${m.listeners}">
+                  <th scope="row">수신 이벤트</th>
+                  <td><code class="d-block fw-medium" th:text="${listener.type}">MemoCreatedListener</code>
+                    <code class="d-block" th:text="${listener.on}">memo.MemoCreated</code></td>
+                </tr>
+              </th:block>
+
+              <th:block th:if="${!m.screens.isEmpty()}">
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면</th></tr>
+                <tr>
+                  <th scope="row" th:text="|화면 ${m.screens.size()}개|">화면 4개</th>
+                  <td>
+                    <th:block th:each="screen : ${m.screens}">
+                      <a class="d-block" th:if="${screenNames.containsKey(screen.template)}" th:text="${screen.template}"
+                         th:href="@{/cozy/dev/workbench(spec=${screenNames.get(screen.template)})}">memo/api/list</a>
+                      <span class="d-block" th:unless="${screenNames.containsKey(screen.template)}">
+                        <span th:text="${screen.template}">memo/api/list</span> <span class="text-secondary small">화면 명세 없음</span>
+                      </span>
+                    </th:block>
+                  </td>
+                </tr>
+              </th:block>
+            </tbody>
+          </table>
+        </th:block>
+      </section>
     </div>
+
   </th:block>
   </div>
 </main>
