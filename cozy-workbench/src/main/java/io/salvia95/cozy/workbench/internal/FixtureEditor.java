@@ -86,6 +86,19 @@ final class FixtureEditor {
 		return statesNode(yaml).getValue().stream().map(FixtureEditor::key).toList();
 	}
 
+	/** 상태의 모양: 모델 이름 → 읽은 값 (맵, 목록, 스칼라). 키는 파일에 적힌 순서다 */
+	@SuppressWarnings("unchecked")
+	static Map<String, Object> values(String yaml, String state) {
+		state(statesNode(yaml), state);
+		Map<String, Object> root = (Map<String, Object>) yaml().load(yaml);
+		Object values = ((Map<Object, Object>) root.get("states")).get(state);
+		Map<String, Object> result = new java.util.LinkedHashMap<>();
+		if (values instanceof Map<?, ?> map) {
+			map.forEach((key, value) -> result.put(String.valueOf(key), value));
+		}
+		return result;
+	}
+
 	/** 상태의 값들 (파일에 적힌 순서) */
 	static List<Field> fields(String yaml, String state) {
 		return locate(yaml, state).stream().map(Located::field).toList();

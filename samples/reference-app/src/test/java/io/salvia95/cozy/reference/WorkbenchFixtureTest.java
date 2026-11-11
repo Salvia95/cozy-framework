@@ -102,8 +102,6 @@ class WorkbenchFixtureTest {
 		@Test
 		void theFixtureViewListsEveryValueOfTheState() throws Exception {
 			String html = fixturePage("default");
-			assertThat(html).as("참·거짓은 고르는 칸이다")
-				.containsPattern("<select[^>]*name=\"v.filter/pinned\"");
 			assertThat(html).contains("name=\"v.result/rows/0/title\"")
 				.contains("value=\"회의록 정리\"")
 				.contains("name=\"v.result/rows/1/updatedAt\"")
@@ -114,6 +112,59 @@ class WorkbenchFixtureTest {
 				.contains("상태 복제");
 			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
 			assertThat(fixturePage("empty")).contains("name=\"v.result/page/totalElements\"").doesNotContain("v.result/rows/0");
+		}
+
+		@Test
+		void objectsArePropertyTablesAndListsOfObjectsAreGridsWithInputsThatFitTheModelType() throws Exception {
+			String html = fixturePage("default");
+			assertThat(html).as("모델 구획: 이름과 타입").containsPattern("<code>result</code>\\s*<code class=\"cozy-workbench-id\"[^>]*>ListResult</code>");
+			String grid = html.substring(html.indexOf("<code>rows</code>"), html.indexOf("<code>page</code>"));
+			assertThat(grid).as("목록은 속성마다 열이 있는 그리드").contains("cozy-workbench-fixture-grid").contains("List&lt;Row&gt;").contains("2행");
+			assertThat(grid).containsSubsequence("<code>id</code>", "정수", "<code>title</code>", "텍스트", "<code>pinned</code>", "true/false",
+					"<code>updatedAt</code>");
+			assertThat(grid).as("정수는 숫자 입력").containsPattern("type=\"number\" step=\"1\"[^>]*name=\"v.result/rows/0/id\" value=\"1\"");
+			assertThat(grid).as("참·거짓은 체크박스. 끄면 숨은 false가 간다")
+				.containsPattern("<input type=\"hidden\" name=\"v.result/rows/0/pinned\" value=\"false\">\\s*<input class=\"form-check-input m-0\" type=\"checkbox\" value=\"true\"[^>]*name=\"v.result/rows/0/pinned\"[^>]*checked")
+				.contains("aria-label=\"rows 2행 title\"");
+			String page = html.substring(html.indexOf("<code>page</code>"));
+			assertThat(page).as("객체는 속성 표").contains("cozy-workbench-fixture-props").contains("CozyPage").contains("<code>totalElements</code>");
+			String filter = html.substring(html.indexOf("aria-label=\"모델 filter\""), html.indexOf("aria-label=\"모델 result\""));
+			assertThat(filter).as("타입에는 있고 명세에는 없는 값").contains("<code class=\"cozy-workbench-fixture-name\">page</code>").contains(">없음</span>");
+			assertThat(html).as("목록이 비면 열만 보인다").doesNotContain("행이 없습니다");
+			assertThat(fixturePage("empty")).contains("행이 없습니다").contains("<code>updatedAt</code>");
+		}
+
+		@Test
+		void nestedObjectsListsOfTextAndNullValuesAreShownByTheirType() throws Exception {
+			String dashboard = body(get(URL).param("spec", "dashboard-index").param("state", "empty").param("view", "fixture"));
+			assertThat(dashboard).containsSubsequence("<code>dashboard</code>", "DashboardView", "<code>memo</code>", "MemoSummary",
+					"<code>activities</code>", "List&lt;ActivityItem&gt;");
+			assertThat(dashboard).as("null은 빈 칸").containsPattern("name=\"v.dashboard/memo/latestTitle\" value=\"\" placeholder=\"null\"");
+			String detail = body(get(URL).param("spec", "memo-detail").param("view", "fixture"));
+			assertThat(detail).contains("List&lt;String&gt;").contains("name=\"v.memo/bodyLines/1\"").contains("value=\"둘째 줄\"");
+			String form = body(get(URL).param("spec", "memo-form").param("state", "invalid").param("view", "fixture"));
+			assertThat(form).as("검증 오류").containsSubsequence("검증 오류", "<code>_errors</code>", "name=\"v._errors/form/title\"");
+			for (String html : java.util.List.of(dashboard, detail, form)) {
+				assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+			}
+		}
+
+		@Test
+		void aCheckboxSavesTrueWhenCheckedAndFalseWhenNot() throws Exception {
+			String hash = hash(fixturePage("default"));
+			MockHttpSession session = new MockHttpSession();
+			this.mvc
+				.perform(post(URL + "/fixture").with(csrf())
+					.session(session)
+					.param("spec", "memo-list")
+					.param("state", "default")
+					.param("hash", hash)
+					.param("v.result/rows/0/pinned", "false")
+					.param("v.result/rows/1/pinned", "false", "true"))
+				.andExpect(status().is3xxRedirection());
+			assertThat(Files.readString(memoList, StandardCharsets.UTF_8)).isEqualTo(original
+				.replace("title: 회의록 정리, pinned: true", "title: 회의록 정리, pinned: false")
+				.replace("title: 주간 보고, pinned: false", "title: 주간 보고, pinned: true"));
 		}
 
 		@Test
@@ -157,6 +208,9 @@ class WorkbenchFixtureTest {
 				.contains("모델 &#39;result&#39;")
 				.doesNotContain("through reference chain")
 				.doesNotContain("[cozy]");
+			assertThat(wrongType).as("알림의 클래스 이름은 짧게")
+				.contains("모델 &#39;result&#39;의 값이 ListResult와 맞지 않습니다")
+				.doesNotContain("MemoViews$ListResult");
 			assertThat(Files.readString(memoList, StandardCharsets.UTF_8)).isEqualTo(original);
 		}
 

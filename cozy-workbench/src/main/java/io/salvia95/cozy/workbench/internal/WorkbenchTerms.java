@@ -17,7 +17,8 @@ final class WorkbenchTerms {
 			"여러 페이지", "invalid", "입력 오류");
 
 	/** 샘플 데이터 값의 종류 */
-	static final Map<String, String> KINDS = Map.of("text", "텍스트", "int", "정수", "number", "숫자", "bool", "true/false", "null", "빈 값");
+	static final Map<String, String> KINDS = Map.of("text", "텍스트", "int", "정수", "number", "숫자", "bool", "true/false", "date", "날짜",
+			"datetime", "날짜와 시각", "time", "시각", "enum", "선택", "null", "빈 값");
 
 	/** 상태의 표시 이름. 관례에 없는 이름은 그대로 둔다 */
 	static String state(String name) {

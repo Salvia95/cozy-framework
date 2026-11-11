@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--/*
   워크벤치 (cozy.dev.workbench.enabled=true). 선택한 것은 주소의 파라미터에 있다: spec, state, w(화면 너비),
-  view(preview·template·spec은 가운데에 보일 것, fixture는 미리보기 옆에 샘플 데이터).
+  view(preview·template·spec은 가운데에 보일 것, fixture는 미리보기 옆에 샘플 데이터. 샘플 데이터는 workbench-fixture.html이 그린다).
   구성은 세 칸이다. 왼쪽은 모듈별 화면 목록과 선택한 화면의 구조 트리, 가운데는 미리보기나 소스, 오른쪽은 속성이나 샘플 데이터.
   구조 트리의 마디마다 속성 표가 숨겨져 있고, 마디나 미리보기의 요소를 선택하면 스크립트가 그 표를 오른쪽 칸에 보인다.
   미리보기는 패턴 카탈로그의 /cozy/dev/catalog/screen을 그대로 쓴다.
@@ -25,6 +25,7 @@
     </div>
 
     <div class="cozy-workbench-panes" th:if="${screen != null}" data-cozy-workbench-selection
+         th:classappend="${view == 'fixture'} ? 'cozy-workbench-panes-fixture'"
          th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
          th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
 
@@ -204,45 +205,28 @@
         </div>
 
         <div class="cozy-workbench-scroll" th:if="${view == 'fixture'}">
-          <div class="card-body" th:if="${fixtureFields == null}">
+          <div class="card-body" th:if="${fixtureSections == null}">
             <p class="text-secondary mb-0">앱 프로젝트 폴더에서 실행할 때만 샘플 데이터를 수정할 수 있습니다.</p>
           </div>
-          <th:block th:if="${fixtureFields != null}">
-            <form class="card-body border-bottom" method="post" th:action="@{/cozy/dev/workbench/fixture}">
+          <th:block th:if="${fixtureSections != null}">
+            <form class="cozy-workbench-fixture-form" method="post" th:action="@{/cozy/dev/workbench/fixture}">
               <input type="hidden" name="spec" th:value="${screen.screen}">
               <input type="hidden" name="state" th:value="${state}">
               <input type="hidden" name="hash" th:value="${fixtureHash}">
               <input type="hidden" name="w" th:value="${w}">
-              <p class="mb-3">
-                <code class="cozy-workbench-command" th:text="${fixtureFile}">src/main/resources/specs/memo-list.yml</code>
-                <span class="text-secondary" th:text="|· ${stateLabels.get(state)} 상태. 값만 수정합니다. 주석과 다른 줄은 변경하지 않습니다.|">· 상태</span>
-              </p>
-              <p class="text-secondary mb-0" th:if="${fixtureFields.isEmpty()}">이 상태에는 수정할 값이 없습니다. 값을 추가하려면 화면 명세 파일을 직접 수정하세요.</p>
-              <div class="mb-2" th:each="field, stat : ${fixtureFields}">
-                <label class="form-label mb-1" th:for="|fixture-${stat.index}|">
-                  <code class="cozy-workbench-command" th:text="${field.path}">result/rows/0/title</code>
-                  <span class="text-secondary small" th:text="${kindLabels.get(field.kind)}">텍스트</span>
-                </label>
-                <th:block th:with="shown=${fixtureDraft != null and fixtureDraft.containsKey(field.path)} ? ${fixtureDraft.get(field.path)} : ${field.value}">
-                  <select class="form-select cozy-workbench-input" th:id="|fixture-${stat.index}|" th:name="|v.${field.path}|"
-                          th:if="${field.editable and field.kind == 'bool' and (shown == 'true' or shown == 'false')}">
-                    <option value="true" th:selected="${shown == 'true'}">true</option>
-                    <option value="false" th:selected="${shown == 'false'}">false</option>
-                  </select>
-                  <input class="form-control cozy-workbench-input" type="text" autocomplete="off" th:id="|fixture-${stat.index}|"
-                         th:name="|v.${field.path}|" th:value="${shown}" placeholder="(빈 값)"
-                         th:inputmode="${field.kind == 'int' or field.kind == 'number'} ? 'decimal'"
-                         th:if="${field.editable and !(field.kind == 'bool' and (shown == 'true' or shown == 'false'))}">
-                  <input class="form-control cozy-workbench-input" type="text" disabled th:id="|fixture-${stat.index}|"
-                         th:value="${field.value}" th:unless="${field.editable}"
-                         title="여러 줄 값과 빈 값은 화면 명세 파일에서 수정합니다">
-                </th:block>
+              <div class="card-body pb-2">
+                <p class="mb-3">
+                  <code class="cozy-workbench-command" th:text="${fixtureFile}">src/main/resources/specs/memo-list.yml</code>
+                  <span class="text-secondary" th:text="|· ${stateLabels.get(state)} 상태. 값만 수정합니다. 주석과 다른 줄은 변경하지 않습니다.|">· 상태</span>
+                </p>
+                <p class="text-secondary mb-0" th:if="${fixtureSections.isEmpty()}">이 상태에는 값이 없습니다. 값을 추가하려면 화면 명세 파일을 직접 수정하세요.</p>
+                <th:block th:replace="~{cozy/dev/workbench-fixture :: sections(${fixtureSections})}"></th:block>
               </div>
-              <div class="btn-list justify-content-end mt-3" th:if="${!fixtureFields.isEmpty()}">
+              <div class="cozy-workbench-fixture-actions" th:if="${!fixtureSections.isEmpty()}">
                 <button type="submit" class="btn btn-primary">저장</button>
               </div>
             </form>
-            <form class="card-body" method="post" th:action="@{/cozy/dev/workbench/state}">
+            <form class="card-body border-top" method="post" th:action="@{/cozy/dev/workbench/state}">
               <input type="hidden" name="spec" th:value="${screen.screen}">
               <input type="hidden" name="from" th:value="${state}">
               <input type="hidden" name="hash" th:value="${fixtureHash}">

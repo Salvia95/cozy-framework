@@ -38,7 +38,8 @@ import io.salvia95.cozy.ui.catalog.ScreenSpec;
  * 만들어 계획을 보인 뒤 적용한다. 쓰는 것은 cozy 명령이다.
  *
  * <p>
- * {@code view=fixture}는 화면 스펙의 상태 값을 보이고, {@code /fixture}가 고친 값을 저장한다({@link FixtureEditor}). 워크벤치가 직접 쓰는 파일은
+ * {@code view=fixture}는 화면 스펙의 상태 값을 모델 타입에 맞춰 속성 표와 그리드로 보이고({@link FixtureForm}), {@code /fixture}가 고친 값을
+ * 저장한다({@link FixtureEditor}). 워크벤치가 직접 쓰는 파일은
  * 스펙 YAML뿐이다.
  */
 @Controller
@@ -109,7 +110,6 @@ public class WorkbenchController {
 		model.addAttribute("screen", screen);
 		model.addAttribute("state", selectedState);
 		model.addAttribute("stateLabels", WorkbenchTerms.states(screen.states().keySet()));
-		model.addAttribute("kindLabels", WorkbenchTerms.KINDS);
 
 		String templateFile = "templates/" + screen.template() + ".html";
 		List<ScreenTree.Item> tree = List.of();
@@ -134,7 +134,9 @@ public class WorkbenchController {
 			if (text != null) {
 				model.addAttribute("fixtureFile", specFile(screen.screen()));
 				model.addAttribute("fixtureHash", hash(text));
-				model.addAttribute("fixtureFields", FixtureEditor.fields(text, selectedState));
+				@SuppressWarnings("unchecked")
+				Map<String, String> draft = (model.getAttribute("fixtureDraft") instanceof Map<?, ?> d) ? (Map<String, String>) d : Map.of();
+				model.addAttribute("fixtureSections", FixtureForm.of(text, selectedState, screen.model(), draft));
 			}
 		}
 		String sourceFile = switch (view) {
@@ -268,33 +270,12 @@ public class WorkbenchController {
 				text = text.substring(0, at);
 			}
 		}
-		return text;
+		// 클래스 이름은 짧게: io.x.MemoViews$ListResult → ListResult
+		return QUALIFIED.matcher(text).replaceAll((m) -> (m.group(2) != null) ? m.group(2) : m.group(1));
 	}
 
-	/** 숫자와 참·거짓 자리에 그렇게 읽히지 않는 값을 적었으면 그 자리와 이유. 없으면 {@code null} */
-	private static String kindProblem(List<FixtureEditor.Field> fields, Map<String, String> values) {
-		for (FixtureEditor.Field field : fields) {
-			String value = values.get(field.path());
-			if (value == null || value.equals(field.value())) {
-				continue;
-			}
-			boolean fits = switch (field.kind()) {
-				case "bool" -> value.equals("true") || value.equals("false");
-				case "int" -> value.matches("-?\\d+");
-				case "number" -> value.matches("-?\\d+(\\.\\d+)?");
-				default -> true;
-			};
-			if (!fits) {
-				String expected = switch (field.kind()) {
-					case "bool" -> "true나 false만 씁니다";
-					case "int" -> "정수만 씁니다";
-					default -> "숫자만 씁니다";
-				};
-				return field.path() + ": " + expected + " (적은 값: " + value + ")";
-			}
-		}
-		return null;
-	}
+	private static final java.util.regex.Pattern QUALIFIED = java.util.regex.Pattern
+		.compile("\\b(?:[a-z_][A-Za-z0-9_]*\\.)+([A-Z][A-Za-z0-9_]*)(?:\\$([A-Z][A-Za-z0-9_]*))*");
 
 	private static String fixtureView(String spec, String state, String w) {
 		return "redirect:" + org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
@@ -307,15 +288,21 @@ public class WorkbenchController {
 			.toUriString();
 	}
 
+	/** 화면 명세의 모델 이름 → 타입 */
+	private Map<String, String> model(String spec) {
+		return this.screenSpecs.all().stream().filter((s) -> s.screen().equals(spec)).findFirst().map(ScreenSpec::model).orElse(Map.of());
+	}
+
 	@PostMapping("/fixture")
 	String saveFixture(@RequestParam String spec, @RequestParam String state, @RequestParam String hash,
 			@RequestParam(defaultValue = "full") String w, @RequestParam MultiValueMap<String, String> form,
 			HttpServletRequest request, RedirectAttributes flash) {
 		String text = specText(spec, request);
 		Map<String, String> values = new LinkedHashMap<>();
+		// 체크박스는 숨은 false 뒤에 true가 온다: 마지막 값을 쓴다
 		form.forEach((name, list) -> {
 			if (name.startsWith("v.")) {
-				values.put(name.substring(2), list.getFirst().replace("\r\n", "\n"));
+				values.put(name.substring(2), list.getLast().replace("\r\n", "\n"));
 			}
 		});
 		String problem;
@@ -324,9 +311,10 @@ public class WorkbenchController {
 		}
 		else {
 			try {
-				problem = kindProblem(FixtureEditor.fields(text, state), values);
+				List<FixtureForm.Input> inputs = FixtureForm.inputs(FixtureForm.of(text, state, model(spec), Map.of()));
+				problem = FixtureForm.problem(inputs, values);
 				if (problem == null) {
-					String changed = FixtureEditor.set(text, state, values);
+					String changed = FixtureEditor.set(text, state, FixtureForm.changes(inputs, values));
 					if (changed.equals(text)) {
 						flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.info("바뀐 값이 없습니다."));
 						return fixtureView(spec, state, w);

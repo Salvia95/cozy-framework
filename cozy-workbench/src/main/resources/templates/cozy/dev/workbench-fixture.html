@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!--/*
+  샘플 데이터: 상태의 모델마다 구획 하나. 객체는 속성 표(왼쪽 열이 속성 이름), 객체의 목록은 그리드(열이 속성)다.
+  입력은 FixtureForm.Input의 control을 따른다. 체크박스는 숨은 false 뒤에 놓여, 끄면 false가, 켜면 true가 마지막 값으로 간다.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="sections(sections)">
+  <section class="cozy-workbench-fixture" th:each="section : ${sections}" th:aria-label="${section.label.isEmpty()} ? |모델 ${section.name}| : ${section.label}">
+    <h4 class="cozy-workbench-fixture-title">
+      <span th:if="${!section.label.isEmpty()}" th:text="${section.label}">검증 오류</span>
+      <code th:text="${section.name}">filter</code>
+      <code class="cozy-workbench-id" th:if="${!section.type.isEmpty()}" th:title="${section.typeName}" th:text="${section.type}">MemoFilter</code>
+    </h4>
+    <p class="text-secondary small mb-2" th:if="${!section.note.isEmpty()}" th:text="${section.note}">모델 타입을 찾을 수 없습니다.</p>
+
+    <th:block th:each="block : ${section.blocks}">
+      <h5 class="cozy-workbench-fixture-subtitle" th:if="${!block.title.isEmpty()}">
+        <code th:text="${block.title}">page</code>
+        <code class="cozy-workbench-id" th:if="${!block.type.isEmpty()}" th:text="${block.type}">CozyPage</code>
+        <span class="cozy-workbench-id ms-auto" th:if="${block.grid}" th:text="|${block.rows.size()}행|">2행</span>
+      </h5>
+
+      <!--/* 속성 표 */-->
+      <table class="table table-sm cozy-workbench-props cozy-workbench-fixture-props" th:if="${!block.grid}">
+        <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+        <tbody>
+          <tr th:each="prop : ${block.props}">
+            <th scope="row">
+              <label class="cozy-workbench-fixture-name" th:for="${prop.input.id}" th:if="${prop.input.editable}"><code th:text="${prop.name}">q</code></label>
+              <code class="cozy-workbench-fixture-name" th:unless="${prop.input.editable}" th:text="${prop.name}">q</code>
+              <span class="cozy-workbench-fixture-kind" th:if="${!prop.label.isEmpty()}" th:text="${prop.label}">텍스트</span>
+            </th>
+            <td><th:block th:replace="~{:: fixtureInput(${prop.input}, ${prop.name})}"></th:block></td>
+          </tr>
+          <tr th:if="${block.props.isEmpty()}"><td colspan="2" class="text-secondary">값이 없습니다.</td></tr>
+        </tbody>
+      </table>
+
+      <!--/* 그리드 */-->
+      <div class="table-responsive cozy-workbench-fixture-grid-wrap" th:if="${block.grid}">
+        <table class="table table-sm table-bordered cozy-workbench-fixture-grid">
+          <thead>
+            <tr>
+              <th scope="col" class="cozy-workbench-fixture-number">행</th>
+              <th scope="col" th:each="column : ${block.columns}">
+                <code th:text="${column.name}">title</code>
+                <span class="cozy-workbench-fixture-kind" th:if="${!column.label.isEmpty()}" th:text="${column.label}">텍스트</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="row : ${block.rows}">
+              <th scope="row" class="cozy-workbench-fixture-number" th:text="${row.number}">1</th>
+              <td th:each="cell, stat : ${row.cells}" th:classappend="${cell.control == 'checkbox'} ? 'text-center'">
+                <th:block th:replace="~{:: fixtureInput(${cell}, |${block.title.isEmpty() ? section.name : block.title} ${row.number}행 ${block.columns[stat.index].name}|)}"></th:block>
+              </td>
+            </tr>
+            <tr th:if="${block.rows.isEmpty()}">
+              <td th:colspan="${block.columns.size() + 1}" class="text-secondary">행이 없습니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </th:block>
+  </section>
+</th:block>
+
+<!--/* 입력 하나. label은 화면 낭독기가 읽을 이름 */-->
+<th:block th:fragment="fixtureInput(input, label)" th:switch="${input.control}">
+  <th:block th:case="'checkbox'">
+    <input type="hidden" th:name="${input.name}" value="false">
+    <input class="form-check-input m-0" type="checkbox" value="true" th:id="${input.id}" th:name="${input.name}"
+           th:checked="${input.checked}" th:aria-label="${label}">
+  </th:block>
+  <select class="form-select form-select-sm cozy-workbench-input" th:case="'select'" th:id="${input.id}" th:name="${input.name}" th:aria-label="${label}">
+    <option th:each="option : ${input.options}" th:value="${option}" th:selected="${option == input.value}" th:text="${option}">OPEN</option>
+  </select>
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="'number'" type="number" th:step="${input.step}"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value}" th:placeholder="${input.placeholder}" th:aria-label="${label}">
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="'date'" type="date"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value}" th:aria-label="${label}">
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="'datetime-local'" type="datetime-local" step="1"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value}" th:aria-label="${label}">
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="'time'" type="time" step="1"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value}" th:aria-label="${label}">
+  <span class="cozy-workbench-fixture-fixed" th:case="'fixed'" title="여러 줄 값, 비어 있는 값, 목록 안의 목록은 화면 명세 파일에서 수정합니다"
+        th:text="${input.value.isEmpty()} ? '(빈 값)' : ${input.value}">첫 줄</span>
+  <span class="cozy-workbench-fixture-absent" th:case="'absent'" title="화면 명세에 이 값이 없습니다. 추가하려면 화면 명세 파일을 수정하세요">없음</span>
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="*" type="text" autocomplete="off"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value}" th:placeholder="${input.placeholder}" th:aria-label="${label}">
+</th:block>
+
+</body>
+</html>
