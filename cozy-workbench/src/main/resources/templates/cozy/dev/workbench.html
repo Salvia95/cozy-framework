@@ -1,82 +1,78 @@
 <!DOCTYPE html>
 <!--/*
-  워크벤치 (cozy.dev.workbench.enabled=true). 선택한 것은 주소의 파라미터에 있다: spec, state, w(화면 너비), view(미리보기·샘플 데이터·템플릿·화면 명세).
-  구성: 왼쪽에 화면 목록과 선택한 화면의 구조(패턴 → 영역 → 프래그먼트, 줄 번호), 오른쪽에 미리보기나 소스.
+  워크벤치 (cozy.dev.workbench.enabled=true). 선택한 것은 주소의 파라미터에 있다: spec, state, w(화면 너비),
+  view(preview·template·spec은 가운데에 보일 것, fixture는 미리보기 옆에 샘플 데이터).
+  구성은 세 칸이다. 왼쪽은 모듈별 화면 목록과 선택한 화면의 구조 트리, 가운데는 미리보기나 소스, 오른쪽은 속성이나 샘플 데이터.
+  구조 트리의 마디마다 속성 표가 숨겨져 있고, 마디나 미리보기의 요소를 선택하면 스크립트가 그 표를 오른쪽 칸에 보인다.
   미리보기는 패턴 카탈로그의 /cozy/dev/catalog/screen을 그대로 쓴다.
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치', ~{::main})}">
 <body>
-<main class="container-fluid py-4">
-  <div th:replace="~{cozy/dev/workbench-nav :: header('screens', ${errors}, ${'화면의 구조와 상태를 확인하고 소스 위치를 찾습니다. 화면 ' + specs.size() + '개'})}"></div>
+<main class="cozy-workbench">
+  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('screens', ${errors}, null)}"></div>
 
-  <div th:replace="~{cozy/component/alert :: flash()}"></div>
-  <th:block th:if="${specProblem != null}">
-    <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 화면 명세를 읽지 못해 빌드된 화면 명세를 표시합니다. ' + specProblem})}"></div>
-  </th:block>
+  <div class="container-fluid py-3">
+    <div th:replace="~{cozy/component/alert :: flash()}"></div>
+    <th:block th:if="${specProblem != null}">
+      <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 화면 명세를 읽지 못해 빌드된 화면 명세를 표시합니다. ' + specProblem})}"></div>
+    </th:block>
+    <th:block th:if="${!engineAvailable}">
+      <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 표시합니다.')}"></div>
+    </th:block>
 
-  <th:block th:if="${!engineAvailable}">
-    <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 표시합니다.')}"></div>
-  </th:block>
-
-  <div th:if="${specs.isEmpty()}">
-    <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
-  </div>
-
-  <div class="row g-3" th:if="${screen != null}">
-    <div class="col-lg-3">
-      <nav class="card mb-4" aria-label="화면">
-        <div class="card-header"><h3 class="card-title">화면</h3></div>
-        <div class="list-group list-group-flush">
-          <a class="list-group-item list-group-item-action d-flex align-items-center" th:each="item : ${specs}"
-             th:classappend="${item.screen == screen.screen} ? 'active'"
-             th:aria-current="${item.screen == screen.screen} ? 'page'"
-             th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w},view=${view})}">
-            <span th:text="${item.screen}">memo-list</span>
-            <span class="badge cozy-tone-critical ms-auto" th:if="${violationCounts.containsKey(item.screen)}"
-                  th:data-cozy-violations="|${item.screen}:${violationCounts.get(item.screen)}|"
-                  th:text="|위반 ${violationCounts.get(item.screen)}건|">위반 1건</span>
-          </a>
-        </div>
-      </nav>
-
-      <section class="card" aria-label="구조">
-        <div class="card-header">
-          <div>
-            <h3 class="card-title">구조</h3>
-            <code class="small" th:text="${screen.template}">memo/api/list</code>
-          </div>
-        </div>
-        <div class="card-body" th:if="${tree.isEmpty()}">
-          <p class="text-secondary mb-0">구조를 읽을 수 없습니다.</p>
-        </div>
-        <ul class="list-unstyled cozy-workbench-tree mb-0" th:if="${!tree.isEmpty()}">
-          <li class="cozy-workbench-node" th:each="item : ${tree}"
-              th:classappend="|cozy-workbench-depth-${item.depth} cozy-workbench-kind-${item.kind}|" th:title="|${item.kindLabel} · ${item.location}|"
-              th:data-cozy-line="${item.line}" th:data-cozy-end="${item.endLine}" th:data-cozy-kind="${item.kind}"
-              th:data-cozy-target="${item.target}" th:data-cozy-name="${item.label}" th:data-cozy-code="${item.code}">
-            <span class="cozy-workbench-text">
-              <button type="button" class="cozy-workbench-label" data-cozy-workbench-node th:text="${item.label}">목록 탐색</button>
-              <code class="cozy-workbench-id" th:if="${!item.detail.isEmpty()}" th:text="${item.detail}">list-with-filter</code>
-            </span>
-            <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"
-               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line}">7</a>
-            <span class="visually-hidden" th:text="${item.location}">templates/memo/api/list.html:7</span>
-          </li>
-        </ul>
-      </section>
+    <div th:if="${specs.isEmpty()}">
+      <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
     </div>
 
-    <div class="col-lg-9 order-first order-lg-last">
-      <section class="card">
+    <div class="cozy-workbench-panes" th:if="${screen != null}" data-cozy-workbench-selection
+         th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
+         th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
+
+      <!--/* 왼쪽: 화면 목록과 구조 */-->
+      <div class="cozy-workbench-side">
+        <nav class="card cozy-workbench-pane cozy-workbench-screens" aria-label="화면">
+          <div class="card-header"><h3 class="card-title">화면</h3></div>
+          <div class="list-group list-group-flush cozy-workbench-scroll">
+            <th:block th:each="group : ${screenGroups}">
+              <div class="list-group-header cozy-workbench-group">
+                <span th:text="${group.key}">memo</span>
+                <span class="ms-auto" th:text="${group.value.size()}">4</span>
+              </div>
+              <a class="list-group-item list-group-item-action d-flex flex-wrap align-items-baseline column-gap-2" th:each="item : ${group.value}"
+                 th:classappend="${item.screen == screen.screen} ? 'active'"
+                 th:aria-current="${item.screen == screen.screen} ? 'page'"
+                 th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w},view=${view == 'fixture' ? 'fixture' : null})}">
+                <span th:if="${!item.title.isEmpty()}" th:text="${item.title}">메모 목록</span>
+                <code class="cozy-workbench-id" th:text="${item.screen}">memo-list</code>
+                <span class="badge cozy-tone-critical ms-auto" th:if="${violationCounts.containsKey(item.screen)}"
+                      th:data-cozy-violations="|${item.screen}:${violationCounts.get(item.screen)}|"
+                      th:text="|위반 ${violationCounts.get(item.screen)}건|">위반 1건</span>
+              </a>
+            </th:block>
+          </div>
+        </nav>
+
+        <section class="card cozy-workbench-pane cozy-workbench-structure" aria-label="구조">
+          <div class="card-header">
+            <h3 class="card-title">구조</h3>
+            <code class="cozy-workbench-id ms-2" th:text="|${screen.template}.html|">memo/api/list.html</code>
+          </div>
+          <div class="card-body" th:if="${nodes.isEmpty()}">
+            <p class="text-secondary mb-0">구조를 읽을 수 없습니다.</p>
+          </div>
+          <div class="cozy-workbench-scroll cozy-workbench-tree" th:if="${!nodes.isEmpty()}">
+            <ul th:replace="~{cozy/dev/workbench-tree :: nodes(${nodes})}"></ul>
+          </div>
+        </section>
+      </div>
+
+      <!--/* 가운데: 미리보기나 소스 */-->
+      <section class="card cozy-workbench-pane cozy-workbench-main" aria-label="미리보기와 소스">
         <div class="card-header">
-          <ul class="nav nav-tabs card-header-tabs" aria-label="보기">
+          <ul class="nav nav-tabs card-header-tabs" aria-label="가운데 보기">
             <li class="nav-item">
-              <a class="nav-link" th:classappend="${view == 'preview'} ? 'active'"
+              <a class="nav-link" th:classappend="${view == 'preview' or view == 'fixture'} ? 'active'"
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}">미리보기</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" th:classappend="${view == 'fixture'} ? 'active'"
-                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='fixture')}">샘플 데이터</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" th:classappend="${view == 'template'} ? 'active'"
@@ -89,49 +85,32 @@
           </ul>
         </div>
 
-        <th:block th:if="${view == 'preview'}">
-          <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3">
+        <th:block th:if="${view == 'preview' or view == 'fixture'}">
+          <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3 cozy-workbench-toolbar">
             <div class="d-flex align-items-center gap-2">
               <span class="text-secondary small text-nowrap">상태</span>
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
                 <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
                    th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})}" th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w},view=${view == 'fixture' ? 'fixture' : null})}"
+                   th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
               </div>
             </div>
-            <div class="d-flex align-items-center gap-2 ms-auto">
+            <div class="d-flex align-items-center gap-2">
               <span class="text-secondary small text-nowrap">화면 너비</span>
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="화면 너비">
                 <a class="btn btn-sm" th:each="width : ${widths}"
                    th:classappend="${width == w} ? 'active'" th:aria-current="${width == w} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})}"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width},view=${view == 'fixture' ? 'fixture' : null})}"
                    th:text="${width == 'full'} ? '전체' : ${width}">전체</a>
               </div>
-              <a class="small" target="_blank" rel="noopener"
-                 th:href="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}">새 창에서 보기</a>
             </div>
-          </div>
-          <div class="card-body border-bottom" data-cozy-workbench-selection
-               th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
-               th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
-            <div class="d-flex flex-wrap align-items-center gap-3">
-              <label class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" checked data-cozy-workbench-pick>
-                <span class="form-check-label">요소 선택</span>
-              </label>
-              <span class="text-secondary" data-cozy-workbench-hint>미리보기나 구조에서 요소를 선택하면 소스 위치가 표시됩니다.</span>
-              <code class="cozy-workbench-location" data-cozy-workbench-location hidden>src/main/resources/templates/memo/api/list.html:7</code>
-              <div class="btn-list ms-auto">
-                <button type="button" class="btn btn-sm" data-cozy-workbench-copy="location" disabled>경로 복사</button>
-                <button type="button" class="btn btn-sm" data-cozy-workbench-copy="context" disabled>에이전트용 복사</button>
-              </div>
-            </div>
-            <p class="cozy-workbench-chain text-secondary small mt-2 mb-0" data-cozy-workbench-chain
-               data-left="미리보기에서 다른 화면으로 이동할 수 없어 처음 화면으로 되돌렸습니다. 다른 화면은 화면 목록에서 선택하거나 새 창에서 확인하세요."></p>
-            <details class="mt-2" data-cozy-workbench-context-details>
-              <summary class="text-secondary small">에이전트 전달 내용</summary>
-              <pre class="cozy-workbench-context mt-2 mb-0" data-cozy-workbench-context>요소를 선택하면 여기에 표시됩니다.</pre>
-            </details>
+            <label class="form-check form-switch mb-0 ms-auto">
+              <input class="form-check-input" type="checkbox" checked data-cozy-workbench-pick>
+              <span class="form-check-label">요소 선택</span>
+            </label>
+            <a class="small text-nowrap" target="_blank" rel="noopener"
+               th:href="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}">새 창에서 보기</a>
           </div>
           <div class="card-body cozy-workbench-stage">
             <div class="cozy-workbench-canvas">
@@ -145,18 +124,75 @@
           </div>
         </th:block>
 
-        <th:block th:if="${view == 'fixture'}">
-          <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3">
-            <div class="d-flex align-items-center gap-2">
-              <span class="text-secondary small text-nowrap">상태</span>
-              <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
-                <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
-                   th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w},view='fixture')}" th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
-              </div>
-            </div>
-            <a class="small ms-auto" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}">이 상태의 미리보기</a>
+        <th:block th:if="${view == 'template' or view == 'spec'}">
+          <div class="card-body" th:if="${sourceFile == null or sourceLines.isEmpty()}">
+            <p class="text-secondary mb-0">소스를 읽을 수 없습니다.</p>
           </div>
+          <th:block th:if="${sourceFile != null and !sourceLines.isEmpty()}">
+            <div class="card-body border-bottom py-2"><code class="small" th:text="${sourceFile}">src/main/resources/templates/memo/api/list.html</code></div>
+            <div class="table-responsive cozy-workbench-scroll">
+              <table class="table table-sm table-borderless cozy-workbench-source mb-0">
+                <tbody>
+                  <tr th:each="line : ${sourceLines}" th:id="|L${line.number}|">
+                    <td class="cozy-workbench-source-number text-secondary" th:text="${line.number}">1</td>
+                    <td><pre class="cozy-workbench-source-text" th:text="${line.text}">소스</pre></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </th:block>
+        </th:block>
+      </section>
+
+      <!--/* 오른쪽: 속성이나 샘플 데이터 */-->
+      <section class="card cozy-workbench-pane cozy-workbench-inspector" aria-label="속성과 샘플 데이터">
+        <div class="card-header">
+          <ul class="nav nav-tabs card-header-tabs" aria-label="오른쪽 보기">
+            <li class="nav-item">
+              <a class="nav-link" th:classappend="${view != 'fixture'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view=${view == 'fixture' ? null : view})}">속성</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" th:classappend="${view == 'fixture'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='fixture')}">샘플 데이터</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="cozy-workbench-scroll" th:if="${view != 'fixture'}">
+          <!--/* 선택한 것이 없을 때: 화면의 속성. 선택하면 스크립트가 그 마디의 표로 바꾼다 */-->
+          <div data-cozy-workbench-props>
+            <table class="table table-sm cozy-workbench-props mb-0">
+              <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+              <tbody>
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면</th></tr>
+                <tr th:if="${!screen.title.isEmpty()}"><th scope="row">이름</th><td th:text="${screen.title}">메모 목록</td></tr>
+                <tr><th scope="row">식별자</th><td><code th:text="${screen.screen}">memo-list</code></td></tr>
+                <tr><th scope="row">모듈</th><td><code th:text="${screenModule}">memo</code></td></tr>
+                <tr><th scope="row">템플릿</th><td><code th:text="${templateFile}">src/main/resources/templates/memo/api/list.html</code></td></tr>
+                <tr th:if="${specFile != null}"><th scope="row">화면 명세</th><td><code th:text="${specFile}">src/main/resources/specs/memo-list.yml</code></td></tr>
+                <tr><th scope="row">상태</th><td th:text="|${screen.states.size()}개 · ${#strings.listJoin(stateLabels.values(), ', ')}|">4개</td></tr>
+                <tr><th scope="row">규칙 위반</th>
+                  <td th:text="${violationCounts.containsKey(screen.screen)} ? |${violationCounts.get(screen.screen)}건| : '없음'">없음</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body border-top" th:if="${view == 'preview'}">
+            <p class="text-secondary small mb-2" data-cozy-workbench-hint>미리보기나 구조에서 요소를 선택하면 속성이 표시됩니다.</p>
+            <p class="cozy-workbench-chain text-secondary small mb-2" data-cozy-workbench-chain
+               data-left="미리보기에서 다른 화면으로 이동할 수 없어 처음 화면으로 되돌렸습니다. 다른 화면은 화면 목록에서 선택하거나 새 창에서 확인하세요."></p>
+            <div class="btn-list justify-content-end">
+              <button type="button" class="btn btn-sm" data-cozy-workbench-copy="location" disabled>경로 복사</button>
+              <button type="button" class="btn btn-sm" data-cozy-workbench-copy="context" disabled>에이전트용 복사</button>
+            </div>
+            <details class="mt-2" data-cozy-workbench-context-details>
+              <summary class="text-secondary small">에이전트 전달 내용</summary>
+              <pre class="cozy-workbench-context mt-2 mb-0" data-cozy-workbench-context>요소를 선택하면 여기에 표시됩니다.</pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="cozy-workbench-scroll" th:if="${view == 'fixture'}">
           <div class="card-body" th:if="${fixtureFields == null}">
             <p class="text-secondary mb-0">앱 프로젝트 폴더에서 실행할 때만 샘플 데이터를 수정할 수 있습니다.</p>
           </div>
@@ -171,12 +207,12 @@
                 <span class="text-secondary" th:text="|· ${stateLabels.get(state)} 상태. 값만 수정합니다. 주석과 다른 줄은 변경하지 않습니다.|">· 상태</span>
               </p>
               <p class="text-secondary mb-0" th:if="${fixtureFields.isEmpty()}">이 상태에는 수정할 값이 없습니다. 값을 추가하려면 화면 명세 파일을 직접 수정하세요.</p>
-              <div class="row g-2 align-items-center mb-2" th:each="field, stat : ${fixtureFields}">
-                <label class="col-md-4 col-form-label" th:for="|fixture-${stat.index}|">
+              <div class="mb-2" th:each="field, stat : ${fixtureFields}">
+                <label class="form-label mb-1" th:for="|fixture-${stat.index}|">
                   <code class="cozy-workbench-command" th:text="${field.path}">result/rows/0/title</code>
                   <span class="text-secondary small" th:text="${kindLabels.get(field.kind)}">텍스트</span>
                 </label>
-                <div class="col-md-8" th:with="shown=${fixtureDraft != null and fixtureDraft.containsKey(field.path)} ? ${fixtureDraft.get(field.path)} : ${field.value}">
+                <th:block th:with="shown=${fixtureDraft != null and fixtureDraft.containsKey(field.path)} ? ${fixtureDraft.get(field.path)} : ${field.value}">
                   <select class="form-select cozy-workbench-input" th:id="|fixture-${stat.index}|" th:name="|v.${field.path}|"
                           th:if="${field.editable and field.kind == 'bool' and (shown == 'true' or shown == 'false')}">
                     <option value="true" th:selected="${shown == 'true'}">true</option>
@@ -189,7 +225,7 @@
                   <input class="form-control cozy-workbench-input" type="text" disabled th:id="|fixture-${stat.index}|"
                          th:value="${field.value}" th:unless="${field.editable}"
                          title="여러 줄 값과 빈 값은 화면 명세 파일에서 수정합니다">
-                </div>
+                </th:block>
               </div>
               <div class="btn-list justify-content-end mt-3" th:if="${!fixtureFields.isEmpty()}">
                 <button type="submit" class="btn btn-primary">저장</button>
@@ -202,33 +238,12 @@
               <input type="hidden" name="w" th:value="${w}">
               <h4 class="subheader mb-2">상태 복제</h4>
               <p class="text-secondary" th:text="|${stateLabels.get(state)} 상태를 새 이름으로 복제합니다. 복제한 뒤 값을 수정하세요.|">상태를 복제합니다.</p>
-              <div class="row g-2 align-items-center">
-                <div class="col-md-4"><label class="col-form-label" for="fixture-state-name">새 상태 이름</label></div>
-                <div class="col-md-5"><input class="form-control cozy-workbench-input" type="text" autocomplete="off" id="fixture-state-name" name="name" placeholder="예: manyRows"></div>
-                <div class="col-md-3 text-end"><button type="submit" class="btn">복제</button></div>
-              </div>
+              <label class="form-label" for="fixture-state-name">새 상태 이름</label>
+              <input class="form-control cozy-workbench-input mb-3" type="text" autocomplete="off" id="fixture-state-name" name="name" placeholder="예: manyRows">
+              <div class="btn-list justify-content-end"><button type="submit" class="btn">복제</button></div>
             </form>
           </th:block>
-        </th:block>
-
-        <th:block th:if="${view == 'template' or view == 'spec'}">
-          <div class="card-body" th:if="${sourceFile == null or sourceLines.isEmpty()}">
-            <p class="text-secondary mb-0">소스를 읽을 수 없습니다.</p>
-          </div>
-          <th:block th:if="${sourceFile != null and !sourceLines.isEmpty()}">
-            <div class="card-body border-bottom py-2"><code class="small" th:text="${sourceFile}">src/main/resources/templates/memo/api/list.html</code></div>
-            <div class="table-responsive">
-              <table class="table table-sm table-borderless cozy-workbench-source mb-0">
-                <tbody>
-                  <tr th:each="line : ${sourceLines}" th:id="|L${line.number}|">
-                    <td class="cozy-workbench-source-number text-secondary" th:text="${line.number}">1</td>
-                    <td><pre class="cozy-workbench-source-text" th:text="${line.text}">소스</pre></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </th:block>
-        </th:block>
+        </div>
       </section>
     </div>
   </div>

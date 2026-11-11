@@ -90,6 +90,7 @@ class RenderingTest extends CozyRenderingTest {
 
 ```yaml
 screen: memo-list                     # 템플릿 경로에서 api/를 빼고 '/'를 '-'로. 파일 이름도 memo-list.yml
+title: 메모 목록                       # 사람에게 보일 화면 이름 (선택). 워크벤치의 화면 목록이 쓴다
 template: memo/api/list               # 뷰 이름 (화면은 {모듈}/api/ 아래)
 fragments: [result]                   # htmx로 따로 렌더링하는 fragment (pageOrFragment의 두 번째 인자)
 model:                                # 모델 이름 → 화면 DTO 타입. 중첩 클래스는 Outer.Inner

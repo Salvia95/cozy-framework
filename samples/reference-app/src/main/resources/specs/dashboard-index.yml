@@ -1,6 +1,7 @@
 # 대시보드
 screen: dashboard-index
 template: dashboard/api/index
+title: 대시보드
 fragments: [activity]
 model:
   dashboard: io.salvia95.cozy.reference.dashboard.api.dto.DashboardView

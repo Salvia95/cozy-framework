@@ -5,8 +5,9 @@
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 검사', ~{::main})}">
 <body>
-<main class="container-fluid py-4">
-  <div th:replace="~{cozy/dev/workbench-nav :: header('check', ${errors}, '컴파일 없이 실행하는 빠른 검사(cozy check) 결과입니다. 최종 검증은 mvn -o verify로 합니다.')}"></div>
+<main>
+  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('check', ${errors}, '컴파일 없이 실행하는 빠른 검사(cozy check) 결과입니다. 최종 검증은 mvn -o verify로 합니다.')}"></div>
+  <div class="container-fluid py-3">
 
   <th:block th:if="${!engineAvailable}">
     <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 검사할 수 없습니다.')}"></div>
@@ -62,6 +63,7 @@
     </section>
   </th:block>
   <script th:src="@{/cozy/workbench.js}" defer></script>
+  </div>
 </main>
 </body>
 </html>

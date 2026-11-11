@@ -21,12 +21,56 @@
 
   var frame = document.querySelector('[data-cozy-workbench-frame]');
   var panel = document.querySelector('[data-cozy-workbench-selection]');
-  if (!frame || !panel) {
+  var propsBox = panel ? panel.querySelector('[data-cozy-workbench-props]') : null;
+  if (!frame || !panel || !propsBox || !panel.querySelector('[data-cozy-workbench-pick]')) {
     return;
+  }
+  // 아무것도 선택하지 않았을 때 보이는 화면의 속성
+  var screenProps = Array.prototype.slice.call(propsBox.children);
+
+  /** 오른쪽 칸의 속성 표를 바꾼다 */
+  function showProps(nodes) {
+    while (propsBox.firstChild) {
+      propsBox.removeChild(propsBox.firstChild);
+    }
+    nodes.forEach(function (node) {
+      propsBox.appendChild(node);
+    });
+  }
+
+  /** 구조의 줄에 딸린 속성 표의 사본. 상위 경로를 채우고, 다른 템플릿이 그린 요소면 그 위치를 덧붙인다 */
+  function propsOf(row, names, rendered, guessed) {
+    var source = row.closest('li').querySelector('[data-cozy-workbench-node-props]');
+    var copy = Array.prototype.map.call(source.children, function (child) {
+      return child.cloneNode(true);
+    });
+    copy.forEach(function (node) {
+      var path = node.querySelector('[data-cozy-prop="path"]');
+      if (path) {
+        path.textContent = names.length > 1 ? names.slice(0, -1).join(' › ') : '없음';
+      }
+      var body = node.querySelector('tbody');
+      if (body && rendered) {
+        var extra = document.createElement('tr');
+        var head = document.createElement('th');
+        head.scope = 'row';
+        head.textContent = '렌더링한 템플릿';
+        var cell = document.createElement('td');
+        var code = document.createElement('code');
+        code.textContent = rendered;
+        cell.appendChild(code);
+        if (guessed) {
+          cell.appendChild(document.createTextNode(' 삽입 위치는 추정'));
+        }
+        extra.appendChild(head);
+        extra.appendChild(cell);
+        body.appendChild(extra);
+      }
+    });
+    return copy;
   }
   var pick = panel.querySelector('[data-cozy-workbench-pick]');
   var hint = panel.querySelector('[data-cozy-workbench-hint]');
-  var locationText = panel.querySelector('[data-cozy-workbench-location]');
   var chainText = panel.querySelector('[data-cozy-workbench-chain]');
   var contextText = panel.querySelector('[data-cozy-workbench-context]');
   var contextDetails = panel.querySelector('[data-cozy-workbench-context-details]');
@@ -187,6 +231,11 @@
     if (chain.length) {
       var innermost = chain[chain.length - 1];
       innermost.classList.add('cozy-workbench-node-selected');
+      for (var folded = innermost.parentElement; folded; folded = folded.parentElement) {
+        if (folded.tagName === 'DETAILS') {
+          folded.open = true;
+        }
+      }
       innermost.scrollIntoView({ block: 'nearest' });
     }
     var where = (line !== null) ? templateFile + ':' + line
@@ -198,11 +247,10 @@
       return row.dataset.cozyCode;
     });
     var rendered = framework ? 'templates/' + framework.template + '.html:' + framework.line : '';
+    showProps(chain.length ? propsOf(chain[chain.length - 1], names, rendered, guessed) : screenProps);
     hint.hidden = true;
-    locationText.textContent = where;
-    locationText.hidden = false;
-    chainText.textContent = (names.length ? names.join(' › ') : '구조에 없는 요소')
-        + (rendered ? ' · 렌더링한 템플릿 ' + rendered : '') + (guessed ? ' · 삽입 위치는 추정' : '');
+    // 구조에 없는 요소는 속성 표가 없으므로 위치를 글로 보인다
+    chainText.textContent = names.length ? '' : '구조에 없는 요소 · ' + where;
 
     var lines = ['Screen: ' + panel.dataset.screen + ' (state: ' + panel.dataset.state + ')'];
     if (description) {
@@ -272,15 +320,7 @@
   function selectRow(row) {
     var doc = previewDocument();
     var line = number(row, 'cozyLine');
-    var elements = [];
-    if (doc) {
-      if (row.dataset.cozyTarget) {
-        elements = rootsOf(row.dataset.cozyTarget);
-      }
-      if (!elements.length) {
-        elements = Array.prototype.slice.call(doc.querySelectorAll('[data-cozy-src="' + template + ':' + line + '"]'));
-      }
-    }
+    var elements = doc ? elementsOf(row) : [];
     show(elements, line, enclosingRow(row), null, elements.length ? describe(elements[0]) : '', false);
   }
 
@@ -295,7 +335,7 @@
     rows.forEach(function (row) {
       row.classList.remove('cozy-workbench-node-selected');
     });
-    locationText.hidden = true;
+    showProps(screenProps);
     hint.hidden = false;
     chainText.textContent = message || '';
     contextText.textContent = '요소를 선택하면 여기에 표시됩니다.';
@@ -360,9 +400,32 @@
   pick.addEventListener('change', function () {
     hoverBox.hidden = true;
   });
+  /** 구조의 줄이 미리보기에서 차지하는 요소들 */
+  function elementsOf(row) {
+    var doc = previewDocument();
+    if (!doc) {
+      return [];
+    }
+    var elements = row.dataset.cozyTarget ? rootsOf(row.dataset.cozyTarget) : [];
+    if (!elements.length) {
+      elements = Array.prototype.slice.call(doc.querySelectorAll('[data-cozy-src="' + template + ':' + number(row, 'cozyLine') + '"]'));
+    }
+    return elements;
+  }
+
   document.querySelectorAll('[data-cozy-workbench-node]').forEach(function (button) {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (event) {
+      // 접고 펴는 줄 안에 있어도 이름을 누르면 선택만 한다
+      event.preventDefault();
       selectRow(button.closest('[data-cozy-line]'));
+    });
+  });
+  rows.forEach(function (row) {
+    row.addEventListener('mouseenter', function () {
+      place(hoverBox, elementsOf(row));
+    });
+    row.addEventListener('mouseleave', function () {
+      hoverBox.hidden = true;
     });
   });
   copyButtons.forEach(function (button) {

@@ -1,6 +1,7 @@
 # 메모 목록 화면 스펙. 패턴 카탈로그 미리보기와 cozy-test 렌더링 검사가 같이 쓴다.
 screen: memo-list
 template: memo/api/list
+title: 메모 목록
 fragments: [result]
 model:
   filter: io.salvia95.cozy.reference.memo.api.dto.MemoFilter

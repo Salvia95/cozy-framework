@@ -39,12 +39,13 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  *
  * @param screen 스펙 이름 ({@code memo-list}). 템플릿 경로에서 {@code api/}를 빼고 {@code /}를 {@code -}로 바꾼 것과 같다
  * @param template 뷰 이름
+ * @param title 사람에게 보일 화면 이름 ({@code 메모 목록}). 적지 않았으면 빈 문자열
  * @param fragments htmx 부분 갱신으로 따로 렌더링하는 fragment 이름
  * @param model 모델 이름 → 화면 DTO 타입(FQN, 중첩 클래스는 {@code Outer.Inner})
  * @param states 상태 이름 → 모델 이름 → fixture
  * @param source 읽은 파일
  */
-public record ScreenSpec(String screen, String template, List<String> fragments, Map<String, String> model,
+public record ScreenSpec(String screen, String template, String title, List<String> fragments, Map<String, String> model,
 		Map<String, Map<String, Object>> states, String source) {
 
 	public static final String LOCATION = "classpath*:specs/*.yml";
@@ -159,7 +160,8 @@ public record ScreenSpec(String screen, String template, List<String> fragments,
 				}
 			}
 		});
-		return new ScreenSpec(screen, template, List.copyOf(fragments), model, states, source);
+		return new ScreenSpec(screen, template, String.valueOf(map.getOrDefault("title", "")).strip(), List.copyOf(fragments), model, states,
+				source);
 	}
 
 	private static String text(Map<String, Object> map, String key, String source) {

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--/*
+  워크벤치의 구조 트리. 마디마다 줄 하나(표시 이름, 식별자, 줄 번호)와 숨겨진 속성 표가 있고, 안의 마디는 접고 펼 수 있다.
+  nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbench.js가 읽는다.
+*/-->
+<html lang="ko">
+<body>
+<ul class="cozy-workbench-nodes" th:fragment="nodes(cozyNodes)">
+  <li th:each="node : ${cozyNodes}" th:with="item=${node.item}">
+    <details open th:remove="${node.children.isEmpty()} ? 'tag'">
+      <summary th:remove="${node.children.isEmpty()} ? 'tag'">
+        <span class="cozy-workbench-node" th:classappend="|cozy-workbench-kind-${item.kind}|" th:title="|${item.kindLabel} · ${item.location}|"
+              th:data-cozy-line="${item.line}" th:data-cozy-end="${item.endLine}" th:data-cozy-kind="${item.kind}"
+              th:data-cozy-target="${item.target}" th:data-cozy-name="${item.label}" th:data-cozy-code="${item.code}">
+          <span class="cozy-workbench-text">
+            <button type="button" class="cozy-workbench-label" data-cozy-workbench-node th:text="${item.label}">목록 탐색</button>
+            <code class="cozy-workbench-id" th:if="${!item.detail.isEmpty()}" th:text="${item.detail}">list-with-filter</code>
+          </span>
+          <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"
+             th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line}">7</a>
+        </span>
+      </summary>
+      <div hidden data-cozy-workbench-node-props>
+        <table class="table table-sm cozy-workbench-props mb-0">
+          <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+          <tbody>
+            <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">기본 정보</th></tr>
+            <tr><th scope="row">이름</th><td th:text="${item.label}">목록 탐색</td></tr>
+            <tr><th scope="row">종류</th><td th:text="${item.kindLabel}">패턴</td></tr>
+            <tr th:if="${!item.detail.isEmpty()}"><th scope="row">식별자</th><td><code th:text="${item.id.isEmpty()} ? ${item.detail} : ${item.id}">pattern/list-with-filter</code></td></tr>
+            <tr th:if="${!item.purpose.isEmpty()}"><th scope="row">설명</th><td th:text="${item.purpose}">용도</td></tr>
+            <tr><th scope="row">상위 경로</th><td data-cozy-prop="path">—</td></tr>
+            <tr><th scope="row">소스 위치</th><td><code th:text="|${templateFile}:${item.lines()}|">src/main/resources/templates/memo/api/list.html:7–58</code></td></tr>
+            <tr th:if="${!item.target.isEmpty()}"><th scope="row">템플릿</th><td><code th:text="|templates/${item.target}.html|">templates/cozy/pattern/list-with-filter.html</code></td></tr>
+            <th:block th:if="${!item.args.isEmpty()}">
+              <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">매개변수</th></tr>
+              <tr th:each="arg : ${item.args}">
+                <th scope="row" th:title="|${arg.name} ${arg.description}|" th:text="${arg.label}">필터</th>
+                <td><code th:text="${arg.value}">값</code></td>
+              </tr>
+            </th:block>
+          </tbody>
+        </table>
+      </div>
+      <th:block th:if="${!node.children.isEmpty()}">
+        <ul th:replace="~{cozy/dev/workbench-tree :: nodes(${node.children})}"></ul>
+      </th:block>
+    </details>
+  </li>
+</ul>
+</body>
+</html>

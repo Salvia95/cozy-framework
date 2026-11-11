@@ -65,4 +65,32 @@ class ScreenTreeTest {
 			.containsExactly(org.assertj.core.groups.Tuple.tuple("프래그먼트", "panel"),
 					org.assertj.core.groups.Tuple.tuple("영역", "#body"));
 	}
+
+	@Test
+	void nestsLinesByDepthAndKeepsTheArgumentsOfAnInsertion() {
+		List<Item> items = ScreenTree.of(List.of(
+				node(7, 0, "replace", "cozy/pattern/list-with-filter", "listWithFilter", null, "'메모'", "~{::#actions}",
+						"~{::#filter}", "~{::#result}"),
+				node(10, 1, "slot", "", null, "filter"), node(28, 1, "slot", "", null, "result"),
+				node(47, 2, "replace", "cozy/component/badge", "badge", null, "'고정'", "'neutral'")), MANIFEST,
+				"templates/memo/api/list.html");
+		List<ScreenTree.Node> roots = ScreenTree.nest(items);
+		assertThat(roots).hasSize(1);
+		assertThat(roots.get(0).children()).extracting((n) -> n.item().label()).containsExactly("필터 영역", "결과 영역");
+		assertThat(roots.get(0).children().get(1).children()).extracting((n) -> n.item().detail()).containsExactly("badge");
+
+		Item pattern = items.get(0);
+		assertThat(pattern.id()).isEqualTo("pattern/list-with-filter");
+		assertThat(pattern.purpose()).isEqualTo("목록");
+		assertThat(pattern.lines()).isEqualTo("7–9");
+		assertThat(pattern.args()).extracting(ScreenTree.Arg::label, ScreenTree.Arg::name, ScreenTree.Arg::value)
+			.containsExactly(org.assertj.core.groups.Tuple.tuple("cozyHeading", "cozyHeading", "'메모'"),
+					org.assertj.core.groups.Tuple.tuple("cozyActions", "cozyActions", "~{::#actions}"),
+					org.assertj.core.groups.Tuple.tuple("필터", "cozyFilter", "~{::#filter}"),
+					org.assertj.core.groups.Tuple.tuple("결과", "cozyResult", "~{::#result}"));
+		assertThat(items.get(3).args()).as("매니페스트에 파라미터가 없으면 순번으로 부른다")
+			.extracting(ScreenTree.Arg::label)
+			.containsExactly("인자 1", "인자 2");
+		assertThat(items.get(1).args()).as("영역에는 인자가 없다").isEmpty();
+	}
 }

@@ -76,19 +76,61 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-catalog-frame { display: block; width: 100%; height: 120px; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
 .cozy-catalog-placeholder { padding: 1rem; border: 1px dashed var(--tblr-border-color); border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); text-align: center; }
 
-/* 워크벤치 (/cozy/dev/workbench): 구조 트리는 깊이만큼 들여 쓰고, 미리보기 틀은 고른 폭으로 가운데에 둔다 */
-.cozy-workbench-tree { padding: .5rem 0; }
-.cozy-workbench-node { display: flex; align-items: baseline; gap: .5rem; padding: .25rem 1rem; }
+/* 워크벤치 (/cozy/dev/workbench): 머리 한 줄 아래에 세 칸(화면과 구조, 미리보기, 속성)이 화면 높이를 채우고 칸마다 따로 스크롤한다.
+   좁은 화면에서는 한 열로 쌓인다. 워크벤치에만 쓰는 화면 유형이다. */
+.cozy-workbench-bar { background: var(--tblr-bg-surface); border-bottom: 1px solid var(--tblr-border-color); min-height: 3.25rem; }
+/* 워드마크: viewBox 723×113의 비율로 폭을 정한다. Tabler가 제목과 상표 안의 svg를 아이콘 크기로 줄이므로 같은 자리에서 다시 정한다 */
+.navbar-brand .cozy-workbench-wordmark { display: block; flex: none; height: 1.5rem; width: 9.6rem; margin: 0; color: var(--tblr-body-color); }
+.cozy-workbench-nav .nav-link { padding: .375rem .75rem; border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); }
+.cozy-workbench-nav .nav-link.active { background: var(--cozy-info-bg); color: var(--cozy-info-fg); font-weight: var(--tblr-font-weight-medium); }
+/* 머리와 알림을 뺀 나머지 높이를 세 칸이 채운다. 알림이 생겨도 페이지가 넘치지 않는다 */
+.cozy-workbench { display: flex; flex-direction: column; height: 100vh; min-height: 36rem; }
+.cozy-workbench > .container-fluid { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.cozy-workbench > .container-fluid > .alert { flex: none; }
+.cozy-workbench-panes { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 18rem minmax(0, 1fr) 21rem; gap: 1rem; }
+.cozy-workbench-side { display: grid; grid-template-rows: fit-content(40%) minmax(0, 1fr); gap: 1rem; min-height: 0; }
+.cozy-workbench-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; margin: 0; }
+.cozy-workbench-pane > .card-header { flex: none; min-height: 2.75rem; padding-top: .5rem; padding-bottom: .5rem; }
+.cozy-workbench-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.cozy-workbench-pane > .cozy-workbench-toolbar { flex: none; padding: .5rem 1rem; row-gap: .5rem; }
+.cozy-workbench-scroll > .card-body { flex: none; }
+.cozy-workbench-group { display: flex; text-transform: none; font-size: var(--tblr-font-size-h5); }
+.cozy-workbench-screens .list-group-item { padding-top: .5rem; padding-bottom: .5rem; }
+@media (max-width: 1199.98px) {
+  .cozy-workbench { height: auto; min-height: 0; }
+  .cozy-workbench-panes { grid-template-columns: minmax(0, 1fr); }
+  .cozy-workbench-side { grid-template-rows: auto; }
+  .cozy-workbench-main { order: -1; }
+  .cozy-workbench-scroll { max-height: 70vh; }
+}
+/* 구조 트리: 안의 마디는 세로 선으로 잇고, 마디가 있는 줄은 접고 편다 */
+.cozy-workbench-tree { padding: .5rem .5rem .5rem .75rem; }
+.cozy-workbench-nodes { list-style: none; margin: 0; padding: 0; }
+.cozy-workbench-nodes .cozy-workbench-nodes { margin-left: .5rem; padding-left: .625rem; border-left: 1px solid var(--tblr-border-color); }
+.cozy-workbench-nodes summary { list-style: none; cursor: default; position: relative; }
+.cozy-workbench-nodes summary::-webkit-details-marker { display: none; }
+.cozy-workbench-nodes summary::before { content: ""; position: absolute; left: .125rem; top: .75rem; width: .375rem; height: .375rem; border-right: 1.5px solid var(--tblr-secondary); border-bottom: 1.5px solid var(--tblr-secondary); transform: rotate(-45deg); cursor: pointer; }
+.cozy-workbench-nodes details[open] > summary::before { transform: rotate(45deg); top: .625rem; }
+.cozy-workbench-nodes summary:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: -2px; border-radius: var(--tblr-border-radius); }
+.cozy-workbench-node { scroll-margin: .5rem; display: flex; align-items: baseline; gap: .5rem; padding: .25rem .375rem .25rem 1rem; border-radius: var(--tblr-border-radius); }
+.cozy-workbench-node:hover { background: var(--tblr-bg-surface-secondary); }
 .cozy-workbench-text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .5rem; min-width: 0; }
+.cozy-workbench-kind-slot .cozy-workbench-label { color: var(--tblr-secondary); font-weight: var(--tblr-font-weight-normal); }
+/* 속성 표: 왼쪽 열이 항목 이름이다 */
+.cozy-workbench-props { table-layout: fixed; }
+.cozy-workbench-props th, .cozy-workbench-props td { padding: .4rem .75rem; vertical-align: top; overflow-wrap: anywhere; text-transform: none; letter-spacing: 0; font-size: var(--tblr-font-size-h4); }
+.cozy-workbench-props-name { width: 6.5rem; }
+.cozy-workbench-props th[scope="row"] { background: var(--tblr-bg-surface-secondary); border-right: 1px solid var(--tblr-border-color); color: var(--tblr-secondary); font-weight: var(--tblr-font-weight-normal); }
+.cozy-workbench-props-section th { padding-top: .75rem; background: var(--tblr-bg-surface); color: var(--tblr-body-color); font-weight: var(--tblr-font-weight-bold); }
+.cozy-workbench-props code { padding: 0; background: transparent; font-size: var(--tblr-font-size-h5); white-space: normal; }
 .cozy-workbench-label { padding: 0; border: 0; background: none; color: inherit; font-weight: var(--tblr-font-weight-medium); text-align: left; overflow-wrap: anywhere; }
 .cozy-workbench-label:hover { color: var(--tblr-primary); }
 .cozy-workbench-label:focus-visible, .cozy-workbench-line:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; border-radius: 2px; }
 .cozy-workbench-location { white-space: normal; overflow-wrap: anywhere; }
-.cozy-workbench-chain { min-height: 1.5em; overflow-wrap: anywhere; }
+.cozy-workbench-chain { overflow-wrap: anywhere; }
+.cozy-workbench-chain:empty { display: none; }
 .cozy-workbench-node-selected { background: var(--cozy-info-bg); box-shadow: inset 2px 0 0 var(--tblr-primary); }
 .cozy-workbench-node-selected .cozy-workbench-label:hover { color: inherit; }
-/* 워드마크: viewBox 723×113의 비율로 폭을 정한다. Tabler가 page-title 안의 svg를 아이콘 크기로 줄이므로 같은 자리에서 다시 정한다 */
-.page-title .cozy-workbench-wordmark { display: block; flex: none; height: 1.75rem; width: 11.2rem; margin-right: 0; color: var(--tblr-body-color); }
 .cozy-workbench-map dt code, .form-hint code { font-size: inherit; }
 .cozy-workbench-id { padding: 0; background: transparent; color: var(--tblr-secondary); font-size: var(--tblr-font-size-h5); overflow-wrap: anywhere; }
 .list-group-item.active .cozy-workbench-id { color: inherit; }
@@ -99,17 +141,8 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-context { padding: .75rem; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface-secondary); color: var(--tblr-body-color); font-size: var(--tblr-font-size-h5); white-space: pre-wrap; overflow-wrap: anywhere; }
 .cozy-workbench-toggle { flex-wrap: wrap; }
 .cozy-workbench-toggle .btn.active { color: var(--tblr-primary-fg); background: var(--tblr-primary); border-color: var(--tblr-primary); }
-.cozy-workbench-kind-slot .cozy-workbench-label, .cozy-workbench-kind-fragment .cozy-workbench-label { font-weight: var(--tblr-font-weight-normal); }
 .cozy-workbench-line { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 1.5rem; min-height: 1.5rem; margin-left: auto; color: var(--tblr-secondary); font-family: var(--tblr-font-monospace); }
 .cozy-workbench-source tr:target { background: var(--cozy-info-bg); }
-.cozy-workbench-depth-1 { padding-left: 1.75rem; }
-.cozy-workbench-depth-2 { padding-left: 2.5rem; }
-.cozy-workbench-depth-3 { padding-left: 3.25rem; }
-.cozy-workbench-depth-4 { padding-left: 4rem; }
-.cozy-workbench-depth-5 { padding-left: 4.75rem; }
-.cozy-workbench-depth-6 { padding-left: 5.5rem; }
-.cozy-workbench-depth-7 { padding-left: 6.25rem; }
-.cozy-workbench-depth-8 { padding-left: 7rem; }
 .cozy-workbench-file, .cozy-workbench-file code { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .cozy-workbench-nav .nav-link:focus-visible, [data-cozy-copy]:focus-visible, [data-cozy-workbench-copy]:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
 .cozy-workbench-findings td { vertical-align: top; }
@@ -126,10 +159,13 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-plan td { vertical-align: top; }
 .cozy-workbench-plan th:first-child, .cozy-workbench-plan td:first-child { width: 5rem; }
 .cozy-workbench-stage { background: var(--tblr-bg-surface-secondary); }
-.cozy-workbench-frame { display: block; width: 100%; height: 70vh; margin: 0 auto; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
-.cozy-workbench-canvas:has(.cozy-workbench-frame-1024) { max-width: 1024px; }
-.cozy-workbench-canvas:has(.cozy-workbench-frame-768) { max-width: 768px; }
-.cozy-workbench-canvas:has(.cozy-workbench-frame-390) { max-width: 390px; }
+/* 고른 너비가 칸보다 넓으면 줄이지 않고 칸 안에서 가로로 스크롤한다 */
+.cozy-workbench-stage { flex: 1 1 auto; min-height: 20rem; display: flex; overflow: auto; }
+.cozy-workbench-stage .cozy-workbench-canvas { flex: 1 0 auto; width: 100%; }
+.cozy-workbench-frame { display: block; width: 100%; height: 100%; min-height: 20rem; margin: 0 auto; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); background: var(--tblr-bg-surface); }
+.cozy-workbench-stage .cozy-workbench-canvas:has(.cozy-workbench-frame-1024) { flex: none; width: 1024px; }
+.cozy-workbench-stage .cozy-workbench-canvas:has(.cozy-workbench-frame-768) { flex: none; width: 768px; }
+.cozy-workbench-stage .cozy-workbench-canvas:has(.cozy-workbench-frame-390) { flex: none; width: 390px; }
 .cozy-workbench-source td { padding-top: 0; padding-bottom: 0; vertical-align: top; }
 .cozy-workbench-source-number { width: 3.5rem; text-align: right; font-family: var(--tblr-font-monospace); font-size: var(--tblr-font-size-h4); user-select: none; }
 .cozy-workbench-source-text { margin: 0; padding: 0; border: 0; background: transparent; color: var(--tblr-body-color); font-size: var(--tblr-font-size-h4); white-space: pre-wrap; overflow-wrap: anywhere; }

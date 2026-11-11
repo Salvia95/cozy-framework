@@ -1,6 +1,7 @@
 # {{L}} 만들기 (form-page 패턴, cozy add crud)
 screen: {{module}}-form
 template: {{module}}/api/form
+title: "{{L}} 만들기"
 fragments: [{{e}}Form]
 model:
   form: {{dtoPkg}}.{{E}}Form

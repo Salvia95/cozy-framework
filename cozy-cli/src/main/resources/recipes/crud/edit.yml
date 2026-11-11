@@ -1,6 +1,7 @@
 # {{L}} 수정 (form-page 패턴, cozy add crud)
 screen: {{module}}-edit
 template: {{module}}/api/edit
+title: "{{L}} 수정"
 fragments: [{{e}}Form]
 model:
   item: {{dtoPkg}}.{{E}}Views.Detail

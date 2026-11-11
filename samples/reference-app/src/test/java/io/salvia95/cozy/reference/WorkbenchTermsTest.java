@@ -59,7 +59,7 @@ class WorkbenchTermsTest {
 	void theMenuUsesTheGlossaryAndCarriesTheWordmark() throws Exception {
 		String html = page("");
 		assertThat(texts(html, "<a class=\"nav-link[^\"]*\"[^>]*>\\s*([^<]+)<")).as("메뉴와 보기 탭")
-			.containsExactly("화면", "모듈", "코드 생성", "검사", "컴포넌트", "미리보기", "샘플 데이터", "템플릿", "화면 명세");
+			.containsExactly("화면", "모듈", "코드 생성", "검사", "컴포넌트", "미리보기", "템플릿", "화면 명세", "속성", "샘플 데이터");
 		assertThat(html).contains("class=\"cozy-workbench-wordmark\"").contains("aria-label=\"Cozy Workbench\"");
 	}
 
@@ -89,7 +89,7 @@ class WorkbenchTermsTest {
 	void everyStructureNodeHasAReadableNameBeforeItsIdentifier() throws Exception {
 		for (ScreenSpec spec : ScreenSpec.load(getClass().getClassLoader())) {
 			String html = page("?spec=" + spec.screen());
-			List<String> labels = texts(html, "data-cozy-workbench-node[^>]*>([^<]+)<");
+			List<String> labels = texts(html, "data-cozy-workbench-node(?:=\"\")?>([^<]+)<");
 			assertThat(labels).as(spec.screen()).isNotEmpty().allMatch((label) -> HANGUL.matcher(label).find());
 		}
 		String list = page("?spec=memo-list");

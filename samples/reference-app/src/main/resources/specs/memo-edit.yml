@@ -1,6 +1,7 @@
 # 메모 수정 (form-page 패턴)
 screen: memo-edit
 template: memo/api/edit
+title: 메모 수정
 fragments: [memoForm]
 model:
   memo: io.salvia95.cozy.reference.memo.api.dto.MemoViews.Detail

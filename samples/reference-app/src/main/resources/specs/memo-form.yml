@@ -1,6 +1,7 @@
 # 메모 만들기 (form-page 패턴)
 screen: memo-form
 template: memo/api/form
+title: 메모 만들기
 fragments: [memoForm]
 model:
   form: io.salvia95.cozy.reference.memo.api.dto.MemoForm

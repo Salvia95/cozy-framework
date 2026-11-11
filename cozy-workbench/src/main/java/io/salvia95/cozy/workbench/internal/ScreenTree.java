@@ -42,9 +42,57 @@ final class ScreenTree {
 	 * @param line 요소가 시작하는 줄
 	 * @param endLine 요소가 끝나는 줄
 	 * @param target 삽입하는 템플릿 이름. 영역과 선언이면 빈 문자열
+	 * @param id 매니페스트의 id ({@code component/badge}). 매니페스트에 없으면 빈 문자열
+	 * @param purpose 매니페스트의 용도 한 줄. 없으면 빈 문자열
+	 * @param args 삽입에 넘긴 인자 (선언한 파라미터 순서)
 	 */
 	record Item(int depth, String kind, String label, String detail, String kindLabel, String code, String location, int line,
-			int endLine, String target) {
+			int endLine, String target, String id, String purpose, List<Arg> args) {
+
+		/** 소스의 줄 범위 ({@code 40–54}, 한 줄이면 {@code 47}) */
+		public String lines() {
+			return (this.endLine > this.line) ? this.line + "–" + this.endLine : String.valueOf(this.line);
+		}
+	}
+
+	/**
+	 * 삽입에 넘긴 인자 하나.
+	 *
+	 * @param label 사람에게 보일 이름. 파라미터의 표시 이름이나 이름, 모르면 순번
+	 * @param name 파라미터 이름. 모르면 빈 문자열
+	 * @param value 템플릿에 적힌 값 ({@code '고정'}, {@code ~{::#filter}}, {@code ${result.page}})
+	 * @param description 파라미터의 설명. 없으면 빈 문자열
+	 */
+	record Arg(String label, String name, String value, String description) {
+	}
+
+	/** 트리의 마디: 줄 하나와 그 안의 줄들 */
+	record Node(Item item, List<Node> children) {
+	}
+
+	/** 깊이로 적힌 줄들을 마디로 묶는다 */
+	static List<Node> nest(List<Item> items) {
+		List<Node> roots = new ArrayList<>();
+		List<Node> open = new ArrayList<>();
+		for (Item item : items) {
+			while (open.size() > item.depth()) {
+				open.removeLast();
+			}
+			Node node = new Node(item, new ArrayList<>());
+			(open.isEmpty() ? roots : open.getLast().children()).add(node);
+			open.add(node);
+		}
+		return roots;
+	}
+
+	private static List<Arg> args(OutlineNode node, Entry entry) {
+		List<Arg> args = new ArrayList<>();
+		for (int i = 0; i < node.args().size(); i++) {
+			Param param = (entry != null && i < entry.params().size()) ? entry.params().get(i) : null;
+			args.add(new Arg((param != null) ? param.displayName() : "인자 " + (i + 1), (param != null) ? param.name() : "",
+					node.args().get(i), (param != null) ? param.description() : ""));
+		}
+		return args;
 	}
 
 	/**
@@ -80,12 +128,12 @@ final class ScreenTree {
 							String name = entry.id().substring(entry.id().indexOf('/') + 1);
 							String group = GROUP_LABELS.getOrDefault(entry.group(), entry.group());
 							items.add(item(depth, node, entry.label().isBlank() ? group : entry.label(), name, group,
-									name + " (" + group + ")", location, node.target()));
+									name + " (" + group + ")", location, node.target(), entry));
 						}
 						else if (node.fragment() != null) {
 							items.add(item(depth, node, (entry != null && !entry.label().isBlank()) ? entry.label() : "프래그먼트",
 									node.fragment(), "프래그먼트",
-									node.fragment() + " (" + target(node) + ")", location, node.target()));
+									node.fragment() + " (" + target(node) + ")", location, node.target(), entry));
 						}
 						else {
 							items.add(item(depth, node, "템플릿", target(node), "템플릿", target(node) + " (템플릿)", location, node.target()));
@@ -100,7 +148,14 @@ final class ScreenTree {
 
 	private static Item item(int depth, OutlineNode node, String label, String detail, String kindLabel, String code,
 			String location, String target) {
-		return new Item(depth, node.kind(), label, detail, kindLabel, code, location, node.line(), node.endLine(), target);
+		return item(depth, node, label, detail, kindLabel, code, location, target, null);
+	}
+
+	private static Item item(int depth, OutlineNode node, String label, String detail, String kindLabel, String code,
+			String location, String target, Entry entry) {
+		boolean insertion = !node.kind().equals("slot") && !node.kind().equals("fragment");
+		return new Item(depth, node.kind(), label, detail, kindLabel, code, location, node.line(), node.endLine(), target,
+				(entry != null) ? entry.id() : "", (entry != null) ? entry.purpose() : "", insertion ? args(node, entry) : List.of());
 	}
 
 	private static String target(OutlineNode node) {

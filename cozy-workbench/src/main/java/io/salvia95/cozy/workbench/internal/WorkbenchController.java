@@ -79,6 +79,9 @@ public class WorkbenchController {
 		}
 		List<ScreenSpec> specs = this.screenSpecs.all();
 		model.addAttribute("specs", specs);
+		Map<String, List<ScreenSpec>> groups = new LinkedHashMap<>();
+		specs.forEach((s) -> groups.computeIfAbsent(module(s), (m) -> new ArrayList<>()).add(s));
+		model.addAttribute("screenGroups", groups);
 		model.addAttribute("specProblem", this.screenSpecs.problem());
 		model.addAttribute("engineAvailable", this.engine.available());
 		WorkbenchEngine.Check check = check();
@@ -119,6 +122,9 @@ public class WorkbenchController {
 			}
 		}
 		model.addAttribute("tree", tree);
+		model.addAttribute("nodes", ScreenTree.nest(tree));
+		model.addAttribute("screenModule", module(screen));
+		model.addAttribute("templateFile", "src/main/resources/" + templateFile);
 		model.addAttribute("specFile", specFile);
 		if (view.equals("fixture") && this.engine.available()) {
 			String text = this.engine.source(specFile(screen.screen())).orElse(null);
@@ -136,6 +142,11 @@ public class WorkbenchController {
 		model.addAttribute("sourceFile", sourceFile);
 		model.addAttribute("sourceLines", (sourceFile != null) ? lines(sourceFile) : List.of());
 		return "cozy/dev/workbench";
+	}
+
+	/** 화면의 모듈: 템플릿 경로의 첫 마디 */
+	private static String module(ScreenSpec spec) {
+		return spec.template().substring(0, spec.template().indexOf('/'));
 	}
 
 	/** 검사할 수 없으면(프로젝트 폴더가 아님) 빈 결과 */

@@ -1,6 +1,7 @@
 # {{L}} 목록 (list-with-filter 패턴, cozy add crud). 패턴 카탈로그 미리보기와 렌더링 검사(C3)가 같이 쓴다.
 screen: {{module}}-list
 template: {{module}}/api/list
+title: "{{L}} 목록"
 fragments: [result]
 model:
   filter: {{dtoPkg}}.{{E}}Filter
