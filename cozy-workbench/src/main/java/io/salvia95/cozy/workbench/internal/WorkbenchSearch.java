@@ -12,8 +12,11 @@ import java.util.Map;
  *
  * <p>
  * 검색어는 공백으로 나눈 낱말이고, 모든 낱말이 한 항목 안에 있어야 찾는다. 대소문자와 띄어쓰기, 식별자의 구분 글자({@code - _ / . :})는 보지
- * 않는다: {@code 메모목록}은 {@code 메모 목록}을, {@code memolist}는 {@code memo-list}를 찾는다. 이름과 식별자에서 찾은 항목이 설명에서만
- * 찾은 항목보다 앞에 온다.
+ * 않는다: {@code 메모목록}은 {@code 메모 목록}을, {@code memolist}는 {@code memo-list}를 찾는다.
+ *
+ * <p>
+ * 이름과 식별자에서 먼저 찾는다. 거기서 하나도 찾지 못했을 때만 설명과 경로에서 찾는다. 설명에 낱말이 들어 있을 뿐인 항목이 이름이 맞는 항목
+ * 사이에 섞이지 않게 한다.
  */
 final class WorkbenchSearch {
 
@@ -43,6 +46,21 @@ final class WorkbenchSearch {
 
 	/** 묶음 하나의 결과 */
 	record Group(String kind, List<Hit> hits) {
+	}
+
+	/**
+	 * 검색 결과.
+	 *
+	 * @param groups 묶음별 결과 ({@link #KINDS} 순서, 찾은 것이 있는 묶음만)
+	 * @param descriptions 이름과 식별자에서 찾지 못해 설명에서 찾은 결과인가
+	 */
+	record Result(List<Group> groups, boolean descriptions) {
+
+		static final Result EMPTY = new Result(List.of(), false);
+
+		public int total() {
+			return this.groups.stream().mapToInt((g) -> g.hits().size()).sum();
+		}
 	}
 
 	/** 묶음의 순서 */
@@ -75,6 +93,9 @@ final class WorkbenchSearch {
 		return terms;
 	}
 
+	/** 설명에서만 찾은 낱말의 점수 */
+	private static final int IN_DESCRIPTION = 1;
+
 	/**
 	 * 낱말 하나의 점수. 이름이나 식별자와 같으면 6, 그것으로 시작하면 4, 그 안에 있으면 3, 설명에만 있으면 1, 없으면 0.
 	 */
@@ -97,36 +118,46 @@ final class WorkbenchSearch {
 		}
 		for (String field : entry.more()) {
 			if (normalize(field).contains(term)) {
-				return 1;
+				return IN_DESCRIPTION;
 			}
 		}
 		return 0;
 	}
 
 	/**
-	 * @return 묶음별 결과 ({@link #KINDS} 순서, 찾은 것이 있는 묶음만). 묶음 안은 점수가 높은 것부터, 같으면 받은 순서
+	 * @return 묶음별 결과. 묶음 안은 점수가 높은 것부터, 같으면 받은 순서
 	 */
-	static List<Group> search(String query, List<Entry> entries) {
+	static Result search(String query, List<Entry> entries) {
 		List<String> terms = terms(query);
 		if (terms.isEmpty()) {
-			return List.of();
+			return Result.EMPTY;
 		}
-		Map<String, List<Hit>> byKind = new LinkedHashMap<>();
-		KINDS.forEach((kind) -> byKind.put(kind, new ArrayList<>()));
+		List<Hit> byName = new ArrayList<>();
+		List<Hit> byDescription = new ArrayList<>();
 		for (Entry entry : entries) {
 			int total = 0;
+			boolean named = true;
 			for (String term : terms) {
 				int score = score(entry, term);
 				if (score == 0) {
 					total = 0;
 					break;
 				}
+				named &= score > IN_DESCRIPTION;
 				total += score;
 			}
 			if (total > 0) {
-				byKind.computeIfAbsent(entry.kind(), (k) -> new ArrayList<>()).add(new Hit(entry, total));
+				(named ? byName : byDescription).add(new Hit(entry, total));
 			}
 		}
+		boolean descriptions = byName.isEmpty();
+		return new Result(group(descriptions ? byDescription : byName), descriptions && !byDescription.isEmpty());
+	}
+
+	private static List<Group> group(List<Hit> found) {
+		Map<String, List<Hit>> byKind = new LinkedHashMap<>();
+		KINDS.forEach((kind) -> byKind.put(kind, new ArrayList<>()));
+		found.forEach((hit) -> byKind.computeIfAbsent(hit.entry().kind(), (k) -> new ArrayList<>()).add(hit));
 		List<Group> groups = new ArrayList<>();
 		byKind.forEach((kind, hits) -> {
 			if (!hits.isEmpty()) {

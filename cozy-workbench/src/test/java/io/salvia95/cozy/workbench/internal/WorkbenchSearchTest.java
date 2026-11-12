@@ -20,8 +20,8 @@ class WorkbenchSearchTest {
 			new Entry("생성 항목", "CRUD 화면", "cozy add crud", "화면", "", "/r?recipe=crud", List.of("목록, 등록, 상세, 수정, 삭제 화면")),
 			new Entry("모듈", "memo", "io.salvia95.app.memo", "", "", "/m?module=memo", List.of()));
 
-	static List<String> ids(List<Group> groups) {
-		return groups.stream().flatMap((g) -> g.hits().stream()).map((h) -> h.entry().id()).toList();
+	static List<String> ids(WorkbenchSearch.Result result) {
+		return result.groups().stream().flatMap((g) -> g.hits().stream()).map((h) -> h.entry().id()).toList();
 	}
 
 	@Test
@@ -39,21 +39,32 @@ class WorkbenchSearchTest {
 	}
 
 	@Test
-	void namesRankBeforeDescriptionsAndGroupsFollowTheMenuOrder() {
-		List<Group> groups = WorkbenchSearch.search("목록", ENTRIES);
-		assertThat(groups).extracting(Group::kind).containsExactly("화면", "컴포넌트", "생성 항목");
+	void groupsFollowTheMenuOrderAndExactNamesComeFirst() {
+		List<Group> groups = WorkbenchSearch.search("목록", ENTRIES).groups();
+		assertThat(groups).extracting(Group::kind).as("설명에만 '목록'이 있는 CRUD 화면은 빠진다").containsExactly("화면", "컴포넌트");
 		assertThat(groups.get(1).hits()).extracting((h) -> h.entry().id()).containsExactly("pattern/list-with-filter");
-		List<Group> memo = WorkbenchSearch.search("memo", ENTRIES);
+		List<Group> memo = WorkbenchSearch.search("memo", ENTRIES).groups();
 		assertThat(memo).extracting(Group::kind).containsExactly("화면", "모듈");
 		assertThat(memo.get(1).hits().getFirst().score()).as("이름과 같으면 가장 높다").isEqualTo(6);
-		assertThat(ids(WorkbenchSearch.search("짧게", ENTRIES))).as("설명에서도 찾는다").containsExactly("component/badge");
+		assertThat(WorkbenchSearch.search("메모", ENTRIES).groups().getFirst().hits()).extracting((h) -> h.entry().id())
+			.as("점수가 같으면 받은 순서").containsExactly("memo-list", "memo-detail");
+	}
+
+	@Test
+	void descriptionsAreSearchedOnlyWhenNoNameMatches() {
+		WorkbenchSearch.Result result = WorkbenchSearch.search("짧게", ENTRIES);
+		assertThat(ids(result)).containsExactly("component/badge");
+		assertThat(result.descriptions()).isTrue();
+		assertThat(WorkbenchSearch.search("crud", ENTRIES).descriptions()).isFalse();
+		assertThat(WorkbenchSearch.search("없는말", ENTRIES).descriptions()).as("아무것도 없으면 설명 결과도 아니다").isFalse();
+		assertThat(WorkbenchSearch.search("메모 짧게", ENTRIES).total()).as("낱말마다 같은 항목에 있어야 한다").isZero();
 	}
 
 	@Test
 	void anEmptyQueryFindsNothing() {
-		assertThat(WorkbenchSearch.search("", ENTRIES)).isEmpty();
-		assertThat(WorkbenchSearch.search("  - / ", ENTRIES)).isEmpty();
-		assertThat(WorkbenchSearch.search(null, ENTRIES)).isEmpty();
+		assertThat(WorkbenchSearch.search("", ENTRIES).groups()).isEmpty();
+		assertThat(WorkbenchSearch.search("  - / ", ENTRIES).groups()).isEmpty();
+		assertThat(WorkbenchSearch.search(null, ENTRIES).groups()).isEmpty();
 		assertThat(WorkbenchSearch.terms("x".repeat(500))).singleElement().asString().hasSize(WorkbenchSearch.MAX_QUERY);
 	}
 }

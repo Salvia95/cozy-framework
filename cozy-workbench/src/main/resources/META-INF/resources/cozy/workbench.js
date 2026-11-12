@@ -64,17 +64,74 @@
     });
   }
 
-  // 전체 상태 보기: 고정 크기로 그린 미리보기를 칸 폭에 맞게 줄인다(--cozy-thumb-w는 그린 폭)
+  // 축소 미리보기: 고정 크기로 그린 미리보기를 칸 폭에 맞게 줄인다(--cozy-thumb-w는 그린 폭). 상태 비교 창이 쓴다
   var thumbs = document.querySelectorAll('[data-cozy-workbench-thumb]');
   if (thumbs.length && window.ResizeObserver) {
     var fit = new ResizeObserver(function (entries) {
       entries.forEach(function (entry) {
         var thumb = entry.target;
         var width = parseFloat(getComputedStyle(thumb).getPropertyValue('--cozy-thumb-w')) || 1280;
-        thumb.style.setProperty('--cozy-thumb-scale', String(thumb.clientWidth / width));
+        // 그린 크기보다 키우지 않는다(카드가 넓으면 가운데에 그린 크기 그대로)
+        thumb.style.setProperty('--cozy-thumb-scale', String(Math.min(1, thumb.clientWidth / width)));
       });
     });
     thumbs.forEach(function (thumb) { fit.observe(thumb); });
+  }
+
+  // 상태 비교 창: 고른 상태만 보이고, 창이 열려 있을 때 그 미리보기를 불러온다. 한 번에 data-cozy-compare-limit개까지 고른다
+  var compare = document.querySelector('[data-cozy-compare]');
+  if (compare) {
+    var limit = parseInt(compare.dataset.cozyCompareLimit, 10) || 4;
+    var picks = Array.prototype.slice.call(compare.querySelectorAll('[data-cozy-compare-pick]'));
+    var grid = compare.querySelector('[data-cozy-compare-grid]');
+    var note = compare.querySelector('[data-cozy-compare-note]');
+    var empty = compare.querySelector('[data-cozy-compare-empty]');
+    var opened = false;
+    var cardOf = function (name) {
+      return Array.prototype.find.call(grid.children, function (card) { return card.dataset.cozyCompareState === name; });
+    };
+    var update = function () {
+      var count = 0;
+      picks.forEach(function (pick) {
+        var card = cardOf(pick.value);
+        card.hidden = !pick.checked;
+        if (pick.checked) {
+          count++;
+          var frame = card.querySelector('iframe');
+          if (opened && !frame.getAttribute('src')) {
+            frame.setAttribute('src', frame.dataset.src);
+          }
+        }
+      });
+      picks.forEach(function (pick) { pick.disabled = !pick.checked && count >= limit; });
+      note.hidden = !(count >= limit && picks.length > limit);
+      empty.hidden = count > 0;
+    };
+    picks.forEach(function (pick) { pick.addEventListener('change', update); });
+    compare.querySelectorAll('[data-cozy-compare-width]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        grid.querySelectorAll('[data-cozy-workbench-thumb]').forEach(function (thumb) {
+          thumb.className = thumb.className.replace(/cozy-workbench-thumb-\S+/, 'cozy-workbench-thumb-' + radio.value);
+        });
+        // 카드를 누르면 고른 너비로 그 상태를 연다
+        grid.querySelectorAll('a[href]').forEach(function (link) {
+          var url = new URL(link.href, window.location.href);
+          url.searchParams.set('w', radio.value);
+          link.setAttribute('href', url.pathname + url.search);
+        });
+      });
+    });
+    compare.addEventListener('shown.bs.modal', function () {
+      opened = true;
+      update();
+    });
+    update();
+    if (compare.dataset.cozyCompareOpen === 'true') {
+      var button = document.querySelector('[data-cozy-compare-button]');
+      if (button) {
+        button.click();
+      }
+    }
   }
 
   // 코드 생성 폼: 모듈을 고르면 그 모듈의 선택지만 보인다. 아이콘 칸은 적은 아이콘을 앞에 그린다

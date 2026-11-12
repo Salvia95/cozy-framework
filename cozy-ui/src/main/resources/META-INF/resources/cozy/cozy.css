@@ -250,17 +250,30 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-search-page { max-width: 56rem; margin: 0 auto; }
 .cozy-workbench-search-context { overflow-wrap: anywhere; }
 /* 개요 */
-.cozy-workbench-overview-group th { background: var(--tblr-bg-surface-secondary); text-transform: none; font-size: var(--tblr-font-size-h5); color: var(--tblr-body-color); }
+/* 개요의 화면 목록: 모듈마다 접고 펴는 묶음. 열 폭을 고정해 묶음마다 열이 같은 자리에 온다 */
+.cozy-workbench-overview-module + .cozy-workbench-overview-module, .cozy-workbench-overview-module:first-of-type { border-top: 1px solid var(--tblr-border-color); }
+.cozy-workbench-overview-module > summary { padding: .625rem 1.25rem; background: var(--tblr-bg-surface-secondary); cursor: pointer; }
+.cozy-workbench-overview-module > summary:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: -2px; }
+.cozy-workbench-overview-module:last-child, .cozy-workbench-overview-module:last-child .table { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.cozy-workbench-overview-screens { table-layout: fixed; }
+.cozy-workbench-overview-name { width: 34%; }
+.cozy-workbench-overview-count { width: 7rem; }
+.cozy-workbench-overview-action { width: 7rem; }
 .cozy-workbench-overview .card-actions a { font-size: var(--tblr-font-size-h5); }
-.cozy-workbench-overview-table code { white-space: nowrap; }
+/* 식별자는 중간에서 끊지 않고 통째로 다음 줄로 넘긴다 */
+.cozy-workbench-overview-table code { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 /* 화면 표는 줄어들지 않고 칸 안에서 가로로 스크롤한다(좁은 화면) */
 .cozy-workbench-overview-screens { min-width: 40rem; }
 /* 화면 낭독기용 머리 글자(position: absolute)가 스크롤 상자 밖으로 나가 페이지를 넓히지 않게 한다 */
 .cozy-workbench-overview .table-responsive { position: relative; }
-/* 전체 상태 보기: 상태마다 고른 너비(full은 1280px)로 그린 미리보기를 카드 폭에 맞게 줄인다. 줄이는 비율은 workbench.js가 정한다 */
-.cozy-workbench-states { list-style: none; margin: 0; padding: 0; width: 100%; align-self: flex-start; display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
-.cozy-workbench-states-390 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); }
+/* 상태 비교 창: 고른 수와 관계없이 창 크기는 같다(화면 높이에 맞추고 안에서 스크롤). 카드는 넓으면 두 열(4개면 위 2개, 아래 2개), 좁으면 한 열.
+   미리보기는 고른 화면 너비(full은 1280px)로 그린 뒤 카드 폭에 맞게 줄인다. 줄이는 비율은 workbench.js가 정한다 */
+@media (min-width: 576px) { .cozy-workbench-compare-dialog { max-width: min(96vw, 96rem); } }
+.cozy-workbench-compare-dialog .modal-content { height: 100%; }
+.cozy-workbench-states { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 1rem; align-items: start; }
+.cozy-workbench-compare-grid { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .cozy-workbench-compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cozy-workbench-compare-picks .form-check-input:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
 .cozy-workbench-state { margin: 0; }
 .cozy-workbench-state > .card-header { min-height: 2.5rem; padding: .5rem .75rem; }
 .cozy-workbench-state-current { border-color: var(--tblr-primary); box-shadow: inset 0 0 0 1px var(--tblr-primary); }
@@ -268,6 +281,7 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-state:has(.stretched-link:focus-visible) { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
 .cozy-workbench-state:hover { border-color: var(--tblr-primary); }
 .cozy-workbench-thumb { --cozy-thumb-w: 1280; --cozy-thumb-h: 800; position: relative; overflow: hidden; aspect-ratio: var(--cozy-thumb-w) / var(--cozy-thumb-h);
+  max-width: calc(var(--cozy-thumb-w) * 1px); width: 100%; margin: 0 auto;
   background: var(--tblr-bg-surface); border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .cozy-workbench-thumb-1024 { --cozy-thumb-w: 1024; --cozy-thumb-h: 768; }
 .cozy-workbench-thumb-768 { --cozy-thumb-w: 768; --cozy-thumb-h: 1024; }

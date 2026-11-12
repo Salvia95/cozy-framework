@@ -18,7 +18,7 @@
         </div>
         <button type="submit" class="btn btn-primary">검색</button>
       </form>
-      <p class="text-secondary small mb-4">화면, 컴포넌트, 생성 항목, 모듈을 한글 이름이나 식별자로 찾습니다. 띄어쓰기와 대소문자는 구분하지 않습니다.</p>
+      <p class="text-secondary small mb-4">화면, 컴포넌트, 생성 항목, 모듈을 한글 이름이나 식별자로 찾습니다. 띄어쓰기와 대소문자는 구분하지 않습니다. 이름과 식별자에서 찾지 못하면 설명에서 찾습니다.</p>
 
       <th:block th:if="${searched and total == 0}">
         <div class="card"><div class="card-body">
@@ -27,7 +27,8 @@
       </th:block>
 
       <th:block th:if="${total > 0}">
-        <p class="mb-3" role="status"><strong th:text="|'${query}' 검색 결과 ${total}건|">'메모' 검색 결과 7건</strong></p>
+        <p class="mb-3" role="status"><strong th:text="|'${query}' 검색 결과 ${total}건|">'메모' 검색 결과 7건</strong>
+          <span class="text-secondary" th:if="${inDescriptions}">· 이름과 식별자에서 찾지 못해 설명에서 찾았습니다.</span></p>
         <section class="card mb-3" th:each="group, it : ${results}" th:aria-labelledby="|search-group-${it.index}|">
           <div class="card-header">
             <h3 class="card-title" th:id="|search-group-${it.index}|" th:text="${group.kind}">화면</h3>

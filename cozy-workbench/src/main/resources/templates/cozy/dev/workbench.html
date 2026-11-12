@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--/*
   워크벤치 (cozy.dev.workbench.enabled=true). 선택한 것은 주소의 파라미터에 있다: spec, state, w(화면 너비),
-  view(preview·template·spec은 가운데에 보일 것, fixture는 미리보기 옆에 샘플 데이터, states는 모든 상태의 축소 미리보기.
-  샘플 데이터는 workbench-fixture.html이 그린다).
+  view(preview·template·spec은 가운데에 보일 것, fixture는 미리보기 옆에 샘플 데이터. 샘플 데이터는 workbench-fixture.html이 그린다).
+  미리보기의 상태는 하나만 고른다. 여러 상태는 "상태 비교" 창에서 나란히 본다(compare=true면 열린 채로 시작한다).
   구성은 세 칸이다. 왼쪽은 모듈별 화면 목록과 선택한 화면의 구조 트리, 가운데는 미리보기나 소스, 오른쪽은 속성이나 샘플 데이터.
   구조 트리의 마디마다 속성 표가 숨겨져 있고, 마디나 미리보기의 요소를 선택하면 스크립트가 그 표를 오른쪽 칸에 보인다.
   미리보기는 패턴 카탈로그의 /cozy/dev/catalog/screen을 그대로 쓴다.
@@ -43,7 +43,7 @@
               <a class="list-group-item list-group-item-action d-flex flex-wrap align-items-baseline column-gap-2" th:each="item : ${group.value}"
                  th:classappend="${item.screen == screen.screen} ? 'active'"
                  th:aria-current="${item.screen == screen.screen} ? 'page'"
-                 th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w})} + ${viewSuffix}">
+                 th:href="@{/cozy/dev/workbench(spec=${item.screen},w=${w})} + ${fixtureSuffix}">
                 <span th:if="${!item.title.isEmpty()}" th:text="${item.title}">메모 목록</span>
                 <code class="cozy-workbench-id" th:text="${item.screen}">memo-list</code>
                 <span class="badge cozy-tone-critical ms-auto" th:if="${violationCounts.containsKey(item.screen)}"
@@ -73,7 +73,7 @@
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" aria-label="가운데 보기">
             <li class="nav-item">
-              <a class="nav-link" th:classappend="${view == 'preview' or view == 'fixture' or view == 'states'} ? 'active'"
+              <a class="nav-link" th:classappend="${view == 'preview' or view == 'fixture'} ? 'active'"
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}">미리보기</a>
             </li>
             <li class="nav-item">
@@ -98,9 +98,9 @@
           </div>
         </div>
 
-        <th:block th:if="${view == 'preview' or view == 'fixture' or view == 'states'}">
+        <th:block th:if="${view == 'preview' or view == 'fixture'}">
           <div class="card-body border-bottom d-flex flex-wrap align-items-center gap-3 cozy-workbench-toolbar">
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
               <span class="text-secondary small text-nowrap">상태</span>
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="상태">
                 <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
@@ -108,46 +108,28 @@
                    th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}"
                    th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
               </div>
+              <!--/* 여러 상태를 나란히 본다: 아래의 상태 비교 창 */-->
+              <button type="button" class="btn btn-sm" th:if="${screen.states.size() > 1}"
+                      data-bs-toggle="modal" data-bs-target="#state-compare" aria-haspopup="dialog" data-cozy-compare-button>
+                <svg th:replace="~{cozy/icon/tabler :: icon('layout-columns')}"></svg>상태 비교</button>
             </div>
             <div class="d-flex align-items-center gap-2">
               <span class="text-secondary small text-nowrap">화면 너비</span>
               <div class="btn-group cozy-workbench-toggle" role="group" aria-label="화면 너비">
                 <a class="btn btn-sm" th:each="width : ${widths}"
                    th:classappend="${width == w} ? 'active'" th:aria-current="${width == w} ? 'true'"
-                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})} + ${viewSuffix}"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})} + ${fixtureSuffix}"
                    th:text="${width == 'full'} ? '전체' : ${width}">전체</a>
               </div>
             </div>
-            <!--/* 모든 상태를 한 번에 본다. 다시 누르면 고른 상태의 미리보기로 돌아간다 */-->
-            <a class="btn btn-sm" th:classappend="${view == 'states'} ? 'active'" th:aria-current="${view == 'states'} ? 'true'"
-               th:href="${view == 'states'} ? @{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})} : @{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='states')}">
-              <svg th:replace="~{cozy/icon/tabler :: icon('layout-grid')}"></svg>전체 상태 보기</a>
-            <label class="form-check form-switch mb-0 ms-auto" th:if="${view != 'states'}">
+            <label class="form-check form-switch mb-0 ms-auto">
               <input class="form-check-input" type="checkbox" checked data-cozy-workbench-pick>
               <span class="form-check-label">요소 선택</span>
             </label>
-            <a class="small text-nowrap" target="_blank" rel="noopener" th:if="${view != 'states'}"
+            <a class="small text-nowrap" target="_blank" rel="noopener"
                th:href="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}">새 창에서 보기</a>
           </div>
-          <!--/* 전체 상태 보기: 상태마다 고른 너비로 그린 미리보기를 줄여 나열한다. 카드를 누르면 그 상태의 미리보기로 간다 */-->
-          <div class="card-body cozy-workbench-stage" th:if="${view == 'states'}">
-            <ul class="cozy-workbench-states" th:classappend="|cozy-workbench-states-${w}|" aria-label="전체 상태">
-              <li class="card cozy-workbench-state" th:each="name : ${screen.states.keySet()}"
-                  th:classappend="${name == state} ? 'cozy-workbench-state-current'">
-                <div class="card-header">
-                  <a class="stretched-link fw-medium" th:aria-current="${name == state} ? 'true'"
-                     th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})}" th:text="${stateLabels.get(name)}">기본</a>
-                  <code class="cozy-workbench-id ms-2" th:if="${stateLabels.get(name) != name}" th:text="${name}">default</code>
-                  <span class="text-secondary small ms-auto" th:if="${name == state}">선택한 상태</span>
-                </div>
-                <div class="cozy-workbench-thumb" th:classappend="|cozy-workbench-thumb-${w}|" data-cozy-workbench-thumb inert>
-                  <iframe loading="lazy" th:src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${name})}"
-                          th:title="|${stateLabels.get(name)} 상태|"></iframe>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div class="card-body cozy-workbench-stage" th:if="${view != 'states'}">
+          <div class="card-body cozy-workbench-stage">
             <div class="cozy-workbench-canvas">
               <iframe class="cozy-workbench-frame" th:classappend="${w != 'full'} ? |cozy-workbench-frame-${w}|"
                       data-cozy-workbench-frame
@@ -312,6 +294,60 @@
           </th:block>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!--/* 상태 비교: 고른 상태(compareLimit개까지)만 축소 미리보기를 그려 나란히 놓는다. 미리보기는 창을 열 때 불러온다(workbench.js) */-->
+  <div class="modal modal-blur fade" id="state-compare" tabindex="-1" role="dialog" aria-labelledby="state-compare-title" aria-hidden="true"
+       th:if="${screen != null and screen.states.size() > 1}"
+       data-cozy-compare th:data-cozy-compare-open="${compareOpen == true}" th:data-cozy-compare-limit="${compareLimit}">
+    <div class="modal-dialog modal-dialog-scrollable cozy-workbench-compare-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title" id="state-compare-title">상태 비교
+            <span class="text-secondary fw-normal ms-1" th:text="${screen.title.isEmpty()} ? ${screen.screen} : ${screen.title}">메모 목록</span></h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap align-items-start column-gap-4 row-gap-3 mb-3">
+            <fieldset class="cozy-workbench-compare-picks">
+              <legend class="form-label mb-1">비교할 상태 <span class="text-secondary fw-normal small" th:text="|${compareLimit}개까지|">4개까지</span></legend>
+              <label class="form-check form-check-inline mb-0" th:each="name : ${screen.states.keySet()}">
+                <input class="form-check-input" type="checkbox" th:value="${name}" th:checked="${compared.contains(name)}" data-cozy-compare-pick>
+                <span class="form-check-label"><span th:text="${stateLabels.get(name)}">기본</span>
+                  <code class="cozy-workbench-id ms-1" th:if="${stateLabels.get(name) != name}" th:text="${name}">default</code></span>
+              </label>
+            </fieldset>
+            <div>
+              <span class="form-label mb-1" id="compare-width-label">화면 너비</span>
+              <div class="btn-group cozy-workbench-toggle" role="radiogroup" aria-labelledby="compare-width-label">
+                <th:block th:each="width : ${widths}">
+                  <input type="radio" class="btn-check" name="compare-width" th:id="|compare-width-${width}|" th:value="${width}"
+                         th:checked="${width == w}" data-cozy-compare-width>
+                  <label class="btn btn-sm" th:for="|compare-width-${width}|" th:text="${width == 'full'} ? '전체' : ${width}">전체</label>
+                </th:block>
+              </div>
+            </div>
+          </div>
+          <p class="text-secondary small" data-cozy-compare-note aria-live="polite" hidden
+             th:text="|한 번에 ${compareLimit}개까지 비교합니다. 다른 상태를 해제하면 고를 수 있습니다.|">한 번에 4개까지 비교합니다.</p>
+          <p class="text-secondary" data-cozy-compare-empty hidden>비교할 상태를 고르세요.</p>
+          <ul class="cozy-workbench-states cozy-workbench-compare-grid" aria-label="고른 상태의 미리보기" data-cozy-compare-grid>
+            <li class="card cozy-workbench-state" th:each="name : ${screen.states.keySet()}" th:data-cozy-compare-state="${name}"
+                th:hidden="${!compared.contains(name)}" th:classappend="${name == state} ? 'cozy-workbench-state-current'">
+              <div class="card-header">
+                <a class="stretched-link fw-medium" th:aria-current="${name == state} ? 'true'"
+                   th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}" th:text="${stateLabels.get(name)}">기본</a>
+                <code class="cozy-workbench-id ms-2" th:if="${stateLabels.get(name) != name}" th:text="${name}">default</code>
+                <span class="text-secondary small ms-auto" th:if="${name == state}">지금 보는 상태</span>
+              </div>
+              <div class="cozy-workbench-thumb" th:classappend="|cozy-workbench-thumb-${w}|" data-cozy-workbench-thumb inert>
+                <iframe th:data-src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${name})}" th:title="|${stateLabels.get(name)} 상태|"></iframe>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   <script th:src="@{/cozy/workbench.js}" defer></script>

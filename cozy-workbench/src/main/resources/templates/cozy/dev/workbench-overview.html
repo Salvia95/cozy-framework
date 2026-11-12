@@ -48,30 +48,39 @@
           <div class="card-body" th:if="${screenGroups.isEmpty()}">
             <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
           </div>
-          <div class="table-responsive" th:if="${!screenGroups.isEmpty()}">
-            <table class="table card-table table-vcenter cozy-workbench-overview-table cozy-workbench-overview-screens">
-              <thead><tr><th>화면</th><th>상태</th><th>규칙 위반</th><th><span class="visually-hidden">보기</span></th></tr></thead>
-              <tbody th:each="group : ${screenGroups}">
-                <tr class="cozy-workbench-overview-group">
-                  <th colspan="4" scope="colgroup"><span th:text="${group.key}">memo</span> <span class="text-secondary fw-normal" th:text="|${group.value.size()}개|">4개</span></th>
-                </tr>
-                <tr th:each="row : ${group.value}" th:with="spec=${row.spec}, name=${spec.title.isEmpty()} ? ${spec.screen} : ${spec.title}">
-                  <td>
-                    <a th:href="@{/cozy/dev/workbench(spec=${spec.screen})}" th:text="${name}">메모 목록</a>
-                    <code class="cozy-workbench-id ms-1" th:if="${!spec.title.isEmpty()}" th:text="${spec.screen}">memo-list</code>
-                  </td>
-                  <td th:text="${#strings.listJoin(row.states.values(), ', ')}">기본, 데이터 없음</td>
-                  <td>
-                    <span class="badge cozy-tone-critical" th:if="${row.violations > 0}" th:text="|위반 ${row.violations}건|">위반 1건</span>
-                    <span class="text-secondary" th:if="${row.violations == 0}">없음</span>
-                  </td>
-                  <td class="text-end text-nowrap">
-                    <a th:href="@{/cozy/dev/workbench(spec=${spec.screen},view='states')}" th:aria-label="|${name} 전체 상태 보기|">전체 상태 보기</a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <p class="card-body border-bottom text-secondary small mb-0 py-2" th:if="${screensFolded}"
+             th:text="|화면이 ${screenCount}개여서 규칙 위반이 있는 모듈만 펼쳤습니다. 모듈 이름을 누르면 펼칩니다.|">화면이 많아 접었습니다.</p>
+          <!--/* 모듈마다 접고 펴는 묶음. 화면이 적으면 모두 펼치고, 많으면 위반이 있는 모듈만 펼친다 */-->
+          <details class="cozy-workbench-overview-module" th:each="group : ${screenGroups}" th:open="${group.open}">
+            <summary>
+              <span class="fw-medium" th:text="${group.module}">memo</span>
+              <span class="text-secondary ms-1" th:text="|화면 ${group.rows.size()}개|">화면 4개</span>
+              <span class="badge cozy-tone-critical ms-2" th:if="${group.violations > 0}" th:text="|위반 ${group.violations}건|">위반 1건</span>
+            </summary>
+            <div class="table-responsive">
+              <table class="table card-table table-vcenter mb-0 cozy-workbench-overview-table cozy-workbench-overview-screens">
+                <colgroup><col class="cozy-workbench-overview-name"><col><col class="cozy-workbench-overview-count"><col class="cozy-workbench-overview-action"></colgroup>
+                <thead><tr><th>화면</th><th>상태</th><th>규칙 위반</th><th><span class="visually-hidden">상태 비교</span></th></tr></thead>
+                <tbody>
+                  <tr th:each="row : ${group.rows}" th:with="spec=${row.spec}">
+                    <td>
+                      <a th:href="@{/cozy/dev/workbench(spec=${spec.screen})}" th:text="${row.name}">메모 목록</a>
+                      <code class="cozy-workbench-id ms-1" th:if="${!spec.title.isEmpty()}" th:text="${spec.screen}">memo-list</code>
+                    </td>
+                    <td th:text="${#strings.listJoin(row.states.values(), ', ')}">기본, 데이터 없음</td>
+                    <td>
+                      <span class="badge cozy-tone-critical" th:if="${row.violations > 0}" th:text="|위반 ${row.violations}건|">위반 1건</span>
+                      <span class="text-secondary" th:if="${row.violations == 0}">없음</span>
+                    </td>
+                    <td class="text-end text-nowrap">
+                      <a th:if="${row.states.size() > 1}" th:href="@{/cozy/dev/workbench(spec=${spec.screen},compare=true)}"
+                         th:aria-label="|${row.name} 상태 비교|">상태 비교</a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
         </section>
       </div>
 

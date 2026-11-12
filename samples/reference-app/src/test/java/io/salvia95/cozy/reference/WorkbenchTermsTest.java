@@ -65,7 +65,7 @@ class WorkbenchTermsTest {
 
 	@Test
 	void retiredWordsAreGone() throws Exception {
-		for (String path : List.of("", "?spec=memo-list&view=fixture", "?spec=memo-list&view=states", "/map", "/check", "/commands",
+		for (String path : List.of("", "?spec=memo-list&view=fixture", "?spec=memo-list&compare=true", "/map", "/check", "/commands",
 				"/commands?recipe=listener", "/search?q=memo")) {
 			assertThat(visible(page(path))).as(path)
 				.doesNotContain("지도")
@@ -82,7 +82,13 @@ class WorkbenchTermsTest {
 	@Test
 	void statesAreNamedForPeopleAndKeepTheirIdentifier() throws Exception {
 		String html = page("?spec=memo-list");
-		assertThat(html).contains("title=\"noResults\"").contains(">검색 결과 없음<").contains(">여러 페이지<").doesNotContain(">noResults<");
+		String states = html.replaceAll("\\s+", " ");
+		assertThat(states).as("상태 버튼은 이름을 보이고 식별자는 title에")
+			.contains("title=\"noResults\">검색 결과 없음</a>")
+			.contains(">여러 페이지</a>")
+			.doesNotContain(">noResults</a>")
+			.as("상태 비교 창은 이름 뒤에 식별자")
+			.contains("<span>검색 결과 없음</span> <code class=\"cozy-workbench-id ms-1\">noResults</code>");
 		assertThat(page("?spec=memo-form")).contains("title=\"invalid\"").contains(">입력 오류<");
 	}
 

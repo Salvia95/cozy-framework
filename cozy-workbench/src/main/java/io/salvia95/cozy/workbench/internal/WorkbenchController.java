@@ -52,7 +52,10 @@ public class WorkbenchController {
 	/** 미리보기 폭. {@code full}은 칸 전체 */
 	static final List<String> WIDTHS = List.of("full", "1024", "768", "390");
 
-	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec", "states");
+	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec");
+
+	/** 상태 비교에서 한 번에 고를 수 있는 상태 수. 상태마다 미리보기를 하나씩 그린다 */
+	static final int COMPARE_LIMIT = 4;
 
 	private final FragmentManifest manifest;
 
@@ -72,13 +75,17 @@ public class WorkbenchController {
 
 	/**
 	 * 화면을 고르지 않았으면({@code spec}이 없으면) 개요, 골랐으면 그 화면의 보기.
+	 *
+	 * @param compare 참이면 상태 비교 창을 열어 둔다 (개요의 "상태 비교")
 	 */
 	@GetMapping
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
-			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view, Model model) {
+			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view,
+			@RequestParam(defaultValue = "false") boolean compare, Model model) {
 		if (spec == null) {
 			return overview(model);
 		}
+		model.addAttribute("compareOpen", compare);
 		return screen(spec, state, w, view, model);
 	}
 
@@ -118,8 +125,6 @@ public class WorkbenchController {
 		model.addAttribute("view", view);
 		// 주소 뒤에 붙일 view: 기본값이면 붙이지 않는다
 		model.addAttribute("fixtureSuffix", view.equals("fixture") ? "&view=fixture" : "");
-		// 화면이나 너비를 바꿔도 이어지는 보기: 샘플 데이터와 전체 상태 보기
-		model.addAttribute("viewSuffix", (view.equals("fixture") || view.equals("states")) ? "&view=" + view : "");
 		model.addAttribute("centerSuffix", (view.equals("fixture") || view.equals("preview")) ? "" : "&view=" + view);
 		if (specs.isEmpty()) {
 			return "cozy/dev/workbench";
@@ -137,6 +142,8 @@ public class WorkbenchController {
 		model.addAttribute("screen", screen);
 		model.addAttribute("state", selectedState);
 		model.addAttribute("stateLabels", WorkbenchTerms.states(screen.states().keySet()));
+		model.addAttribute("compareLimit", COMPARE_LIMIT);
+		model.addAttribute("compared", compared(screen.states().keySet(), selectedState));
 
 		String templateFile = "templates/" + screen.template() + ".html";
 		List<ScreenTree.Item> tree = List.of();
@@ -184,6 +191,9 @@ public class WorkbenchController {
 	/** 개요에 보일 미구현 항목의 수 */
 	static final int OVERVIEW_SLOTS = 10;
 
+	/** 화면이 이보다 많으면 개요의 화면 목록은 위반이 있는 모듈만 펼친다 */
+	static final int OVERVIEW_OPEN_SCREENS = 12;
+
 	/**
 	 * 개요의 화면 한 줄.
 	 *
@@ -191,10 +201,34 @@ public class WorkbenchController {
 	 * @param violations 그 화면의 템플릿이나 화면 명세에 있는 위반 수
 	 */
 	public record ScreenRow(ScreenSpec spec, Map<String, String> states, long violations) {
+
+		/** 화면 이름. 화면 명세에 {@code title}이 없으면 식별자 */
+		public String name() {
+			return this.spec.title().isEmpty() ? this.spec.screen() : this.spec.title();
+		}
+	}
+
+	/**
+	 * 개요의 모듈 하나와 그 화면들.
+	 *
+	 * @param open 처음에 펼쳐 둘까. 화면이 적으면 모두, 많으면 위반이 있는 모듈만
+	 */
+	public record ScreenGroup(String module, List<ScreenRow> rows, long violations, boolean open) {
 	}
 
 	/** 개요의 미구현 항목 하나 ({@code cozy describe}의 {@code slots[]}) */
 	public record SlotRow(String slot, String file, int line, String what) {
+	}
+
+	/** 모듈별 화면을 묶음으로. 화면이 {@link #OVERVIEW_OPEN_SCREENS}개 이하면 모두 펼치고, 많으면 위반이 있는 모듈만 펼친다 */
+	static List<ScreenGroup> screenGroups(Map<String, List<ScreenRow>> byModule) {
+		boolean openAll = byModule.values().stream().mapToInt(List::size).sum() <= OVERVIEW_OPEN_SCREENS;
+		List<ScreenGroup> groups = new ArrayList<>();
+		byModule.forEach((module, rows) -> {
+			long violations = rows.stream().mapToLong(ScreenRow::violations).sum();
+			groups.add(new ScreenGroup(module, List.copyOf(rows), violations, openAll || violations > 0));
+		});
+		return groups;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -209,7 +243,8 @@ public class WorkbenchController {
 		List<ScreenSpec> specs = this.screenSpecs.all();
 		specs.forEach((s) -> screens.computeIfAbsent(module(s), (m) -> new ArrayList<>())
 			.add(new ScreenRow(s, WorkbenchTerms.states(s.states().keySet()), counts.getOrDefault(s.screen(), 0L))));
-		model.addAttribute("screenGroups", screens);
+		model.addAttribute("screenGroups", screenGroups(screens));
+		model.addAttribute("screensFolded", specs.size() > OVERVIEW_OPEN_SCREENS);
 		model.addAttribute("screenCount", specs.size());
 		List<Finding> findings = new ArrayList<>();
 		check.violations().forEach((v) -> findings.add(new Finding(v, link(v).orElse(null))));
@@ -276,12 +311,25 @@ public class WorkbenchController {
 			}
 		}
 		String query = q.strip();
-		List<WorkbenchSearch.Group> groups = WorkbenchSearch.search(query, entries);
+		WorkbenchSearch.Result result = WorkbenchSearch.search(query, entries);
 		model.addAttribute("query", query);
 		model.addAttribute("searched", !WorkbenchSearch.terms(query).isEmpty());
-		model.addAttribute("results", groups);
-		model.addAttribute("total", groups.stream().mapToInt((g) -> g.hits().size()).sum());
+		model.addAttribute("results", result.groups());
+		model.addAttribute("inDescriptions", result.descriptions());
+		model.addAttribute("total", result.total());
 		return "cozy/dev/workbench-search";
+	}
+
+	/** 상태 비교를 열 때 고른 상태: 지금 상태와 그 뒤의 상태들, 모두 {@link #COMPARE_LIMIT}개까지 */
+	static List<String> compared(java.util.Set<String> states, String current) {
+		List<String> picked = new ArrayList<>();
+		picked.add(current);
+		for (String name : states) {
+			if (picked.size() < COMPARE_LIMIT && !name.equals(current)) {
+				picked.add(name);
+			}
+		}
+		return picked;
 	}
 
 	/** 화면의 모듈: 템플릿 경로의 첫 마디 */

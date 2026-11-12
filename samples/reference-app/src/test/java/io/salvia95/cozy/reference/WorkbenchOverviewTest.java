@@ -42,7 +42,7 @@ class WorkbenchOverviewTest {
 
 	@Test
 	void theWorkbenchOpensOnTheOverview() throws Exception {
-		String html = page("");
+		String html = page("").replaceAll("\\s+", " ");
 		assertThat(html).as("개요 메뉴가 선택된다")
 			.contains("aria-current=\"page\" href=\"/cozy/dev/workbench\">개요</a>")
 			.contains("href=\"/cozy/dev/workbench/screens\">화면</a>")
@@ -52,10 +52,13 @@ class WorkbenchOverviewTest {
 			.contains(">규칙 위반<")
 			.contains(">미구현 항목<")
 			.contains("io.salvia95.cozy.reference");
-		assertThat(html).as("화면 목록은 모듈별로, 화면 보기와 전체 상태 보기로 이어진다")
+		assertThat(html).as("화면 목록은 모듈별로, 화면 보기와 상태 비교로 이어진다")
 			.contains("href=\"/cozy/dev/workbench?spec=memo-list\">메모 목록</a>")
 			.contains("기본, 데이터 없음, 검색 결과 없음, 여러 페이지")
-			.contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;view=states\" aria-label=\"메모 목록 전체 상태 보기\"");
+			.contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;compare=true\" aria-label=\"메모 목록 상태 비교\"")
+			.as("화면이 적으면 모듈 묶음을 모두 펼친다")
+			.contains("<details class=\"cozy-workbench-overview-module\" open=\"open\">")
+			.doesNotContain("모듈만 펼쳤습니다");
 		assertThat(html).as("모듈의 의존 방향")
 			.contains("href=\"/cozy/dev/workbench/map?module=memo\">memo</a>")
 			.contains("activity, dashboard")
@@ -92,7 +95,11 @@ class WorkbenchOverviewTest {
 			.contains(">배지<");
 
 		String crud = page("/search?q=crud");
-		assertThat(crud).contains(">생성 항목<").contains("href=\"/cozy/dev/workbench/commands?recipe=crud\"").contains(">CRUD 화면<");
+		assertThat(crud).contains(">생성 항목<").contains("href=\"/cozy/dev/workbench/commands?recipe=crud\"").contains(">CRUD 화면<")
+			.as("이름에서 찾았으니 설명에 crud가 있는 항목은 뺀다")
+			.contains("검색 결과 1건")
+			.doesNotContain("설명에서 찾았습니다");
+		assertThat(page("/search?q=짧게")).as("이름에 없으면 설명에서").contains("설명에서 찾았습니다").contains(">배지<");
 
 		String memo = page("/search?q=memo");
 		assertThat(memo).as("모듈과 화면이 함께").contains(">모듈<").contains("href=\"/cozy/dev/workbench/map?module=memo\"").contains(">화면<");
@@ -107,27 +114,30 @@ class WorkbenchOverviewTest {
 	}
 
 	@Test
-	void theStatesViewListsEveryStateAsAThumbnail() throws Exception {
-		String html = page("?spec=memo-list&view=states&w=768").replaceAll("\\s+", " ");
+	void stateComparisonIsAModalAndThePreviewShowsOneState() throws Exception {
+		String html = page("?spec=memo-list&w=768").replaceAll("\\s+", " ");
+		assertThat(html).as("미리보기는 상태 하나")
+			.contains("data-cozy-workbench-frame")
+			.contains("src=\"/cozy/dev/catalog/screen?spec=memo-list&amp;state=default&amp;inspect=1\"")
+			.as("상태 비교 버튼이 창을 연다")
+			.contains("data-bs-toggle=\"modal\" data-bs-target=\"#state-compare\" aria-haspopup=\"dialog\" data-cozy-compare-button")
+			.contains("id=\"state-compare\"")
+			.contains("data-cozy-compare-open=\"false\" data-cozy-compare-limit=\"4\"");
+		String modal = html.substring(html.indexOf("id=\"state-compare\""));
 		for (String state : List.of("default", "empty", "noResults", "paged")) {
-			assertThat(html).as(state)
-				.contains("src=\"/cozy/dev/catalog/screen?spec=memo-list&amp;state=" + state + "\"")
+			assertThat(modal).as(state)
+				.contains("value=\"" + state + "\" data-cozy-compare-pick checked=\"checked\"")
+				.as("미리보기는 창을 열 때 불러온다")
+				.contains("data-src=\"/cozy/dev/catalog/screen?spec=memo-list&amp;state=" + state + "\"")
 				.contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;state=" + state + "&amp;w=768\"");
 		}
-		assertThat(html).contains("cozy-workbench-thumb-768")
-			.contains("data-cozy-workbench-thumb")
-			.as("선택한 상태가 표시된다")
-			.contains("선택한 상태")
-			.as("다시 누르면 미리보기로")
-			.contains("<a class=\"btn btn-sm active\" aria-current=\"true\" href=\"/cozy/dev/workbench?spec=memo-list&amp;state=default&amp;w=768\">")
-			.as("요소 선택은 미리보기에서만")
-			.doesNotContain("data-cozy-workbench-pick")
-			.doesNotContain("data-cozy-workbench-frame");
-		assertThat(html).as("너비와 화면을 바꿔도 전체 상태 보기에 남는다")
-			.contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;state=default&amp;w=390&amp;view=states\"")
-			.contains("href=\"/cozy/dev/workbench?spec=memo-detail&amp;w=768&amp;view=states\"");
-		assertThat(page("?spec=memo-list")).contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;state=default&amp;w=full&amp;view=states\"")
-			.contains(">전체 상태 보기</a>");
-		valid(html, "전체 상태 보기");
+		assertThat(modal).doesNotContain(" src=\"/cozy/dev/catalog/screen")
+			.contains("cozy-workbench-thumb-768")
+			.contains("지금 보는 상태")
+			.contains("id=\"compare-width-768\" value=\"768\" data-cozy-compare-width checked=\"checked\"");
+		assertThat(page("?spec=memo-list&compare=true")).contains("data-cozy-compare-open=\"true\"");
+		assertThat(page("?spec=memo-detail")).as("상태가 둘이면 둘 다").contains("value=\"empty\" data-cozy-compare-pick checked=\"checked\"");
+		this.mvc.perform(get(URL + "?spec=memo-list&view=states")).andExpect(status().isBadRequest());
+		valid(html, "상태 비교");
 	}
 }
