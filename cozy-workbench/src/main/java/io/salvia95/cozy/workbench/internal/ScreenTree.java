@@ -45,9 +45,15 @@ final class ScreenTree {
 	 * @param id 매니페스트의 id ({@code component/badge}). 매니페스트에 없으면 빈 문자열
 	 * @param purpose 매니페스트의 용도 한 줄. 없으면 빈 문자열
 	 * @param args 삽입에 넘긴 인자 (선언한 파라미터 순서)
+	 * @param fragment 삽입한 fragment 이름 ({@code badge}). 선언, 영역, 템플릿 전체를 넣으면 빈 문자열
 	 */
 	record Item(int depth, String kind, String label, String detail, String kindLabel, String code, String location, int line,
-			int endLine, String target, String id, String purpose, List<Arg> args) {
+			int endLine, String target, String id, String purpose, List<Arg> args, String fragment) {
+
+		/** 고칠 수 있는 인자가 있는가 */
+		public boolean editable() {
+			return this.args.stream().anyMatch(Arg::editable);
+		}
 
 		/** 소스의 줄 범위 ({@code 40–54}, 한 줄이면 {@code 47}) */
 		public String lines() {
@@ -62,8 +68,39 @@ final class ScreenTree {
 	 * @param name 파라미터 이름. 모르면 빈 문자열
 	 * @param value 템플릿에 적힌 값 ({@code '고정'}, {@code ~{::#filter}}, {@code ${result.page}})
 	 * @param description 파라미터의 설명. 없으면 빈 문자열
+	 * @param index 몇 번째 인자인가 (1부터)
+	 * @param text 글자 그대로의 문자열이면 그 글자({@code 고정}). 표현식이나 선택자면 {@code null}
+	 * @param choices 매니페스트가 정한 값 → 화면 글 ({@code 중립 (neutral)}). 정하지 않았으면 빈 맵
 	 */
-	record Arg(String label, String name, String value, String description) {
+	record Arg(String label, String name, String value, String description, int index, String text, Map<String, String> choices) {
+
+		/** 문자열 인자만 고친다. 표현식({@code ${…}})과 선택자({@code ~{::#id}})는 읽기 전용이다 */
+		public boolean editable() {
+			return this.text != null;
+		}
+
+		/** 지금 값이 정한 값 밖이면 선택 칸 맨 앞에 그대로 둔다 */
+		public boolean outside() {
+			return !this.choices.isEmpty() && this.text != null && !this.choices.containsKey(this.text);
+		}
+	}
+
+	/** 글자 그대로의 문자열 하나: {@code '…'}. 안의 {@code \\}와 {@code \'}는 한 글자다 */
+	private static final Pattern LITERAL = Pattern.compile("'((?:[^'\\\\]|\\\\.)*)'");
+
+	/** 인자의 원문이 문자열 하나면 그 글자, 아니면 {@code null} */
+	static String literal(String raw) {
+		Matcher m = LITERAL.matcher(raw.strip());
+		if (!m.matches()) {
+			return null;
+		}
+		StringBuilder text = new StringBuilder();
+		String inner = m.group(1);
+		for (int i = 0; i < inner.length(); i++) {
+			char c = inner.charAt(i);
+			text.append((c == '\\' && i + 1 < inner.length()) ? inner.charAt(++i) : c);
+		}
+		return text.toString();
 	}
 
 	/** 트리의 마디: 줄 하나와 그 안의 줄들 */
@@ -89,8 +126,14 @@ final class ScreenTree {
 		List<Arg> args = new ArrayList<>();
 		for (int i = 0; i < node.args().size(); i++) {
 			Param param = (entry != null && i < entry.params().size()) ? entry.params().get(i) : null;
+			Map<String, String> choices = new java.util.LinkedHashMap<>();
+			if (param != null) {
+				param.choices().keySet().forEach((value) -> choices.put(value, param.choiceText(value)));
+			}
+			// fragment를 이름으로 부를 때만 고칠 수 있다 (cozy set arg가 줄과 이름으로 찾는다)
+			String text = (node.fragment() != null) ? literal(node.args().get(i)) : null;
 			args.add(new Arg((param != null) ? param.displayName() : "인자 " + (i + 1), (param != null) ? param.name() : "",
-					node.args().get(i), (param != null) ? param.description() : ""));
+					node.args().get(i), (param != null) ? param.description() : "", i + 1, text, java.util.Collections.unmodifiableMap(choices)));
 		}
 		return args;
 	}
@@ -155,7 +198,8 @@ final class ScreenTree {
 			String location, String target, Entry entry) {
 		boolean insertion = !node.kind().equals("slot") && !node.kind().equals("fragment");
 		return new Item(depth, node.kind(), label, detail, kindLabel, code, location, node.line(), node.endLine(), target,
-				(entry != null) ? entry.id() : "", (entry != null) ? entry.purpose() : "", insertion ? args(node, entry) : List.of());
+				(entry != null) ? entry.id() : "", (entry != null) ? entry.purpose() : "", insertion ? args(node, entry) : List.of(),
+				(insertion && node.fragment() != null) ? node.fragment() : "");
 	}
 
 	private static String target(OutlineNode node) {

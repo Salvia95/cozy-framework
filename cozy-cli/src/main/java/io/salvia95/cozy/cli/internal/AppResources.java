@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -35,11 +36,23 @@ public final class AppResources {
 	private AppResources() {
 	}
 
-	/** 매니페스트 항목. 규칙 검사와 describe가 쓴다 */
-	public record ManifestEntry(String id, String template, String signature, String purpose, String source, int line) {
+	/**
+	 * 매니페스트 항목. 규칙 검사, describe, {@code cozy set arg}가 쓴다.
+	 *
+	 * @param params 파라미터 이름 (signature 순서)
+	 * @param choices 파라미터 이름 → 넘길 수 있는 값 (적은 순서). 값을 정한 파라미터만
+	 */
+	public record ManifestEntry(String id, String template, String signature, String purpose, String source, int line,
+			List<String> params, Map<String, List<String>> choices) {
 
 		public FragmentDeclaration declaration() {
 			return new FragmentDeclaration(this.id, this.template, this.signature, this.source, this.line);
+		}
+
+		/** fragment 이름 ({@code badge(text, tone)}의 {@code badge}) */
+		public String fragmentName() {
+			int open = this.signature.indexOf('(');
+			return (open < 0) ? this.signature : this.signature.substring(0, open);
 		}
 	}
 
@@ -79,10 +92,16 @@ public final class AppResources {
 			List<String> signatureParams = m.group(2).isBlank() ? List.of()
 					: Stream.of(m.group(2).split("\\s*,\\s*")).map(String::trim).toList();
 			List<String> declared = new ArrayList<>();
+			Map<String, List<String>> choices = new LinkedHashMap<>();
 			if (fragment.get("params") instanceof List<?> params) {
 				for (Object p : params) {
-					declared.add(text((Map<String, Object>) p, "name", source, id));
-					text((Map<String, Object>) p, "type", source, id);
+					String name = text((Map<String, Object>) p, "name", source, id);
+					String type = text((Map<String, Object>) p, "type", source, id);
+					declared.add(name);
+					List<String> values = choices(((Map<String, Object>) p).get("choices"), type, source, id + "의 " + name);
+					if (!values.isEmpty()) {
+						choices.put(name, values);
+					}
 				}
 			}
 			if (!declared.equals(signatureParams)) {
@@ -93,9 +112,40 @@ public final class AppResources {
 				throw invalid(source, id + ": samples에 상태가 하나 이상 있어야 합니다 (예: default)");
 			}
 			entries.add(new ManifestEntry(id, template, signature, purpose, source,
-					(index < lines.size()) ? lines.get(index) : 0));
+					(index < lines.size()) ? lines.get(index) : 0, List.copyOf(declared), Map.copyOf(choices)));
 		}
 		return entries;
+	}
+
+	/** 파라미터의 {@code choices}: cozy-ui {@code FragmentManifest.choices}와 같은 검사 */
+	private static List<String> choices(Object raw, String type, String source, String where) {
+		if (raw == null) {
+			return List.of();
+		}
+		if (!"String".equals(type)) {
+			throw invalid(source, where + ": choices는 String 파라미터에만 씁니다 (type: " + type + ")");
+		}
+		List<Object> values;
+		if (raw instanceof List<?> list) {
+			values = new ArrayList<>(list);
+		}
+		else if (raw instanceof Map<?, ?> map) {
+			values = new ArrayList<>(map.keySet());
+		}
+		else {
+			throw invalid(source, where + ": choices는 값의 목록이나 값 → 이름의 맵입니다 (예: { info: 정보, success: 성공 })");
+		}
+		if (values.isEmpty()) {
+			throw invalid(source, where + ": choices가 비어 있습니다. 값을 정하지 않으려면 choices를 지웁니다");
+		}
+		List<String> texts = new ArrayList<>();
+		for (Object value : values) {
+			if (!(value instanceof String text) || text.isBlank() || text.contains("'") || text.contains("\\")) {
+				throw invalid(source, where + ": choices의 값은 따옴표와 역슬래시가 없는 글자입니다: " + value);
+			}
+			texts.add(text);
+		}
+		return List.copyOf(texts);
 	}
 
 	/** {@code src/main/resources/specs/*.yml}. 읽지 못하는 스펙은 상태 없이 둔다(검사는 C3가 한다) */

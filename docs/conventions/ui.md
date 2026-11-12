@@ -102,13 +102,15 @@ fragments:
     document: false                     # 완전한 HTML 문서를 그리면 true (레이아웃)
     params:                             # signature와 같은 순서
       - { name: text, type: String, required: true, description: 표시할 글자 }
-      - { name: tone, type: String, required: true, description: "neutral, info, success, warning, critical" }
+      - { name: tone, type: String, required: true, description: "neutral, info, success, warning, critical",
+          choices: { neutral: 중립, info: 정보, success: 성공, warning: 경고, critical: 위험 } }
     samples:                            # 상태 이름 → 값. 카탈로그와 렌더링 테스트가 쓴다
       default: { text: 고정, tone: neutral }
 ```
 
 - **label**: 항목과 파라미터에 적을 수 있다(선택). 항목의 `label`은 워크벤치가 식별자 앞에 표시하는 이름이다. 프레임워크 항목은 범정부 UI/UX 디자인 시스템(KRDS)에 같은 역할의 컴포넌트가 있으면 그 명칭을 쓴다. fragment를 받는 파라미터의 `label`(`필터`)은 구조 트리에 "필터 영역"으로 표시된다. 없으면 종류와 식별자로 표시된다.
 - **type**: `String`, `boolean`, `int`, `long`, `fragment` 또는 클래스 FQN이다. FQN이면 샘플 맵을 그 타입으로 변환한다.
+- **choices**: `String` 파라미터가 받을 수 있는 값이다(선택). 값의 목록(`[compact, wide]`)이나 값 → 이름의 맵(`{ info: 정보 }`)으로 적는다. 값에는 작은따옴표와 역슬래시를 쓰지 않는다. 워크벤치의 속성 패널은 이 값을 선택 칸으로 보이고(`정보 (info)`), `cozy set arg`는 이 밖의 값을 거절한다. 프레임워크는 `badge`의 `tone`, `alert`·`toast`의 `kind`, `field`의 `type`에 적었다. 템플릿에 직접 적은 값은 아직 검사하지 않는다.
 - **fragment 파라미터의 샘플 값**: fragment 이름을 쓴다. `template :: selector` 형식이고, 템플릿을 생략하면 `cozy/dev/catalog`에서 찾는다. 샘플 값이 없으면 자리 표시가 들어간다.
 - **폼 샘플**: `_form` 맵은 `th:object`가 되고, `_errors` 맵(필드 → 메시지)은 검증 오류가 된다.
 - **이름 규칙**: fragment를 받는 fragment는 모든 파라미터 이름이 `cozy`로 시작해야 한다(ADR-0021).

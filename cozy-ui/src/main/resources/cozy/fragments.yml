@@ -118,7 +118,8 @@ fragments:
     params:
       - { name: name, type: String, label: 이름, required: true, description: 폼 객체의 속성 이름 }
       - { name: label, type: String, label: 레이블, required: true, description: 표시 이름 }
-      - { name: type, type: String, label: 입력 유형, required: true, description: "text, textarea, checkbox, switch, number, date, email" }
+      - { name: type, type: String, label: 입력 유형, required: true, description: "text, textarea, checkbox, switch, number, date, email",
+          choices: { text: 한 줄 텍스트, textarea: 여러 줄 텍스트, checkbox: 체크박스, switch: 스위치, number: 숫자, date: 날짜, email: 이메일 } }
     samples:
       default: { name: title, label: 제목, type: text, _form: { title: 회의록 정리 } }
       error: { name: title, label: 제목, type: text, _form: { title: "" }, _errors: { title: 제목을 입력하세요 } }
@@ -155,7 +156,8 @@ fragments:
     purpose: 상태나 분류를 짧게 표시한다. 분류는 neutral, 상태만 색 tone을 쓴다.
     params:
       - { name: text, type: String, label: 표시 텍스트, required: true, description: 표시할 글자 }
-      - { name: tone, type: String, label: 색상, required: true, description: "neutral, info, success, warning, critical" }
+      - { name: tone, type: String, label: 색상, required: true, description: "neutral, info, success, warning, critical",
+          choices: { neutral: 중립, info: 정보, success: 성공, warning: 경고, critical: 위험 } }
     samples:
       default: { text: 고정, tone: neutral }
       success: { text: 완료, tone: success }
@@ -167,7 +169,8 @@ fragments:
     signature: alert(kind, message)
     purpose: 아이콘이 붙은 알림(색만으로 뜻을 전하지 않는다). 만들기·수정·삭제 결과는 플래시(CozyFlash)로, 패턴이 flash()로 그린다.
     params:
-      - { name: kind, type: String, label: 종류, required: true, description: "info, success, warning, critical" }
+      - { name: kind, type: String, label: 종류, required: true, description: "info, success, warning, critical",
+          choices: { info: 정보, success: 성공, warning: 경고, critical: 위험 } }
       - { name: message, type: String, label: 메시지, required: true, description: 알림 문장 }
     samples:
       success: { kind: success, message: 메모를 만들었습니다 }
@@ -279,7 +282,8 @@ fragments:
     signature: toast(kind, message)
     purpose: 짧은 확인(복사함 등). 중립 바탕, critical만 빨강. 만들기·수정·삭제 결과는 플래시(alert)로 알린다.
     params:
-      - { name: kind, type: String, label: 종류, required: true, description: "info, success, warning, critical" }
+      - { name: kind, type: String, label: 종류, required: true, description: "info, success, warning, critical",
+          choices: { info: 정보, success: 성공, warning: 경고, critical: 위험 } }
       - { name: message, type: String, label: 메시지, required: true, description: 알림 문장 }
     samples:
       default: { kind: success, message: 복사했습니다 }

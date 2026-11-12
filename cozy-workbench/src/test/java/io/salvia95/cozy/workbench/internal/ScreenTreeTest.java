@@ -93,4 +93,32 @@ class ScreenTreeTest {
 			.containsExactly("인자 1", "인자 2");
 		assertThat(items.get(1).args()).as("영역에는 인자가 없다").isEmpty();
 	}
+
+	/** 문자열 인자만 고칠 수 있다. 매니페스트가 값을 정했으면 그 이름이 붙는다 */
+	@Test
+	void onlyStringLiteralArgumentsAreEditable() {
+		FragmentManifest manifest = new FragmentManifest(List.of(new Entry("component/badge", "cozy/component/badge", "badge(text, tone)",
+				"표시", "배지",
+				List.of(new Param("text", "String", true, "", "표시 텍스트"),
+						new Param("tone", "String", true, "", "색상", java.util.Map.of("neutral", "중립"))),
+				java.util.Map.of(), false, "test", 1)));
+		List<Item> items = ScreenTree.of(List.of(node(5, 0, "replace", "cozy/component/badge", "badge", null, "'It\\'s \\\\ 고정'", "'neutral'"),
+				node(6, 0, "replace", "cozy/component/badge", "badge", null, "${row.label}", "'gray'"),
+				node(7, 0, "replace", "memo/spi/card", null, null)), manifest, "templates/x.html");
+		Item first = items.get(0);
+		assertThat(first.fragment()).isEqualTo("badge");
+		assertThat(first.editable()).isTrue();
+		assertThat(first.args()).extracting(ScreenTree.Arg::index, ScreenTree.Arg::text, ScreenTree.Arg::editable)
+			.containsExactly(org.assertj.core.groups.Tuple.tuple(1, "It's \\ 고정", true),
+					org.assertj.core.groups.Tuple.tuple(2, "neutral", true));
+		assertThat(first.args().get(1).choices()).containsExactly(java.util.Map.entry("neutral", "중립 (neutral)"));
+		assertThat(first.args().get(1).outside()).isFalse();
+		Item second = items.get(1);
+		assertThat(second.args().get(0).editable()).as("표현식은 읽기 전용").isFalse();
+		assertThat(second.args().get(1).outside()).as("정한 값 밖의 값").isTrue();
+		assertThat(items.get(2).fragment()).as("템플릿 전체를 넣으면 고칠 인자가 없다").isEmpty();
+		assertThat(ScreenTree.literal("'a' + 'b'")).isNull();
+		assertThat(ScreenTree.literal("~{::#x}")).isNull();
+		assertThat(ScreenTree.literal(" '' ")).isEmpty();
+	}
 }

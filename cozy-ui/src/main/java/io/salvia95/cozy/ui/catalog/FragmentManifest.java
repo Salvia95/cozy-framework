@@ -82,8 +82,19 @@ public record FragmentManifest(List<Entry> fragments) {
 	 * @param required 필수 여부
 	 * @param description 설명
 	 * @param label 사람에게 보일 이름 ({@code 필터}). 적지 않았으면 빈 문자열
+	 * @param choices 넘길 수 있는 값 → 사람에게 보일 이름 (적은 순서). 값을 정하지 않았으면 빈 맵. 이름을 적지 않은 값은 빈 문자열
 	 */
-	public record Param(String name, String type, boolean required, String description, String label) {
+	public record Param(String name, String type, boolean required, String description, String label, Map<String, String> choices) {
+
+		public Param(String name, String type, boolean required, String description, String label) {
+			this(name, type, required, description, label, Map.of());
+		}
+
+		/** 고를 값의 화면 글: 이름이 있으면 "이름 (값)", 없으면 값 */
+		public String choiceText(String value) {
+			String text = this.choices.getOrDefault(value, "");
+			return text.isBlank() ? value : text + " (" + value + ")";
+		}
 
 		/** 화면에 보일 이름. {@code label}이 없으면 파라미터 이름 */
 		public String displayName() {
@@ -168,9 +179,11 @@ public record FragmentManifest(List<Entry> fragments) {
 			if (fragment.get("params") instanceof List<?> rawParams) {
 				for (Object p : rawParams) {
 					Map<String, Object> param = (Map<String, Object>) p;
-					params.add(new Param(text(param, "name", source, id), text(param, "type", source, id),
-							Boolean.TRUE.equals(param.get("required")), String.valueOf(param.getOrDefault("description", "")),
-							String.valueOf(param.getOrDefault("label", ""))));
+					String name = text(param, "name", source, id);
+					String type = text(param, "type", source, id);
+					params.add(new Param(name, type, Boolean.TRUE.equals(param.get("required")),
+							String.valueOf(param.getOrDefault("description", "")), String.valueOf(param.getOrDefault("label", "")),
+							choices(param.get("choices"), type, source, id + "의 " + name)));
 				}
 			}
 			List<String> declared = params.stream().map(Param::name).toList();
@@ -225,6 +238,40 @@ public record FragmentManifest(List<Entry> fragments) {
 			}
 		}
 		return lines;
+	}
+
+	/**
+	 * {@code choices}: 값의 목록({@code [info, success]}), 또는 값 → 이름의 맵({@code { info: 정보, success: 성공 }}). 글자(String)
+	 * 파라미터에만 쓴다. 형식 검사를 바꾸면 cozy-cli의 {@code AppResources.manifest}도 같이 고친다.
+	 */
+	static Map<String, String> choices(Object raw, String type, String source, String where) {
+		if (raw == null) {
+			return Map.of();
+		}
+		if (!"String".equals(type)) {
+			throw invalid(source, where + ": choices는 String 파라미터에만 씁니다 (type: " + type + ")");
+		}
+		Map<String, String> choices = new LinkedHashMap<>();
+		if (raw instanceof List<?> list) {
+			list.forEach((value) -> choices.put(choiceValue(value, source, where), ""));
+		}
+		else if (raw instanceof Map<?, ?> map) {
+			map.forEach((value, label) -> choices.put(choiceValue(value, source, where), (label == null) ? "" : String.valueOf(label)));
+		}
+		else {
+			throw invalid(source, where + ": choices는 값의 목록이나 값 → 이름의 맵입니다 (예: { info: 정보, success: 성공 })");
+		}
+		if (choices.isEmpty()) {
+			throw invalid(source, where + ": choices가 비어 있습니다. 값을 정하지 않으려면 choices를 지웁니다");
+		}
+		return java.util.Collections.unmodifiableMap(choices);
+	}
+
+	private static String choiceValue(Object value, String source, String where) {
+		if (!(value instanceof String text) || text.isBlank() || text.contains("'") || text.contains("\\")) {
+			throw invalid(source, where + ": choices의 값은 따옴표와 역슬래시가 없는 글자입니다: " + value);
+		}
+		return text;
 	}
 
 	private static String text(Map<String, Object> map, String key, String source, String id) {

@@ -25,6 +25,7 @@ cozy <동작> [옵션]
   recipes [--json]    구조를 만드는 명령 목록
   add <레시피> …       구조 만들기 [--dry-run] [--json]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
+  set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -32,7 +33,7 @@ cozy <동작> [옵션]
 | `--project <폴더>` | 현재 폴더 | 앱 폴더. 위로 올라가며 `pom.xml`과 `src/main/java`가 함께 있는 폴더를 찾는다 |
 | `--repository <폴더>` | `COZY_REPOSITORY`, 없으면 `~/.m2/repository` | cozy jar가 있는 Maven 저장소(저장소 배치). `check`가 cozy-ui jar를 여기서 찾는다 |
 | `--json` | 끔 | 기계가 읽는 출력 (아래 형식) |
-| `--dry-run` | 끔 | (`add`, `link`) 계획만 보이고 파일을 쓰지 않는다 |
+| `--dry-run` | 끔 | (`add`, `link`, `enable`, `sync`, `set`) 계획만 보이고 파일을 쓰지 않는다 |
 
 | 종료 코드 | 뜻 |
 | --- | --- |
@@ -381,6 +382,29 @@ cozy sync agents --force     # 내용이 다른 AGENTS.md도 바꾼다
 - **`AGENTS.md`가 다르면** 그대로 두고 "다음"에서 `--force`를 알린다. 스킬은 맞추고 종료 코드는 0이다.
 - **출력**: 다른 명령과 같은 계획 형식이다. 모두 같으면 "바뀐 것 없음"이다. `--json`의 `recipe`는 `sync agents`이고 `slots`는 늘 비어 있다.
 - **인자**: `agents` 말고 다른 것을 적거나, `--force`를 다른 동작에 쓰면 종료 코드 2다.
+
+## set arg
+
+템플릿의 fragment 호출(`th:replace`, `th:insert`)에 넘긴 인자 가운데 글자 그대로의 문자열(`'고정'`) 하나를 바꾼다. 워크벤치의 속성 패널이 이 명령으로 매개변수를 고친다([ADR-0038](../adr/0038-workbench-redesign.md) §7). 그 인자의 글자만 바뀌고 줄바꿈, 들여쓰기, 다른 인자는 그대로다.
+
+```bash
+cozy set arg memo/api/list --line 47 --fragment badge --index 2 --from neutral --value info --dry-run
+```
+
+| 인자 | 뜻 |
+| --- | --- |
+| `<템플릿>` | 앱 템플릿의 뷰 이름(`memo/api/list` → `src/main/resources/templates/memo/api/list.html`) |
+| `--line` | 호출이 있는 요소가 시작하는 줄 (`cozy describe --json`의 `outline[].line`). 인자는 다음 줄에 있어도 된다 |
+| `--fragment` | 부르는 fragment 이름 (`badge`) |
+| `--index` | 몇 번째 인자인가 (1부터) |
+| `--from` | 지금 값. 템플릿의 값과 다르면 거절한다 |
+| `--value` | 새 값. 빈 글자는 `--value ""` |
+
+- **고치지 않는 것**: 표현식(`${memo.title}`, `'/memo/' + ${memo.id}`)과 선택자(`~{::#filter}`)는 거절한다. 템플릿에서 직접 고친다.
+- **정한 값**: 매니페스트가 그 파라미터의 `choices`를 정했으면([ui.md](ui.md)) 그 가운데 하나여야 한다. 프레임워크 fragment는 cozy-ui의 매니페스트(`--ui`나 저장소의 jar), 앱 fragment는 앱의 매니페스트를 본다.
+- **글자**: 큰따옴표와 `&`는 문자 참조(`&quot;`, `&amp;`), 역슬래시는 `\\`로 적는다. 작은따옴표와 줄바꿈은 거절한다(Thymeleaf가 fragment 인자의 `\'`를 읽지 못한다).
+- **거절하는 경우**: 그 줄에 그 fragment의 호출이 없거나 둘 이상, 인자 번호가 범위 밖, 작은따옴표로 감싼 속성, 지금 값이 다름. 종료 코드 2이고 파일은 바뀌지 않는다.
+- **출력**: 다른 명령과 같은 계획 형식이다. `바꿈  {템플릿 파일}    badge(…) 2번째 인자 tone: 'neutral' → 'info'`. `--json`의 `recipe`는 `set arg`이고 `slots`는 늘 비어 있다.
 
 ## 의존
 

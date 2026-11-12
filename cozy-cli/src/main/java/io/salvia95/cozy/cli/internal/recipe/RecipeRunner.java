@@ -81,6 +81,17 @@ public final class RecipeRunner {
 		report("sync agents", plan, List.of(), next, false, dryRun, json, out);
 	}
 
+	/** {@code cozy set arg …}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 */
+	public static void set(List<String> rest, AppProject project, Supplier<FrameworkJar> framework, boolean dryRun, boolean json,
+			PrintStream out) {
+		if (rest.isEmpty() || !rest.getFirst().equals("arg")) {
+			throw new CliException("cozy set 뒤에는 arg만 적습니다 (" + SetArg.USAGE + ").");
+		}
+		Plan plan = new Plan(project.dir());
+		String next = SetArg.run(plan, project, framework, Args.parse(rest.subList(1, rest.size())));
+		report("set arg", plan, List.of(), next, false, dryRun, json, out);
+	}
+
 	/**
 	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
 	 *

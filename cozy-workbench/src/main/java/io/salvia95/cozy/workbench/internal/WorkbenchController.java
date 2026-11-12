@@ -427,6 +427,55 @@ public class WorkbenchController {
 		return fixtureView(spec, name.strip(), w);
 	}
 
+	// ── 매개변수: 속성 패널에서 문자열 인자를 고친다 (cozy set arg) ───────────────
+
+	/**
+	 * 속성 패널에서 고친 매개변수 하나의 변경 파일이나 적용 결과. 화면 보기가 오른쪽 칸 위에 보인다.
+	 *
+	 * @param name 사람에게 보일 이름 ({@code 배지 · 색상})
+	 * @param command 터미널에 붙여 넣을 수 있는 cozy 명령
+	 * @param dryRun 변경 파일 확인이면 참, 적용이면 거짓
+	 */
+	public record ArgChange(String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome, int line, String fragment,
+			int index, String from, String value) {
+	}
+
+	/**
+	 * 템플릿의 fragment 호출 인자 가운데 문자열 하나를 고친다. 파일은 cozy 명령이 쓴다({@code cozy set arg}). 변경 파일을 확인하거나
+	 * ({@code step=plan}) 적용하고({@code step=apply}), 같은 화면의 그 줄로 돌아간다({@code node}).
+	 */
+	@PostMapping("/arg")
+	String setArg(@RequestParam String spec, @RequestParam String state, @RequestParam(defaultValue = "full") String w,
+			@RequestParam int line, @RequestParam String fragment, @RequestParam int index, @RequestParam String from,
+			@RequestParam String value, @RequestParam(defaultValue = "") String name, @RequestParam String step,
+			HttpServletRequest request, RedirectAttributes flash) {
+		if (!STEPS.contains(step)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		requireSameOrigin(request);
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 템플릿을 고칠 수 있습니다");
+		}
+		ScreenSpec screen = this.screenSpecs.all()
+			.stream()
+			.filter((s) -> s.screen().equals(spec))
+			.findFirst()
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec));
+		List<String> args = List.of("set", "arg", screen.template(), "--line", String.valueOf(line), "--fragment", fragment, "--index",
+				String.valueOf(index), "--from", from, "--value", value);
+		boolean dryRun = step.equals("plan");
+		WorkbenchEngine.Outcome outcome = this.engine.execute(args, dryRun);
+		flash.addFlashAttribute("argChange", new ArgChange(name, commandLine(args), dryRun, outcome, line, fragment, index, from, value));
+		return "redirect:" + org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
+			.queryParam("spec", spec)
+			.queryParam("state", state)
+			.queryParam("w", WIDTHS.contains(w) ? w : "full")
+			.queryParam("node", line)
+			.build()
+			.encode()
+			.toUriString();
+	}
+
 	// ── 만들기: 폼 → cozy 명령 → 계획 → 적용 ───────────────────────────────
 
 	/** 계획과 적용 */

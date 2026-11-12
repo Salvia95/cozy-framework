@@ -77,7 +77,9 @@ class WorkbenchLayoutTest {
 			.contains("src/main/resources/templates/memo/api/list.html:7–58")
 			.contains(">필터<")
 			.contains(">색상<")
-			.contains("<code>&#39;neutral&#39;</code>");
+			.as("문자열 매개변수는 고칠 수 있고, 선택자는 글자 그대로다")
+			.contains("<option value=\"neutral\" selected=\"selected\">중립 (neutral)</option>")
+			.contains("<code>~{::#filter}</code>");
 	}
 
 	@Test

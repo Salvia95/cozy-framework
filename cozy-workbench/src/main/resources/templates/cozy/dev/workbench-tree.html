@@ -2,6 +2,7 @@
 <!--/*
   워크벤치의 구조 트리. 마디마다 줄 하나(표시 이름, 식별자, 줄 번호)와 숨겨진 속성 표가 있고, 안의 마디는 접고 펼 수 있다.
   nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbench.js가 읽는다.
+  매개변수 가운데 문자열은 고칠 수 있다: POST /cozy/dev/workbench/arg가 cozy set arg로 변경 파일을 보이고 적용한다.
 */-->
 <html lang="ko">
 <body>
@@ -36,7 +37,28 @@
               <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">매개변수</th></tr>
               <tr th:each="arg : ${item.args}">
                 <th scope="row" th:title="|${arg.name} ${arg.description}|" th:text="${arg.label}">필터</th>
-                <td><code th:text="${arg.value}">값</code></td>
+                <td th:if="${!arg.editable or item.fragment.isEmpty()}"><code th:text="${arg.value}">값</code></td>
+                <!--/* 문자열 인자: 고친 값으로 cozy set arg의 변경 파일을 확인한다. 이 표는 선택할 때 복사되므로 id를 두지 않는다 */-->
+                <td th:if="${arg.editable and !item.fragment.isEmpty()}">
+                  <form class="cozy-workbench-arg-form" method="post" th:action="@{/cozy/dev/workbench/arg}">
+                    <input type="hidden" name="spec" th:value="${screen.screen}">
+                    <input type="hidden" name="state" th:value="${state}">
+                    <input type="hidden" name="w" th:value="${w}">
+                    <input type="hidden" name="line" th:value="${item.line}">
+                    <input type="hidden" name="fragment" th:value="${item.fragment}">
+                    <input type="hidden" name="index" th:value="${arg.index}">
+                    <input type="hidden" name="from" th:value="${arg.text}">
+                    <input type="hidden" name="name" th:value="|${item.label} · ${arg.label}|">
+                    <select class="form-select form-select-sm" name="value" th:if="${!arg.choices.isEmpty()}" th:aria-label="|${item.label} ${arg.label}|">
+                      <option th:if="${arg.outside()}" th:value="${arg.text}" selected th:text="|${arg.text} (정한 값 밖)|">gray</option>
+                      <option th:each="choice : ${arg.choices}" th:value="${choice.key}" th:selected="${choice.key == arg.text}"
+                              th:text="${choice.value}">중립 (neutral)</option>
+                    </select>
+                    <input class="form-control form-control-sm" type="text" autocomplete="off" name="value" th:if="${arg.choices.isEmpty()}"
+                           th:value="${arg.text}" th:aria-label="|${item.label} ${arg.label}|">
+                    <button type="submit" class="btn btn-sm mt-1" name="step" value="plan">변경 파일 확인</button>
+                  </form>
+                </td>
               </tr>
             </th:block>
           </tbody>

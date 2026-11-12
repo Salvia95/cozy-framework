@@ -514,6 +514,29 @@
     });
   });
 
+  // 매개변수를 고친 뒤 돌아오면(?node=줄) 그 줄을 다시 선택한다. 미리보기가 그려지면 선택 표시도 다시 놓는다
+  var wanted = new URLSearchParams(window.location.search).get('node');
+  var initialRow = wanted ? rows.find(function (row) {
+    return row.dataset.cozyLine === wanted && row.querySelector('[data-cozy-workbench-node]');
+  }) : null;
+  // 고친 결과(변경 파일이나 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다
+  var argResult = document.querySelector('[data-cozy-arg-result]');
+  function revealResult() {
+    if (argResult) {
+      argResult.scrollIntoView({ block: 'start' });
+      argResult.focus({ preventScroll: true });
+    }
+  }
+  if (initialRow) {
+    selectRow(initialRow);
+    frame.addEventListener('load', function again() {
+      frame.removeEventListener('load', again);
+      selectRow(initialRow);
+      revealResult();
+    });
+  }
+  revealResult();
+
   /** 클립보드를 쓸 수 없으면 글을 펼쳐 골라 둔다 (Ctrl+C로 복사) */
   function showText() {
     contextDetails.open = true;
