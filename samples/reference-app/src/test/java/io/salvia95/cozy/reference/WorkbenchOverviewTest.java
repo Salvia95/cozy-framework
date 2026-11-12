@@ -123,6 +123,9 @@ class WorkbenchOverviewTest {
 			.contains("data-bs-toggle=\"modal\" data-bs-target=\"#state-compare\" aria-haspopup=\"dialog\" data-cozy-compare-button")
 			.contains("id=\"state-compare\"")
 			.contains("data-cozy-compare-open=\"false\" data-cozy-compare-limit=\"4\"");
+		assertThat(html).as("확인 창과 같은 제목 구조")
+			.contains("role=\"dialog\" aria-labelledby=\"state-compare-title\"")
+			.contains("<h2 class=\"modal-title\" id=\"state-compare-title\">");
 		String modal = html.substring(html.indexOf("id=\"state-compare\""));
 		for (String state : List.of("default", "empty", "noResults", "paged")) {
 			assertThat(modal).as(state)

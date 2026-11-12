@@ -106,5 +106,13 @@ class SourceDocsTest {
 		Map<String, String> names = new java.util.LinkedHashMap<>();
 		docs.forEach((name, description) -> names.put(name, SourceDocs.shortName(description)));
 		assertThat(SourceDocs.FRAMEWORK.get("io.salvia95.cozy.ui.CozyPage")).isEqualTo(names);
+		Path options = Path.of("../cozy-ui/src/main/java/io/salvia95/cozy/ui/CozyOptions.java");
+		for (Class<?> type : java.util.List.of(io.salvia95.cozy.ui.CozyOptions.class, io.salvia95.cozy.ui.CozyOptions.Option.class)) {
+			Map<String, String> optionNames = new java.util.LinkedHashMap<>();
+			SourceDocs.of(Files.readString(options), type)
+				.forEach((name, description) -> optionNames.put(name, SourceDocs.shortName(description)));
+			assertThat(optionNames).as(type.getName()).isNotEmpty();
+			assertThat(SourceDocs.FRAMEWORK.get(type.getName())).as(type.getName()).isEqualTo(optionNames);
+		}
 	}
 }

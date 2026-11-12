@@ -21,6 +21,8 @@ Rules for editing generated templates, filling `fragment-body`, and fixing R-rul
 - Never build page frames such as `container-xl` by hand; the pattern draws the header, body, and flash messages.
 - Use Tabler markup: `list-group list-group-flush` inside cards, `datagrid` for details, `stat` for numbers, and `emptyState` for no results.
 - Insert icons with `<svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>`.
+- Use `field` for values the user types, and use `selectField`, `checkboxGroup`, or `radioGroup` with a `CozyOptions` list for values chosen from a fixed set.
+- Use `inputGrid` inside a form for several rows of the same shape, choose each column's input with `CozyGrid.Column`, and fill it with `CozyGrid.bind`.
 
 ## Slots
 

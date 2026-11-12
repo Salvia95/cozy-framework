@@ -114,7 +114,7 @@ fragments:
     label: 입력 필드
     template: cozy/component/field
     signature: field(name, label, type)
-    purpose: 입력 하나와 검증 오류. <form th:object> 안에서 쓴다.
+    purpose: 직접 적는 입력 하나(글자, 여러 줄, 숫자, 날짜, 이메일)나 켜고 끄는 칸과 검증 오류. <form th:object> 안에서 쓴다. 정해진 값 중에서 고르는 칸에는 쓰지 않는다.
     params:
       - { name: name, type: String, label: 이름, required: true, description: 폼 객체의 속성 이름 }
       - { name: label, type: String, label: 레이블, required: true, description: 표시 이름 }
@@ -126,6 +126,101 @@ fragments:
       textarea: { name: body, label: 본문, type: textarea, _form: { body: 여러 줄 본문 } }
       checkbox: { name: pinned, label: 고정, type: checkbox, _form: { pinned: true } }
       switch: { name: pinned, label: 목록 위에 고정, type: switch, _form: { pinned: true } }
+  - id: component/select
+    label: 셀렉트
+    template: cozy/component/select
+    signature: selectField(name, label, options)
+    purpose: 정해진 값 가운데 하나를 펼침 목록에서 고른다. <form th:object> 안에서 쓴다. 맨 앞의 "선택하세요"는 아직 고르지 않은 상태다. 선택지가 몇 개뿐이라 늘어놓고 보는 편이 나으면 radioGroup을 쓴다.
+    params:
+      - { name: name, type: String, label: 이름, required: true, description: 폼 객체의 속성 이름 }
+      - { name: label, type: String, label: 레이블, required: true, description: 표시 이름 }
+      - { name: options, type: io.salvia95.cozy.ui.CozyOptions, label: 선택지, required: true, description: 값과 이름 (보이는 순서) }
+    samples:
+      default: { name: status, label: 상태, options: { items: [ { value: TODO, label: 할 일 }, { value: DOING, label: 진행 중 }, { value: DONE, label: 완료 } ] }, _form: { status: DOING } }
+      error: { name: status, label: 상태, options: { items: [ { value: TODO, label: 할 일 }, { value: DOING, label: 진행 중 }, { value: DONE, label: 완료 } ] }, _form: { status: "" }, _errors: { status: 상태를 고르세요 } }
+  - id: component/checkbox-group
+    label: 체크박스
+    template: cozy/component/choice
+    signature: checkboxGroup(name, label, options)
+    purpose: 정해진 값을 늘어놓고 여럿 고른다(폼 속성은 목록). <form th:object> 안에서 쓴다. 켜고 끄는 칸 하나는 field의 checkbox·switch를 쓴다.
+    params:
+      - { name: name, type: String, label: 이름, required: true, description: 폼 객체의 속성 이름 (목록) }
+      - { name: label, type: String, label: 레이블, required: true, description: 묶음의 표시 이름 }
+      - { name: options, type: io.salvia95.cozy.ui.CozyOptions, label: 선택지, required: true, description: 값과 이름 (보이는 순서) }
+    samples:
+      default: { name: channels, label: 알림 받을 곳, options: { items: [ { value: MAIL, label: 메일 }, { value: SMS, label: 문자 }, { value: MESSENGER, label: 메신저 } ] }, _form: { channels: [ MAIL ] } }
+      error: { name: channels, label: 알림 받을 곳, options: { items: [ { value: MAIL, label: 메일 }, { value: SMS, label: 문자 } ] }, _form: { channels: [] }, _errors: { channels: 알림 받을 곳을 하나 이상 고르세요 } }
+  - id: component/radio-group
+    label: 라디오 버튼
+    template: cozy/component/choice
+    signature: radioGroup(name, label, options)
+    purpose: 정해진 값을 늘어놓고 하나를 고른다. <form th:object> 안에서 쓴다. 선택지가 많으면 select를 쓴다.
+    params:
+      - { name: name, type: String, label: 이름, required: true, description: 폼 객체의 속성 이름 }
+      - { name: label, type: String, label: 레이블, required: true, description: 묶음의 표시 이름 }
+      - { name: options, type: io.salvia95.cozy.ui.CozyOptions, label: 선택지, required: true, description: 값과 이름 (보이는 순서) }
+    samples:
+      default: { name: priority, label: 중요도, options: { items: [ { value: LOW, label: 보통 }, { value: HIGH, label: 높음 } ] }, _form: { priority: HIGH } }
+      error: { name: priority, label: 중요도, options: { items: [ { value: LOW, label: 보통 }, { value: HIGH, label: 높음 } ] }, _form: { priority: "" }, _errors: { priority: 중요도를 고르세요 } }
+  - id: component/input-grid
+    label: 입력 그리드
+    template: cozy/component/input-grid
+    signature: inputGrid(label, grid)
+    purpose: 같은 모양의 여러 행을 표에서 바로 입력한다. 열마다 입력 방식(text, number, date, email, select, radio, checkbox)을 정하고 칸 전체가 입력이다. 폼 안에서 쓰고, 행 추가·복제·삭제는 감싼 폼을 row 파라미터로 제출한다(CozyGrid.RowAction).
+    params:
+      - { name: label, type: String, label: 이름, required: true, description: "그리드 이름 (표 이름, 행 추가 버튼)" }
+      - { name: grid, type: io.salvia95.cozy.ui.CozyGrid, label: 그리드, required: true, description: "열과 행 (Spring 폼이면 CozyGrid.bind)" }
+    samples:
+      default:
+        label: 필드
+        grid:
+          key: items
+          editableRows: true
+          columns:
+            - { name: title, label: 이름, input: text, required: true, options: null }
+            - { name: kind, label: 종류, input: select, options: { items: [ { value: text, label: 글자 }, { value: longtext, label: 여러 줄 글자 } ] }, required: false }
+            - { name: priority, label: 중요도, input: radio, options: { items: [ { value: LOW, label: 보통 }, { value: HIGH, label: 높음 } ] }, required: false }
+            - { name: required, label: 필수, input: checkbox, required: false, options: null }
+            - { name: due, label: 마감, input: date, required: false, options: null }
+          rows:
+            - { cells: [ { name: "items[0].title", value: 회의록, error: null }, { name: "items[0].kind", value: text, error: null }, { name: "items[0].priority", value: HIGH, error: null }, { name: "items[0].required", value: "true", error: null }, { name: "items[0].due", value: "2026-11-20", error: null } ] }
+            - { cells: [ { name: "items[1].title", value: 본문, error: null }, { name: "items[1].kind", value: longtext, error: null }, { name: "items[1].priority", value: LOW, error: null }, { name: "items[1].required", value: "false", error: null }, { name: "items[1].due", value: "", error: null } ] }
+      error:
+        label: 필드
+        grid:
+          key: items
+          editableRows: true
+          columns:
+            - { name: title, label: 이름, input: text, required: true, options: null }
+            - { name: kind, label: 종류, input: select, options: { items: [ { value: text, label: 글자 }, { value: longtext, label: 여러 줄 글자 } ] }, required: false }
+            - { name: priority, label: 중요도, input: radio, options: { items: [ { value: LOW, label: 보통 }, { value: HIGH, label: 높음 } ] }, required: false }
+            - { name: required, label: 필수, input: checkbox, required: false, options: null }
+            - { name: due, label: 마감, input: date, required: false, options: null }
+          rows:
+            - { cells: [ { name: "items[0].title", value: "", error: 이름을 입력하세요 }, { name: "items[0].kind", value: "", error: 종류를 고르세요 }, { name: "items[0].priority", value: "", error: null }, { name: "items[0].required", value: "false", error: null }, { name: "items[0].due", value: "", error: null } ] }
+      empty:
+        label: 필드
+        grid:
+          key: items
+          editableRows: true
+          columns:
+            - { name: title, label: 이름, input: text, required: true, options: null }
+            - { name: kind, label: 종류, input: select, options: { items: [ { value: text, label: 글자 }, { value: longtext, label: 여러 줄 글자 } ] }, required: false }
+            - { name: priority, label: 중요도, input: radio, options: { items: [ { value: LOW, label: 보통 }, { value: HIGH, label: 높음 } ] }, required: false }
+            - { name: required, label: 필수, input: checkbox, required: false, options: null }
+            - { name: due, label: 마감, input: date, required: false, options: null }
+          rows: []
+      fixed:
+        label: 연락처
+        grid:
+          key: contacts
+          editableRows: false
+          columns:
+            - { name: name, label: 이름, input: text, required: false, options: null }
+            - { name: email, label: 메일, input: email, required: false, options: null }
+            - { name: count, label: 횟수, input: number, required: false, options: null }
+          rows:
+            - { cells: [ { name: "contacts[0].name", value: 담당자, error: null }, { name: "contacts[0].email", value: "a@example.com", error: null }, { name: "contacts[0].count", value: "3", error: null } ] }
   - id: component/data-table
     label: 표
     template: cozy/component/data-table

@@ -1,0 +1,10 @@
+<!--/* 셀렉트: 정해진 값 가운데 하나를 고른다. <form th:object="${form}"> 안에서 쓴다. 직접 적는 값은 field를 쓴다.
+     options: CozyOptions(값과 이름, 보이는 순서). 맨 앞의 빈 선택지 "선택하세요"는 아직 고르지 않은 상태다. */-->
+<div class="mb-3" th:fragment="selectField(name, label, options)">
+  <label class="form-label" th:for="${name}" th:text="${label}">항목</label>
+  <select class="form-select" th:field="*{__${name}__}" th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'">
+    <option value="">선택하세요</option>
+    <option th:each="option : ${options.items}" th:value="${option.value}" th:text="${option.label}">값</option>
+  </select>
+  <div class="invalid-feedback d-block" th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">오류</div>
+</div>

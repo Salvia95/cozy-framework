@@ -136,8 +136,9 @@ class WorkbenchCommandTest {
 			assertThat(body(get(URL).param("recipe", "migration"))).as("있어야 하는 모듈은 고르기")
 				.contains("<option value=\"memo\">memo</option>");
 			String crud = body(get(URL).param("recipe", "crud"));
-			assertThat(crud).as("여러 번 쓰는 옵션은 그리드, 칸마다 구성 요소")
-				.contains("cozy-workbench-grid")
+			assertThat(crud).as("여러 번 쓰는 옵션은 그리드, 칸마다 구성 요소 (입력 그리드와 같은 모양)")
+				.contains("class=\"table table-bordered cozy-grid cozy-workbench-grid\"")
+				.contains("class=\"cozy-grid-ops\"")
 				.contains("name=\"opt.field.0.name\"")
 				.contains("name=\"opt.field.0.kind\"")
 				.contains("type=\"checkbox\" value=\"!\"")

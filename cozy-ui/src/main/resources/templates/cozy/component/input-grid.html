@@ -1,0 +1,66 @@
+<!--/*
+  입력 그리드: 같은 모양의 여러 행을 표에서 바로 입력한다. 열마다 입력 방식(text, number, date, email, select, radio, checkbox)을
+  CozyGrid.Column으로 정한다. 칸 전체가 입력이고 칸의 선이 입력의 테두리다. 머리(열 이름, 행 번호)는 가운데 정렬이다.
+  label: 그리드 이름(표의 aria-label, 행 추가 버튼). grid: CozyGrid(칸마다 입력 이름·값·오류). Spring 폼이면 CozyGrid.bind로 만든다.
+  행 추가·복제·삭제(grid.editableRows)는 감싼 폼을 name="row", value="add:{key}" · "duplicate:{key}/{행}" · "delete:{key}/{행}"으로
+  제출한다(행은 0부터). 컨트롤러는 CozyGrid.RowAction으로 목록을 고치고 같은 화면을 다시 그린다.
+*/-->
+<div class="cozy-grid-wrap" th:fragment="inputGrid(label, grid)">
+  <div class="table-responsive">
+    <table class="table table-bordered cozy-grid" th:aria-label="${label}">
+      <thead>
+        <tr>
+          <th scope="col" class="cozy-grid-number">행</th>
+          <th scope="col" th:each="column : ${grid.columns}"><span th:text="${column.label}">이름</span><span class="cozy-grid-required" th:if="${column.required}" aria-hidden="true">*</span></th>
+          <th scope="col" class="cozy-grid-ops" th:if="${grid.editableRows}"><span class="visually-hidden">행 작업</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="row, rowStat : ${grid.rows}">
+          <th scope="row" class="cozy-grid-number" th:text="${rowStat.count}">1</th>
+          <td th:each="cell, cellStat : ${row.cells}" th:with="column=${grid.columns[cellStat.index]}, spoken=|${grid.columns[cellStat.index].label} ${rowStat.count}행|"
+              th:classappend="${column.input == 'checkbox'} ? 'cozy-grid-check'">
+            <th:block th:switch="${column.input}">
+            <th:block th:case="'checkbox'">
+              <input type="hidden" th:name="|_${cell.name}|" value="on">
+              <input class="form-check-input" type="checkbox" th:name="${cell.name}" value="true" th:aria-label="${spoken}"
+                     th:checked="${cell.value == 'true'}" th:classappend="${cell.error != null} ? 'is-invalid'" th:attr="aria-invalid=${cell.error != null} ? 'true' : null">
+            </th:block>
+            <div class="cozy-grid-radios" role="radiogroup" th:case="'radio'" th:aria-label="${spoken}">
+              <label class="form-check form-check-inline" th:each="option : ${column.options.items}">
+                <input class="form-check-input" type="radio" th:name="${cell.name}" th:value="${option.value}"
+                       th:checked="${option.value == cell.value}" th:classappend="${cell.error != null} ? 'is-invalid'">
+                <span class="form-check-label" th:text="${option.label}">값</span>
+              </label>
+            </div>
+            <select class="form-select" th:case="'select'" th:name="${cell.name}" th:aria-label="${spoken}"
+                    th:classappend="${cell.error != null} ? 'is-invalid'" th:attr="aria-invalid=${cell.error != null} ? 'true' : null">
+              <option value="">선택하세요</option>
+              <option th:each="option : ${column.options.items}" th:value="${option.value}" th:selected="${option.value == cell.value}" th:text="${option.label}">값</option>
+            </select>
+            <input class="form-control" th:case="*" th:type="${column.input}" th:name="${cell.name}" th:value="${cell.value}" autocomplete="off" th:aria-label="${spoken}"
+                   th:classappend="${cell.error != null} ? 'is-invalid'" th:attr="aria-invalid=${cell.error != null} ? 'true' : null">
+            </th:block>
+            <div class="invalid-feedback d-block" th:if="${cell.error != null}" th:text="${cell.error}">오류</div>
+          </td>
+          <td class="cozy-grid-ops" th:if="${grid.editableRows}">
+            <div class="btn-list flex-nowrap gap-1">
+              <button type="submit" class="btn btn-sm btn-icon" name="row" th:value="|duplicate:${grid.key}/${rowStat.index}|" th:aria-label="|${rowStat.count}행 복제|" title="행 복제">
+                <svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>
+              </button>
+              <button type="submit" class="btn btn-sm btn-icon cozy-btn-critical" name="row" th:value="|delete:${grid.key}/${rowStat.index}|" th:aria-label="|${rowStat.count}행 삭제|" title="행 삭제">
+                <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr th:if="${grid.rows.isEmpty()}">
+          <td class="cozy-grid-empty text-secondary" th:colspan="${grid.columns.size() + (grid.editableRows ? 2 : 1)}">행이 없습니다.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <button type="submit" class="btn btn-sm mt-2" name="row" th:if="${grid.editableRows}" th:value="|add:${grid.key}|" th:aria-label="|${label}에 행 추가|">
+    <svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>행 추가
+  </button>
+</div>

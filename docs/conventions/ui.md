@@ -57,6 +57,42 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 - **입력과 출력**: 입력은 getter와 setter가 있는 폼 클래스로 받고, 출력은 `api/dto` 패키지의 record로 넘긴다. 컨트롤러는 spi(`*Facade`, `*Finder`)만 부르고 spi DTO를 화면 DTO로 바꾼다. 도메인 객체를 템플릿에 직접 넘기지 않는다.
 - **리다이렉트**: `CozyViews.redirect`는 `"redirect:" + path`와 같다. htmx 요청이면 인터셉터가 200 빈 응답과 `HX-Redirect`로 바꾸고, 플래시도 전달된다.
 - **htmx 헤더**: `HtmxRequest`를 메서드 인자로 받으면 htmx 헤더를 읽을 수 있다(`htmx()`, `partial()`, `target()`, `trigger()`). boost 요청은 부분 갱신으로 보지 않는다.
+- **선택지 (`CozyOptions`)**: `selectField`, `checkboxGroup`, `radioGroup`에 넘기는 값과 이름의 목록이다. 컨트롤러가 화면 DTO나 모델에 담는다. 보이는 순서는 목록의 순서이고, 같은 값이 두 번 있거나 값·이름이 비면 예외다.
+
+  ```java
+  CozyOptions.of(Status.class, (s) -> switch (s) { case TODO -> "할 일"; case DONE -> "완료"; });   // 값은 상수 이름
+  CozyOptions.of(labels);                                   // 순서가 있는 Map<값, 이름>
+  new CozyOptions(List.of(new CozyOptions.Option("MAIL", "메일")));
+  ```
+
+  화면 명세의 샘플 값은 `{ items: [ { value: TODO, label: 할 일 } ] }`이다. 폼 속성은 셀렉트·라디오 버튼이면 값 하나(`String`이나 enum), 체크박스면 목록이다.
+- **입력 그리드 (`CozyGrid`)**: 열(`CozyGrid.Column`)마다 입력 방식을 개발자가 고른다. 칸은 입력 이름·값·오류를 가진다. Spring 폼의 목록 속성이면 `CozyGrid.bind`가 칸 이름(`items[0].title`), 값, 검증 오류를 바인딩 결과에서 채운다.
+
+  ```java
+  List<CozyGrid.Column> columns = List.of(
+      CozyGrid.Column.text("title", "이름").asRequired(),
+      CozyGrid.Column.select("kind", "종류", kindOptions),      // 셀렉트(콤보박스)
+      CozyGrid.Column.radio("priority", "중요도", priorityOptions),
+      CozyGrid.Column.checkbox("required", "필수"),
+      CozyGrid.Column.date("due", "마감"));                      // number, email도 있다
+  model.addAttribute("fieldsGrid", CozyGrid.bind("items", columns, form.getItems(), errors));
+  ```
+
+  - 열의 입력 방식은 text, number, date, email, select, radio, checkbox다. select·radio 열에만 선택지(`CozyOptions`)가 있고, 그 두 열에는 꼭 있어야 한다. `asRequired()`는 머리에 *를 붙인다. 검사는 서버가 한다.
+  - 체크박스 칸은 Spring의 꺼짐 표시(`_items[0].required`)를 함께 보내므로 끈 값도 `false`로 바인딩된다.
+  - **행 추가·복제·삭제**: 버튼이 감싼 폼을 `row=add:items`, `row=duplicate:items/0`, `row=delete:items/0`으로 제출한다(행은 0부터). 컨트롤러는 검증하지 않고 목록만 고친 뒤 같은 화면을 다시 그린다.
+
+    ```java
+    @PostMapping(params = "row")
+    String row(@RequestParam String row, @ModelAttribute("form") FieldsForm form, Model model) {
+        CozyGrid.RowAction.parse(row).ifPresent((a) -> a.apply("items", form.getItems(), ItemRow::new, ItemRow::copy));
+        model.addAttribute("fieldsGrid", CozyGrid.bind("items", columns, form.getItems(), null));
+        return "memo/api/fields";
+    }
+    ```
+
+    형식이 다른 `row` 값과 없는 행은 예외다. 행 수가 정해진 그리드는 `new CozyGrid(key, columns, rows, false)`로 만들면 행 작업 버튼이 없다.
+  - 화면 명세의 샘플 값은 레코드 필드를 모두 적는다(`required`, `options`, `error`는 `false`·`null`이라도). 형식은 cozy-ui 매니페스트의 `component/input-grid` 샘플과 같다.
 - **내비 등록**: `CozyNavItem("메모", "/memo", 10, "notes")` 빈을 등록한다. 마지막 인자는 Tabler Icons 이름이고, 없는 이름이면 기동이 실패한다. 요청 경로가 그 경로로 시작하면 활성으로 표시한다.
 
 ## fragment 목록
@@ -76,14 +112,18 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 | `component/page-header` | `pageHeader(제목, 상위이름, 상위주소, 버튼)` | 패턴이 쓴다. 상위가 있으면 제목 위 경로 |
 | `component/form-actions` | `formActions('/memo', 'plus', '메모 만들기')` | 폼 카드 아래 오른쪽 [취소] [주 버튼] |
 | `component/delete-confirm` | `deleteConfirm('memo-delete', '메모', ${memo.title}, '/memo/1/delete')` | 삭제 버튼 + 확인 창 [취소] [삭제] |
-| `component/field` | `field('title', '제목', 'text')` | `<form th:object>` 안. text, textarea, checkbox, switch, number, date, email |
+| `component/field` | `field('title', '제목', 'text')` | `<form th:object>` 안. 직접 적는 입력(text, textarea, number, date, email)과 켜고 끄는 checkbox, switch. 정해진 값 중에서 고르는 칸은 field가 아니라 아래 선택 컴포넌트가 맡는다 |
+| `component/select` | `selectField('status', '상태', ${statusOptions})` | 셀렉트. 정해진 값 가운데 하나를 펼침 목록에서 고른다. 맨 앞 "선택하세요"는 아직 고르지 않은 상태 |
+| `component/checkbox-group` | `checkboxGroup('channels', '알림 받을 곳', ${channelOptions})` | 체크박스. 늘어놓고 여럿 고른다. 폼 속성은 목록 |
+| `component/input-grid` | `inputGrid('필드', ${fieldsGrid})` | 입력 그리드. 같은 모양의 여러 행을 표에서 바로 입력한다. 열마다 입력 방식(text, number, date, email, select, radio, checkbox)을 `CozyGrid.Column`으로 고르고, 칸 전체가 입력이다. 폼 안에 둔다 |
+| `component/radio-group` | `radioGroup('priority', '중요도', ${priorityOptions})` | 라디오 버튼. 늘어놓고 하나 고른다. 선택지가 많으면 `selectField` |
 | `component/data-table` | `dataTable(~{::#head}, ~{::.row})` | `<tr>` 머리행과 행들 |
 | `component/pagination` | `pagination(${page}, '/memo', '#result', '#filter')` | `CozyPage`. 이전·다음과 번호 5개(`CozyPage.window()`) |
 | `component/badge` | `badge('고정', 'neutral')` | tone: neutral, info, success, warning, critical. 분류는 neutral |
 | `component/alert` | `alert('success', '메모를 만들었습니다')` | kind: info, success, warning, critical. 종류별 아이콘. 같은 파일의 `flash()`가 플래시를 그린다 |
 | `component/stat` | `stat('notes', '12개', '전체 메모')` | 숫자 카드. 색 없음 |
 | `component/empty-state` | `emptyState('notes', '없습니다', '설명')` | 만들기 버튼까지: `emptyStateAction(…, ~{::#action})`. 조건에 맞는 것이 없으면 `noResults('/memo')` |
-| `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm` |
+| `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm`. 확인 창은 모두 같은 구조다: Tabler의 `modal modal-blur fade`(바탕 흐림, 페이드), `role="dialog"`, 제목 `h2.modal-title`(id는 `{id}-title`), `aria-labelledby`가 제목을 가리킨다 |
 | `component/toast` | `toast('success', '복사했습니다')` | 사소한 확인만. 중립 바탕, critical만 빨강. 스크립트는 `Cozy.toast(message, kind)` |
 | `component/loading` | `loading()` | `htmx-indicator` |
 | `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.51.0 전체 (외곽선 5,233개, 채운 1,054개) |

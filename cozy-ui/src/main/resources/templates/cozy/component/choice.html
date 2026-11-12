@@ -1,0 +1,22 @@
+<!--/* 체크박스 묶음과 라디오 버튼 묶음: 정해진 값을 보이는 그대로 늘어놓고 고른다. <form th:object="${form}"> 안에서 쓴다.
+     checkboxGroup은 여럿(폼 속성은 목록), radioGroup은 하나를 고른다. 선택지가 많아 다 늘어놓기 어려우면 select를 쓴다.
+     options: CozyOptions(값과 이름, 보이는 순서). 켜고 끄는 칸 하나는 field의 checkbox·switch다. */-->
+<fieldset class="mb-3" th:fragment="checkboxGroup(name, label, options)">
+  <legend class="form-label" th:text="${label}">항목</legend>
+  <label class="form-check" th:each="option : ${options.items}">
+    <input type="checkbox" class="form-check-input" th:field="*{__${name}__}" th:value="${option.value}"
+           th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'">
+    <span class="form-check-label" th:text="${option.label}">값</span>
+  </label>
+  <div class="invalid-feedback d-block" th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">오류</div>
+</fieldset>
+
+<fieldset class="mb-3" th:fragment="radioGroup(name, label, options)">
+  <legend class="form-label" th:text="${label}">항목</legend>
+  <label class="form-check" th:each="option : ${options.items}">
+    <input type="radio" class="form-check-input" th:field="*{__${name}__}" th:value="${option.value}"
+           th:classappend="${#fields.hasErrors(name)} ? 'is-invalid'">
+    <span class="form-check-label" th:text="${option.label}">값</span>
+  </label>
+  <div class="invalid-feedback d-block" th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">오류</div>
+</fieldset>

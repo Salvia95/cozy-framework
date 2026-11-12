@@ -7,11 +7,11 @@
   <button type="button" class="btn cozy-btn-critical" data-bs-toggle="modal" th:attr="data-bs-target=${'#' + cozyId}">
     <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>삭제
   </button>
-  <div class="modal" tabindex="-1" role="dialog" th:id="${cozyId}" th:attr="aria-labelledby=${cozyId + '-title'}">
+  <div class="modal modal-blur fade" tabindex="-1" role="dialog" aria-hidden="true" th:id="${cozyId}" th:attr="aria-labelledby=${cozyId + '-title'}">
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" method="post" th:action="@{${cozyUrl}}" th:hx-post="@{${cozyUrl}}">
         <div class="modal-header">
-          <h3 class="modal-title" th:id="${cozyId + '-title'}" th:text="|${cozyResource} 삭제|">삭제</h3>
+          <h2 class="modal-title" th:id="${cozyId + '-title'}" th:text="|${cozyResource} 삭제|">삭제</h2>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
         </div>
         <div class="modal-body">

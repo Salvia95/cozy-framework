@@ -90,23 +90,23 @@
                 <span class="cozy-workbench-id ms-auto" th:if="${grid.repeatable}" th:text="|${grid.rows.size()}행|">1행</span>
               </h4>
               <div class="table-responsive cozy-workbench-grid-wrap">
-                <table class="table table-sm table-bordered cozy-workbench-grid">
+                <table class="table table-bordered cozy-grid cozy-workbench-grid">
                   <thead>
                     <tr>
-                      <th scope="col" class="cozy-workbench-grid-number">행</th>
+                      <th scope="col" class="cozy-grid-number">행</th>
                       <th scope="col" th:each="column : ${grid.columns}">
                         <span th:text="${column.label}">이름</span><span class="cozy-workbench-required" th:if="${column.required}" aria-hidden="true">*</span>
                       </th>
-                      <th scope="col" class="cozy-workbench-grid-ops" th:if="${grid.repeatable}"><span class="visually-hidden">행 작업</span></th>
+                      <th scope="col" class="cozy-grid-ops" th:if="${grid.repeatable}"><span class="visually-hidden">행 작업</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr th:each="row, rowStat : ${grid.rows}">
-                      <th scope="row" class="cozy-workbench-grid-number" th:text="${row.number}">1</th>
-                      <td th:each="cell : ${row.cells}" th:classappend="${cell.control == 'flag'} ? 'text-center'">
+                      <th scope="row" class="cozy-grid-number" th:text="${row.number}">1</th>
+                      <td th:each="cell : ${row.cells}" th:classappend="${cell.control == 'flag'} ? 'cozy-grid-check'">
                         <th:block th:replace="~{cozy/dev/workbench-commands :: commandInput(${cell}, true)}"></th:block>
                       </td>
-                      <td class="cozy-workbench-grid-ops" th:if="${grid.repeatable}">
+                      <td class="cozy-grid-ops" th:if="${grid.repeatable}">
                         <div class="btn-list flex-nowrap gap-1">
                           <button type="submit" class="btn btn-sm btn-ghost-secondary btn-icon" name="row" th:value="|duplicate:${grid.field}/${rowStat.index}|"
                                   th:formaction="@{/cozy/dev/workbench/commands(recipe=${selected.name})} + '#' + ${grid.anchor()}"

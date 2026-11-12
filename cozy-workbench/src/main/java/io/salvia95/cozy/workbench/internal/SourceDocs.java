@@ -23,7 +23,8 @@ final class SourceDocs {
 
 	/** 소스가 앱에 없는 프레임워크 타입: 타입 이름 → 속성 → 설명 */
 	static final Map<String, Map<String, String>> FRAMEWORK = Map.of("io.salvia95.cozy.ui.CozyPage",
-			Map.of("number", "현재 페이지", "size", "페이지 크기", "totalElements", "전체 건수"));
+			Map.of("number", "현재 페이지", "size", "페이지 크기", "totalElements", "전체 건수"), "io.salvia95.cozy.ui.CozyOptions",
+			Map.of("items", "선택지"), "io.salvia95.cozy.ui.CozyOptions$Option", Map.of("value", "값", "label", "이름"));
 
 	private static final Pattern PARAM = Pattern.compile("@param\\s+(\\w+)\\s+([^@]*)");
 
