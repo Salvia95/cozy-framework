@@ -11,34 +11,6 @@ permissions:
   actions: read
 
 jobs:
-  args:
-    runs-on: windows-2025
-    timeout-minutes: 10
-    steps:
-      - name: 인수 전달 진단 (공백·한글·점이 있는 인수)
-        shell: powershell
-        run: |
-          $d = Join-Path $env:RUNNER_TEMP 'args'
-          New-Item -ItemType Directory -Force -Path $d | Out-Null
-          Set-Content -Encoding UTF8 (Join-Path $d 'echo.ps1') -Value '$i = 0; foreach ($a in $args) { Write-Host "  [$i] <$a>"; $i++ }'
-          Set-Content -Encoding ASCII (Join-Path $d 'echo.cmd') -Value "@echo off`r`n:loop`r`nif `"%~1`"==`"`" goto :eof`r`necho   cmd arg ^<%1^>`r`nshift`r`ngoto loop"
-          Set-Content -Encoding ASCII (Join-Path $d 'forward.cmd') -Value "@powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0echo.ps1`" %*"
-          $sample = @('new', '-B', '-DgroupId=com.example', '-DappName=설치 확인', '-Dpersistence=true')
-          Set-Content -Encoding ASCII (Join-Path $d 'raw.cmd') -Value "@echo   raw: %*"
-          $py = (Get-Command python).Source
-          $sample = @('new', '-B', '-DgroupId=com.example', '-DappName=설치 확인', '--label', '할 일', '-Dpersistence=true')
-          $variants = [ordered]@{
-            'A-as-is' = '$rest = @($args)'
-            'B-string' = '$rest = @($args | ForEach-Object { [string]$_ })'
-            'C-quoted' = '$rest = @($args | ForEach-Object { if ("$_" -match ''\s'') { ''"'' + "$_" + ''"'' } else { "$_" } })'
-          }
-          foreach ($name in $variants.Keys) {
-            $body = $variants[$name] + '; & "' + (Join-Path $d 'raw.cmd') + '" @rest; & "' + $py + '" -c "import sys; print(''  py:'', sys.argv[1:])" @rest'
-            Set-Content -Encoding UTF8 (Join-Path $d 'relay.ps1') -Value $body
-            Write-Host "== $name"
-            & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $d 'relay.ps1') @sample
-          }
-
   msi:
     runs-on: windows-2025
     timeout-minutes: 90

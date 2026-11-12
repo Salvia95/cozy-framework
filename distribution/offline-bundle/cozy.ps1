@@ -22,7 +22,9 @@ $VersionFile = Join-Path $Root 'COZY_VERSION'
 $Version = if (Test-Path $VersionFile) { (Get-Content -Raw $VersionFile).Trim() } else { 'unknown' }
 $Action = if ($args.Count -gt 0) { [string]$args[0] } else { 'help' }
 # @(...)로 감싼다. if의 결과는 펼쳐지므로 인수가 하나면 배열이 아니라 문자열이 되고, $Rest[0]이 첫 글자가 된다
-$Rest = @(if ($args.Count -gt 1) { $args[1..($args.Count - 1)] })
+# [string]으로 바꿔 둔다. Windows PowerShell 5.1은 -File로 받은 '-'로 시작하는 인수를 외부 명령에 넘길 때 따옴표를 빼서,
+# "-DappName=VOC 도우미"가 공백에서 둘로 나뉜다
+$Rest = @(if ($args.Count -gt 1) { $args[1..($args.Count - 1)] | ForEach-Object { [string]$_ } })
 
 # 번들의 JDK는 이 명령(과 여기서 부르는 Maven) 안에서만 쓴다. 시스템의 JAVA_HOME과 PATH 설정은 바꾸지 않는다
 $BundledJdk = Join-Path $Root 'jdk'
