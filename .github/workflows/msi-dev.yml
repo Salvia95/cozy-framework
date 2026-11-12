@@ -24,13 +24,20 @@ jobs:
           Set-Content -Encoding ASCII (Join-Path $d 'echo.cmd') -Value "@echo off`r`n:loop`r`nif `"%~1`"==`"`" goto :eof`r`necho   cmd arg ^<%1^>`r`nshift`r`ngoto loop"
           Set-Content -Encoding ASCII (Join-Path $d 'forward.cmd') -Value "@powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0echo.ps1`" %*"
           $sample = @('new', '-B', '-DgroupId=com.example', '-DappName=설치 확인', '-Dpersistence=true')
-          Write-Host '1. PowerShell -> .cmd(%*로 출력)'
-          & (Join-Path $d 'echo.cmd') @sample
-          Write-Host '2. PowerShell -> .cmd -> powershell -File'
-          & (Join-Path $d 'forward.cmd') @sample
-          Write-Host '3. powershell -File 안에서 받은 $args를 .cmd로 다시 (@args 펼치기)'
-          Set-Content -Encoding UTF8 (Join-Path $d 'relay.ps1') -Value ('$rest = @($args[1..($args.Count - 1)]); & "' + (Join-Path $d 'echo.cmd') + '" @rest')
-          & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $d 'relay.ps1') @sample
+          Set-Content -Encoding ASCII (Join-Path $d 'raw.cmd') -Value "@echo   raw: %*"
+          $py = (Get-Command python).Source
+          $sample = @('new', '-B', '-DgroupId=com.example', '-DappName=설치 확인', '--label', '할 일', '-Dpersistence=true')
+          $variants = [ordered]@{
+            'A 그대로'       = '$rest = @($args)'
+            'B [string]'     = '$rest = @($args | ForEach-Object { [string]$_ })'
+            'C 따옴표'       = '$rest = @($args | ForEach-Object { if ("$_" -match ''\s'') { ''"'' + "$_" + ''"'' } else { "$_" } })'
+          }
+          foreach ($name in $variants.Keys) {
+            $body = $variants[$name] + '; & "' + (Join-Path $d 'raw.cmd') + '" @rest; & "' + $py + '" -c "import sys; print(''  py:'', sys.argv[1:])" @rest'
+            Set-Content -Encoding UTF8 (Join-Path $d 'relay.ps1') -Value $body
+            Write-Host "== $name"
+            & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $d 'relay.ps1') @sample
+          }
 
   msi:
     runs-on: windows-2025
