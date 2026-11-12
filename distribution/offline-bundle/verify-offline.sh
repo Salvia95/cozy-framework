@@ -3,19 +3,25 @@
 # 설치 → 아키타입 생성(옵션 3조합) → mvn -o verify → mvn -o -Pdist package가 되는지 본다.
 # 앱마다 에이전트 문서를 확인하고, basic 앱에는 cozy sync agents, persistence 앱에는 cozy enable events, 이벤트 앱에는 cozy add·link·2단계 명령으로 구조를 더한 뒤 verify한다.
 #
-#   distribution/offline-bundle/verify-offline.sh <번들 zip>
+#   distribution/offline-bundle/verify-offline.sh <번들 zip> [작업 폴더]
+#
+# JDK를 담은 번들(add-jdk.sh의 linux-x64)이면 시스템 JDK 자리에 부르면 실패하는 java를 둔다. 설치, 생성, 빌드, 패키징이
+# 모두 번들의 JDK로 돌아야 통과한다. windows-x64 번들은 Linux에서 실행할 수 없어 Windows에서 확인한다.
 #
 # unshare --net으로 네트워크 장치가 루프백뿐인 이름공간에서 돌린다. 랜선을 뽑은 PC처럼 루프백(127.0.0.1)만 켠다
 # (앱은 루프백에서 뜨고, 패키징의 AOT 훈련 실행이 루프백으로 요청한다). HOME과 Maven의 user.home도 빈 폴더로 바꿔
 # 기존 ~/.m2와 설정을 쓰지 않는다. Windows는 docs/conventions/windows-verification.md의 아키타입과 오프라인 번들 절차를 따른다.
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ZIP="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 WORK="${2:-$(dirname "$ZIP")/offline-check}"
 if [ "${COZY_OFFLINE_INNER:-}" != "1" ]; then
   rm -rf "$WORK"
   mkdir -p "$WORK/home"
 fi
+# 네트워크를 끊은 쪽은 작업 폴더로 cd한 뒤에도 같은 경로를 쓴다
+WORK="$(cd "$WORK" && pwd)"
 
 if [ "${COZY_OFFLINE_INNER:-}" != "1" ]; then
   # 네트워크를 끊은 이름공간에서 자신을 다시 실행한다
@@ -35,23 +41,53 @@ unzip -q "$ZIP"
 BUNDLE="$(ls -d "$WORK"/cozy-offline-bundle-*/ | head -1)"
 BUNDLE="${BUNDLE%/}"
 
+# 번들의 JDK: 있으면 시스템 JDK를 쓰지 못하게 막고, 라이선스 목록의 JDK 줄을 jdk.env로 다시 만든다
+JAVA=java
+JDK_OPTIONS=()
+if [ -d "$BUNDLE/jdk" ]; then
+  # shellcheck source=jdk.env
+  . "$ROOT/distribution/offline-bundle/jdk.env"
+  case "$BUNDLE" in
+    *-linux-x64) JDK_FILE="$JDK_LINUX_X64" ;;
+    *)
+      echo "[cozy] 이 JDK는 Linux에서 실행할 수 없습니다: $(basename "$BUNDLE"). windows-x64 번들은 Windows에서 확인합니다" >&2
+      exit 2
+      ;;
+  esac
+  test ! -e "$BUNDLE/jdk/lib/src.zip"
+  JAVA="$BUNDLE/jdk/bin/java"
+  JDK_OPTIONS=(--jdk-distribution="$JDK_FILE" --jdk-sources="$JDK_SOURCES")
+  mkdir -p "$WORK/system-jdk/bin"
+  printf '#!/bin/sh\necho "[cozy] 번들의 JDK 대신 시스템 JDK를 불렀습니다: java $*" >&2\nexit 97\n' > "$WORK/system-jdk/bin/java"
+  chmod +x "$WORK/system-jdk/bin/java"
+  export PATH="$WORK/system-jdk/bin:$PATH" JAVA_HOME="$WORK/system-jdk"
+  echo "[cozy] 번들 JDK: $(grep '^IMPLEMENTOR_VERSION=' "$BUNDLE/jdk/release"). 시스템 JDK는 막았다"
+fi
+
 # 라이선스 목록: 번들의 저장소만으로 다시 만들어 담긴 목록과 같은지 본다.
 # 네트워크가 없으므로 약한 카피레프트 jar의 소스 jar가 빠져 있으면 여기서 실패한다
 VERSION="$(cat "$BUNDLE/COZY_VERSION")"
 MAVEN_FILE="$(basename "$(ls "$BUNDLE"/apache-maven-*-bin.zip | head -1)")"
 test -f "$BUNDLE/LICENSE" && test -f "$BUNDLE/NOTICE"
-java -cp "$BUNDLE/repository/io/salvia95/cozy/cozy-starter-runtime/$VERSION/cozy-starter-runtime-$VERSION.jar" \
+"$JAVA" -cp "$BUNDLE/repository/io/salvia95/cozy/cozy-starter-runtime/$VERSION/cozy-starter-runtime-$VERSION.jar" \
   io.salvia95.cozy.runtime.internal.dist.BundleLicenses --repository="$BUNDLE/repository" \
   --overrides="$BUNDLE/licenses/license-overrides.txt" --output="$WORK/THIRD-PARTY.check.txt" \
-  --title="Cozy offline bundle $VERSION" --maven-distribution="$MAVEN_FILE"
+  --title="Cozy offline bundle $VERSION" --maven-distribution="$MAVEN_FILE" ${JDK_OPTIONS[@]+"${JDK_OPTIONS[@]}"}
 diff -u "$BUNDLE/licenses/THIRD-PARTY.txt" "$WORK/THIRD-PARTY.check.txt"
 echo "[cozy] 라이선스 목록 확인: $(grep -c 'sources.jar\]' "$BUNDLE/licenses/THIRD-PARTY.txt")개 jar의 소스 jar 포함"
 
 "$BUNDLE/cozy" version | grep -qx "$VERSION"
 "$BUNDLE/cozy" install "$WORK/cozy"
-MAVEN_BIN="$(ls -d "$WORK"/cozy/apache-maven-*/bin | head -1)"
-export PATH="$WORK/cozy/bin:$MAVEN_BIN:$PATH"
+# PATH에는 설치 폴더의 bin 하나만 더한다. bin/mvn이 설치한 Maven을 (JDK가 있으면 그 JDK로) 부른다
+export PATH="$WORK/cozy/bin:$PATH"
 test "$(cozy version)" = "$VERSION"
+test "$(command -v mvn)" = "$WORK/cozy/bin/mvn"
+if [ -d "$BUNDLE/jdk" ]; then
+  test -x "$WORK/cozy/jdk/bin/java"
+  out="$(mvn -v)"
+  grep -q "runtime: $WORK/cozy/jdk" <<< "$out"
+  echo "[cozy] 설치한 mvn이 번들 JDK로 돈다: $WORK/cozy/jdk"
+fi
 
 # cozy 명령(cozy-cli)으로 구조를 더한다. 빈칸이 남지 않는 레시피만 쓰므로 바로 verify를 통과해야 한다
 cozy_recipes() {
@@ -154,4 +190,4 @@ for combo in basic:false:false persistence:true:false events:true:true; do
   test -d "offline-$name/target/dist/image/offline-$name"
   echo "[cozy] 통과: $name (persistence=$persistence, events=$events)"
 done
-echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·워크벤치·에이전트 문서·cozy add·enable·sync·verify·-Pdist package"
+echo "[cozy] 오프라인 수용 기준 통과: 번들만으로 생성·워크벤치·에이전트 문서·cozy add·enable·sync·verify·-Pdist package$([ -d "$BUNDLE/jdk" ] && echo " (번들 JDK)")"

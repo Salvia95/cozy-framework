@@ -1,6 +1,7 @@
 name: release
 
 # 오프라인 번들을 만들고 검증해 GitHub Release 초안에 올린다.
+# - 번들은 둘이다: JDK 없는 번들과, Temurin JDK를 담은 Windows x64 번들. JDK를 담았으므로 그 소스 묶음도 함께 올린다
 # - 태그 vX.Y.Z push: 버전 확인 → 종단 검증 → 번들 → 오프라인 검증 → 릴리스 초안(게시는 사람이 한다)
 # - 수동 실행(workflow_dispatch): 같은 빌드와 검증만 하고 번들을 실행 결과(artifact)로 남긴다. 릴리스는 만들지 않는다
 on:
@@ -46,6 +47,14 @@ jobs:
       - name: 오프라인 번들
         run: distribution/offline-bundle/build-bundle.sh "$GITHUB_WORKSPACE/build/offline-bundle" "$RUNNER_TEMP/maven/apache-maven-3.10.0-bin.zip"
 
+      - name: JDK 번들 (Windows x64, 검증용 Linux x64)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          distribution/offline-bundle/add-jdk.sh "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" windows-x64
+          distribution/offline-bundle/add-jdk.sh "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" linux-x64
+          distribution/release/jdk-sources.sh build/jdk-sources
+
       - name: 오프라인 검증 (네트워크 장치 없음)
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -54,16 +63,21 @@ jobs:
           if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
-          distribution/offline-bundle/verify-offline.sh "build/offline-bundle/cozy-offline-bundle-$VERSION.zip"
+          distribution/offline-bundle/verify-offline.sh "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" build/check
+          rm -rf build/check
+          # 번들 JDK: 시스템 JDK를 막은 상태에서 설치·생성·빌드·패키징이 모두 번들의 JDK로 돈다
+          distribution/offline-bundle/verify-offline.sh "build/offline-bundle/cozy-offline-bundle-$VERSION-linux-x64.zip" build/check-jdk
+          rm -rf build/check-jdk
 
       - name: 체크섬과 릴리스 노트
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p build/release
-          cp "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" build/release/
-          (cd build/release && sha256sum "cozy-offline-bundle-$VERSION.zip" > SHA256SUMS)
-          distribution/release/release-notes.sh "$VERSION" "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" > build/release/RELEASE-NOTES.md
+          cp "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" "build/offline-bundle/cozy-offline-bundle-$VERSION-windows-x64.zip" \
+            build/jdk-sources/*.tar.gz build/release/
+          (cd build/release && sha256sum "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION-windows-x64.zip" *.tar.gz > SHA256SUMS)
+          distribution/release/release-notes.sh "$VERSION" build/release > build/release/RELEASE-NOTES.md
           cat build/release/SHA256SUMS
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -97,4 +111,4 @@ jobs:
           sha256sum -c SHA256SUMS
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
             --title "Cozy $VERSION" --notes-file RELEASE-NOTES.md \
-            "cozy-offline-bundle-$VERSION.zip" SHA256SUMS
+            "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION-windows-x64.zip" ./*.tar.gz SHA256SUMS

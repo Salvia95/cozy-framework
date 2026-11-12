@@ -8,7 +8,8 @@
 #   cozy version                   프레임워크 버전
 #   cozy help                      이 도움말
 #
-# 설치하면 <설치 폴더>/bin/cozy가 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy를 쓴다.
+# 설치하면 <설치 폴더>/bin에 cozy와 mvn이 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy와 번들의 Maven을 쓴다.
+# 번들에 JDK(jdk/)가 있으면 cozy와 그 mvn은 그 JDK로 돈다. 없으면 시스템의 JDK 25(JAVA_HOME, PATH)를 쓴다.
 # new의 옵션: groupId, artifactId, package, appId(기본 artifactId), appName(한글 가능), persistence(기본 true),
 # events(기본 false, persistence 필요).
 #   cozy new -DgroupId=com.example -DartifactId=voc-assistant -Dpackage=com.example.voc \
@@ -20,8 +21,14 @@ SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SELF/COZY_VERSION" ]; then ROOT="$SELF"; else ROOT="$(dirname "$SELF")"; fi
 VERSION="$(cat "$ROOT/COZY_VERSION" 2>/dev/null || true)"
 
+# 번들의 JDK는 이 명령 안에서만 쓴다. 시스템의 JAVA_HOME과 PATH 설정은 바꾸지 않는다
+if [ -x "$ROOT/jdk/bin/java" ]; then
+  export JAVA_HOME="$ROOT/jdk"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+
 usage() {
-  sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 need_java() {
@@ -58,6 +65,20 @@ install() {
   cp "$ROOT/cozy.ps1" "$dest/lib/"
   cp -r "$ROOT/lib/cli" "$dest/lib/"
   chmod +x "$dest/bin/cozy"
+  # JDK: 이전 번들의 JDK가 남지 않게 지우고, 이 번들에 있으면 복사한다
+  if [ "$ROOT/jdk" != "$dest/jdk" ]; then
+    rm -rf "$dest/jdk"
+    if [ -d "$ROOT/jdk" ]; then cp -r "$ROOT/jdk" "$dest/jdk"; fi
+  fi
+  # bin/mvn: 설치 폴더의 Maven을 부른다. 설치 폴더에 JDK가 있으면 그 JDK로 돈다
+  cat > "$dest/bin/mvn" <<SH
+#!/usr/bin/env bash
+# 설치 폴더의 Maven을 실행한다. 설치 폴더에 JDK(jdk/)가 있으면 그 JDK로 실행한다 (cozy install이 만든 파일)
+COZY_HOME="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -x "\$COZY_HOME/jdk/bin/java" ]; then export JAVA_HOME="\$COZY_HOME/jdk"; fi
+exec "\$COZY_HOME/$(basename "$maven_dir")/bin/mvn" "\$@"
+SH
+  chmod +x "$dest/bin/mvn"
 
   cat > "$maven_dir/conf/settings.xml" <<XML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -69,7 +90,10 @@ install() {
 XML
 
   echo "[cozy] 설치했습니다: $dest"
-  echo "  PATH에 추가: export PATH=\"$dest/bin:$maven_dir/bin:\$PATH\""
+  if [ -d "$dest/jdk" ]; then
+    echo "  JDK:         $dest/jdk (cozy와 mvn이 쓴다. 시스템 설정은 바꾸지 않았다)"
+  fi
+  echo "  PATH에 추가: export PATH=\"$dest/bin:\$PATH\""
   echo "  새 앱:       cozy new"
 }
 

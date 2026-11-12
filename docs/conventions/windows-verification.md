@@ -151,13 +151,13 @@ WSL이나 Linux에서 만든 번들(`distribution/offline-bundle/build-bundle.sh
 
 ### 오프라인 PC에서 확인 (M7 완료 기준)
 
-네트워크를 끊는다(랜선을 뽑거나 Wi-Fi를 끈다). JDK 25만 설치된 PC를 쓴다. 기존 `%USERPROFILE%\.m2`가 있으면 이름을 바꿔 둔다.
+네트워크를 끊는다(랜선을 뽑거나 Wi-Fi를 끈다). JDK 없는 번들은 JDK 25만 설치된 PC를 쓴다. Windows x64 번들(JDK 포함)은 아래 "번들 JDK"를 먼저 본다. 기존 `%USERPROFILE%\.m2`가 있으면 이름을 바꿔 둔다.
 
 ```powershell
 Expand-Archive cozy-offline-bundle-1.0.0-SNAPSHOT.zip C:\cozy-bundle
 cd C:\cozy-bundle\cozy-offline-bundle-1.0.0-SNAPSHOT
 .\cozy.cmd install
-$env:Path = "$env:USERPROFILE\cozy\bin;$env:USERPROFILE\cozy\apache-maven-3.10.0\bin;" + $env:Path
+$env:Path = "$env:USERPROFILE\cozy\bin;" + $env:Path
 
 mkdir C:\work; cd C:\work
 cozy version
@@ -206,6 +206,32 @@ mvn -o verify
 - [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다(`TaskCrudTest`, `TaskScreenTest` 포함).
 - [ ] `cmd.exe`에서 `cozy.cmd add module memo --label "메모 보관"`도 같은 결과다.
 
+## 번들 JDK (Windows x64 번들, ADR-0025 보완)
+
+JDK가 설치되지 않은 PC를 쓴다. 없으면 JDK를 PATH에서 빼고 `JAVA_HOME`을 지운 PowerShell 창에서 한다(`$env:JAVA_HOME = $null`, `$env:Path`에서 JDK 폴더 제거, `Get-Command java`가 실패하는지 확인). 네트워크를 끊는다.
+
+```powershell
+Get-FileHash -Algorithm SHA256 cozy-offline-bundle-1.3.0-windows-x64.zip   # SHA256SUMS와 비교
+Expand-Archive cozy-offline-bundle-1.3.0-windows-x64.zip C:\cozy-bundle
+cd C:\cozy-bundle\cozy-offline-bundle-1.3.0-windows-x64
+.\cozy.cmd version
+.\cozy.cmd install
+$env:Path = "$env:USERPROFILE\cozy\bin;" + $env:Path
+mvn -v
+```
+
+이어서 M7의 `cozy new`부터 끝까지, M11의 cozy 명령까지 같은 창에서 한다.
+
+- [ ] `.\cozy.cmd install`이 `JDK:         C:\Users\...\cozy\jdk`와 `PATH에 추가: $env:Path = '...\cozy\bin;' + $env:Path`를 출력한다. `%USERPROFILE%\cozy\jdk\bin\java.exe`와 `%USERPROFILE%\cozy\bin\mvn.cmd`가 있다. `jdk\lib\src.zip`은 없다.
+- [ ] `mvn -v`의 `Java version:` 줄이 `25.0.5`이고 `runtime:`이 `%USERPROFILE%\cozy\jdk`다.
+- [ ] 설치 뒤에도 시스템 설정이 그대로다. 새 PowerShell 창의 `$env:JAVA_HOME`과 시스템 환경 변수(`[Environment]::GetEnvironmentVariable('JAVA_HOME', 'User')`, `'Machine'`)가 설치 전과 같다.
+- [ ] M7의 `cozy new`, `mvn -o verify`, `mvn -o -Pdist package`, 앱 실행이 모두 통과한다. app-image의 런타임(`target\dist\image\voc-assistant\runtime\release`)이 `JAVA_VERSION="25.0.5"`다.
+- [ ] M11의 cozy 명령이 모두 통과한다(`cozy add`, `cozy check`, `cozy describe`가 번들 JDK로 돈다).
+- [ ] `cmd.exe`에서 `mvn.cmd -v`도 같은 `runtime:`을 보여 준다. 실패하는 빌드(예: 앱의 테스트 하나를 깨뜨린 뒤 `mvn -o verify`)의 `%ERRORLEVEL%`이 0이 아니다.
+- [ ] `licenses\THIRD-PARTY.txt`의 머리말에 `Eclipse Temurin JDK in jdk/`와 `OpenJDK25U-jdk-sources_25.0.5_8.tar.gz` 줄이 있다.
+- [ ] 다시 설치하기: JDK 25가 PATH에 있는 창에서 JDK 없는 번들로 `.\cozy.cmd install`을 하면 `%USERPROFILE%\cozy\jdk`가 사라지고, `mvn -v`의 `runtime:`이 시스템 JDK가 된다.
+- [ ] IntelliJ: Project SDK를 `%USERPROFILE%\cozy\jdk`로, Maven home을 `%USERPROFILE%\cozy\apache-maven-3.10.0`으로, Maven JRE를 Project SDK로 두면 실행 설정 "mvn -o verify"가 통과한다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -217,3 +243,4 @@ mvn -o verify
 | | M5 | | |
 | | M6 | | |
 | | M7 | | |
+| | 번들 JDK | | |

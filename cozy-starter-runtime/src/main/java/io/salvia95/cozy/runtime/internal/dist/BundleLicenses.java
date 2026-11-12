@@ -50,7 +50,11 @@ import org.w3c.dom.Node;
  * </ul>
  *
  * 실행: {@code java -cp cozy-starter-runtime.jar io.salvia95.cozy.runtime.internal.dist.BundleLicenses
- * --repository=... --overrides=... --output=... [--title=...] [--maven-distribution=...] [--fetch-sources=URL]}
+ * --repository=... --overrides=... --output=... [--title=...] [--maven-distribution=...] [--fetch-sources=URL]
+ * [--jdk-distribution=... --jdk-sources=...]}
+ *
+ * <p>번들에 JDK({@code jdk/})가 들어 있으면 받은 배포판 이름과, 같은 릴리스에 함께 올리는 소스 묶음 이름을 함께 준다. JDK는
+ * {@link #GPL2_CPE}라 바이너리를 재배포할 때 소스를 얻는 곳을 함께 적어야 한다. 하나만 주면 실패로 닫는다.
  */
 public final class BundleLicenses {
 
@@ -360,13 +364,41 @@ public final class BundleLicenses {
 		}
 	}
 
+	/** 번들에 든 JDK: 받은 배포판 파일 이름과, 같은 릴리스에 올리는 소스 묶음 파일 이름 */
+	record Jdk(String distribution, String sources) {
+	}
+
+	/** {@code --jdk-distribution}과 {@code --jdk-sources}는 함께 주거나 둘 다 뺀다 */
+	static Jdk jdk(Map<String, String> options) {
+		String distribution = options.get("jdk-distribution");
+		String sources = options.get("jdk-sources");
+		boolean hasDistribution = distribution != null && !distribution.isBlank();
+		boolean hasSources = sources != null && !sources.isBlank();
+		if (hasDistribution != hasSources) {
+			throw new IllegalArgumentException("--jdk-distribution과 --jdk-sources는 함께 줍니다. JDK를 담으면 소스를 얻는 곳도 적어야 합니다");
+		}
+		return hasDistribution ? new Jdk(distribution, sources) : null;
+	}
+
 	/** 목록 파일 내용 */
 	static String render(String title, String mavenDistribution, List<Artifact> artifacts) {
+		return render(title, mavenDistribution, null, artifacts);
+	}
+
+	/** 목록 파일 내용. {@code jdk}가 있으면 번들의 JDK와 그 소스 묶음을 적는다 */
+	static String render(String title, String mavenDistribution, Jdk jdk, List<Artifact> artifacts) {
 		StringBuilder list = new StringBuilder(title).append(": third-party components\n\n");
 		list.append("Cozy itself (").append(COZY_GROUP).append(":*) is licensed under the Apache License 2.0 (LICENSE, NOTICE).\n");
 		if (mavenDistribution != null && !mavenDistribution.isBlank()) {
 			list.append("Apache Maven (").append(mavenDistribution)
 				.append(") is licensed under the Apache License 2.0; its LICENSE, NOTICE and lib/ license files are inside the archive.\n");
+		}
+		if (jdk != null) {
+			list.append("Eclipse Temurin JDK in jdk/ (").append(jdk.distribution())
+				.append(", without lib/src.zip) is licensed under ").append(GPL2_CPE)
+				.append("; the licenses of its components are in jdk/legal/ and jdk/NOTICE.\n")
+				.append("Its complete corresponding source code is ").append(jdk.sources())
+				.append(", published with this bundle in the same release.\n");
 		}
 		list.append("""
 				repository/ is a Maven repository with the build tools and libraries needed to build Cozy apps offline.
@@ -409,6 +441,7 @@ public final class BundleLicenses {
 		try {
 			Path repository = Path.of(required(options, "repository"));
 			Path output = Path.of(required(options, "output"));
+			Jdk jdk = jdk(options);
 			Map<String, Override> overrides = parseOverrides(
 					Files.readString(Path.of(required(options, "overrides")), StandardCharsets.UTF_8));
 			List<Artifact> artifacts = scan(repository, overrides);
@@ -439,7 +472,7 @@ public final class BundleLicenses {
 
 			Files.createDirectories(output.toAbsolutePath().getParent());
 			Files.writeString(output, render(options.getOrDefault("title", "Cozy offline bundle"),
-					options.get("maven-distribution"), artifacts), StandardCharsets.UTF_8);
+					options.get("maven-distribution"), jdk, artifacts), StandardCharsets.UTF_8);
 			long sources = artifacts.stream().filter(Artifact::needsSources).count();
 			out.println("[cozy] 번들 라이선스 목록: 아티팩트 " + artifacts.size() + "개, 소스 jar " + sources + "개 → " + output);
 			return 0;

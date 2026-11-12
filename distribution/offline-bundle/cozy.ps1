@@ -7,7 +7,8 @@
 #   cozy version                     프레임워크 버전
 #   cozy help                        이 도움말
 #
-# 설치하면 <설치 폴더>\bin\cozy.cmd가 생긴다. PATH에 <설치 폴더>\bin을 더하면 어디서나 cozy를 쓴다.
+# 설치하면 <설치 폴더>\bin에 cozy.cmd와 mvn.cmd가 생긴다. PATH에 <설치 폴더>\bin을 더하면 어디서나 cozy와 번들의 Maven을 쓴다.
+# 번들에 JDK(jdk\)가 있으면 cozy와 그 mvn은 그 JDK로 돈다. 없으면 시스템의 JDK 25(JAVA_HOME, PATH)를 쓴다.
 # PowerShell에서는 -D 인수를 따옴표로 감싼다. 감싸지 않으면 점(.)에서 인수가 나뉜다.
 #   cozy new "-DgroupId=com.example" "-DartifactId=voc-assistant" "-Dpackage=com.example.voc" `
 #            "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=false" "-DinteractiveMode=false"
@@ -22,8 +23,15 @@ $Version = if (Test-Path $VersionFile) { (Get-Content -Raw $VersionFile).Trim() 
 $Action = if ($args.Count -gt 0) { [string]$args[0] } else { 'help' }
 $Rest = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
 
+# 번들의 JDK는 이 명령(과 여기서 부르는 Maven) 안에서만 쓴다. 시스템의 JAVA_HOME과 PATH 설정은 바꾸지 않는다
+$BundledJdk = Join-Path $Root 'jdk'
+if (Test-Path (Join-Path $BundledJdk 'bin\java.exe')) {
+  $env:JAVA_HOME = $BundledJdk
+  $env:Path = (Join-Path $BundledJdk 'bin') + ';' + $env:Path
+}
+
 function Show-Usage {
-  Get-Content -Encoding UTF8 $PSCommandPath | Select-Object -First 15 | ForEach-Object { $_ -replace '^# ?', '' }
+  Get-Content -Encoding UTF8 $PSCommandPath | Select-Object -First 16 | ForEach-Object { $_ -replace '^# ?', '' }
 }
 
 function Assert-Java {
@@ -62,6 +70,24 @@ function Install-Cozy([string]$Destination) {
   Copy-Item (Join-Path $Root 'cozy.ps1') $lib
   Copy-Item -Recurse (Join-Path $Root 'lib\cli') $lib
 
+  # JDK: 이전 번들의 JDK가 남지 않게 지우고, 이 번들에 있으면 복사한다
+  $jdkTarget = Join-Path $Destination 'jdk'
+  if ($BundledJdk -ne $jdkTarget) {
+    if (Test-Path $jdkTarget) { Remove-Item -Recurse -Force $jdkTarget }
+    if (Test-Path $BundledJdk) { Copy-Item -Recurse $BundledJdk $jdkTarget }
+  }
+  # bin\mvn.cmd: 설치 폴더의 Maven을 부른다. 설치 폴더에 JDK가 있으면 그 JDK로 돈다
+  $mvnCmd = @(
+    '@echo off',
+    'rem Runs the Maven in this install folder, on the JDK in jdk\ when there is one (written by cozy install).',
+    'setlocal',
+    'for %%i in ("%~dp0..") do set "COZY_HOME=%%~fi"',
+    'if exist "%COZY_HOME%\jdk\bin\java.exe" set "JAVA_HOME=%COZY_HOME%\jdk"',
+    ('call "%COZY_HOME%\' + (Split-Path $mavenDir -Leaf) + '\bin\mvn.cmd" %*'),
+    'exit /b %ERRORLEVEL%'
+  ) -join "`r`n"
+  [System.IO.File]::WriteAllText((Join-Path $bin 'mvn.cmd'), $mvnCmd + "`r`n", (New-Object System.Text.ASCIIEncoding))
+
   $settings = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Cozy 오프라인 번들 ${Version}: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
@@ -73,7 +99,10 @@ function Install-Cozy([string]$Destination) {
   [System.IO.File]::WriteAllText((Join-Path $mavenDir 'conf\settings.xml'), $settings, (New-Object System.Text.UTF8Encoding($false)))
 
   Write-Host "[cozy] 설치했습니다: $Destination"
-  Write-Host "  PATH에 추가: `$env:Path = '$bin;$mavenDir\bin;' + `$env:Path"
+  if (Test-Path $jdkTarget) {
+    Write-Host "  JDK:         $jdkTarget (cozy와 mvn이 쓴다. 시스템 설정은 바꾸지 않았다)"
+  }
+  Write-Host "  PATH에 추가: `$env:Path = '$bin;' + `$env:Path"
   Write-Host "  새 앱:       cozy new"
 }
 

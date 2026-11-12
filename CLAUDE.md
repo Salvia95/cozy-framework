@@ -47,7 +47,8 @@ mvn -o -Pe2e install                  # + 배포·업데이트 종단 검증 (�
 mvn -o -Pdist package -pl samples/reference-app   # 앱 하나를 배포 패키지로 (target/dist)
 mvn -o verify -pl cozy-archetype -am             # 아키타입: 옵션 3조합 생성 → verify -Pdist (몇 분)
 distribution/offline-bundle/build-bundle.sh       # 오프라인 번들 (인터넷 필요, build/offline-bundle)
-distribution/offline-bundle/verify-offline.sh build/offline-bundle/cozy-offline-bundle-*.zip   # 네트워크 없이 번들 검증
+distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-<버전>.zip windows-x64   # + Temurin JDK (linux-x64는 검증용)
+distribution/offline-bundle/verify-offline.sh build/offline-bundle/cozy-offline-bundle-<버전>.zip   # 네트워크 없이 번들 검증 (-linux-x64.zip이면 시스템 JDK를 막고)
 distribution/offline-bundle/cozy help                # 번들 사용자 명령: cozy install | new | version | help
 distribution/release/set-version.sh 1.0.0         # 모든 cozy 모듈 버전 바꾸기 (릴리스 절차: docs/conventions/release.md)
 gh workflow run release.yml                       # CI에서 번들 빌드·검증만 (태그 v* push면 릴리스 초안까지)

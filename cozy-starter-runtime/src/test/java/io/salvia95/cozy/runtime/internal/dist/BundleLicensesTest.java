@@ -156,6 +156,52 @@ class BundleLicensesTest {
 		assertThat(errors.toString(StandardCharsets.UTF_8)).contains("org.example:gpl:1.0");
 	}
 
+	@Test
+	void aBundledJdkIsListedWithWhereItsSourceIs() throws Exception {
+		Path repo = Files.createDirectories(dir.resolve("repository"));
+		pom(repo, "org.example", "lib", "1.0", null, "Apache-2.0", true);
+		Path overrides = Files.writeString(dir.resolve("overrides.txt"), "# 없음\n");
+		Path out = dir.resolve("bundle/licenses/THIRD-PARTY.txt");
+		var stdout = new ByteArrayOutputStream();
+
+		int status = BundleLicenses.run(List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out,
+				"--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
+				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5_8.tar.gz"), new PrintStream(stdout, true, StandardCharsets.UTF_8));
+
+		assertThat(status).isZero();
+		assertThat(Files.readString(out)).contains("Eclipse Temurin JDK in jdk/ (OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip")
+			.contains("GPL-2.0-only WITH Classpath-exception-2.0")
+			.contains("jdk/legal/")
+			.contains("OpenJDK25U-jdk-sources_25.0.5_8.tar.gz");
+
+		// 소스를 어디서 얻는지 없이 JDK만 적을 수 없다. 반대도 마찬가지다
+		Files.delete(out);
+		for (String only : List.of("--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
+				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5_8.tar.gz")) {
+			var errors = new ByteArrayOutputStream();
+			int failed = BundleLicenses.run(
+					List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out, only),
+					new PrintStream(errors, true, StandardCharsets.UTF_8));
+			assertThat(failed).isEqualTo(1);
+			assertThat(out).doesNotExist();
+			assertThat(errors.toString(StandardCharsets.UTF_8)).contains("--jdk-distribution").contains("--jdk-sources");
+		}
+	}
+
+	@Test
+	void withoutABundledJdkTheListDoesNotMentionOne() throws Exception {
+		Path repo = Files.createDirectories(dir.resolve("repository"));
+		pom(repo, "org.example", "lib", "1.0", null, "Apache-2.0", true);
+		Path overrides = Files.writeString(dir.resolve("overrides.txt"), "# 없음\n");
+		Path out = dir.resolve("bundle/licenses/THIRD-PARTY.txt");
+
+		int status = BundleLicenses.run(List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out),
+				new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
+
+		assertThat(status).isZero();
+		assertThat(Files.readString(out)).doesNotContain("Temurin").doesNotContain("jdk/");
+	}
+
 	private void pom(String group, String artifact, String version, String parent, String licenses, boolean jar)
 			throws Exception {
 		pom(this.dir, group, artifact, version, parent, licenses, jar);

@@ -28,10 +28,10 @@
 | [0022](0022-rules-and-test-base.md) | 규칙 검사와 테스트 기반: 실패로 닫는 기준, vnu 구성, 검사 픽스처 | M4 |
 | [0023](0023-events-runtime.md) | 이벤트 실행 구성: 인박스 위치, 실행기, 보관, 호환 검사 | M5 |
 | [0024](0024-distribution-and-update.md) | 배포 장치: 패키징 도구, AOT 캐시, 교체 스크립트, 롤백 | M6 |
-| [0025](0025-archetype-and-offline-bundle.md) | 아키타입과 오프라인 번들: 옵션 처리, 검증, 번들 구성, SQLite 네이티브 반입 | M7 |
+| [0025](0025-archetype-and-offline-bundle.md) | 아키타입과 오프라인 번들: 옵션 처리, 검증, 번들 구성, SQLite 네이티브 반입. 보완: Windows x64 번들에 JDK | M7 |
 | [0026](0026-third-party-licenses.md) | 제3자 라이선스 목록과 허용 목록 | PRD §11 |
 | [0027](0027-framework-license.md) | 프레임워크 라이선스: Apache-2.0 | 레포 공개 |
-| [0028](0028-release.md) | 릴리스: GitHub Release의 오프라인 번들, 버전 고정, 번들 라이선스 | 배포 방식 |
+| [0028](0028-release.md) | 릴리스: GitHub Release의 오프라인 번들, 버전 고정, 번들 라이선스. 보완: 릴리스 자산과 JDK 소스 | 배포 방식 |
 | [0029](0029-module-layers.md) | 모듈 안의 구조: api · spi · internal, 템플릿도 같은 3분할 (0008, 0009 개정) | 사용자 지시 |
 | [0030](0030-ui-quality.md) | 화면 품질: Tabler 레이아웃 구조, Tabler Icons 전체, 화면 확인(runtime-verifier) | 사용자 지적 |
 | [0031](0031-design-system.md) | 디자인 시스템: Tabler 구현 + Polaris 원칙 + Cloudscape CRUD 흐름, 색 tone, 버튼 순서(R14, R15) | 사용자 지시 |

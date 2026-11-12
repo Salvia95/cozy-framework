@@ -72,3 +72,59 @@
 - 새 의존성과 플러그인은 없다.
 - 번들 크기는 프레임워크 검사 도구(vnu 등)와 jpackage용 플러그인을 포함해 수백 MB다. 실제 크기는 docs/conventions/performance.md에 적는다.
 - 번들의 Maven 저장소는 만든 시점의 버전으로 고정된다. 프레임워크 버전을 올리면 번들을 다시 만든다.
+
+## 보완 (2026-11-12, 사용자 결정 "권장안으로 진행해줘": Windows x64 번들에 JDK를 담는다)
+
+### 배경
+
+- 6의 결정은 "JDK는 번들에 넣지 않는다. 사내 표준 배포본을 따른다"였다.
+- 그래서 오프라인 PC에는 번들과 별도로 JDK 25를 반입하고 설치해야 했다. 사내 표준 배포본이 25가 아니면 이것이 설치의 첫 걸림돌이 된다.
+- 사용자가 번들에 컴팩트한 JDK를 함께 넣을 수 있는지 물었고, 권장안(아래)을 골랐다.
+
+### 결정
+
+1. **번들은 두 가지다.**
+   - `cozy-offline-bundle-{버전}.zip`: 지금과 같다. 운영체제와 상관없고 JDK가 없다. 6의 JDK 결정은 이 번들에 그대로 적용된다.
+   - `cozy-offline-bundle-{버전}-windows-x64.zip`: 같은 내용에 `jdk/`를 더한다. 안의 폴더 이름에도 플랫폼을 붙인다.
+   - 대상이 폐쇄망 Windows PC라 Windows x64만 낸다.
+2. **JDK는 Eclipse Temurin 25다.** 배포판 이름과 SHA-256을 `distribution/offline-bundle/jdk.env`에 고정한다. Adoptium API의 checksum과 릴리스 자산의 `.sha256.txt`가 같은 것을 확인했다. 판은 ADR-0017 표를 따른다.
+3. **줄이는 것은 `lib/src.zip`(약 50MB)뿐이다.**
+   - Temurin 25에는 `jmods/`가 없다. `jlink`는 JDK 자기 런타임에서 링크한다(JEP 493). 이때 `jlink`는 모듈에 속한 파일의 해시를 확인한다.
+   - 직접 확인했다. `man/`을 지우면 `SHA-512 sum check failed`, `conf/net.properties`를 고치면 `... has been modified`로 `jlink`가 실패한다. `lib/src.zip`은 모듈 파일이 아니어서 지워도 된다.
+   - `mvn -Pdist package`가 `jpackage`(안에서 `jlink`)를 쓰므로, 모듈 파일을 건드리면 앱 패키징이 깨진다.
+   - `jlink`로 만든 작은 런타임은 쓰지 않는다. 개발 PC에는 `javac`(앱 컴파일, cozy-cli의 파서), `jpackage`, `jlink`와 그 원료가 모두 필요하다.
+4. **번들 JDK는 cozy 명령과 설치한 Maven만 쓴다.** 시스템의 `JAVA_HOME`과 PATH 설정은 바꾸지 않는다.
+   - `cozy`·`cozy.ps1`은 번들(또는 설치) 폴더에 `jdk/`가 있으면, 자기 프로세스 안에서만 `JAVA_HOME`을 그 JDK로 두고 PATH 앞에 `jdk/bin`을 더한다.
+   - `cozy install`은 `jdk/`를 설치 폴더에 복사한다. 이전 설치의 `jdk/`는 먼저 지운다. 판이 다른 JDK가 남지 않게 하기 위해서다.
+   - `cozy install`은 `bin/mvn`(Windows `bin\mvn.cmd`)을 만든다. 설치 폴더의 Maven을 부르고, 설치 폴더에 `jdk/`가 있으면 그 JDK로 돌린다. PATH 안내는 `<설치 폴더>/bin` 하나가 된다.
+   - Maven이 번들 JDK로 돌면 나머지가 따라온다. 테스트 포크, `CozyPackager`(`java.home`의 java), `jpackage`가 모두 Maven의 `java.home`을 쓴다.
+   - IDE는 자기 설정을 쓴다. 번들 README에 Project SDK와 Maven JRE를 `<설치 폴더>\jdk`로 지정하라고 적는다.
+   - 번들 JDK의 파일을 고치지 않는다(사내 인증서를 `cacerts`에 더하는 것 등). 3의 이유로 `-Pdist`가 실패한다. 인증서가 필요하면 별도 truststore를 JVM 옵션으로 준다.
+5. **라이선스와 소스**
+   - JDK는 `GPL-2.0-only WITH Classpath-exception-2.0`이다. ADR-0028의 약한 카피레프트 묶음에 들고, 바이너리를 재배포할 때 소스를 얻는 방법을 함께 줘야 한다.
+   - 소스 묶음(`OpenJDK25U-jdk-sources_*.tar.gz`, 약 120MB)은 번들 안이 아니라 **같은 GitHub Release의 자산**으로 올린다.
+     - 번들 안에 넣으면 Windows 번들이 120MB 더 커진다. 번들을 쓰는 데는 필요 없다.
+     - GPLv2 §3은 바이너리를 받는 곳에서 소스도 받을 수 있게 하면 소스를 배포한 것으로 본다.
+     - 상위 링크에 기대지 않는다. ADR-0028이 소스 jar를 번들에 담는 이유(상위 링크는 사라질 수 있다)와 같다. 우리 릴리스에 같이 둔다.
+   - `jdk/legal/`과 `jdk/NOTICE`는 그대로 둔다.
+   - `licenses/THIRD-PARTY.txt`에 JDK 줄을 적는다. 배포판 이름, 라이선스, `jdk/legal/`, 소스 묶음 이름이 들어간다. `BundleLicenses`의 `--jdk-distribution`과 `--jdk-sources`는 함께 줘야 하고, 하나만 주면 실패로 닫는다.
+6. **만들기와 검증**
+   - `add-jdk.sh`가 JDK 없는 번들에서 플랫폼 번들을 만든다. 순서는 받기, SHA-256 확인, `jdk/`에 풀기, `lib/src.zip` 지우기, 도구와 판 확인, 라이선스 목록 다시 만들기다.
+   - JDK 번들은 릴리스 워크플로(Linux)가 만든다. 그래서 PowerShell 판은 두지 않는다. Windows에서 만들려면 WSL에서 돌린다. 6의 "bash와 PowerShell을 같이 둔다"는 사용자가 실행하는 스크립트(`cozy`, `cozy.ps1`)와 `build-bundle`에 그대로 적용된다.
+   - 오프라인 검증은 두 번 한다. 한 번은 JDK 없는 번들이다. 다른 한 번은 같은 JDK의 Linux x64 판을 담은 번들이다(검증용, 릴리스로 내지 않는다).
+   - 두 번째 검증에서는 `verify-offline.sh`가 시스템 JDK 자리에 부르면 실패하는 `java`를 둔다(`JAVA_HOME`도 그 자리). 설치, 생성, `cozy add`, `mvn -o verify`, `mvn -o -Pdist package`가 모두 번들 JDK로 돌아야 통과한다.
+   - Windows x64 번들은 Linux에서 실행할 수 없다. 여기서는 `add-jdk.sh`가 파일, 도구, 판을 확인하는 것까지다. 실행은 Windows에서 확인한다(windows-verification.md).
+   - bash `cozy`의 JDK 선택과 설치는 `BundleCommandsTest`가 가짜 JDK와 가짜 Maven으로 확인한다.
+7. **JDK 판올림**: JDK는 분기마다(1·4·7·10월) 보안 패치가 나온다. ADR-0017 확인 때 같이 보고 `jdk.env`를 올린다. JDK 보안 패치는 패치 릴리스로 낼 수 있다(release.md의 "보안 수정").
+
+### 결과
+
+- 릴리스 자산은 네 개다. 두 번들, JDK 소스 묶음, `SHA256SUMS`.
+- 새 Maven 의존성과 플러그인은 없다. 반입하는 것이 하나 늘었다(Temurin JDK, ADR-0017 표).
+- 크기(1.3.0-SNAPSHOT 실측): JDK 없는 번들 233MB, Windows x64 번들 318MB(+85MB). 풀면 JDK가 240MB다(원래 292MB에서 `lib/src.zip` 51MB를 뺐다). JDK 소스 묶음은 116MB다.
+
+### 도입 검토 (CLAUDE.md: 이유, 라이선스, 폐쇄망 반입 영향)
+
+| 항목 | 이유 | 라이선스 | 폐쇄망 반입 |
+| --- | --- | --- | --- |
+| Eclipse Temurin JDK 25.0.5+8 (Windows x64, 검증용 Linux x64) | 오프라인 PC에 JDK를 따로 반입·설치하지 않게 한다 | GPL-2.0 with Classpath Exception(구성 요소별 라이선스는 `jdk/legal/`). 소스 묶음을 같은 릴리스에 올린다 | Windows x64 번들 안에 들어 있다. 따로 반입할 것이 없다 |

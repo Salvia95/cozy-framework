@@ -19,6 +19,7 @@
 | 구성 | 버전 | 관리 |
 | --- | --- | --- |
 | JDK | 25.0.5 (Temurin) | 빌드 PC |
+| Eclipse Temurin JDK (번들) | 25.0.5+8 | Windows x64 오프라인 번들의 `jdk/`. 검증용 Linux x64. 배포판 이름과 SHA-256은 `distribution/offline-bundle/jdk.env` (ADR-0025 보완, 승인 2026-11-12) |
 | Maven | 3.10.0 (4.0.0은 RC) | 빌드 PC |
 | Spring Boot | 4.1.2 (4.2.0은 RC2) | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
@@ -66,3 +67,4 @@
 - 2026-11-10(워크벤치 첫 마일스톤): Tabler 1.7.4와 Tabler Icons 3.51.0(외곽선 5,233개)으로 올리고 화면을 확인했다.
 - 2026-11-12(M27 보완): 다시 확인했다. JDK 25.0.5(Temurin)가 나와 빌드 PC를 올리고 전체 빌드를 통과시켰다. agent-browser를 0.42.0으로 올렸다(Chrome 157). 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 플러그인, Tabler 1.7.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9).
 - 2026-11-12(릴리스 1.2.0): 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Framework 7.0.10, Security 7.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 플러그인, Tabler 1.7.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9, GitHub Actions). 더 새로운 것은 LTS가 아닌 JDK 26·27(ADR-0001이 JDK 25), `next` 태그의 htmx 4, RC인 Maven 4뿐이라 올리지 않는다.
+- 2026-11-12(번들 JDK): Windows x64 번들에 Temurin JDK 25.0.5+8을 담는다(ADR-0025 보완). 빌드 PC의 JDK와 같은 판이다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 Adoptium API와 릴리스 자산의 `.sha256.txt`가 같다.

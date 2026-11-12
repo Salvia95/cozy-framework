@@ -109,3 +109,13 @@
 - 번들 크기가 소스 jar만큼(약 8.5MB) 늘어난다.
 - 의존성이 바뀌어 새 아티팩트가 들어오면, 라이선스를 정할 수 없을 때 번들 빌드가 실패한다. 예외 목록에 근거를 적거나 의존성을 바꾼다.
 - 번들은 Linux 러너에서 만든다. 번들의 라이브러리와 플러그인은 운영체제와 상관없다(ADR-0025). 그래도 첫 릴리스 전에 CI가 만든 번들로 Windows 확인(M7)을 한다.
+
+## 보완 (2026-11-12, ADR-0025 보완: Windows x64 번들에 JDK를 담는다)
+
+- **배포물**: 1의 목록이 바뀐다. 태그의 GitHub Release에 다음을 붙인다.
+  - JDK 없는 번들 `cozy-offline-bundle-{버전}.zip`
+  - Windows x64 번들 `cozy-offline-bundle-{버전}-windows-x64.zip`(Temurin JDK 포함)
+  - JDK 소스 묶음 `OpenJDK25U-jdk-sources_*.tar.gz`
+  - 세 파일의 `SHA256SUMS`
+- **번들 라이선스**: JDK(`GPL-2.0-only WITH Classpath-exception-2.0`)는 약한 카피레프트 묶음을 따른다. 다만 소스는 번들 안이 아니라 같은 릴리스의 자산으로 둔다. jar의 소스 jar는 번들 안에 두는 규칙을 그대로 지킨다. 이유는 ADR-0025 보완 5에 있다.
+- **워크플로**: 번들 다음에 `add-jdk.sh`(windows-x64, 검증용 linux-x64)와 `jdk-sources.sh`를 돌린다. 오프라인 검증은 JDK 없는 번들과 linux-x64 번들에 각각 한다.

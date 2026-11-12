@@ -63,6 +63,7 @@ AOT 캐시로 기동 시간이 절반 이하로 준다(reference-app 3.50초 →
 | 항목 | 결과 |
 | --- | --- |
 | 번들 크기 | 231MB (Maven 저장소 + Maven 3.10.0 + 문서 + 약한 카피레프트 jar의 소스 jar 25개 8.5MB, ADR-0028). license-maven-plugin을 더하기 전에는 195MB |
+| Windows x64 번들 크기 | 318MB (JDK 없는 번들 233MB + Temurin JDK 25.0.5. 풀면 JDK 240MB, `lib/src.zip` 제외, ADR-0025 보완). JDK 소스 묶음 116MB는 릴리스에 따로 올린다 |
 | 번들만으로 생성·`mvn -o verify`·`mvn -o -Pdist package` | 3조합 통과. 네트워크 장치가 루프백뿐인 상태(`verify-offline.sh`)에서 확인했다 |
 | 빌드 중 외부 요청 | 0건. 네트워크 장치가 없어 외부 요청은 실패할 수밖에 없고, 빌드가 성공했다 |
 
