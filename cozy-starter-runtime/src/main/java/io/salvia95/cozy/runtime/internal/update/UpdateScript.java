@@ -61,9 +61,16 @@ public final class UpdateScript {
 				LOG="$UPDATE_DIR/update.log"
 
 				log() { printf '%%s %%s\\n' "$(date -u +%%Y-%%m-%%dT%%H:%%M:%%SZ)" "$*" >> "$LOG"; }
+				# 끝났지만 부모가 아직 거두지 않은 프로세스(좀비)는 끝난 것이다. kill -0 뒤에 부모가 거두면 ps는 아무것도 찾지 못하므로,
+				# 그때는 kill -0으로 다시 본다. ps를 쓸 수 없어도 프로세스가 있으면 살아 있다고 보아 기다린다
 				alive() {
 				  kill -0 "$1" 2>/dev/null || return 1
-				  [ "$(ps -o stat= -p "$1" 2>/dev/null | cut -c1)" != "Z" ]
+				  state=$(ps -o stat= -p "$1" 2>/dev/null | cut -c1)
+				  case "$state" in
+				    Z) return 1 ;;
+				    '') kill -0 "$1" 2>/dev/null ;;
+				    *) return 0 ;;
+				  esac
 				}
 				result() {
 				  printf 'status=%%s\\nfrom=%%s\\nto=%%s\\nmessage=%%s\\n' "$1" "$FROM_VERSION" "$TO_VERSION" "$2" \\
