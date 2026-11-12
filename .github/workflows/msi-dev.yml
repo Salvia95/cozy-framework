@@ -11,6 +11,27 @@ permissions:
   actions: read
 
 jobs:
+  args:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - name: 인수 전달 진단 (공백·한글·점이 있는 인수)
+        shell: powershell
+        run: |
+          $d = Join-Path $env:RUNNER_TEMP 'args'
+          New-Item -ItemType Directory -Force -Path $d | Out-Null
+          Set-Content -Encoding UTF8 (Join-Path $d 'echo.ps1') -Value '$i = 0; foreach ($a in $args) { Write-Host "  [$i] <$a>"; $i++ }'
+          Set-Content -Encoding ASCII (Join-Path $d 'echo.cmd') -Value "@echo off`r`n:loop`r`nif `"%~1`"==`"`" goto :eof`r`necho   cmd arg ^<%1^>`r`nshift`r`ngoto loop"
+          Set-Content -Encoding ASCII (Join-Path $d 'forward.cmd') -Value "@powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0echo.ps1`" %*"
+          $sample = @('new', '-B', '-DgroupId=com.example', '-DappName=설치 확인', '-Dpersistence=true')
+          Write-Host '1. PowerShell -> .cmd(%*로 출력)'
+          & (Join-Path $d 'echo.cmd') @sample
+          Write-Host '2. PowerShell -> .cmd -> powershell -File'
+          & (Join-Path $d 'forward.cmd') @sample
+          Write-Host '3. powershell -File 안에서 받은 $args를 .cmd로 다시 (@args 펼치기)'
+          Set-Content -Encoding UTF8 (Join-Path $d 'relay.ps1') -Value ('$rest = @($args[1..($args.Count - 1)]); & "' + (Join-Path $d 'echo.cmd') + '" @rest')
+          & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $d 'relay.ps1') @sample
+
   msi:
     runs-on: windows-2025
     timeout-minutes: 90
