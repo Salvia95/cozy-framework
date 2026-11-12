@@ -42,3 +42,4 @@
 | [0036](0036-workbench.md) | 워크벤치: 앱 안의 dev 도구 `/cozy/dev/workbench`, dev 전용 모듈 `cozy-workbench`, 엔진은 같은 cozy-cli (0016 개정) | 사용자 결정 |
 | [0037](0037-add-field.md) | `cozy add field`: crud 한 벌에 필드 하나. 파서가 찾은 위치, 꼭 고칠 곳과 보이는 곳, `--default`, 호출하는 곳 고치기 (0033 정한 것 4·§1 개정) | 사용자 지시 |
 | [0038](0038-workbench-redesign.md) | 워크벤치 디자인 개선: 용어와 표시 이름(KRDS 명칭 참고), 워드마크, 3단 구성, 모듈 의존성 다이어그램, 구조화된 입력, 매개변수 수정과 행 추가·삭제 (0031·0036 개정) | 사용자 결정 |
+| [0039](0039-msi-installer.md) | 개발 도구 설치 파일(MSI): 사용자별 설치 `%LOCALAPPDATA%\Programs\Cozy`, 영구 사용자 PATH, 위치와 상관없는 Maven 설정, WiX v7, Windows 러너 검증 (0025·0028 개정) | 사용자 결정 |

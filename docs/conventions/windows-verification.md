@@ -232,6 +232,37 @@ mvn -v
 - [ ] 다시 설치하기: JDK 25가 PATH에 있는 창에서 JDK 없는 번들로 `.\cozy.cmd install`을 하면 `%USERPROFILE%\cozy\jdk`가 사라지고, `mvn -v`의 `runtime:`이 시스템 JDK가 된다.
 - [ ] IntelliJ: Project SDK를 `%USERPROFILE%\cozy\jdk`로, Maven home을 `%USERPROFILE%\cozy\apache-maven-3.10.0`으로, Maven JRE를 Project SDK로 두면 실행 설정 "mvn -o verify"가 통과한다.
 
+## MSI 설치 파일 (ADR-0039)
+
+CI의 Windows 러너가 조용한 설치·사용·제거를 이미 확인한다(`verify-msi.ps1`). 여기서는 사람이 쓰는 경로를 본다. JDK가 없고 Cozy가 설치되지 않은 PC에서, 네트워크를 끊고 한다.
+
+1. `cozy-{버전}-windows-x64.msi`를 탐색기에서 더블클릭한다.
+2. 끝나면 **새** PowerShell 창을 연다.
+
+```powershell
+cozy version
+mvn -v
+mkdir C:\work; cd C:\work
+cozy new "-DgroupId=com.example" "-DartifactId=voc-assistant" "-Dpackage=com.example.voc" `
+  "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=true" "-DinteractiveMode=false"
+cd voc-assistant
+cozy add crud task --entity Task --label "할 일" --icon checklist --field "title:text!:제목"
+mvn -o verify
+mvn -o -Pdist package
+```
+
+- [ ] 더블클릭 설치에 관리자 권한(UAC) 창이 뜨지 않는다. 끝나면 `%LOCALAPPDATA%\Programs\Cozy`에 `bin`, `jdk`, `apache-maven-3.10.0`, `repository`가 있다.
+- [ ] 인터넷에서 받은 MSI면 SmartScreen 경고가 뜰 수 있다(서명하지 않았다). "추가 정보 → 실행"으로 설치되는지, 회사 정책에서 막히는지 기록한다.
+- [ ] 새 창에서 `cozy version`이 버전을, `mvn -v`의 `runtime:`이 `%LOCALAPPDATA%\Programs\Cozy\jdk`를 보여 준다. PATH를 손으로 넣지 않았다.
+- [ ] "설정 → 앱 → 설치된 앱"에 Cozy가 있다.
+- [ ] `cozy new`의 `-DappName=VOC 도우미`(공백과 한글)가 깨지거나 나뉘지 않는다. 브라우저 제목이 "VOC 도우미"다.
+- [ ] `mvn -o verify`, `mvn -o -Pdist package`가 통과하고 앱이 뜬다.
+- [ ] `cmd.exe`에서도 `cozy version`, `mvn -v`가 된다.
+- [ ] IntelliJ: Maven home을 `%LOCALAPPDATA%\Programs\Cozy\apache-maven-3.10.0`으로, JDK를 `%LOCALAPPDATA%\Programs\Cozy\jdk`로 두면 "mvn -o verify" 실행 설정이 통과한다. 로컬 저장소가 `...\Cozy\repository`로 잡힌다(설정의 `${maven.home}/../repository`).
+- [ ] 같은 MSI를 다시 더블클릭하면 덮어쓴다. 더 낮은 판의 MSI는 "더 새로운 Cozy가 이미 설치되어 있습니다"로 막힌다.
+- [ ] "설치된 앱"에서 제거하면 새 창에서 `cozy`를 찾지 못하고, 사용자 PATH에서 `...\Cozy\bin`이 빠진다. `%LOCALAPPDATA%\Programs\Cozy`에 남는 것이 있으면(Maven이 만든 파일) 기록한다.
+- [ ] 관리자 PowerShell에서 `msiexec /i cozy-{버전}-windows-x64.msi ALLUSERS=1`을 하면 "Cozy는 사용자별로만 설치합니다" 메시지로 거부된다. 한글 메시지가 깨지지 않는다.
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |
@@ -244,3 +275,4 @@ mvn -v
 | | M6 | | |
 | | M7 | | |
 | | 번들 JDK | | |
+| | MSI | | |

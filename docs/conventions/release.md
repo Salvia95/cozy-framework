@@ -1,13 +1,14 @@
 # 프레임워크 릴리스
 
-프레임워크는 GitHub Release에 오프라인 번들로 낸다. Maven 저장소(패키지)로는 내지 않는다. 결정과 이유는 ADR-0028과 ADR-0025 보완에 있다.
+프레임워크는 GitHub Release에 오프라인 번들로 낸다. Maven 저장소(패키지)로는 내지 않는다. 결정과 이유는 ADR-0028, ADR-0025 보완, ADR-0039에 있다.
 
 | 릴리스 자산 | 내용 |
 | --- | --- |
+| `cozy-{버전}-windows-x64.msi` | Windows 설치 파일. Windows x64 번들을 `cozy install`로 펼친 폴더를 `%LOCALAPPDATA%\Programs\Cozy`에 사용자별로 설치하고 사용자 PATH에 등록한다 |
 | `cozy-offline-bundle-{버전}-windows-x64.zip` | Windows x64 번들. Temurin JDK(`jdk/`)를 담았다 |
 | `cozy-offline-bundle-{버전}.zip` | JDK 없는 번들. 운영체제와 상관없다 |
 | `OpenJDK25U-jdk-sources_*.tar.gz` | Windows x64 번들에 담은 JDK의 소스 묶음(GPL-2.0 with Classpath Exception) |
-| `SHA256SUMS` | 위 세 파일의 SHA-256 |
+| `SHA256SUMS` | 위 네 파일의 SHA-256 |
 
 ## 절차
 
@@ -15,7 +16,7 @@
    - 번들 JDK: Temurin 25의 새 패치가 있으면 `distribution/offline-bundle/jdk.env`의 릴리스, 파일 이름, SHA-256 세 쌍을 바꾼다. Adoptium API(`api.adoptium.net/v3/assets/release_name/eclipse/<릴리스>`)의 checksum과 릴리스 자산의 `.sha256.txt`가 같은지 본다.
 2. **Windows 확인**: windows-verification.md의 확인 항목을 끝낸다. 1.0.0 전에는 M1~M7 전부다.
    - CI가 만든 번들로 확인하려면 워크플로를 수동으로 돌린다: `gh workflow run release.yml`
-   - 실행 결과의 `cozy-offline-bundle-{버전}`(14일 보관)을 받는다. 두 번들과 JDK 소스 묶음이 들어 있다.
+   - 실행 결과의 `cozy-offline-bundle-{버전}`(두 번들과 JDK 소스 묶음)과 `cozy-msi-{버전}`(MSI)을 받는다. 14일 보관한다.
    - Windows x64 번들은 JDK를 설치하지 않은(또는 PATH에서 뺀) PC에서 확인한다.
 3. **버전 바꾸기**:
 
@@ -41,6 +42,7 @@
    - `-Pe2e install`
    - 번들 만들기(JDK 없는 번들, Windows x64 번들, 검증용 Linux x64 번들)와 JDK 소스 묶음 받기
    - 오프라인 검증(JDK 없는 번들, Linux x64 번들은 시스템 JDK를 막고)
+   - MSI 만들기와 검증(Windows 러너: 설치, 앱 생성·빌드·패키징, 제거, 컴퓨터별 설치 거부)
    - 릴리스 초안 만들기
 
 5. **게시**: 초안의 "변경 내용"을 채우고 Windows 확인 결과를 적은 뒤 게시한다.
@@ -63,17 +65,21 @@
 | `distribution/release/install-maven.sh <폴더>` | Maven 3.10.0을 받아 SHA-512를 확인하고 푼다 |
 | `distribution/release/release-notes.sh <버전> <릴리스 폴더>` | 릴리스 노트 초안(세 파일의 크기와 SHA-256, 설치 요약). 폴더에 두 번들과 JDK 소스 묶음이 있어야 한다 |
 | `distribution/release/jdk-sources.sh <폴더>` | `jdk.env`의 JDK 소스 묶음을 받아 SHA-256을 확인한다 |
+| `distribution/msi/build-msi.ps1 -Bundle <windows-x64 zip>` | (Windows, WiX 필요) 번들의 `cozy.cmd install`로 설치 폴더 모양을 만들고 `cozy.wxs`로 묶는다. 결과는 `cozy-{버전}-windows-x64.msi`. MSI 판은 `-SNAPSHOT`을 뗀 숫자 세 자리 |
+| `distribution/msi/verify-msi.ps1 -Msi <msi>` | (Windows) 조용히 설치 → 설치 폴더·사용자 PATH·Maven 설정 → 시스템 JDK를 막고 앱 생성·`cozy add`·`verify`·`-Pdist package` → 실패한 빌드의 종료 코드 → 제거 → 컴퓨터별 설치 거부 |
 | `distribution/offline-bundle/add-jdk.sh <번들 zip> <windows-x64\|linux-x64> [배포판]` | JDK 없는 번들에 `jdk.env`의 Temurin을 더한 플랫폼 번들을 만든다(SHA-256, 도구, 판 확인, `lib/src.zip` 제거, 라이선스 목록 다시 만들기) |
 
 ## 워크플로 (`.github/workflows/release.yml`)
 
 | 실행 | 하는 일 | 결과 |
 | --- | --- | --- |
-| 태그 `v*` push | 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬·노트 | 실행 결과 + **릴리스 초안** |
+| 태그 `v*` push | `bundle`: 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬. `windows`: MSI 만들기·검증. `release`: 체크섬 확인 → 노트 → 초안 | 실행 결과 + **릴리스 초안** |
 | 수동(`workflow_dispatch`) | 같은 빌드와 검증. SNAPSHOT 버전도 된다 | 실행 결과만 |
 
 - 액션은 커밋 SHA로 고정한다. 버전은 ADR-0017 표에 있다.
 - 빌드 작업은 읽기 권한만 갖는다. 릴리스 작업만 `contents: write`를 갖는다.
+- `windows` 작업은 WiX Toolset 7.0.1을 `dotnet tool install`로 받고 `wix eula accept wix7`로 약관(OSMF EULA v1.1)에 동의한 뒤 만든다. 동의는 레포 주인의 결정이다(ADR-0039). 수익 조건이 바뀌면 다시 본다.
+- `windows` 작업은 받은 번들을 `SHA256SUMS`로 확인한 뒤 쓴다. MSI의 SHA-256은 릴리스 작업이 `SHA256SUMS`에 더한다.
 - 릴리스 작업은 받은 파일을 `SHA256SUMS`로 다시 확인한 뒤 올린다.
 
 ## 번들 라이선스 목록

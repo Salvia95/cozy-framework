@@ -2,8 +2,9 @@ name: release
 
 # 오프라인 번들을 만들고 검증해 GitHub Release 초안에 올린다.
 # - 번들은 둘이다: JDK 없는 번들과, Temurin JDK를 담은 Windows x64 번들. JDK를 담았으므로 그 소스 묶음도 함께 올린다
+# - Windows 러너가 Windows x64 번들로 MSI를 만들고 설치·사용·제거를 확인한다
 # - 태그 vX.Y.Z push: 버전 확인 → 종단 검증 → 번들 → 오프라인 검증 → 릴리스 초안(게시는 사람이 한다)
-# - 수동 실행(workflow_dispatch): 같은 빌드와 검증만 하고 번들을 실행 결과(artifact)로 남긴다. 릴리스는 만들지 않는다
+# - 수동 실행(workflow_dispatch): 같은 빌드와 검증만 하고 번들과 MSI를 실행 결과(artifact)로 남긴다. 릴리스는 만들지 않는다
 on:
   push:
     tags: ['v*']
@@ -69,7 +70,7 @@ jobs:
           distribution/offline-bundle/verify-offline.sh "build/offline-bundle/cozy-offline-bundle-$VERSION-linux-x64.zip" build/check-jdk
           rm -rf build/check-jdk
 
-      - name: 체크섬과 릴리스 노트
+      - name: 체크섬
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -77,7 +78,6 @@ jobs:
           cp "build/offline-bundle/cozy-offline-bundle-$VERSION.zip" "build/offline-bundle/cozy-offline-bundle-$VERSION-windows-x64.zip" \
             build/jdk-sources/*.tar.gz build/release/
           (cd build/release && sha256sum "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION-windows-x64.zip" *.tar.gz > SHA256SUMS)
-          distribution/release/release-notes.sh "$VERSION" build/release > build/release/RELEASE-NOTES.md
           cat build/release/SHA256SUMS
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -88,20 +88,94 @@ jobs:
           compression-level: 0
           if-no-files-found: error
 
+  # MSI: 같은 실행의 Windows x64 번들을 cozy install로 펼쳐 WiX로 묶고, 같은 러너에서 설치부터 제거까지 확인한다
+  windows:
+    needs: bundle
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.bundle.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: cozy-offline-bundle-${{ needs.bundle.outputs.version }}
+          path: build/bundle
+
+      - name: 번들 체크섬 확인
+        shell: pwsh
+        run: |
+          $name = "cozy-offline-bundle-$env:VERSION-windows-x64.zip"
+          $expected = (Get-Content build\bundle\SHA256SUMS | Where-Object { $_ -match "  $([regex]::Escape($name))$" }) -replace '  .*$', ''
+          $actual = (Get-FileHash -Algorithm SHA256 "build\bundle\$name").Hash.ToLowerInvariant()
+          if (-not $expected -or $expected -ne $actual) { throw "SHA-256이 다릅니다: $name ($actual, SHA256SUMS: $expected)" }
+
+      - name: WiX Toolset 7.0.1 (OSMF EULA v1.1, 레포 주인 동의)
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 7.0.1
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" eula accept wix7
+
+      - name: MSI 만들기
+        shell: powershell
+        run: distribution\msi\build-msi.ps1 -Bundle "build\bundle\cozy-offline-bundle-$env:VERSION-windows-x64.zip" -Output build\msi
+
+      - name: MSI 검증 (설치 → 앱 생성·빌드·패키징 → 제거 → 컴퓨터별 설치 거부)
+        shell: powershell
+        run: distribution\msi\verify-msi.ps1 -Msi "build\msi\cozy-$env:VERSION-windows-x64.msi" -Work build\msi-check
+
+      - name: MSI 체크섬
+        shell: pwsh
+        run: |
+          $name = "cozy-$env:VERSION-windows-x64.msi"
+          $hash = (Get-FileHash -Algorithm SHA256 "build\msi\$name").Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText("$PWD\build\msi\$name.sha256", "$hash  $name`n")
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cozy-msi-${{ needs.bundle.outputs.version }}
+          path: |
+            build/msi/*.msi
+            build/msi/*.msi.sha256
+          retention-days: 14
+          compression-level: 0
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: msi-logs-${{ needs.bundle.outputs.version }}
+          path: build/msi-check/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
   release:
     if: github.ref_type == 'tag'
-    needs: bundle
+    needs: [bundle, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: cozy-offline-bundle-${{ needs.bundle.outputs.version }}
           path: release
 
-      - name: 릴리스 초안
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: cozy-msi-${{ needs.bundle.outputs.version }}
+          path: release
+
+      - name: 체크섬, 릴리스 노트, 릴리스 초안
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
@@ -109,6 +183,11 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS
+          sha256sum -c "cozy-$VERSION-windows-x64.msi.sha256"
+          cat "cozy-$VERSION-windows-x64.msi.sha256" >> SHA256SUMS
+          rm "cozy-$VERSION-windows-x64.msi.sha256"
+          "$GITHUB_WORKSPACE/distribution/release/release-notes.sh" "$VERSION" . > RELEASE-NOTES.md
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
             --title "Cozy $VERSION" --notes-file RELEASE-NOTES.md \
-            "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION-windows-x64.zip" ./*.tar.gz SHA256SUMS
+            "cozy-$VERSION-windows-x64.msi" "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION-windows-x64.zip" \
+            ./*.tar.gz SHA256SUMS
