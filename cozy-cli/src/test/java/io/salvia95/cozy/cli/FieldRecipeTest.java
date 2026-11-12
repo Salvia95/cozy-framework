@@ -338,7 +338,7 @@ class FieldRecipeTest {
 		memo();
 		change(JAVA + "internal/app/command/MemoFacadeImpl.java", "\t\tInstant now = Instant.now(this.clock);\n",
 				"\t\tInstant now = Instant.now(this.clock);\n\t\tif (title.startsWith(\"!\")) {\n\t\t\tpinned = true;\n\t\t}\n");
-		change(JAVA + "api/dto/MemoForm.java", "\tprivate boolean pinned;\n", "\t/** 목록 위에 고정 */\n\tprivate boolean pinned;\n");
+		change(JAVA + "api/dto/MemoForm.java", "\t/** 고정 */\n\tprivate boolean pinned;\n", "\t/** 목록 위에 고정 */\n\tprivate boolean pinned;\n");
 		change(JAVA + "api/dto/MemoViews.java", "\tpublic static MemoForm formOf(MemoItem item) {\n",
 				"\tpublic static String shortTitle(MemoItem item) {\n\t\treturn item.title().strip();\n\t}\n\n"
 						+ "\tpublic static MemoForm formOf(MemoItem item) {\n");
@@ -347,8 +347,11 @@ class FieldRecipeTest {
 			.contains("\t\trow.setPinned(pinned);\n\t\trow.setDueOn(dueOn);\n\t\trow.setCreatedAt(now);\n")
 			.contains("this.mapper.update(id, title, pinned, dueOn, Instant.now(this.clock))");
 		assertThat(read(JAVA + "api/dto/MemoForm.java"))
-			.contains("\t/** 목록 위에 고정 */\n\tprivate boolean pinned;\n\n\t@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)\n\tprivate LocalDate dueOn;\n");
+			.contains("\t/** 목록 위에 고정 */\n\tprivate boolean pinned;\n\n\t/** 마감일 */\n\t@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)\n\tprivate LocalDate dueOn;\n");
 		assertThat(read(JAVA + "api/dto/MemoViews.java")).contains("return item.title().strip();")
+			.as("화면 DTO의 설명: 워크벤치가 속성 이름으로 쓴다")
+			.contains("\t * @param dueOn 마감일\n\t * @param updatedAt 수정한 시각\n\t */\n\tpublic record Row(")
+			.contains("\t * @param dueOn 마감일\n\t * @param createdAt 만든 시각\n")
 			.contains("\t\tform.setDueOn(item.dueOn());\n\t\treturn form;\n")
 			.contains("\n\t\t\t\t&& Objects.equals(item.dueOn(), form.getDueOn());\n");
 	}

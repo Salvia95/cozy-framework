@@ -136,7 +136,7 @@ public class WorkbenchController {
 				model.addAttribute("fixtureHash", hash(text));
 				@SuppressWarnings("unchecked")
 				Map<String, String> draft = (model.getAttribute("fixtureDraft") instanceof Map<?, ?> d) ? (Map<String, String>) d : Map.of();
-				model.addAttribute("fixtureSections", FixtureForm.of(text, selectedState, screen.model(), draft));
+				model.addAttribute("fixtureSections", FixtureForm.of(text, selectedState, screen.model(), draft, this::docs));
 			}
 		}
 		String sourceFile = switch (view) {
@@ -278,14 +278,73 @@ public class WorkbenchController {
 		.compile("\\b(?:[a-z_][A-Za-z0-9_]*\\.)+([A-Z][A-Za-z0-9_]*)(?:\\$([A-Z][A-Za-z0-9_]*))*");
 
 	private static String fixtureView(String spec, String state, String w) {
+		return fixtureView(spec, state, w, null);
+	}
+
+	/** @param anchor 화면 안의 위치 (행을 고친 그리드). 없으면 {@code null} */
+	private static String fixtureView(String spec, String state, String w, String anchor) {
 		return "redirect:" + org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
 			.queryParam("spec", spec)
 			.queryParam("state", state)
 			.queryParam("w", WIDTHS.contains(w) ? w : "full")
 			.queryParam("view", "fixture")
+			.fragment(anchor)
 			.build()
 			.encode()
 			.toUriString();
+	}
+
+	/** 행 작업: {@code add:result/rows}, {@code duplicate:result/rows/1}, {@code delete:result/rows/1} */
+	private record RowOp(String action, String list, int index) {
+
+		static RowOp parse(String value) {
+			int colon = value.indexOf(':');
+			String action = (colon < 0) ? "" : value.substring(0, colon);
+			String path = (colon < 0) ? "" : value.substring(colon + 1);
+			if (action.equals("add") && !path.isEmpty()) {
+				return new RowOp(action, path, -1);
+			}
+			int slash = path.lastIndexOf('/');
+			if ((action.equals("duplicate") || action.equals("delete")) && slash > 0 && path.substring(slash + 1).matches("\\d{1,6}")) {
+				return new RowOp(action, path.substring(0, slash), Integer.parseInt(path.substring(slash + 1)));
+			}
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] row는 add:{목록}, duplicate:{목록}/{행}, delete:{목록}/{행}입니다: " + value);
+		}
+
+		String apply(String yaml, String state, Map<String, String> model) {
+			return switch (this.action) {
+				case "duplicate" -> FixtureEditor.duplicateRow(yaml, state, this.list, this.index);
+				case "delete" -> FixtureEditor.deleteRow(yaml, state, this.list, this.index);
+				default -> {
+					FixtureForm.Block grid = FixtureForm.grid(FixtureForm.of(yaml, state, model, Map.of()), this.list)
+						.orElseThrow(() -> new IllegalArgumentException(this.list + "는 목록이 아닙니다."));
+					if (!grid.newItem().isEmpty()) {
+						yield FixtureEditor.addRow(yaml, state, this.list, grid.newItem());
+					}
+					if (grid.rows().isEmpty()) {
+						throw new IllegalArgumentException(this.list + "의 행 모양을 알 수 없어 행을 더할 수 없습니다. 화면 명세 파일에서 첫 행을 적으세요.");
+					}
+					yield FixtureEditor.duplicateRow(yaml, state, this.list, grid.rows().size() - 1);
+				}
+			};
+		}
+
+		String done() {
+			return switch (this.action) {
+				case "duplicate" -> (this.index + 1) + "행을 복제했습니다.";
+				case "delete" -> (this.index + 1) + "행을 삭제했습니다.";
+				default -> "행을 추가했습니다.";
+			};
+		}
+	}
+
+	/** DTO의 속성 설명: 프레임워크 타입은 아는 이름, 앱 타입은 소스의 Javadoc */
+	private Map<String, String> docs(Class<?> type) {
+		Map<String, String> framework = SourceDocs.FRAMEWORK.get(type.getName());
+		if (framework != null) {
+			return framework;
+		}
+		return this.engine.source(SourceDocs.file(type)).map((source) -> SourceDocs.of(source, type)).orElse(Map.of());
 	}
 
 	/** 화면 명세의 모델 이름 → 타입 */
@@ -295,9 +354,11 @@ public class WorkbenchController {
 
 	@PostMapping("/fixture")
 	String saveFixture(@RequestParam String spec, @RequestParam String state, @RequestParam String hash,
-			@RequestParam(defaultValue = "full") String w, @RequestParam MultiValueMap<String, String> form,
-			HttpServletRequest request, RedirectAttributes flash) {
+			@RequestParam(defaultValue = "full") String w, @RequestParam(required = false) String row,
+			@RequestParam MultiValueMap<String, String> form, HttpServletRequest request, RedirectAttributes flash) {
 		String text = specText(spec, request);
+		RowOp op = (row == null) ? null : RowOp.parse(row);
+		String anchor = (op == null) ? null : FixtureForm.Block.anchor(op.list());
 		Map<String, String> values = new LinkedHashMap<>();
 		// 체크박스는 숨은 false 뒤에 true가 온다: 마지막 값을 쓴다
 		form.forEach((name, list) -> {
@@ -314,7 +375,11 @@ public class WorkbenchController {
 				List<FixtureForm.Input> inputs = FixtureForm.inputs(FixtureForm.of(text, state, model(spec), Map.of()));
 				problem = FixtureForm.problem(inputs, values);
 				if (problem == null) {
+					// 적던 값을 먼저 반영하고 행을 고친다. 행의 자리는 값을 바꿔도 그대로다
 					String changed = FixtureEditor.set(text, state, FixtureForm.changes(inputs, values));
+					if (op != null) {
+						changed = op.apply(changed, state, model(spec));
+					}
 					if (changed.equals(text)) {
 						flash.addFlashAttribute(CozyFlash.ATTRIBUTE, CozyFlash.info("바뀐 값이 없습니다."));
 						return fixtureView(spec, state, w);
@@ -330,9 +395,10 @@ public class WorkbenchController {
 			// 적은 값은 다음 화면에 그대로 둔다
 			flash.addFlashAttribute("fixtureDraft", values);
 		}
-		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, (problem == null) ? CozyFlash.success("저장했습니다. " + specFile(spec))
+		String done = ((op == null) ? "저장했습니다. " : op.done() + " ") + specFile(spec);
+		flash.addFlashAttribute(CozyFlash.ATTRIBUTE, (problem == null) ? CozyFlash.success(done)
 				: CozyFlash.critical("저장하지 않았습니다. " + problem));
-		return fixtureView(spec, state, w);
+		return fixtureView(spec, state, w, anchor);
 	}
 
 	@PostMapping("/state")

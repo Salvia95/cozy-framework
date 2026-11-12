@@ -132,7 +132,7 @@ class FixtureFormTest {
 
 		Block rows = block(result, "rows");
 		assertThat(rows.columns()).extracting(Column::name).as("열은 타입의 속성 순서").containsExactly("id", "title", "pinned", "status", "due");
-		assertThat(rows.columns()).extracting(Column::label).containsExactly("정수", "텍스트", "true/false", "Status", "날짜");
+		assertThat(rows.columns()).extracting(Column::kind).containsExactly("정수", "텍스트", "true/false", "Status", "날짜");
 		assertThat(rows.rows()).hasSize(2);
 		assertThat(rows.rows().get(0).cells()).extracting(Input::path)
 			.containsExactly("result/rows/0/id", "result/rows/0/title", "result/rows/0/pinned", "result/rows/0/status", "result/rows/0/due");
@@ -146,7 +146,7 @@ class FixtureFormTest {
 		assertThat(prop(page, "totalElements")).extracting(Input::path, Input::value).containsExactly("result/page/totalElements", "2");
 
 		Block tags = block(result, "tags");
-		assertThat(tags.columns()).extracting(Column::name, Column::label).containsExactly(org.assertj.core.groups.Tuple.tuple("값", "텍스트"));
+		assertThat(tags.columns()).extracting(Column::name, Column::kind).containsExactly(org.assertj.core.groups.Tuple.tuple("값", "텍스트"));
 		assertThat(tags.rows()).extracting((r) -> r.cells().getFirst().path()).containsExactly("result/tags/0", "result/tags/1");
 	}
 
@@ -242,5 +242,43 @@ class FixtureFormTest {
 		assertThat(FixtureForm.problem(inputs, Map.of("result/rows/0/status", "LATER"))).contains("OPEN, CLOSED");
 		assertThat(FixtureForm.problem(inputs, Map.of("result/rows/0/due", "11월 30일"))).contains("날짜");
 		assertThat(FixtureForm.problem(inputs, Map.of("result/rows/0/title", "아무 글", "result/rows/0/id", "7"))).isNull();
+	}
+
+	@Test
+	void namesComeFromTheDtoDocsAndTheIdentifierStays() {
+		Map<String, String> rowDocs = Map.of("title", "제목", "due", "마감일 (yyyy-MM-dd)");
+		List<Section> sections = FixtureForm.of(SPEC, "default", MODEL, Map.of(),
+				(type) -> type == Row.class ? rowDocs : type == Filter.class ? Map.of("q", "검색어") : Map.of());
+		Block rows = block(section(sections, "result"), "rows");
+		assertThat(rows.columns()).extracting(Column::name, Column::title, Column::description)
+			.contains(org.assertj.core.groups.Tuple.tuple("title", "제목", "제목"),
+					org.assertj.core.groups.Tuple.tuple("due", "마감일", "마감일 (yyyy-MM-dd)"),
+					org.assertj.core.groups.Tuple.tuple("id", "", ""));
+		assertThat(rows.columns().get(4).spoken()).isEqualTo("마감일");
+		assertThat(rows.columns().get(0).spoken()).as("이름이 없으면 식별자").isEqualTo("id");
+		Prop q = block(section(sections, "filter"), "").props().getFirst();
+		assertThat(q).extracting(Prop::name, Prop::title).containsExactly("q", "검색어");
+
+		assertThat(FixtureForm.of(SPEC, "default", MODEL, Map.of(), (type) -> {
+			throw new IllegalStateException("소스를 읽지 못함");
+		})).as("설명을 읽지 못해도 화면은 그린다").hasSize(2);
+	}
+
+	@Test
+	void eachGridKnowsItsPathAndTheRowToAdd() {
+		List<Section> sections = form("default");
+		Block rows = block(section(sections, "result"), "rows");
+		assertThat(rows).extracting(Block::path, Block::anchor, Block::addable)
+			.containsExactly("result/rows", "fixture-result-rows", true);
+		assertThat(rows.newItem()).startsWith("{ id: 0, title: \"\", pinned: false, status: OPEN, due: \"").endsWith("\" }");
+		assertThat(block(section(sections, "result"), "tags").newItem()).isEqualTo("\"\"");
+		assertThat(block(section(sections, "result"), "page").path()).isEqualTo("result/page");
+		assertThat(FixtureForm.grid(sections, "result/tags")).isPresent();
+		assertThat(FixtureForm.grid(sections, "result/page")).as("표는 그리드가 아니다").isEmpty();
+
+		List<Section> untyped = FixtureForm.of(SPEC, "empty", Map.of("filter", "java.util.Map", "result", "java.util.Map"), Map.of());
+		Block empty = block(section(untyped, "result"), "rows");
+		assertThat(empty).extracting(Block::newItem, Block::addable).as("타입도 행도 없으면 더할 수 없다").containsExactly("", false);
+		assertThat(FixtureForm.newItem(Page.class)).isEqualTo("{ number: 0, size: 0, totalElements: 0 }");
 	}
 }

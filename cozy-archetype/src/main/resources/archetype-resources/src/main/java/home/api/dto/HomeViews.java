@@ -18,7 +18,13 @@ public final class HomeViews {
 	private HomeViews() {
 	}
 
-	/** 목록 한 행 */
+	/**
+	 * 목록 한 행
+	 *
+	 * @param id 번호
+	 * @param title 제목
+	 * @param createdAt 만든 시각
+	 */
 	public record Row(long id, String title, String createdAt) {
 
 		public static Row of(NoteItem note) {
@@ -26,15 +32,28 @@ public final class HomeViews {
 		}
 	}
 
-	/** 목록 결과 (fragment "result") */
+	/**
+	 * 목록 결과 (fragment "result")
+	 *
+	 * @param rows 행
+	 */
 	public record ListResult(List<Row> rows) {
 	}
 
-	/** 최근 활동 (화면 아래 카드) */
+	/**
+	 * 최근 활동 (화면 아래 카드)
+	 *
+	 * @param items 활동
+	 */
 	public record Activity(List<ActivityRow> items) {
 	}
 
-	/** 최근 활동 한 줄 */
+	/**
+	 * 최근 활동 한 줄
+	 *
+	 * @param message 내용
+	 * @param at 시각
+	 */
 	public record ActivityRow(String message, String at) {
 
 		public static ActivityRow of(NoteActivityItem activity) {

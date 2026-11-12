@@ -3,8 +3,10 @@ package {{dtoPkg}};
 /** {{L}} 목록 필터 (GET 쿼리 파라미터, cozy add crud). q는 {{searchLabels}}에서 찾는다. */
 public class {{E}}Filter {
 
+	/** 검색어 */
 	private String q;
 
+	/** 페이지 */
 	private Integer page;
 
 	public String getQ() {

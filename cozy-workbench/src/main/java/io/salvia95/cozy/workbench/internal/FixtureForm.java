@@ -70,12 +70,28 @@ final class FixtureForm {
 		}
 	}
 
-	/** 속성 표의 행 하나: 속성 이름, 종류, 입력 */
-	public record Prop(String name, String label, Input input) {
+	/**
+	 * 속성 표의 행 하나.
+	 *
+	 * @param name 속성 이름 (식별자)
+	 * @param title 사람이 읽는 이름 (DTO Javadoc의 짧은 이름). 없으면 빈 글
+	 * @param description Javadoc의 설명 전체. 없으면 빈 글
+	 * @param kind 종류의 이름 ({@code 정수}, enum이면 타입 이름)
+	 */
+	public record Prop(String name, String title, String description, String kind, Input input) {
+
+		/** 화면 낭독기가 읽을 이름 */
+		public String spoken() {
+			return this.title.isEmpty() ? this.name : this.title;
+		}
 	}
 
-	/** 그리드의 열 하나: 속성 이름과 종류 */
-	public record Column(String name, String label) {
+	/** 그리드의 열 하나. 구성은 {@link Prop}과 같다 */
+	public record Column(String name, String title, String description, String kind) {
+
+		public String spoken() {
+			return this.title.isEmpty() ? this.name : this.title;
+		}
 	}
 
 	/** 그리드의 행 하나. {@code number}는 1부터 */
@@ -85,10 +101,27 @@ final class FixtureForm {
 	/**
 	 * 속성 표나 그리드 하나.
 	 *
+	 * @param path 상태 안의 자리 ({@code result/rows})
 	 * @param title 모델 안의 경로 ({@code page}, {@code memo/bodyLines}). 모델 자체면 빈 글
 	 * @param type 타입의 짧은 이름 ({@code CozyPage}, {@code List<Row>}). 모르면 빈 글
+	 * @param newItem 그리드에 더할 행의 YAML ({@code { id: 0, title: "" }}). 원소 타입을 모르면 빈 글
 	 */
-	public record Block(String title, String type, boolean grid, List<Prop> props, List<Column> columns, List<Row> rows) {
+	public record Block(String path, String title, String type, boolean grid, List<Prop> props, List<Column> columns, List<Row> rows,
+			String newItem) {
+
+		/** 화면 안의 위치 ({@code #fixture-result-rows}) */
+		public String anchor() {
+			return anchor(this.path);
+		}
+
+		/** 행을 더할 수 있는가: 원소 타입을 알거나, 복제할 행이 있다 */
+		public boolean addable() {
+			return !this.newItem.isEmpty() || !this.rows.isEmpty();
+		}
+
+		static String anchor(String path) {
+			return "fixture-" + path.replaceAll("[^A-Za-z0-9_-]", "-");
+		}
 	}
 
 	/**
@@ -146,9 +179,17 @@ final class FixtureForm {
 	 * @param draft 자리 → 적다가 저장하지 못한 값
 	 */
 	static List<Section> of(String yaml, String state, Map<String, String> model, Map<String, String> draft) {
+		return of(yaml, state, model, draft, (type) -> Map.of());
+	}
+
+	/**
+	 * @param docs 타입 → 속성 이름 → 설명 ({@link SourceDocs}). 없으면 빈 맵
+	 */
+	static List<Section> of(String yaml, String state, Map<String, String> model, Map<String, String> draft,
+			java.util.function.Function<Class<?>, Map<String, String>> docs) {
 		Map<String, FixtureEditor.Field> fields = new LinkedHashMap<>();
 		FixtureEditor.fields(yaml, state).forEach((f) -> fields.put(f.path(), f));
-		Builder builder = new Builder(fields, draft);
+		Builder builder = new Builder(fields, draft, docs);
 		List<Section> sections = new ArrayList<>();
 		FixtureEditor.values(yaml, state).forEach((name, value) -> {
 			if (name.equals(io.salvia95.cozy.ui.catalog.ScreenSpec.ERRORS_KEY)) {
@@ -163,6 +204,11 @@ final class FixtureForm {
 			sections.add(new Section(name, "", type.map(FixtureForm::simpleName).orElse(""), typeName, note, builder.root(name, shape, value)));
 		});
 		return sections;
+	}
+
+	/** 자리가 {@code path}인 그리드 */
+	static Optional<Block> grid(List<Section> sections, String path) {
+		return sections.stream().flatMap((s) -> s.blocks().stream()).filter((b) -> b.grid() && b.path().equals(path)).findFirst();
 	}
 
 	/** 모든 입력 (화면 순서) */
@@ -349,6 +395,44 @@ final class FixtureForm {
 		return "List<" + element + ">";
 	}
 
+	// ── 새 행 ─────────────────────────────────────────────────────────────
+
+	/** 원소 타입으로 만든 새 행의 YAML (흐름 표기 한 줄). 모르는 타입이면 빈 글 */
+	static String newItem(Type element) {
+		String item = defaultValue(shape(element), 0);
+		return (item == null) ? "" : item;
+	}
+
+	/** 타입의 기본값. 글은 빈 글, 숫자는 0, 참·거짓은 false, 날짜는 오늘, enum은 첫 상수, 목록은 빈 목록. 모르면 {@code null} */
+	private static String defaultValue(Shape shape, int depth) {
+		return switch (shape) {
+			case Scalar s -> switch (s.kind()) {
+				case "bool" -> "false";
+				case "int", "number" -> "0";
+				case "date" -> "\"" + LocalDate.now() + "\"";
+				case "datetime" -> "\"" + LocalDate.now() + "T09:00\"";
+				case "time" -> "\"09:00\"";
+				case "enum" -> s.options().isEmpty() ? "null" : plainOrQuoted(s.options().getFirst());
+				default -> "\"\"";
+			};
+			case ListOf l -> "[]";
+			case ObjectOf o when depth < 3 -> {
+				List<String> parts = new ArrayList<>();
+				for (Property property : properties(o.type())) {
+					String value = defaultValue(shape(property.type()), depth + 1);
+					parts.add(property.name() + ": " + ((value == null) ? "null" : value));
+				}
+				yield parts.isEmpty() ? "{}" : "{ " + String.join(", ", parts) + " }";
+			}
+			default -> null;
+		};
+	}
+
+	/** enum 상수는 따옴표 없이. YAML이 참·거짓이나 null로 읽을 이름(YES, OFF, NULL 등)만 따옴표로 */
+	private static String plainOrQuoted(String constant) {
+		return constant.matches("(?i)y|yes|n|no|true|false|on|off|null|~") ? "\"" + constant + "\"" : constant;
+	}
+
 	// ── 묶기 ─────────────────────────────────────────────────────────────
 
 	private static final class Builder {
@@ -357,11 +441,42 @@ final class FixtureForm {
 
 		private final Map<String, String> draft;
 
+		private final java.util.function.Function<Class<?>, Map<String, String>> docs;
+
+		private final Map<Class<?>, Map<String, String>> docCache = new java.util.HashMap<>();
+
 		private int next;
 
-		Builder(Map<String, FixtureEditor.Field> fields, Map<String, String> draft) {
+		Builder(Map<String, FixtureEditor.Field> fields, Map<String, String> draft,
+				java.util.function.Function<Class<?>, Map<String, String>> docs) {
 			this.fields = fields;
 			this.draft = draft;
+			this.docs = docs;
+		}
+
+		/** 타입의 속성 설명. 타입을 모르면 빈 맵 */
+		private Map<String, String> docs(Class<?> type) {
+			if (type == null) {
+				return Map.of();
+			}
+			return this.docCache.computeIfAbsent(type, (t) -> {
+				try {
+					return this.docs.apply(t);
+				}
+				catch (RuntimeException ex) {
+					return Map.of();
+				}
+			});
+		}
+
+		private Prop prop(Class<?> owner, String name, String kind, Input input) {
+			String description = docs(owner).getOrDefault(name, "");
+			return new Prop(name, description.isEmpty() ? "" : SourceDocs.shortName(description), description, kind, input);
+		}
+
+		private Column column(Class<?> owner, String name, String kind) {
+			String description = docs(owner).getOrDefault(name, "");
+			return new Column(name, description.isEmpty() ? "" : SourceDocs.shortName(description), description, kind);
 		}
 
 		/** 모델 하나의 블록들 */
@@ -375,7 +490,7 @@ final class FixtureForm {
 				case Untyped u when value instanceof List<?> list -> grid(name, "", Object.class, list, out);
 				default -> {
 					Input input = input(name, fitted);
-					out.add(new Block("", "", false, List.of(new Prop(name, label(fitted, input), input)), List.of(), List.of()));
+					out.add(new Block(name, "", "", false, List.of(prop(null, name, label(fitted, input), input)), List.of(), List.of(), ""));
 				}
 			}
 			return out;
@@ -397,15 +512,15 @@ final class FixtureForm {
 			Set<String> known = new LinkedHashSet<>();
 			for (Property property : properties(type)) {
 				known.add(property.name());
-				member(path, title, property.name(), shape(property.type()), map, props, nested, out);
+				member(type, path, title, property.name(), shape(property.type()), map, props, nested, out);
 			}
 			for (Object key : map.keySet()) {
 				if (!known.contains(String.valueOf(key))) {
-					member(path, title, String.valueOf(key), UNTYPED, map, props, nested, out);
+					member(type, path, title, String.valueOf(key), UNTYPED, map, props, nested, out);
 				}
 			}
 			if (!props.isEmpty() || nested.isEmpty()) {
-				out.add(new Block(title, title.isEmpty() ? "" : simpleName(type), false, props, List.of(), List.of()));
+				out.add(new Block(path, title, title.isEmpty() ? "" : simpleName(type), false, props, List.of(), List.of(), ""));
 			}
 			nested.forEach(Runnable::run);
 		}
@@ -414,22 +529,22 @@ final class FixtureForm {
 			List<Prop> props = new ArrayList<>();
 			List<Runnable> nested = new ArrayList<>();
 			for (Object key : map.keySet()) {
-				member(path, title, String.valueOf(key), UNTYPED, map, props, nested, out);
+				member(null, path, title, String.valueOf(key), UNTYPED, map, props, nested, out);
 			}
 			if (!props.isEmpty() || nested.isEmpty()) {
-				out.add(new Block(title, "", false, props, List.of(), List.of()));
+				out.add(new Block(path, title, "", false, props, List.of(), List.of(), ""));
 			}
 			nested.forEach(Runnable::run);
 		}
 
 		/** 객체의 속성 하나: 스칼라면 표의 행, 객체나 목록이면 표 뒤에 따로 보일 블록 */
-		private void member(String path, String title, String name, Shape shape, Map<?, ?> map, List<Prop> props,
+		private void member(Class<?> owner, String path, String title, String name, Shape shape, Map<?, ?> map, List<Prop> props,
 				List<Runnable> nested, List<Block> out) {
 			String child = path + "/" + name;
 			String childTitle = title.isEmpty() ? name : title + "/" + name;
 			if (!map.containsKey(name)) {
 				Input absent = absent(child, shape);
-				props.add(new Prop(name, label(shape, absent), absent));
+				props.add(prop(owner, name, label(shape, absent), absent));
 				return;
 			}
 			Object value = map.get(name);
@@ -441,7 +556,7 @@ final class FixtureForm {
 				case Untyped u when value instanceof List<?> list -> nested.add(() -> grid(child, childTitle, Object.class, list, out));
 				default -> {
 					Input input = input(child, fitted);
-					props.add(new Prop(name, label(fitted, input), input));
+					props.add(prop(owner, name, label(fitted, input), input));
 				}
 			}
 		}
@@ -451,6 +566,8 @@ final class FixtureForm {
 			Shape shape = shape(element);
 			boolean maps = list.stream().anyMatch((item) -> item instanceof Map);
 			String type = (shape instanceof Untyped) ? "" : typeLabel(new ListOf(element));
+			String newItem = newItem(element);
+			Class<?> owner = (shape instanceof ObjectOf o) ? o.type() : null;
 			List<String> names = new ArrayList<>();
 			List<Shape> shapes = new ArrayList<>();
 			if (shape instanceof ObjectOf o) {
@@ -481,16 +598,16 @@ final class FixtureForm {
 				}
 				List<Column> columns = new ArrayList<>();
 				for (int c = 0; c < names.size(); c++) {
-					columns.add(new Column(names.get(c), columnLabel(shapes.get(c), rows, c)));
+					columns.add(column(owner, names.get(c), columnLabel(shapes.get(c), rows, c)));
 				}
-				out.add(new Block(title, type, true, List.of(), columns, rows));
+				out.add(new Block(path, title, type, true, List.of(), columns, rows, newItem));
 				return;
 			}
 			List<Row> rows = new ArrayList<>();
 			for (int i = 0; i < list.size(); i++) {
 				rows.add(new Row(i + 1, List.of(cell(path + "/" + i, shape, true, list.get(i)))));
 			}
-			out.add(new Block(title, type, true, List.of(), List.of(new Column("값", columnLabel(shape, rows, 0))), rows));
+			out.add(new Block(path, title, type, true, List.of(), List.of(new Column("값", "", "", columnLabel(shape, rows, 0))), rows, newItem));
 		}
 
 		/** 열의 종류. 타입을 모르면 값이 있는 첫 칸의 종류 */

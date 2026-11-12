@@ -448,7 +448,29 @@ final class FieldRecipe {
 			VariableTree anchor = components.get(names.indexOf(before));
 			source.insert(source.start(anchor), declaration + ", ");
 			source.use(this.field.importName());
+			docParam(source, record, before, declaration.substring(declaration.lastIndexOf(' ') + 1));
 			return components.size();
+		}
+
+		/**
+		 * record의 Javadoc에 {@code @param {before}} 줄이 있으면 그 앞에 새 구성 요소의 줄을 더한다. 설명은 필드의 라벨이다. 줄이 없으면(설명을 적지 않은
+		 * record) 더하지 않는다.
+		 */
+		private void docParam(Source source, ClassTree record, String before, String name) {
+			int declaration = source.lineStart(source.start(record));
+			int close = source.text.lastIndexOf("*/", declaration);
+			int open = source.text.lastIndexOf("/**", declaration);
+			if (close < 0 || open < 0 || open > close || !source.text.substring(close + 2, declaration).isBlank()) {
+				return;
+			}
+			java.util.regex.Matcher line = java.util.regex.Pattern.compile("(?m)^([ \\t]*\\*[ \\t]*)@param[ \\t]+" + before + "\\b")
+				.matcher(source.text)
+				.region(open, close);
+			if (line.find()) {
+				String label = (this.field.kind() == Field.Kind.LONGTEXT && name.endsWith("Lines")) ? this.field.label() + " (줄마다)"
+						: this.field.label();
+				source.insert(line.start(), line.group(1) + "@param " + name + " " + label + "\n");
+			}
 		}
 
 		private void records() {

@@ -160,4 +160,65 @@ class FixtureEditorTest {
 		assertThatThrownBy(() -> FixtureEditor.duplicate(SPEC, "default", "많은 것")).hasMessageContaining("영문");
 		assertThatThrownBy(() -> FixtureEditor.duplicate(SPEC, "no-such", "x")).hasMessageContaining("no-such");
 	}
+
+	@Test
+	void aRowIsAddedDuplicatedAndDeletedLineByLine() {
+		String added = FixtureEditor.addRow(SPEC, "default", "result/rows", "{ id: 0, title: \"\", pinned: false, updatedAt: \"\" }");
+		assertThat(added).isEqualTo(SPEC.replace("        - { id: 2, title: 주간 보고, pinned: false, updatedAt: \"2026-11-05 17:20\" }\n",
+				"        - { id: 2, title: 주간 보고, pinned: false, updatedAt: \"2026-11-05 17:20\" }\n        - { id: 0, title: \"\", pinned: false, updatedAt: \"\" }\n"));
+
+		String duplicated = FixtureEditor.duplicateRow(SPEC, "default", "result/rows", 0);
+		String first = "        - { id: 1, title: 회의록 정리, pinned: true, updatedAt: \"2026-11-06 10:00\" }\n";
+		assertThat(duplicated).isEqualTo(SPEC.replace(first, first + first));
+
+		String deleted = FixtureEditor.deleteRow(SPEC, "default", "result/rows", 0);
+		assertThat(deleted).isEqualTo(SPEC.replace(first, ""));
+		assertThat(FixtureEditor.fields(deleted, "default")).extracting(Field::path).contains("result/rows/0/title").doesNotContain("result/rows/1/title");
+		String last = FixtureEditor.deleteRow(SPEC, "default", "result/rows", 1);
+		assertThat(FixtureEditor.fields(last, "default")).extracting(Field::path).contains("result/rows/0/title").doesNotContain("result/rows/1/id");
+		assertThat(last).contains("# 조건 없음").contains("      page: { number: 1, size: 10, totalElements: 2 }");
+	}
+
+	@Test
+	void deletingTheLastRowLeavesAnEmptyListAndAddingToAnEmptyListMakesABlockList() {
+		String none = FixtureEditor.deleteRow(FixtureEditor.deleteRow(SPEC, "default", "result/rows", 0), "default", "result/rows", 0);
+		assertThat(none).contains("      rows: []\n      page: { number: 1, size: 10, totalElements: 2 }");
+		assertThat(FixtureEditor.values(none, "default").get("result")).isEqualTo(Map.of("rows", List.of(),
+				"page", Map.of("number", 1, "size", 10, "totalElements", 2)));
+
+		String first = FixtureEditor.addRow(SPEC, "empty", "result/rows", "{ id: 0, title: \"\" }");
+		assertThat(first).contains("    result:\n      rows:\n        - { id: 0, title: \"\" }\n      page: { number: 1, size: 10, totalElements: 0 }");
+		assertThat(FixtureEditor.fields(first, "empty")).extracting(Field::path).contains("result/rows/0/id");
+		assertThat(FixtureEditor.states(first)).containsExactly("default", "empty");
+	}
+
+	@Test
+	void flowListsAreEditedInsideTheirBrackets() {
+		String spec = """
+				screen: memo-detail
+				template: memo/api/detail
+				model:
+				  memo: it.Detail
+				states:
+				  default:
+				    memo: { id: 1, bodyLines: [첫 줄, 둘째 줄], tags: [] }   # 메모
+				  empty:
+				    memo: { id: 2, bodyLines: [], tags: [] }
+				""";
+		assertThat(FixtureEditor.addRow(spec, "default", "memo/bodyLines", "\"\"")).contains("bodyLines: [첫 줄, 둘째 줄, \"\"], tags: [] }   # 메모");
+		assertThat(FixtureEditor.addRow(spec, "default", "memo/tags", "\"\"")).as("흐름 맵 안의 빈 목록은 흐름 목록으로")
+			.contains("tags: [\"\"] }   # 메모");
+		assertThat(FixtureEditor.duplicateRow(spec, "default", "memo/bodyLines", 0)).contains("bodyLines: [첫 줄, 첫 줄, 둘째 줄]");
+		assertThat(FixtureEditor.deleteRow(spec, "default", "memo/bodyLines", 0)).contains("bodyLines: [둘째 줄]");
+		assertThat(FixtureEditor.deleteRow(spec, "default", "memo/bodyLines", 1)).contains("bodyLines: [첫 줄]");
+		assertThat(FixtureEditor.deleteRow(FixtureEditor.deleteRow(spec, "default", "memo/bodyLines", 1), "default", "memo/bodyLines", 0))
+			.contains("bodyLines: [], tags: [] }   # 메모");
+	}
+
+	@Test
+	void rowsThatDoNotExistAreRefused() {
+		assertThatThrownBy(() -> FixtureEditor.deleteRow(SPEC, "default", "result/rows", 5)).hasMessageContaining("6행이 없습니다");
+		assertThatThrownBy(() -> FixtureEditor.addRow(SPEC, "default", "result/page", "{}")).hasMessageContaining("목록이 아닙니다");
+		assertThatThrownBy(() -> FixtureEditor.duplicateRow(SPEC, "default", "result/none", 0)).hasMessageContaining("result/none");
+	}
 }

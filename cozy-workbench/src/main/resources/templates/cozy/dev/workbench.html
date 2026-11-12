@@ -214,6 +214,8 @@
               <input type="hidden" name="state" th:value="${state}">
               <input type="hidden" name="hash" th:value="${fixtureHash}">
               <input type="hidden" name="w" th:value="${w}">
+              <!--/* 칸에서 Enter를 누르면 첫 제출 버튼이 눌린다: 행 버튼이 아니라 저장이 되게 맨 앞에 둔다 */-->
+              <button type="submit" class="d-none" tabindex="-1" aria-hidden="true">저장</button>
               <div class="card-body pb-2">
                 <p class="mb-3">
                   <code class="cozy-workbench-command" th:text="${fixtureFile}">src/main/resources/specs/memo-list.yml</code>

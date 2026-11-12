@@ -3,10 +3,13 @@ package io.salvia95.cozy.reference.memo.api.dto;
 /** 목록 필터 (GET 쿼리 파라미터). */
 public class MemoFilter {
 
+	/** 검색어 */
 	private String q;
 
+	/** 고정한 메모만 */
 	private boolean pinned;
 
+	/** 페이지 */
 	private Integer page;
 
 	public String getQ() {

@@ -6,13 +6,16 @@ import jakarta.validation.constraints.Size;
 /** 메모 등록·수정 입력. 화면 입력은 getter/setter가 있는 폼 클래스로 받는다. */
 public class MemoForm {
 
+	/** 제목 */
 	@NotBlank(message = "제목을 입력하세요")
 	@Size(max = 100, message = "제목은 100자까지 쓸 수 있습니다")
 	private String title;
 
+	/** 본문 */
 	@Size(max = 5000, message = "본문은 5000자까지 쓸 수 있습니다")
 	private String body;
 
+	/** 고정 */
 	private boolean pinned;
 
 	public String getTitle() {

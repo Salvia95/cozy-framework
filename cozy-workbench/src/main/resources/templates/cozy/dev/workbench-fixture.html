@@ -2,6 +2,8 @@
 <!--/*
   샘플 데이터: 상태의 모델마다 구획 하나. 객체는 속성 표(왼쪽 열이 속성 이름), 객체의 목록은 그리드(열이 속성)다.
   입력은 FixtureForm.Input의 control을 따른다. 체크박스는 숨은 false 뒤에 놓여, 끄면 false가, 켜면 true가 마지막 값으로 간다.
+  속성 이름 앞의 한글 이름은 DTO의 Javadoc에서 온다(SourceDocs). 없으면 식별자만 보인다.
+  행 버튼(추가·복제·삭제)은 저장과 같은 폼의 버튼이다(name="row"). 적던 값을 함께 보내 먼저 반영하고 행을 고친다.
 */-->
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
@@ -16,7 +18,7 @@
     <p class="text-secondary small mb-2" th:if="${!section.note.isEmpty()}" th:text="${section.note}">모델 타입을 찾을 수 없습니다.</p>
 
     <th:block th:each="block : ${section.blocks}">
-      <h5 class="cozy-workbench-fixture-subtitle" th:if="${!block.title.isEmpty()}">
+      <h5 class="cozy-workbench-fixture-subtitle" th:if="${!block.title.isEmpty()}" th:id="${block.grid} ? ${block.anchor}">
         <code th:text="${block.title}">page</code>
         <code class="cozy-workbench-id" th:if="${!block.type.isEmpty()}" th:text="${block.type}">CozyPage</code>
         <span class="cozy-workbench-id ms-auto" th:if="${block.grid}" th:text="|${block.rows.size()}행|">2행</span>
@@ -27,41 +29,69 @@
         <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
         <tbody>
           <tr th:each="prop : ${block.props}">
-            <th scope="row">
-              <label class="cozy-workbench-fixture-name" th:for="${prop.input.id}" th:if="${prop.input.editable}"><code th:text="${prop.name}">q</code></label>
-              <code class="cozy-workbench-fixture-name" th:unless="${prop.input.editable}" th:text="${prop.name}">q</code>
-              <span class="cozy-workbench-fixture-kind" th:if="${!prop.label.isEmpty()}" th:text="${prop.label}">텍스트</span>
+            <th scope="row" th:title="${prop.description.isEmpty() or prop.description == prop.title} ? null : ${prop.description}">
+              <label class="cozy-workbench-fixture-name" th:for="${prop.input.id}" th:if="${prop.input.editable}">
+                <span th:if="${!prop.title.isEmpty()}" th:text="${prop.title}">검색어</span>
+                <code th:classappend="${!prop.title.isEmpty()} ? 'cozy-workbench-id'" th:text="${prop.name}">q</code>
+              </label>
+              <span class="cozy-workbench-fixture-name" th:unless="${prop.input.editable}">
+                <span th:if="${!prop.title.isEmpty()}" th:text="${prop.title}">검색어</span>
+                <code th:classappend="${!prop.title.isEmpty()} ? 'cozy-workbench-id'" th:text="${prop.name}">q</code>
+              </span>
+              <span class="cozy-workbench-fixture-kind" th:if="${!prop.kind.isEmpty()}" th:text="${prop.kind}">텍스트</span>
             </th>
-            <td><th:block th:replace="~{:: fixtureInput(${prop.input}, ${prop.name})}"></th:block></td>
+            <td><th:block th:replace="~{:: fixtureInput(${prop.input}, ${prop.spoken})}"></th:block></td>
           </tr>
           <tr th:if="${block.props.isEmpty()}"><td colspan="2" class="text-secondary">값이 없습니다.</td></tr>
         </tbody>
       </table>
 
       <!--/* 그리드 */-->
-      <div class="table-responsive cozy-workbench-fixture-grid-wrap" th:if="${block.grid}">
+      <div class="table-responsive cozy-workbench-fixture-grid-wrap" th:if="${block.grid}" th:id="${block.title.isEmpty()} ? ${block.anchor}">
         <table class="table table-sm table-bordered cozy-workbench-fixture-grid">
           <thead>
             <tr>
               <th scope="col" class="cozy-workbench-fixture-number">행</th>
-              <th scope="col" th:each="column : ${block.columns}">
-                <code th:text="${column.name}">title</code>
-                <span class="cozy-workbench-fixture-kind" th:if="${!column.label.isEmpty()}" th:text="${column.label}">텍스트</span>
+              <th scope="col" th:each="column : ${block.columns}"
+                  th:title="${column.description.isEmpty() or column.description == column.title} ? null : ${column.description}">
+                <span class="d-block" th:if="${!column.title.isEmpty()}" th:text="${column.title}">제목</span>
+                <code th:classappend="${!column.title.isEmpty()} ? 'cozy-workbench-id'" th:text="${column.name}">title</code>
+                <span class="cozy-workbench-fixture-kind" th:if="${!column.kind.isEmpty()}" th:text="${column.kind}">텍스트</span>
               </th>
+              <th scope="col" class="cozy-workbench-fixture-ops"><span class="visually-hidden">행 작업</span></th>
             </tr>
           </thead>
           <tbody>
             <tr th:each="row : ${block.rows}">
               <th scope="row" class="cozy-workbench-fixture-number" th:text="${row.number}">1</th>
               <td th:each="cell, stat : ${row.cells}" th:classappend="${cell.control == 'checkbox'} ? 'text-center'">
-                <th:block th:replace="~{:: fixtureInput(${cell}, |${block.title.isEmpty() ? section.name : block.title} ${row.number}행 ${block.columns[stat.index].name}|)}"></th:block>
+                <th:block th:replace="~{:: fixtureInput(${cell}, |${block.title.isEmpty() ? section.name : block.title} ${row.number}행 ${block.columns[stat.index].spoken}|)}"></th:block>
+              </td>
+              <td class="cozy-workbench-fixture-ops">
+                <div class="btn-list flex-nowrap gap-1">
+                  <button type="submit" class="btn btn-sm btn-ghost-secondary btn-icon" name="row" th:value="|duplicate:${block.path}/${row.number - 1}|"
+                          th:aria-label="|${block.title.isEmpty() ? section.name : block.title} ${row.number}행 복제|" title="행 복제">
+                    <svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>
+                  </button>
+                  <button type="submit" class="btn btn-sm btn-ghost-danger btn-icon" name="row" th:value="|delete:${block.path}/${row.number - 1}|"
+                          th:aria-label="|${block.title.isEmpty() ? section.name : block.title} ${row.number}행 삭제|" title="행 삭제">
+                    <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr th:if="${block.rows.isEmpty()}">
-              <td th:colspan="${block.columns.size() + 1}" class="text-secondary">행이 없습니다.</td>
+              <td th:colspan="${block.columns.size() + 2}" class="text-secondary">행이 없습니다.</td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div class="mt-2" th:if="${block.grid}">
+        <button type="submit" class="btn btn-sm" name="row" th:value="|add:${block.path}|" th:disabled="${!block.addable}"
+                th:aria-label="|${block.title.isEmpty() ? section.name : block.title}에 행 추가|">
+          <svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>
+          행 추가
+        </button>
       </div>
     </th:block>
   </section>

@@ -23,9 +23,11 @@ import org.yaml.snakeyaml.nodes.Tag;
  * 글자 그대로 남는다.
  *
  * <ul>
- * <li>고치는 것은 이미 있는 값(문자열, 숫자, 참·거짓)뿐이다. 키나 목록의 항목을 더하거나 빼지 않는다.</li>
+ * <li>값은 이미 있는 것(문자열, 숫자, 참·거짓)만 고친다. 키는 더하거나 빼지 않는다.</li>
  * <li>여러 줄 블록({@code |}, {@code >})과 비어 있는 값은 고치지 않는다.</li>
  * <li>상태는 통째로 복제할 수 있다: 그 상태의 글을 새 이름으로 바로 아래에 넣는다.</li>
+ * <li>목록의 행은 더하고, 복제하고, 지울 수 있다({@link #addRow}, {@link #duplicateRow}, {@link #deleteRow}). 블록 목록({@code - …})은 줄
+ * 단위로, 흐름 목록({@code [a, b]})은 괄호 안에서 고친다. 빈 흐름 목록에 첫 행을 더하면 블록 목록이 된다.</li>
  * </ul>
  */
 final class FixtureEditor {
@@ -229,6 +231,157 @@ final class FixtureEditor {
 		String copy = block.substring(0, keyStart - blockStart) + name + block.substring(keyEnd - blockStart);
 		String head = yaml.substring(0, blockEnd);
 		return (head.endsWith("\n") ? head : head + "\n") + copy + yaml.substring(blockEnd);
+	}
+
+	// ── 목록의 행 ──────────────────────────────────────────────────────────
+
+	/** 상태 안의 목록과, 그 목록이 값인 맵의 키 (없으면 {@code null}) */
+	private record Found(SequenceNode sequence, Node key, Node parent) {
+	}
+
+	private static Found sequence(String yaml, String state, String path) {
+		Node node = state(statesNode(yaml), state).getValueNode();
+		Node key = null;
+		Node parent = null;
+		for (String part : path.split("/")) {
+			parent = node;
+			key = null;
+			if (node instanceof MappingNode map) {
+				NodeTuple tuple = map.getValue()
+					.stream()
+					.filter((t) -> key(t).equals(part))
+					.findFirst()
+					.orElseThrow(() -> new IllegalArgumentException("상태 '" + state + "'에 " + path + "가 없습니다."));
+				key = tuple.getKeyNode();
+				node = tuple.getValueNode();
+			}
+			else if (node instanceof SequenceNode list && part.matches("\\d+") && Integer.parseInt(part) < list.getValue().size()) {
+				node = list.getValue().get(Integer.parseInt(part));
+			}
+			else {
+				throw new IllegalArgumentException("상태 '" + state + "'에 " + path + "가 없습니다.");
+			}
+		}
+		if (!(node instanceof SequenceNode sequence)) {
+			throw new IllegalArgumentException(path + "는 목록이 아닙니다.");
+		}
+		return new Found(sequence, key, parent);
+	}
+
+	private static int offset(String yaml, org.yaml.snakeyaml.error.Mark mark) {
+		return yaml.offsetByCodePoints(0, mark.getIndex());
+	}
+
+	private static boolean flow(SequenceNode sequence) {
+		return sequence.getFlowStyle() == DumperOptions.FlowStyle.FLOW;
+	}
+
+	/** 블록 목록의 행 {@code index}가 차지하는 줄: 시작({@code -}가 있는 줄의 처음)과 끝(다음 행의 줄 처음이나 마지막 행 끝의 줄바꿈 뒤) */
+	private static int[] blockRow(String yaml, SequenceNode sequence, int index) {
+		List<Node> items = sequence.getValue();
+		int itemStart = offset(yaml, items.get(index).getStartMark());
+		int start = lineStart(yaml, itemStart);
+		if (!yaml.substring(start, itemStart).matches("[ \\t]*-[ \\t]+")) {
+			throw new IllegalArgumentException("이 목록은 한 줄에 한 행이 아니어서 여기서 고칠 수 없습니다. 화면 명세 파일에서 고치세요.");
+		}
+		int end;
+		if (index + 1 < items.size()) {
+			end = lineStart(yaml, offset(yaml, items.get(index + 1).getStartMark()));
+		}
+		else {
+			int last = offset(yaml, items.get(index).getEndMark()) - 1;
+			while (last > itemStart && Character.isWhitespace(yaml.charAt(last))) {
+				last--;
+			}
+			int newline = yaml.indexOf('\n', last);
+			end = (newline < 0) ? yaml.length() : newline + 1;
+		}
+		return new int[] { start, end };
+	}
+
+	/**
+	 * 목록 끝에 행을 더한 YAML.
+	 *
+	 * @param path 목록의 자리 ({@code result/rows})
+	 * @param item 새 행의 YAML (한 줄의 흐름 표기: {@code { id: 0, title: "" }})
+	 */
+	static String addRow(String yaml, String state, String path, String item) {
+		Found found = sequence(yaml, state, path);
+		SequenceNode sequence = found.sequence();
+		List<Node> items = sequence.getValue();
+		StringBuilder result = new StringBuilder(yaml);
+		if (!flow(sequence)) {
+			int[] last = blockRow(yaml, sequence, items.size() - 1);
+			String dash = yaml.substring(last[0], offset(yaml, items.getLast().getStartMark()));
+			String head = yaml.substring(0, last[1]);
+			return (head.endsWith("\n") ? head : head + "\n") + dash + item + "\n" + yaml.substring(last[1]);
+		}
+		int open = offset(yaml, sequence.getStartMark());
+		int close = offset(yaml, sequence.getEndMark());
+		if (!items.isEmpty()) {
+			return result.insert(offset(yaml, items.getLast().getEndMark()), ", " + item).toString();
+		}
+		boolean blockParent = found.key() != null && found.parent() instanceof MappingNode map
+				&& map.getFlowStyle() != DumperOptions.FlowStyle.FLOW;
+		if (!blockParent) {
+			return result.replace(open, close, "[" + item + "]").toString();
+		}
+		// 블록 맵의 값인 빈 목록은 블록 목록이 된다: rows: [] → rows:\n  - item
+		int keyStart = offset(yaml, found.key().getStartMark());
+		int keyEnd = offset(yaml, found.key().getEndMark());
+		int colon = yaml.indexOf(':', keyEnd);
+		String indent = " ".repeat(keyStart - lineStart(yaml, keyStart) + 2);
+		return result.replace(colon + 1, close, "\n" + indent + "- " + item).toString();
+	}
+
+	/** 행 {@code index}를 바로 아래에 복제한 YAML. 행의 글을 그대로 쓴다 */
+	static String duplicateRow(String yaml, String state, String path, int index) {
+		SequenceNode sequence = sequence(yaml, state, path).sequence();
+		List<Node> items = rowCheck(sequence, path, index);
+		if (!flow(sequence)) {
+			int[] row = blockRow(yaml, sequence, index);
+			String text = yaml.substring(row[0], row[1]);
+			return yaml.substring(0, row[1]) + (text.endsWith("\n") ? "" : "\n") + text + (text.endsWith("\n") ? "" : "\n")
+					+ yaml.substring(row[1]);
+		}
+		int start = offset(yaml, items.get(index).getStartMark());
+		int end = offset(yaml, items.get(index).getEndMark());
+		return new StringBuilder(yaml).insert(end, ", " + yaml.substring(start, end)).toString();
+	}
+
+	/** 행 {@code index}를 지운 YAML. 마지막 행을 지우면 빈 목록({@code []})이 된다 */
+	static String deleteRow(String yaml, String state, String path, int index) {
+		Found found = sequence(yaml, state, path);
+		SequenceNode sequence = found.sequence();
+		List<Node> items = rowCheck(sequence, path, index);
+		StringBuilder result = new StringBuilder(yaml);
+		if (!flow(sequence)) {
+			int[] row = blockRow(yaml, sequence, index);
+			if (items.size() > 1) {
+				return result.delete(row[0], row[1]).toString();
+			}
+			if (found.key() == null) {
+				throw new IllegalArgumentException("목록 안의 목록은 마지막 행을 여기서 지울 수 없습니다. 화면 명세 파일에서 고치세요.");
+			}
+			int colon = yaml.indexOf(':', offset(yaml, found.key().getEndMark()));
+			return result.replace(colon + 1, row[1], " []\n").toString();
+		}
+		if (items.size() == 1) {
+			return result.replace(offset(yaml, sequence.getStartMark()), offset(yaml, sequence.getEndMark()), "[]").toString();
+		}
+		if (index + 1 < items.size()) {
+			return result.delete(offset(yaml, items.get(index).getStartMark()), offset(yaml, items.get(index + 1).getStartMark()))
+				.toString();
+		}
+		return result.delete(offset(yaml, items.get(index - 1).getEndMark()), offset(yaml, items.get(index).getEndMark())).toString();
+	}
+
+	private static List<Node> rowCheck(SequenceNode sequence, String path, int index) {
+		List<Node> items = sequence.getValue();
+		if (index < 0 || index >= items.size()) {
+			throw new IllegalArgumentException(path + "에 " + (index + 1) + "행이 없습니다.");
+		}
+		return items;
 	}
 
 	private static int lineStart(String text, int offset) {

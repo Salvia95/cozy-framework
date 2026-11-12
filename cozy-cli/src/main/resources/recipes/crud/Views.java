@@ -12,7 +12,10 @@ public final class {{E}}Views {
 	private {{E}}Views() {
 	}
 
-	/** 목록 한 행 */
+	/**
+	 * 목록 한 행
+	 *
+{{rowDocs}}	 */
 	public record Row({{rowComponents}}) {
 
 		public static Row of({{E}}Item item) {
@@ -20,11 +23,19 @@ public final class {{E}}Views {
 		}
 	}
 
-	/** 목록 결과 (fragment "result") */
+	/**
+	 * 목록 결과 (fragment "result")
+	 *
+	 * @param rows 행
+	 * @param page 페이지
+	 */
 	public record ListResult(List<Row> rows, CozyPage page) {
 	}
 
-	/** 상세 화면 */
+	/**
+	 * 상세 화면
+	 *
+{{detailDocs}}	 */
 	public record Detail({{detailComponents}}) {
 
 		public static Detail of({{E}}Item item) {

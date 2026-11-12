@@ -18,7 +18,14 @@ public final class MemoViews {
 	private MemoViews() {
 	}
 
-	/** 목록 한 행 */
+	/**
+	 * 목록 한 행
+	 *
+	 * @param id 번호
+	 * @param title 제목
+	 * @param pinned 고정
+	 * @param updatedAt 수정한 시각
+	 */
 	public record Row(long id, String title, boolean pinned, String updatedAt) {
 
 		public static Row of(MemoItem memo) {
@@ -26,11 +33,25 @@ public final class MemoViews {
 		}
 	}
 
-	/** 목록 결과 (fragment "result") */
+	/**
+	 * 목록 결과 (fragment "result")
+	 *
+	 * @param rows 행
+	 * @param page 페이지
+	 */
 	public record ListResult(List<Row> rows, CozyPage page) {
 	}
 
-	/** 상세 화면 */
+	/**
+	 * 상세 화면
+	 *
+	 * @param id 번호
+	 * @param title 제목
+	 * @param bodyLines 본문 (줄마다)
+	 * @param pinned 고정
+	 * @param createdAt 만든 시각
+	 * @param updatedAt 수정한 시각
+	 */
 	public record Detail(long id, String title, List<String> bodyLines, boolean pinned, String createdAt,
 			String updatedAt) {
 

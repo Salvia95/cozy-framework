@@ -18,7 +18,7 @@
 
 | 구성 | 버전 | 관리 |
 | --- | --- | --- |
-| JDK | 25.0.3 (Temurin) | 빌드 PC |
+| JDK | 25.0.5 (Temurin) | 빌드 PC |
 | Maven | 3.10.0 (4.0.0은 RC) | 빌드 PC |
 | Spring Boot | 4.1.2 (4.2.0은 RC2) | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
@@ -47,7 +47,7 @@
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
 | Tabler Icons (`@tabler/icons-sprite`) | 3.51.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
-| agent-browser | 0.41.2 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
+| agent-browser | 0.42.0 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
 
 ## 근거
 
@@ -64,3 +64,4 @@
 - 2026-11-08(M8): 시작할 때 다시 확인했다. license-maven-plugin이 2.8.0 GA로 나와 올렸다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 다른 플러그인, Tabler 1.7.3, htmx 2.0.11, Tabler Icons 3.50.0, Pretendard 1.3.9, agent-browser 0.41.2).
 - 2026-11-10(릴리스 1.1.0): 다시 확인했다. exec-maven-plugin 3.7.0과 license-maven-plugin 2.9.0을 올렸다. Tabler 1.7.4와 Tabler Icons 3.51.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다.
 - 2026-11-10(워크벤치 첫 마일스톤): Tabler 1.7.4와 Tabler Icons 3.51.0(외곽선 5,233개)으로 올리고 화면을 확인했다.
+- 2026-11-12(M27 보완): 다시 확인했다. JDK 25.0.5(Temurin)가 나와 빌드 PC를 올리고 전체 빌드를 통과시켰다. agent-browser를 0.42.0으로 올렸다(Chrome 157). 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 플러그인, Tabler 1.7.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9).

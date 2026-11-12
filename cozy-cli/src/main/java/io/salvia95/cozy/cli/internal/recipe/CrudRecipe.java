@@ -232,6 +232,11 @@ final class CrudRecipe {
 			t.put("rowArgs", "item.id(), " + join(rowFields, (f) -> "item." + f.name() + "()", ", ") + ", format(item.updatedAt())");
 			t.put("detailComponents", "long id, " + join(fields, (f) -> f.kind() == Field.Kind.LONGTEXT ? "List<String> " + f.name() + "Lines"
 					: f.javaType() + " " + f.name(), ", ") + ", String createdAt, String updatedAt");
+			t.put("rowDocs", "\t * @param id 번호\n" + join(rowFields, (f) -> "\t * @param " + f.name() + " " + f.label() + "\n", "")
+					+ "\t * @param updatedAt 수정한 시각\n");
+			t.put("detailDocs", "\t * @param id 번호\n" + join(fields, (f) -> f.kind() == Field.Kind.LONGTEXT
+					? "\t * @param " + f.name() + "Lines " + f.label() + " (줄마다)\n" : "\t * @param " + f.name() + " " + f.label() + "\n", "")
+					+ "\t * @param createdAt 만든 시각\n\t * @param updatedAt 수정한 시각\n");
 			t.put("detailArgs", "item.id(), " + join(fields, (f) -> f.kind() == Field.Kind.LONGTEXT ? "item." + f.name() + "().lines().toList()"
 					: "item." + f.name() + "()", ", ") + ", format(item.createdAt()), format(item.updatedAt())");
 			t.put("formOf", join(fields, (f) -> "\t\tform.set" + f.pascal() + "(item." + f.name() + "());\n", ""));
@@ -369,7 +374,7 @@ final class CrudRecipe {
 
 		/** 폼의 속성 하나: 검증 애너테이션과 필드 선언. 빈 줄로 끝난다 */
 		static String formDeclaration(Field f) {
-			StringBuilder decl = new StringBuilder();
+			StringBuilder decl = new StringBuilder("\t/** " + f.label() + " */\n");
 			switch (f.kind()) {
 				case TEXT, LONGTEXT -> {
 					if (f.required()) {
