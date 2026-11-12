@@ -13,9 +13,12 @@
    ```bash
    distribution/release/set-version.sh 1.0.0
    git diff                      # POM, -DarchetypeVersion= 예시, 번들 README의 zip 이름
-   mvn verify
+   mvn -o -Pe2e install          # 워크플로와 같은 검증. 결과를 보고 나서 커밋한다
    git commit -am "릴리스 1.0.0"
    ```
+
+   - `mvn verify`로는 부족하다. 아키타입 통합 테스트는 생성한 앱을 따로 빌드하면서 새 버전의 cozy 모듈(`cozy-workbench` 등)을 로컬 저장소에서 찾는데, `verify`는 설치하지 않아 오프라인에서 실패한다. `install`은 모듈을 차례로 설치하므로 통과한다.
+   - 검증이 통과한 것을 확인한 뒤에 커밋하고 태그를 붙인다. 명령을 `&&`로 이어 결과를 보기 전에 태그를 push하지 않는다.
 
 4. **태그 push**:
 
