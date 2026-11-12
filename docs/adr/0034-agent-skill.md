@@ -60,3 +60,10 @@ nklcbdt 레포의 작성 규칙(`.claude/rules/common/claude-authoring-conventio
 - 작은 모델이 플레이북을 찾아 읽는지는 사용자의 내부 평가(ADR-0032 §8)로 확인한다.
 - 영어 지시문과 한국어 메시지·출력이 섞인다. 메시지는 코드 안에만 두어 경계를 분명히 했지만, 작은 모델이 한국어 메시지를 정확히 찾는지는 평가로 확인한다.
 - 다른 에이전트 도구가 `.agents/skills/`를 읽지 않으면 스킬이 보이지 않는다. 그때도 `AGENTS.md`가 스킬 경로를 알려 준다.
+
+## 보완 (2026-11-12, 사용자 결정: 화면 디자인 기준의 앱 쪽 판은 cozy-helper의 주제 플레이북으로)
+
+- 레포의 화면 작업 스킬(`.claude/skills/ui-design-criteria`)과 같은 기준을 생성 앱의 에이전트도 쓰게 한다. 스킬은 하나(cozy-helper)로 두는 이 결정을 지키고, 주제 플레이북을 더한다: `screens`(마크업, 색, 아이콘, 규칙 위반), `screen-layout`(화면 유형, 폭, 버튼 자리), `screen-states`(상태와 피드백), `inputs`(입력 컴포넌트 고르기), `wording`(문구와 용어).
+- SKILL.md의 표는 플레이북마다 어떤 일을 할 때 읽는지 먼저 쓰고 링크한다. 주제 플레이북도 명령 플레이북과 같은 절 순서와 작성 규칙(`AgentDocsTest`)을 따른다.
+- `cozy sync agents`, 아키타입, 오프라인 번들은 주제 목록(`Recipes.TOPIC_PLAYBOOKS`)을 따라 새 플레이북을 함께 놓는다. 구조는 바뀌지 않는다.
+

@@ -48,4 +48,5 @@ Rules for editing generated templates, filling `fragment-body`, and fixing R-rul
 
 ## Next
 
+- Read [screen-layout](../screen-layout/PLAYBOOK.md), [screen-states](../screen-states/PLAYBOOK.md), [inputs](../inputs/PLAYBOOK.md), or [wording](../wording/PLAYBOOK.md) for the design rules of that topic.
 - Run `cozy check`, then `mvn -o verify`, which also renders every spec state.

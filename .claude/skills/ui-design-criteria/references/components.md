@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | 기본 레이아웃 | `cozy/layout/base :: appShell(제목, ~{::main})` | 모든 앱 화면 |
 | 빈 레이아웃 | `cozy/layout/base :: base(제목, ~{::main})` | 내비가 필요 없는 문서(오류 화면, 카탈로그) |
+| 기본 레이아웃 본문 | `shellBody(본문)` | `appShell`의 내부 구성. 화면에서 직접 쓰지 않는다 |
 
 ## 패턴
 

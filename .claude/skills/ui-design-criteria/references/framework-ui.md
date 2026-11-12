@@ -66,7 +66,7 @@ cozy-ui의 레이아웃·패턴·컴포넌트를 새로 만들거나 시그니�
 | `samples/violations/rules/` | 규칙별 위반 픽스처 |
 | `cozy-ui/src/main/resources/templates/cozy/dev/catalog.html` | 카탈로그 전용 샘플 조각 |
 | `docs/conventions/ui.md`의 fragment 목록 | 공개 API 문서 |
-| `docs/agents/skills/cozy-helper/references/screens/PLAYBOOK.md` | 생성 앱 에이전트의 화면 규칙(영어, lean) |
+| `docs/agents/skills/cozy-helper/references/` 의 `screens`, `screen-layout`, `screen-states`, `inputs`, `wording` 플레이북 | 생성 앱 에이전트의 화면 기준(영어, lean). 이 스킬의 앱 쪽 판이다 |
 | 이 스킬의 `components.md` | 컴포넌트 목록 |
 
 - 찾을 때는 fragment 이름과 템플릿 경로로 저장소 전체를 검색한다(`target/` 제외).

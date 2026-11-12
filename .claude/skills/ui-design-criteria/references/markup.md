@@ -96,4 +96,4 @@
 ## 생성 앱에서
 
 - 생성 앱의 화면은 `cozy add crud`, `cozy add screen`, `cozy add field`가 만들고 고친다. 구조 파일을 손으로 만들거나 옮기지 않는다. 남은 `cozy:slot` 칸만 채운다.
-- 생성 앱의 에이전트 문서(`docs/agents/`)의 `screens` 플레이북이 같은 규칙을 앱 쪽 말로 담고 있다. 이 기준과 다르면 둘 다 고친다.
+- 생성 앱의 에이전트 문서(`docs/agents/skills/cozy-helper/`)의 주제 플레이북(`screens`, `screen-layout`, `screen-states`, `inputs`, `wording`)이 같은 기준을 앱 쪽 말(영어)로 담고 있다. 이 기준을 바꾸면 그 플레이북도 함께 고친다.

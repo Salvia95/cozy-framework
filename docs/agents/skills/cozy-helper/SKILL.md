@@ -48,7 +48,11 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Create or alter a table | [add-migration](references/add-migration/PLAYBOOK.md) |
 | Turn on events in an app without them | [enable-events](references/enable-events/PLAYBOOK.md) |
 | Add the dev-only workbench for browsing screens | [enable-workbench](references/enable-workbench/PLAYBOOK.md) |
-| Edit screen markup and wording | [screens](references/screens/PLAYBOOK.md) |
+| Edit screen markup, colors, and icons, or fix an `[R…]` violation | [screens](references/screens/PLAYBOOK.md) |
+| Pick a screen's pattern and width, or place its buttons | [screen-layout](references/screen-layout/PLAYBOOK.md) |
+| Design empty, no-result, invalid, and result states, or choose a flash, alert, toast, or dialog | [screen-states](references/screen-states/PLAYBOOK.md) |
+| Choose the input for a typed value, a value from a fixed set, or several rows of the same shape | [inputs](references/inputs/PLAYBOOK.md) |
+| Write button labels, titles, messages, and terms shown on screens | [wording](references/wording/PLAYBOOK.md) |
 | Update `AGENTS.md` and this skill after a Cozy upgrade | [sync-agents](references/sync-agents/PLAYBOOK.md) |
 
 ## Reading results

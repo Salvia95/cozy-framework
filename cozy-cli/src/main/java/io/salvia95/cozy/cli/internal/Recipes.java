@@ -273,7 +273,7 @@ public final class Recipes {
 			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]");
 
 	/** 명령이 아닌 주제의 플레이북 */
-	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens");
+	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens", "screen-layout", "screen-states", "inputs", "wording");
 
 	public static final List<Recipe> ALL = List.of(
 			new Recipe("module", 1, "cozy add module <모듈> [--label 라벨]", "빈 모듈(package-info.java, allowedDependencies = {})",
