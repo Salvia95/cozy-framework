@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -309,6 +310,84 @@ class CozyCliTest {
 				.contains("\"choices\": [")
 				.contains("\"overview\"")
 				.contains("\"repeatable\": true");
+		}
+
+		/**
+		 * 값의 구성(parts)은 폼이 칸마다 받아 다시 잇는다. 구성 요소의 예시를 규칙대로 이으면 인자의 예시가 되어야 한다: {@code :}로 잇고, 플래그는
+		 * 앞 요소에 붙이고, 비어 있는 끝의 선택 요소는 뺀다.
+		 */
+		@Test
+		void partsJoinBackToTheExampleAndSourcesAreKnown() {
+			for (Recipes.Recipe recipe : Recipes.ALL) {
+				for (Recipes.Param param : recipe.params()) {
+					String as = recipe.name() + " " + param.name();
+					if (param.repeatable()) {
+						assertThat(param.parts()).as(as + ": 여러 번 쓰는 옵션은 구성이 있다").isNotEmpty();
+					}
+					if (!param.parts().isEmpty()) {
+						StringBuilder joined = new StringBuilder();
+						String pending = "";
+						boolean optionalSeen = false;
+						for (int i = 0; i < param.parts().size(); i++) {
+							Recipes.Part part = param.parts().get(i);
+							if (part.flag() != null) {
+								assertThat(i).as(as + " " + part.name() + ": 플래그는 앞 요소가 있다").isPositive();
+								assertThat(param.parts().get(i - 1).flag()).as(as + ": 플래그 앞은 값이다").isNull();
+								assertThat(part.example()).as(as + " " + part.name()).isIn("", part.flag());
+								joined.append(part.example());
+								continue;
+							}
+							if (optionalSeen) {
+								assertThat(part.required()).as(as + " " + part.name() + ": 선택 요소 뒤에 필수 요소가 오지 않는다").isFalse();
+							}
+							optionalSeen |= !part.required();
+							pending += (i == 0 ? "" : ":") + part.example();
+							if (!part.example().isEmpty()) {
+								joined.append(pending);
+								pending = "";
+							}
+							assertThat(part.label()).as(as + " " + part.name()).isNotBlank();
+							checkChoices(as + " " + part.name(), part.choices(), part.choiceLabels(), part.from());
+						}
+						assertThat(joined.toString()).as(as + ": 구성 요소의 예시를 이은 값").isEqualTo(param.example());
+						assertThat(param.choices()).as(as + ": 구성이 있으면 고를 값은 구성 요소에 둔다").isEmpty();
+					}
+					checkChoices(as, param.choices(), param.choiceLabels(), param.from());
+					if (param.separator() != null) {
+						assertThat(param.repeatable()).as(as).isFalse();
+						assertThat(!param.choices().isEmpty() || param.from() != null).as(as + ": 여럿을 고르는 값은 선택지가 있다").isTrue();
+						for (String one : param.example().split(java.util.regex.Pattern.quote(param.separator()))) {
+							if (!param.choices().isEmpty()) {
+								assertThat(param.choices()).as(as).contains(one);
+							}
+						}
+					}
+				}
+			}
+			assertThat(Recipes.ALL.stream()
+				.flatMap((r) -> r.params().stream().filter((p) -> p.from() != null && !p.strict()).map((p) -> r.name() + " " + p.name())))
+				.as("새 값도 받는 출처: crud와 screen은 없는 모듈을 만든다")
+				.containsExactly("crud 모듈", "screen 모듈");
+			assertThat(Recipes.SOURCES).containsOnlyKeys("modules", "entities", "events", "app-events", "finders", "facades", "dtos",
+					"icons");
+			Result json = run("recipes", "--json");
+			assertThat(json.out()).contains("\"parts\": [")
+				.contains("\"from\": \"modules\"")
+				.contains("\"flag\": \"!\"")
+				.contains("\"separator\": \",\"")
+				.contains("\"strict\": false")
+				.contains("\"choiceLabels\": {")
+				.contains("\"sources\": {");
+		}
+
+		private static void checkChoices(String as, List<String> choices, Map<String, String> labels, String from) {
+			if (from != null) {
+				assertThat(Recipes.SOURCES).as(as + "의 출처").containsKey(from);
+			}
+			if (!labels.isEmpty()) {
+				assertThat(labels.keySet()).as(as + ": 고를 값마다 이름이 있다").containsExactlyElementsOf(choices);
+				assertThat(labels.values()).as(as).allMatch((label) -> label != null && !label.isBlank());
+			}
 		}
 
 		@Test

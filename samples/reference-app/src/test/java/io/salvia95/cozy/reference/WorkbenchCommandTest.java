@@ -121,14 +121,108 @@ class WorkbenchCommandTest {
 				assertThat(form).as(recipe.name())
 					.contains(recipe.usage().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"));
 				for (Recipes.Param param : recipe.params()) {
+					String field = (param.option() ? "opt." : "arg.") + param.name();
 					assertThat(form).as(recipe.name() + " " + param.name())
-						.contains("name=\"" + (param.option() ? "opt." : "arg.") + param.name() + "\"");
+						.contains("name=\"" + (param.parts().isEmpty() ? field : field + ".0." + param.parts().getFirst().name()) + "\"");
 				}
+				assertThat(new CozyHtmlValidator().validate(form).stream().filter(CozyHtmlValidator.Message::isError)).as(recipe.name())
+					.isEmpty();
 			}
 			String screen = body(get(URL).param("recipe", "screen"));
-			assertThat(screen).as("고를 값은 select로").contains("<option value=\"overview\"").contains("<option value=\"details\"");
-			assertThat(screen).as("모듈은 지금 있는 모듈에서 고를 수 있다").contains("<option value=\"memo\"");
-			assertThat(body(get(URL).param("recipe", "crud"))).as("여러 번 쓰는 옵션은 한 줄에 하나").contains("<textarea");
+			assertThat(screen).as("고를 값은 select로, 이름 뒤에 값").contains("<option value=\"overview\">대시보드 (overview)</option>")
+				.contains("<option value=\"details\">상세 정보 확인 (details)</option>");
+			assertThat(screen).as("모듈은 지금 있는 모듈을 제안하고 새 이름도 받는다").contains("list=\"command-p0-list\"")
+				.contains("<option value=\"memo\"></option>");
+			assertThat(body(get(URL).param("recipe", "migration"))).as("있어야 하는 모듈은 고르기")
+				.contains("<option value=\"memo\">memo</option>");
+			String crud = body(get(URL).param("recipe", "crud"));
+			assertThat(crud).as("여러 번 쓰는 옵션은 그리드, 칸마다 구성 요소")
+				.contains("cozy-workbench-grid")
+				.contains("name=\"opt.field.0.name\"")
+				.contains("name=\"opt.field.0.kind\"")
+				.contains("type=\"checkbox\" value=\"!\"")
+				.contains("<option value=\"longtext\">여러 줄 텍스트 (longtext)</option>")
+				.contains("value=\"add:opt.field\"")
+				.doesNotContain("<textarea");
+			assertThat(crud).as("여럿 고르는 값은 체크박스").contains("name=\"opt.publish\" value=\"created\"")
+				.contains("생성 (created)");
+			assertThat(crud).as("아이콘은 이름 목록에서").contains("list=\"command-icons\"").contains("<option value=\"notes\">");
+			assertThat(crud.indexOf("name=\"step\" value=\"plan\"")).as("Enter는 변경 파일 확인이다: 행 버튼보다 앞에 있다")
+				.isLessThan(crud.indexOf("name=\"row\""));
+		}
+
+		@Test
+		void choicesComeFromTheApp() throws Exception {
+			assertThat(body(get(URL).param("recipe", "field"))).as("add field의 엔티티는 crud 한 벌")
+				.contains("<optgroup label=\"memo\" data-cozy-module=\"memo\">")
+				.contains("<option value=\"Memo\">Memo</option>");
+			assertThat(body(get(URL).param("recipe", "listener"))).as("받을 이벤트는 모든 모듈의 이벤트")
+				.contains("<option value=\"memo.MemoCreated\">memo.MemoCreated</option>");
+			assertThat(body(get(URL).param("recipe", "event-version"))).contains("<option value=\"MemoCreated\">MemoCreated</option>");
+			assertThat(body(get(URL).param("recipe", "query"))).as("조회 인터페이스와 돌려줄 DTO")
+				.contains("<option value=\"ActivityFinder\">ActivityFinder</option>")
+				.contains("<option value=\"list:ActivityItem\">ActivityItem 목록 (list:ActivityItem)</option>")
+				.contains("<option value=\"long\">64비트 정수 (long)</option>");
+			assertThat(body(get(URL).param("recipe", "fragment"))).as("파라미터 타입은 종류와 DTO")
+				.contains("<optgroup label=\"memo 모듈의 DTO\" data-cozy-module=\"memo\">")
+				.contains("<option value=\"list:MemoItem\">MemoItem 목록 (list:MemoItem)</option>");
+			assertThat(body(get(URL).param("recipe", "link"))).as("쓰려는 모듈은 여럿 고르기")
+				.contains("name=\"opt.uses\" value=\"activity\"");
+		}
+
+		@Test
+		void rowButtonsEditTheGridWithoutRunningTheCommand() throws Exception {
+			Map<String, String> before = sources(project);
+			String added = body(post(URL).with(csrf())
+				.param("recipe", "crud")
+				.param("row", "add:opt.field")
+				.param("arg.모듈", "task")
+				.param("opt.field.0.name", "title")
+				.param("opt.field.0.kind", "text")
+				.param("opt.field.0.required", "!")
+				.param("opt.field.0.label", "제목"));
+			assertThat(added).as("적던 값은 그대로, 행이 하나 늘었다")
+				.contains("name=\"opt.field.0.name\" value=\"title\"")
+				.contains("name=\"opt.field.1.name\" value=\"\"")
+				.contains("2행")
+				.contains("name=\"arg.모듈\" value=\"task\"")
+				.doesNotContain("필수 항목을 입력하세요")
+				.doesNotContain("적용 전입니다");
+			assertThat(added).as("행 버튼은 그 그리드로 돌아온다").contains("formaction=\"/cozy/dev/workbench/commands?recipe=crud#command-opt-field\"")
+				.as("다시 읽어도 같은 생성 항목이다: 주소에 recipe가 있다")
+				.contains("action=\"/cozy/dev/workbench/commands?recipe=crud#command-result\"")
+				.contains("id=\"command-opt-field\"");
+			assertThat(new CozyHtmlValidator().validate(added).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+			String deleted = body(post(URL).with(csrf())
+				.param("recipe", "crud")
+				.param("row", "delete:opt.field/0")
+				.param("opt.field.0.name", "title")
+				.param("opt.field.1.name", "body"));
+			assertThat(deleted).contains("name=\"opt.field.0.name\" value=\"body\"").doesNotContain("value=\"title\"");
+			this.mvc.perform(post(URL).with(csrf()).param("recipe", "crud").param("row", "delete:opt.field/3"))
+				.andExpect(status().isBadRequest());
+			this.mvc.perform(post(URL).with(csrf()).param("recipe", "screen").param("row", "add:opt.nav"))
+				.andExpect(status().isBadRequest());
+			assertThat(sources(project)).isEqualTo(before);
+		}
+
+		@Test
+		void theChangedFilesAreATreeByModuleAndLayer() throws Exception {
+			String html = body(command("crud", "plan").param("arg.모듈", "task")
+				.param("opt.entity", "Task")
+				.param("opt.label", "할 일")
+				.param("opt.icon", "checklist")
+				.param("opt.field.0.name", "title")
+				.param("opt.field.0.kind", "text")
+				.param("opt.field.0.required", "!")
+				.param("opt.field.0.label", "제목")
+				.param("opt.publish", "created"));
+			assertThat(html).contains("적용 전입니다").contains("task 모듈").contains("cozy-workbench-changes");
+			int tree = html.indexOf("cozy-workbench-changes");
+			assertThat(html.substring(tree)).as("계층은 정한 순서")
+				.containsSubsequence(">공개 API<", ">내부 구현<", ">화면<", ">SQL<", ">화면 명세<", ">테스트<");
+			assertThat(html).contains(">TaskFacade.java<").contains(">spi/dto<").contains(">task-list.yml<");
+			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
 		}
 
 		@Test
@@ -160,7 +254,9 @@ class WorkbenchCommandTest {
 			Map<String, String> before = sources(project);
 			String html = body(command("field", "plan").param("arg.모듈", "memo")
 				.param("opt.entity", "Memo")
-				.param("opt.field", "dueOn:date:마감일"));
+				.param("opt.field.0.name", "dueOn")
+				.param("opt.field.0.kind", "date")
+				.param("opt.field.0.label", "마감일"));
 			assertThat(html).contains("cozy add field memo --entity Memo --field dueOn:date:마감일")
 				.contains("수동 수정 항목 1건")
 				.contains("적용 후 수동 수정 항목")
@@ -178,7 +274,8 @@ class WorkbenchCommandTest {
 				.param("arg.화면", "stats")
 				.param("opt.pattern", "details")
 				.param("opt.title", "통계")
-				.param("opt.nav", "통계:no-such-icon"));
+				.param("opt.nav.0.label", "통계")
+				.param("opt.nav.0.icon", "no-such-icon"));
 			assertThat(html).contains("no-such-icon").contains("파일은 변경되지 않았습니다").doesNotContain("적용했습니다");
 			assertThat(sources(project)).isEqualTo(before);
 		}
@@ -257,7 +354,18 @@ class WorkbenchCommandTest {
 				.param("opt.entity", "Task")
 				.param("opt.label", "할 일")
 				.param("opt.icon", "checklist")
-				.param("opt.field", "title:text!:제목\r\ndueOn:date:마감일\r\n\r\ndone:bool:완료\r\n")
+				.param("opt.field.0.name", "title")
+				.param("opt.field.0.kind", "text")
+				.param("opt.field.0.required", "!")
+				.param("opt.field.0.label", "제목")
+				.param("opt.field.1.name", "dueOn")
+				.param("opt.field.1.kind", "date")
+				.param("opt.field.1.label", "마감일")
+				.param("opt.field.2.name", "")
+				.param("opt.field.2.kind", "text")
+				.param("opt.field.3.name", "done")
+				.param("opt.field.3.kind", "bool")
+				.param("opt.field.3.label", "완료")
 				.param("opt.publish", "created"));
 			assertThat(html).contains("적용했습니다")
 				.contains("cozy add crud task --entity Task --label &quot;할 일&quot; --icon checklist --field title:text!:제목")
@@ -270,7 +378,16 @@ class WorkbenchCommandTest {
 				.param("opt.entity", "Task")
 				.param("opt.label", "할 일")
 				.param("opt.icon", "checklist")
-				.param("opt.field", "title:text!:제목\ndueOn:date:마감일\ndone:bool:완료")
+				.param("opt.field.0.name", "title")
+				.param("opt.field.0.kind", "text")
+				.param("opt.field.0.required", "!")
+				.param("opt.field.0.label", "제목")
+				.param("opt.field.1.name", "dueOn")
+				.param("opt.field.1.kind", "date")
+				.param("opt.field.1.label", "마감일")
+				.param("opt.field.2.name", "done")
+				.param("opt.field.2.kind", "bool")
+				.param("opt.field.2.label", "완료")
 				.param("opt.publish", "created"));
 			assertThat(again).contains("변경 사항 없음");
 			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();

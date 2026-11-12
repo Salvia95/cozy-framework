@@ -51,6 +51,48 @@
     });
   });
 
+  // 코드 생성 폼: 모듈을 고르면 그 모듈의 선택지만 보인다. 아이콘 칸은 적은 아이콘을 앞에 그린다
+  var commandForm = document.querySelector('[data-cozy-command-form]');
+  if (commandForm) {
+    var moduleSelect = commandForm.querySelector('[data-cozy-command-module]');
+    var filterByModule = function () {
+      var module = moduleSelect.value.trim();
+      commandForm.querySelectorAll('optgroup[data-cozy-module]').forEach(function (group) {
+        var other = module !== '' && group.dataset.cozyModule !== module;
+        group.hidden = other;
+        group.disabled = other;
+      });
+      commandForm.querySelectorAll('select').forEach(function (select) {
+        var chosen = select.selectedOptions[0];
+        if (chosen && chosen.parentElement.disabled) {
+          // 다른 모듈의 값이 골라져 있으면 보이는 첫 값으로 바꾼다
+          var first = Array.prototype.find.call(select.options, function (option) {
+            return !option.parentElement.disabled;
+          });
+          select.value = first ? first.value : '';
+        }
+      });
+    };
+    if (moduleSelect) {
+      moduleSelect.addEventListener('change', filterByModule);
+      moduleSelect.addEventListener('input', filterByModule);
+      filterByModule();
+    }
+    var iconList = document.getElementById('command-icons');
+    var icons = new Set(iconList ? Array.prototype.map.call(iconList.options, function (option) {
+      return option.value;
+    }) : []);
+    commandForm.querySelectorAll('[data-cozy-icon-input]').forEach(function (input) {
+      var use = input.parentElement.querySelector('[data-cozy-icon-preview] use');
+      var href = use.getAttribute('href');
+      var sprite = href.substring(0, href.indexOf('#') + 1);
+      input.addEventListener('input', function () {
+        var name = input.value.trim();
+        use.setAttribute('href', sprite + 'tabler-' + (icons.has(name) ? name : 'question-mark'));
+      });
+    });
+  }
+
   var frame = document.querySelector('[data-cozy-workbench-frame]');
   var panel = document.querySelector('[data-cozy-workbench-selection]');
   var propsBox = panel ? panel.querySelector('[data-cozy-workbench-props]') : null;

@@ -151,7 +151,7 @@ class WorkbenchFixtureTest {
 			String html = fixturePage("default");
 			assertThat(html).as("모델 구획: 이름과 타입").containsPattern("<code>result</code>\\s*<code class=\"cozy-workbench-id\"[^>]*>ListResult</code>");
 			String grid = html.substring(html.indexOf("<code>rows</code>"), html.indexOf("<code>page</code>"));
-			assertThat(grid).as("목록은 속성마다 열이 있는 그리드").contains("cozy-workbench-fixture-grid").contains("List&lt;Row&gt;").contains("2행");
+			assertThat(grid).as("목록은 속성마다 열이 있는 그리드").contains("cozy-workbench-grid").contains("List&lt;Row&gt;").contains("2행");
 			assertThat(grid).containsSubsequence("id</code>", "정수", "title</code>", "텍스트", "pinned</code>", "true/false",
 					"updatedAt</code>");
 			assertThat(grid).as("정수는 숫자 입력").containsPattern("type=\"number\" step=\"1\"[^>]*name=\"v.result/rows/0/id\" value=\"1\"");

@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <!--/*
   워크벤치의 코드 생성 (/cozy/dev/workbench/commands). cozy recipes의 레시피마다 폼을 보이고,
-  폼의 값으로 cozy 명령을 만들어 계획(--dry-run)을 보인 뒤 적용한다. 파일은 cozy 명령이 쓴다.
+  폼의 값으로 cozy 명령을 만들어 변경 파일(--dry-run)을 보인 뒤 적용한다. 파일은 cozy 명령이 쓴다.
+  레시피는 주소의 recipe다(폼과 행 버튼도 그 주소로 보낸다). 폼은 CommandForm이 만든다: 통째로 적는 인자는 속성 표, 구성이 있는 인자(--field 이름:종류[!][:라벨])는 그리드다.
+  그리드의 행 버튼(name="row")은 명령을 부르지 않고 행만 고친 폼을 다시 보인다.
+  선택지의 data-cozy-module은 그 모듈을 골랐을 때만 보인다(workbench.js가 거른다).
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 코드 생성', ~{::main})}">
 <body>
@@ -32,12 +35,13 @@
       </nav>
     </div>
 
-    <div class="col-lg-8 col-xl-9">
+    <!--/* 좁은 화면에서 생성 항목을 골랐으면 폼을 목록보다 먼저 보인다 */-->
+    <div class="col-lg-8 col-xl-9" th:classappend="${selected != null} ? 'order-first order-lg-0'">
       <div class="card" th:if="${selected == null}"><div class="card-body">
         <div th:replace="~{cozy/component/empty-state :: emptyState('tools', '생성 항목을 선택하세요', '왼쪽에서 항목을 선택하면 입력 항목이 표시됩니다. 적용하기 전에는 파일이 변경되지 않습니다.')}"></div>
       </div></div>
 
-      <th:block th:if="${selected != null}">
+      <th:block th:if="${selected != null}" th:with="form=${commandForm}">
         <section class="card mb-3">
           <div class="card-header">
             <div>
@@ -45,8 +49,10 @@
               <code class="cozy-workbench-command small" th:text="${selected.usage}">cozy add crud …</code>
             </div>
           </div>
-          <form id="command-form" class="card-body" method="post" th:action="@{/cozy/dev/workbench/commands} + '#command-result'">
-            <input type="hidden" name="recipe" th:value="${selected.name}">
+          <form id="command-form" class="card-body cozy-workbench-command-form" method="post" th:action="@{/cozy/dev/workbench/commands(recipe=${selected.name})} + '#command-result'"
+                data-cozy-command-form>
+            <!--/* 칸에서 Enter를 누르면 행 버튼이 아니라 변경 파일 확인이다 */-->
+            <button type="submit" class="d-none" tabindex="-1" aria-hidden="true" name="step" value="plan" th:disabled="${!engineAvailable}">변경 파일 확인</button>
             <p class="mb-3">
               <span th:text="${selected.does}">무엇을 만드는지</span>
               <span class="text-secondary" th:text="|· 미구현 항목: ${selected.slots}|">· 미구현 항목: 없음</span>
@@ -55,30 +61,87 @@
               <div th:replace="~{cozy/component/alert :: alert('critical', ${'필수 항목을 입력하세요: ' + #strings.listJoin(missing, ', ')})}"></div>
             </th:block>
             <p class="text-secondary mb-0" th:if="${selected.params.isEmpty()}">입력 항목이 없습니다.</p>
-            <div class="mb-3" th:each="arg, stat : ${selected.params}" th:with="id=${'command-field-' + stat.index}, value=${values.get(arg.field())}">
-              <label class="form-label" th:for="${id}" th:classappend="${arg.required} ? 'required'" th:text="${arg.label}">모듈</label>
-              <th:block th:if="${!arg.choices.isEmpty()}">
-                <select class="form-select" th:id="${id}" th:name="${arg.field()}">
-                  <option value="" th:if="${!arg.required}">선택 안 함</option>
-                  <option th:each="choice : ${arg.choices}" th:value="${choice}" th:text="${choice}"
-                          th:selected="${choice == value}">overview</option>
-                </select>
-              </th:block>
-              <th:block th:if="${arg.choices.isEmpty() and arg.repeatable}">
-                <textarea class="form-control cozy-workbench-input" rows="4" th:id="${id}" th:name="${arg.field()}"
-                          th:placeholder="${'예: ' + arg.example}" th:text="${value}"></textarea>
-                <small class="form-hint">한 줄에 하나씩 입력합니다. 줄마다 <code th:text="|--${arg.name}|">--field</code> 옵션 하나로 전달됩니다.</small>
-              </th:block>
-              <th:block th:if="${arg.choices.isEmpty() and !arg.repeatable}">
-                <input class="form-control cozy-workbench-input" type="text" autocomplete="off" th:id="${id}" th:name="${arg.field()}"
-                       th:value="${value}" th:placeholder="${'예: ' + arg.example}"
-                       th:list="${arg.name == '모듈' and !modules.isEmpty()} ? 'command-modules'">
-              </th:block>
-            </div>
-            <datalist id="command-modules" th:if="${!modules.isEmpty()}">
-              <option th:each="module : ${modules}" th:value="${module}"></option>
+
+            <!--/* 통째로 적는 인자: 속성 표 */-->
+            <table class="table table-sm cozy-workbench-props cozy-workbench-command-props" th:if="${!form.fields.isEmpty()}">
+              <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
+              <tbody>
+                <tr th:each="field : ${form.fields}" th:with="input=${field.input}">
+                  <th scope="row">
+                    <label class="cozy-workbench-command-name" th:for="${input.id}" th:if="${input.control != 'checks'}">
+                      <span th:text="${field.label}">엔티티 이름</span><span class="cozy-workbench-required" th:if="${field.required}" aria-hidden="true">*</span>
+                      <code class="cozy-workbench-id" th:text="${field.identifier}">--entity</code>
+                    </label>
+                    <span class="cozy-workbench-command-name" th:id="|${input.id}-label|" th:if="${input.control == 'checks'}">
+                      <span th:text="${field.label}">발행할 이벤트</span><span class="cozy-workbench-required" th:if="${field.required}" aria-hidden="true">*</span>
+                      <code class="cozy-workbench-id" th:text="${field.identifier}">--publish</code>
+                    </span>
+                  </th>
+                  <td><th:block th:replace="~{cozy/dev/workbench-commands :: commandInput(${input}, false)}"></th:block></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!--/* 구성이 있는 인자: 그리드. 행 하나가 옵션 하나다 */-->
+            <section class="cozy-workbench-command-grid" th:each="grid : ${form.grids}" th:aria-labelledby="${grid.anchor()}">
+              <h4 class="cozy-workbench-fixture-subtitle" th:id="${grid.anchor()}">
+                <span><span th:text="${grid.label}">필드</span><span class="cozy-workbench-required" th:if="${grid.required}" aria-hidden="true">*</span></span>
+                <code class="cozy-workbench-id" th:text="${grid.identifier}">--field</code>
+                <span class="cozy-workbench-id ms-auto" th:if="${grid.repeatable}" th:text="|${grid.rows.size()}행|">1행</span>
+              </h4>
+              <div class="table-responsive cozy-workbench-grid-wrap">
+                <table class="table table-sm table-bordered cozy-workbench-grid">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="cozy-workbench-grid-number">행</th>
+                      <th scope="col" th:each="column : ${grid.columns}">
+                        <span th:text="${column.label}">이름</span><span class="cozy-workbench-required" th:if="${column.required}" aria-hidden="true">*</span>
+                      </th>
+                      <th scope="col" class="cozy-workbench-grid-ops" th:if="${grid.repeatable}"><span class="visually-hidden">행 작업</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="row, rowStat : ${grid.rows}">
+                      <th scope="row" class="cozy-workbench-grid-number" th:text="${row.number}">1</th>
+                      <td th:each="cell : ${row.cells}" th:classappend="${cell.control == 'flag'} ? 'text-center'">
+                        <th:block th:replace="~{cozy/dev/workbench-commands :: commandInput(${cell}, true)}"></th:block>
+                      </td>
+                      <td class="cozy-workbench-grid-ops" th:if="${grid.repeatable}">
+                        <div class="btn-list flex-nowrap gap-1">
+                          <button type="submit" class="btn btn-sm btn-ghost-secondary btn-icon" name="row" th:value="|duplicate:${grid.field}/${rowStat.index}|"
+                                  th:formaction="@{/cozy/dev/workbench/commands(recipe=${selected.name})} + '#' + ${grid.anchor()}"
+                                  th:aria-label="|${grid.label} ${row.number}행 복제|" title="행 복제">
+                            <svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>
+                          </button>
+                          <button type="submit" class="btn btn-sm btn-ghost-danger btn-icon" name="row" th:value="|delete:${grid.field}/${rowStat.index}|"
+                                  th:formaction="@{/cozy/dev/workbench/commands(recipe=${selected.name})} + '#' + ${grid.anchor()}"
+                                  th:aria-label="|${grid.label} ${row.number}행 삭제|" title="행 삭제">
+                            <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                <button type="submit" class="btn btn-sm" name="row" th:value="|add:${grid.field}|" th:if="${grid.repeatable}"
+                        th:formaction="@{/cozy/dev/workbench/commands(recipe=${selected.name})} + '#' + ${grid.anchor()}" th:aria-label="|${grid.label}에 행 추가|">
+                  <svg th:replace="~{cozy/icon/tabler :: icon('plus')}"></svg>
+                  행 추가
+                </button>
+                <small class="form-hint m-0">
+                  <th:block th:if="${grid.repeatable}">한 행이 <code th:text="${grid.identifier}">--field</code> 하나입니다. 글을 적는 칸이 모두 빈 행은 넘기지 않습니다.</th:block>
+                  <th:block th:unless="${grid.repeatable}">칸의 값을 이어 <code th:text="${grid.identifier}">--nav</code> 하나로 넘깁니다.</th:block>
+                  예: <code th:text="|${grid.identifier} ${grid.example}|">--field title:text!:제목</code>
+                </small>
+              </div>
+            </section>
+
+            <datalist id="command-icons" th:if="${form.usesIcons()}">
+              <option th:each="icon : ${T(io.salvia95.cozy.ui.CozyIcons).outline()}" th:value="${icon}"></option>
             </datalist>
-            <div class="btn-list justify-content-end">
+            <div class="btn-list justify-content-end mt-3">
               <button type="submit" class="btn btn-primary" name="step" value="plan" th:disabled="${!engineAvailable}">변경 파일 확인</button>
             </div>
           </form>
@@ -106,29 +169,59 @@
               <span th:if="${!outcome.slots.isEmpty()}" th:text="|· 미구현 항목 ${outcome.slots.size()}건|">· 미구현 항목 1건</span>
               <span th:if="${!outcome.manual.isEmpty()}" th:text="|· 수동 수정 항목 ${outcome.manual.size()}건|">· 수동 수정 항목 1건</span>
             </div>
-            <div class="table-responsive">
-              <table class="table card-table cozy-workbench-plan">
-                <thead><tr><th>구분</th><th>파일</th><th th:if="${hasDetails}">내용</th></tr></thead>
-                <tbody>
-                  <tr th:each="change : ${outcome.changes}">
-                    <td class="text-nowrap">
-                      <span class="badge" th:classappend="${change.action == 'unchanged'} ? 'cozy-tone-neutral' : (${change.action == 'delete'} ? 'cozy-tone-warning' : 'cozy-tone-info')"
-                            th:text="${change.label()}">생성</span>
-                    </td>
-                    <td><code class="cozy-workbench-command" th:text="${change.file}">src/main/java/…</code></td>
-                    <td class="text-secondary" th:if="${hasDetails}" th:text="${change.detail}">내용</td>
-                  </tr>
-                </tbody>
-              </table>
+            <!--/* 변경 파일: 모듈 → 계층 → 파일 */-->
+            <div class="card-body border-bottom cozy-workbench-tree">
+              <ul class="cozy-workbench-nodes cozy-workbench-changes">
+                <li th:each="group : ${changeTree}">
+                  <details open>
+                    <summary>
+                      <span class="cozy-workbench-node">
+                        <span class="cozy-workbench-text">
+                          <span class="fw-bold" th:text="${group.label}">memo 모듈</span>
+                          <span class="cozy-workbench-id" th:text="${group.summary()}">생성 3 · 수정 1</span>
+                        </span>
+                      </span>
+                    </summary>
+                    <ul class="cozy-workbench-nodes">
+                      <li th:each="layer : ${group.layers}">
+                        <details open>
+                          <summary>
+                            <span class="cozy-workbench-node">
+                              <span class="cozy-workbench-text">
+                                <span class="fw-medium" th:text="${layer.label}">공개 API</span>
+                                <span class="cozy-workbench-id" th:text="|${layer.files.size()}개|">3개</span>
+                              </span>
+                            </span>
+                          </summary>
+                          <ul class="cozy-workbench-nodes">
+                            <li th:each="file : ${layer.files}" th:with="change=${file.change}">
+                              <div class="cozy-workbench-node cozy-workbench-change" th:classappend="${change.action == 'unchanged'} ? 'cozy-workbench-change-same'">
+                                <span class="badge" th:classappend="${change.action == 'unchanged'} ? 'cozy-tone-neutral' : (${change.action == 'delete'} ? 'cozy-tone-warning' : 'cozy-tone-info')"
+                                      th:text="${change.label()}">생성</span>
+                                <span class="cozy-workbench-text">
+                                  <code class="cozy-workbench-change-file" th:title="${change.file}" th:text="${file.name}">MemoFacade.java</code>
+                                  <code class="cozy-workbench-id" th:if="${!file.folder.isEmpty()}" th:text="${file.folder}">spi</code>
+                                  <span class="text-secondary" th:if="${change.detail != null and !change.detail.isBlank()}" th:text="|— ${change.detail}|">— dueOn 필드</span>
+                                  <span class="visually-hidden" th:text="${change.file}">src/main/java/…</span>
+                                </span>
+                              </div>
+                            </li>
+                          </ul>
+                        </details>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+              </ul>
             </div>
-            <div class="card-body border-top" th:if="${!outcome.slots.isEmpty()}">
+            <div class="card-body border-bottom" th:if="${!outcome.slots.isEmpty()}">
               <h4 class="subheader mb-2" th:text="${dryRun} ? '적용 후 미구현 항목' : '미구현 항목'">미구현 항목</h4>
               <div class="mb-2" th:each="slot : ${outcome.slots}">
                 <code class="cozy-workbench-command" th:text="|${slot.file}:${slot.line}|">파일:줄</code>
                 <div><span class="fw-medium" th:text="${slot.slot}">listener-body</span> <span class="text-secondary" th:text="|— ${slot.what}|">— 무엇을</span></div>
               </div>
             </div>
-            <div class="card-body border-top" th:if="${!outcome.manual.isEmpty()}">
+            <div class="card-body border-bottom" th:if="${!outcome.manual.isEmpty()}">
               <h4 class="subheader mb-2" th:text="${dryRun} ? '적용 후 수동 수정 항목' : '수동 수정 항목'">수동 수정 항목</h4>
               <div class="mb-3" th:each="todo : ${outcome.manual}">
                 <code class="cozy-workbench-command" th:text="${todo.file}">파일</code>
@@ -136,7 +229,7 @@
                 <pre class="cozy-workbench-context mt-1 mb-0" th:text="${todo.snippet}">넣을 내용</pre>
               </div>
             </div>
-            <div class="card-body border-top">
+            <div class="card-body">
               <p class="mb-0"><span class="text-secondary">다음 단계:</span> <span th:text="${outcome.next}">다음 할 일</span></p>
               <th:block th:if="${needsRestart}">
                 <div class="mt-3" th:replace="~{cozy/component/alert :: alert('info', '소스가 변경되었습니다. 앱을 다시 빌드하고 실행해야 워크벤치와 앱 화면에 반영됩니다.')}"></div>
@@ -156,5 +249,57 @@
   <script th:src="@{/cozy/workbench.js}" defer></script>
   </div>
 </main>
+
+<!--/*
+  입력 하나 (CommandForm.Input). cell이면 그리드의 칸이라 이름표가 없어 aria-label을 단다.
+  선택 칸: 폼의 행이면 맨 위에 빈 선택지가 있다. 그리드의 칸은 첫 값을 기본으로 고른다.
+  제안 칸(suggest): 앱의 값을 목록으로 보이지만 새 값도 적는다(add crud의 모듈은 없으면 만든다).
+*/-->
+<th:block th:fragment="commandInput(input, cell)" th:switch="${input.control}">
+  <select class="form-select form-select-sm" th:case="'select'" th:id="${input.id}" th:name="${input.name}"
+          th:aria-label="${cell} ? ${input.label}" th:aria-required="${input.required} ? 'true'"
+          th:data-cozy-command-module="${input.name == 'arg.모듈'} ? 'true'">
+    <option value="" th:if="${!cell}" th:text="${input.empty()}">선택하세요</option>
+    <th:block th:each="group : ${input.groups}">
+      <option th:if="${group.label.isEmpty()}" th:each="option : ${group.options}" th:value="${option.value}"
+              th:selected="${input.selected(option.value)}" th:text="${option.text}">memo</option>
+      <optgroup th:if="${!group.label.isEmpty()}" th:label="${group.label}" th:data-cozy-module="${group.module.isEmpty()} ? null : ${group.module}">
+        <option th:each="option : ${group.options}" th:value="${option.value}" th:selected="${input.selected(option.value)}" th:text="${option.text}">MemoItem</option>
+      </optgroup>
+    </th:block>
+  </select>
+  <th:block th:case="'suggest'">
+    <input class="form-control form-control-sm cozy-workbench-input" type="text" autocomplete="off" th:list="|${input.id}-list|"
+           th:id="${input.id}" th:name="${input.name}" th:value="${input.value()}" th:placeholder="${input.placeholder}"
+           th:aria-label="${cell} ? ${input.label}" th:aria-required="${input.required} ? 'true'"
+           th:data-cozy-command-module="${input.name == 'arg.모듈'} ? 'true'">
+    <datalist th:id="|${input.id}-list|">
+      <th:block th:each="group : ${input.groups}"><option th:each="option : ${group.options}" th:value="${option.value}"></option></th:block>
+    </datalist>
+  </th:block>
+  <div class="cozy-workbench-checks" th:case="'checks'" role="group" th:aria-labelledby="|${input.id}-label|">
+    <th:block th:each="group : ${input.groups}">
+      <label class="form-check form-check-inline m-0" th:each="option, stat : ${group.options}">
+        <input class="form-check-input" type="checkbox" th:id="|${input.id}-${stat.index}|" th:name="${input.name}" th:value="${option.value}"
+               th:checked="${input.selected(option.value)}">
+        <span class="form-check-label" th:text="${option.text}">생성 (created)</span>
+      </label>
+    </th:block>
+  </div>
+  <div class="input-group input-group-sm input-group-flat cozy-workbench-icon-input" th:case="'icon'">
+    <span class="input-group-text">
+      <svg class="icon" aria-hidden="true" data-cozy-icon-preview><use th:href="@{${iconSprite}} + '#tabler-' + ${input.value().isEmpty() ? 'question-mark' : input.value()}"></use></svg>
+    </span>
+    <input class="form-control cozy-workbench-input" type="text" autocomplete="off" list="command-icons" th:id="${input.id}" th:name="${input.name}"
+           th:value="${input.value()}" th:placeholder="${input.placeholder}" th:aria-label="${cell} ? ${input.label}"
+           th:aria-required="${input.required} ? 'true'" data-cozy-icon-input>
+    <a class="input-group-text" th:href="@{/cozy/dev/catalog/icons}" target="_blank" th:if="${!cell}">아이콘 목록</a>
+  </div>
+  <input class="form-check-input m-0" th:case="'flag'" type="checkbox" th:value="${input.flag}" th:id="${input.id}" th:name="${input.name}"
+         th:checked="${input.checked()}" th:aria-label="${input.label}">
+  <input class="form-control form-control-sm cozy-workbench-input" th:case="*" type="text" autocomplete="off"
+         th:id="${input.id}" th:name="${input.name}" th:value="${input.value()}" th:placeholder="${input.placeholder}"
+         th:aria-label="${cell} ? ${input.label}" th:aria-required="${input.required} ? 'true'">
+</th:block>
 </body>
 </html>

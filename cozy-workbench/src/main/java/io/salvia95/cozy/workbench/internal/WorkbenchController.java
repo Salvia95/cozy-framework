@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import io.salvia95.cozy.ui.CozyFlash;
+import io.salvia95.cozy.ui.CozyIcons;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 
@@ -433,65 +434,54 @@ public class WorkbenchController {
 
 	@GetMapping("/commands")
 	String commands(@RequestParam(required = false) String recipe, Model model) {
-		commandModel(recipe, Map.of(), model);
+		commandModel(recipe, Map.of(), null, model);
 		return "cozy/dev/workbench-commands";
 	}
 
 	/**
 	 * 폼의 값으로 cozy 명령을 만들어 계획하거나({@code step=plan}) 적용한다({@code step=apply}). 인자는 폼의 값뿐이고, 쓰는 경로는 cozy 명령의
-	 * 계획이 정한다.
+	 * 계획이 정한다. 그리드의 행 버튼({@code row=add:opt.field} 등)은 명령을 부르지 않고 행만 고친 폼을 다시 보인다.
 	 */
 	@PostMapping("/commands")
-	String execute(@RequestParam String recipe, @RequestParam String step, @RequestParam MultiValueMap<String, String> form,
-			HttpServletRequest request, Model model) {
-		if (!STEPS.contains(step)) {
+	String execute(@RequestParam String recipe, @RequestParam(required = false) String step,
+			@RequestParam(required = false) String row, @RequestParam MultiValueMap<String, String> form, HttpServletRequest request,
+			Model model) {
+		if (row == null && !STEPS.contains(step)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
 		}
 		requireSameOrigin(request);
-		if (!this.engine.available()) {
+		if (row == null && !this.engine.available()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
-		Map<String, String> values = new LinkedHashMap<>();
+		Map<String, List<String>> values = new LinkedHashMap<>();
 		form.forEach((name, list) -> {
 			if (name.startsWith("arg.") || name.startsWith("opt.")) {
-				values.put(name, list.getFirst());
+				values.put(name, List.copyOf(list));
 			}
 		});
-		WorkbenchEngine.Recipe selected = commandModel(recipe, values, model);
-		List<String> missing = new ArrayList<>();
-		List<String> args = new ArrayList<>(selected.command());
-		for (WorkbenchEngine.Param param : selected.params()) {
-			List<String> given = values.getOrDefault(param.field(), "").lines().map(String::strip).filter((v) -> !v.isEmpty()).toList();
-			if (given.isEmpty()) {
-				if (param.required()) {
-					missing.add(param.label());
-				}
-				continue;
-			}
-			for (String value : param.repeatable() ? given : List.of(String.join(" ", given))) {
-				if (param.option()) {
-					args.add("--" + param.name());
-				}
-				args.add(value);
-			}
+		CommandForm built = commandModel(recipe, values, row, model);
+		if (row != null) {
+			return "cozy/dev/workbench-commands";
 		}
-		model.addAttribute("missing", missing);
-		if (!missing.isEmpty()) {
+		model.addAttribute("missing", built.missing());
+		if (!built.missing().isEmpty()) {
 			return "cozy/dev/workbench-commands";
 		}
 		boolean dryRun = step.equals("plan");
-		WorkbenchEngine.Outcome outcome = this.engine.execute(args, dryRun);
-		model.addAttribute("commandLine", commandLine(args));
+		WorkbenchEngine.Outcome outcome = this.engine.execute(built.args(), dryRun);
+		model.addAttribute("commandLine", commandLine(built.args()));
 		model.addAttribute("outcome", outcome);
 		model.addAttribute("dryRun", dryRun);
-		model.addAttribute("hasDetails", outcome.changes().stream().anyMatch((c) -> c.detail() != null && !c.detail().isBlank()));
+		Map<String, Object> described = this.engine.describe();
+		model.addAttribute("changeTree", ChangeTree.of(outcome.changes(), basePackage(described), eventModules(described)));
 		model.addAttribute("changed", outcome.changes().stream().filter((c) -> !c.action().equals("unchanged")).count());
 		model.addAttribute("needsRestart", outcome.applied()
 				&& outcome.changes().stream().anyMatch((c) -> !c.action().equals("unchanged")));
 		return "cozy/dev/workbench-commands";
 	}
 
-	private WorkbenchEngine.Recipe commandModel(String recipe, Map<String, String> values, Model model) {
+	/** @return 고른 레시피의 폼. 고르지 않았으면 {@code null} */
+	private CommandForm commandModel(String recipe, Map<String, List<String>> values, String row, Model model) {
 		List<WorkbenchEngine.Recipe> recipes = this.engine.recipes();
 		WorkbenchEngine.Recipe selected = (recipe == null) ? null
 				: recipes.stream()
@@ -507,18 +497,43 @@ public class WorkbenchController {
 		groups.values().removeIf(List::isEmpty);
 		model.addAttribute("recipeGroups", groups);
 		model.addAttribute("selected", selected);
-		model.addAttribute("values", values);
 		model.addAttribute("missing", List.of());
-		List<Object> modules = new ArrayList<>();
-		if (this.engine.available() && this.engine.describe().get("modules") instanceof List<?> described) {
-			for (Object module : described) {
-				if (module instanceof Map<?, ?> m) {
-					modules.add(m.get("name"));
+		if (selected == null) {
+			return null;
+		}
+		CommandForm built;
+		try {
+			built = CommandForm.of(selected, values,
+					CommandForm.sources(this.engine.available() ? this.engine.describe() : Map.of(), CozyIcons.outline()), row);
+		}
+		catch (IllegalArgumentException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+		}
+		model.addAttribute("commandForm", built);
+		model.addAttribute("iconSprite", CozyIcons.OUTLINE_SPRITE);
+		return built;
+	}
+
+	private static String basePackage(Map<String, Object> described) {
+		return (described.get("app") instanceof Map<?, ?> app && app.get("basePackage") != null)
+				? String.valueOf(app.get("basePackage")) : "";
+	}
+
+	/** 이벤트 이름 → 모듈 */
+	private static Map<String, String> eventModules(Map<String, Object> described) {
+		Map<String, String> events = new LinkedHashMap<>();
+		if (described.get("modules") instanceof List<?> modules) {
+			for (Object item : modules) {
+				if (item instanceof Map<?, ?> m && m.get("events") instanceof List<?> list) {
+					for (Object event : list) {
+						if (event instanceof Map<?, ?> e && e.get("type") != null) {
+							events.put(String.valueOf(e.get("type")), String.valueOf(m.get("name")));
+						}
+					}
 				}
 			}
 		}
-		model.addAttribute("modules", modules);
-		return selected;
+		return events;
 	}
 
 	/** 터미널에 붙여 넣을 수 있는 명령. 공백이나 따옴표가 있는 인자는 큰따옴표로 묶는다 */

@@ -185,6 +185,36 @@ cozy <동작> [옵션]
   | `repeatable` | 여러 번 쓸 수 있는가 (`--field`, `--param`) |
   | `choices` | 고를 수 있는 값. 자유롭게 적는 값이면 빈 목록 |
   | `example` | 예시 값 |
+  | `choiceLabels` | 고를 값의 사람이 읽는 이름(`{"text": "한 줄 텍스트"}`). 없으면 빈 객체 |
+  | `from` | 앱에서 가져오는 선택지의 출처(아래 `sources`). 없으면 `null` |
+  | `strict` | `from`의 값만 받는가. `false`면 앱의 값은 제안이고 새 값도 받는다(`add crud`·`add screen`의 모듈은 없으면 만든다). `from`이 없으면 `false` |
+  | `separator` | 값 하나에 여럿을 고를 때 사이에 넣는 글자(`--uses memo,activity`, `--publish created,deleted`). 하나만 고르면 `null` |
+  | `parts` | 값의 구성(아래). 통째로 적는 값이면 빈 목록. 여러 번 쓰는 옵션은 모두 구성이 있다 |
+
+- **`parts`**: `--field 이름:종류[!][:라벨]`처럼 칸 여럿을 이은 값의 구성 요소다. 워크벤치는 구성 요소마다 그리드의 열을 만들고, 행 하나를 값 하나로 잇는다.
+
+  | 키 | 뜻 |
+  | --- | --- |
+  | `name`, `label` | 구성 요소의 이름(`kind`)과 사람에게 보일 이름(`종류`) |
+  | `required` | 꼭 있어야 하는가. 선택 요소는 끝에만 온다 |
+  | `choices`, `choiceLabels` | 고를 값과 그 이름. 자유롭게 적으면 빈 목록 |
+  | `from` | 앱에서 가져오는 선택지. 구성 요소의 출처는 늘 그 값만 받는다 |
+  | `flag` | 켜면 앞 요소 바로 뒤에 붙는 글자(`!`). 플래그가 아니면 `null` |
+  | `example` | 예시 값. 플래그는 켜면 그 글자, 끄면 빈 글자 |
+
+  - **잇는 규칙**: 구성 요소를 순서대로 `:`로 잇는다. 플래그는 `:` 없이 앞 요소에 붙인다. 비어 있는 끝의 선택 요소는 뺀다. `{title, text, !, 제목}`은 `title:text!:제목`, `{done, bool, (끔), (빈 라벨)}`은 `done:bool`이다.
+  - 구성 요소의 예시를 이으면 `example`이 된다(`CozyCliTest`가 확인한다).
+- **`sources`**: 최상위 객체다. `from`이 가리킬 수 있는 출처와 그 뜻이다. "선택한 모듈"은 같은 레시피의 위치 인자 `모듈`이다. 값은 워크벤치가 `cozy describe --json`과 cozy-ui에서 얻는다.
+
+  | 출처 | 값 | `describe`에서 |
+  | --- | --- | --- |
+  | `modules` | 앱의 모듈 | `modules[].name` |
+  | `entities` | 선택한 모듈의 CRUD 엔티티 | `E`: `{E}Facade`, `{E}Finder`, DTO `{E}Item`, `{E}Controller`가 모두 있다 |
+  | `events` | 선택한 모듈의 이벤트 | `modules[].events[].type` |
+  | `app-events` | 앱의 모든 이벤트 `모듈.이벤트` | 모든 모듈의 `events[].type` |
+  | `finders`, `facades` | 선택한 모듈의 조회·명령 인터페이스 | `modules[].finders[].type`, `facades[].type` |
+  | `dtos` | 선택한 모듈의 DTO와 그 목록 `Record`, `list:Record` | `modules[].dtos[].type` |
+  | `icons` | Tabler Icons의 외곽선 아이콘 이름 | (cozy-ui의 스프라이트) |
 
 ## add, link, enable
 

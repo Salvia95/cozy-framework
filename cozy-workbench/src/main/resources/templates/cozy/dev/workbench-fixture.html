@@ -47,27 +47,27 @@
       </table>
 
       <!--/* 그리드 */-->
-      <div class="table-responsive cozy-workbench-fixture-grid-wrap" th:if="${block.grid}" th:id="${block.title.isEmpty()} ? ${block.anchor}">
-        <table class="table table-sm table-bordered cozy-workbench-fixture-grid">
+      <div class="table-responsive cozy-workbench-grid-wrap" th:if="${block.grid}" th:id="${block.title.isEmpty()} ? ${block.anchor}">
+        <table class="table table-sm table-bordered cozy-workbench-grid">
           <thead>
             <tr>
-              <th scope="col" class="cozy-workbench-fixture-number">행</th>
+              <th scope="col" class="cozy-workbench-grid-number">행</th>
               <th scope="col" th:each="column : ${block.columns}"
                   th:title="${column.description.isEmpty() or column.description == column.title} ? null : ${column.description}">
                 <span class="d-block" th:if="${!column.title.isEmpty()}" th:text="${column.title}">제목</span>
                 <code th:classappend="${!column.title.isEmpty()} ? 'cozy-workbench-id'" th:text="${column.name}">title</code>
                 <span class="cozy-workbench-fixture-kind" th:if="${!column.kind.isEmpty()}" th:text="${column.kind}">텍스트</span>
               </th>
-              <th scope="col" class="cozy-workbench-fixture-ops"><span class="visually-hidden">행 작업</span></th>
+              <th scope="col" class="cozy-workbench-grid-ops"><span class="visually-hidden">행 작업</span></th>
             </tr>
           </thead>
           <tbody>
             <tr th:each="row : ${block.rows}">
-              <th scope="row" class="cozy-workbench-fixture-number" th:text="${row.number}">1</th>
+              <th scope="row" class="cozy-workbench-grid-number" th:text="${row.number}">1</th>
               <td th:each="cell, stat : ${row.cells}" th:classappend="${cell.control == 'checkbox'} ? 'text-center'">
                 <th:block th:replace="~{:: fixtureInput(${cell}, |${block.title.isEmpty() ? section.name : block.title} ${row.number}행 ${block.columns[stat.index].spoken}|)}"></th:block>
               </td>
-              <td class="cozy-workbench-fixture-ops">
+              <td class="cozy-workbench-grid-ops">
                 <div class="btn-list flex-nowrap gap-1">
                   <button type="submit" class="btn btn-sm btn-ghost-secondary btn-icon" name="row" th:value="|duplicate:${block.path}/${row.number - 1}|"
                           th:aria-label="|${block.title.isEmpty() ? section.name : block.title} ${row.number}행 복제|" title="행 복제">

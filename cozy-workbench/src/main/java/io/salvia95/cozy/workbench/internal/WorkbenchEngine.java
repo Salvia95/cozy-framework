@@ -237,14 +237,29 @@ public class WorkbenchEngine {
 	 * 레시피의 인자 하나 ({@code cozy recipes --json}의 {@code params[]}).
 	 *
 	 * @param option 옵션({@code --이름 값})인가. 아니면 위치 인자다
+	 * @param choiceLabels 고를 값 → 사람이 읽는 이름
+	 * @param from 앱에서 가져오는 선택지. 없으면 {@code null}
+	 * @param separator 여럿을 고를 때 사이에 넣는 글자. 하나만 고르면 {@code null}
+	 * @param parts 값의 구성. 통째로 적는 값이면 빈 목록
+	 * @param strict {@code from}의 값만 받는가. 거짓이면 앱의 값은 제안이고 새 값도 받는다
 	 */
 	public record Param(String name, String label, boolean option, boolean required, boolean repeatable, List<String> choices,
-			String example) {
+			String example, java.util.Map<String, String> choiceLabels, String from, String separator, List<Part> parts,
+			boolean strict) {
 
 		/** 폼의 필드 이름 */
 		public String field() {
 			return (this.option ? "opt." : "arg.") + this.name;
 		}
+	}
+
+	/**
+	 * 값의 구성 요소 하나 ({@code params[].parts[]}).
+	 *
+	 * @param flag 켜면 앞 요소 뒤에 붙는 글자({@code !}). 플래그가 아니면 {@code null}
+	 */
+	public record Part(String name, String label, boolean required, List<String> choices, java.util.Map<String, String> choiceLabels,
+			String from, String flag, String example) {
 	}
 
 	/**
@@ -276,9 +291,16 @@ public class WorkbenchEngine {
 			}
 			List<Param> params = new ArrayList<>();
 			for (JsonNode p : r.path("params")) {
+				List<Part> parts = new ArrayList<>();
+				for (JsonNode part : p.path("parts")) {
+					parts.add(new Part(part.path("name").asString(), part.path("label").asString(), part.path("required").asBoolean(),
+							strings(part.path("choices")), labels(part.path("choiceLabels")), text(part, "from"), text(part, "flag"),
+							part.path("example").asString("")));
+				}
 				params.add(new Param(p.path("name").asString(), p.path("label").asString(), p.path("option").asBoolean(),
 						p.path("required").asBoolean(), p.path("repeatable").asBoolean(), strings(p.path("choices")),
-						p.path("example").asString("")));
+						p.path("example").asString(""), labels(p.path("choiceLabels")), text(p, "from"), text(p, "separator"),
+						List.copyOf(parts), p.path("strict").asBoolean(true)));
 			}
 			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("title").asString(),
 					r.path("group").asString(), r.path("usage").asString(),
@@ -300,6 +322,12 @@ public class WorkbenchEngine {
 		List<String> values = new ArrayList<>();
 		array.forEach((v) -> values.add(v.asString()));
 		return List.copyOf(values);
+	}
+
+	private static java.util.Map<String, String> labels(JsonNode object) {
+		java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+		object.properties().forEach((e) -> labels.put(e.getKey(), e.getValue().asString()));
+		return java.util.Collections.unmodifiableMap(labels);
 	}
 
 	/**
