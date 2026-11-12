@@ -64,6 +64,37 @@ class BundleCommandsTest {
 	}
 
 	/**
+	 * Windows PowerShell 5.1은 {@code $ErrorActionPreference = 'Stop'}일 때 {@code 2>&1}로 받은 외부 명령의 stderr를 오류로
+	 * 바꿔 스크립트를 멈춘다. java처럼 정상 출력을 stderr에 쓰는 명령을 그렇게 받으면 명령이 늘 실패한다. 그래서 {@code 2>&1}은 바로
+	 * 앞에서 Continue로 바꾼 곳에서만 쓴다.
+	 */
+	@Test
+	void powershellScriptsRedirectStderrOnlyWhileErrorsContinue() throws IOException {
+		List<Path> scripts;
+		try (var paths = Files.walk(BUNDLE.getParent())) {
+			scripts = paths.filter((path) -> path.toString().endsWith(".ps1")).sorted().toList();
+		}
+		assertThat(scripts).isNotEmpty();
+		List<String> unsafe = new ArrayList<>();
+		for (Path script : scripts) {
+			List<String> lines = Files.readAllLines(script, StandardCharsets.UTF_8);
+			for (int i = 0; i < lines.size(); i++) {
+				String line = lines.get(i).strip();
+				if (line.startsWith("#") || !line.contains("2>&1")) {
+					continue;
+				}
+				boolean continues = lines.subList(Math.max(0, i - 3), i)
+					.stream()
+					.anyMatch((before) -> before.contains("$ErrorActionPreference = 'Continue'"));
+				if (!continues) {
+					unsafe.add(BUNDLE.getParent().relativize(script) + ":" + (i + 1) + " " + line);
+				}
+			}
+		}
+		assertThat(unsafe).isEmpty();
+	}
+
+	/**
 	 * bash의 cozy가 번들의 JDK({@code jdk/})를 쓰는 방식. 가짜 JDK와 가짜 Maven으로 번들 모양을 만들고, 시스템 JDK 자리에는 부르면
 	 * 실패하는 java를 둔다.
 	 */

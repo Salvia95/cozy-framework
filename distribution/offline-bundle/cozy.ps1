@@ -36,8 +36,14 @@ function Show-Usage {
 
 function Assert-Java {
   if (-not (Get-Command java -ErrorAction SilentlyContinue)) { throw '[cozy] JDK 25가 필요합니다. JAVA_HOME과 PATH를 확인하세요.' }
-  $major = (& java -XshowSettings:properties -version 2>&1 | Select-String 'java.specification.version = (\d+)').Matches[0].Groups[1].Value
-  if ([int]$major -lt 25) { throw "[cozy] JDK 25가 필요합니다 (지금: $major)" }
+  # java는 설정을 stderr에 쓴다. Windows PowerShell 5.1은 Stop일 때 2>&1로 받은 stderr를 오류로 바꿔 멈추므로 잠시 Continue로 둔다
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $settings = @(& java -XshowSettings:properties -version 2>&1 | ForEach-Object { "$_" }) }
+  finally { $ErrorActionPreference = $previous }
+  $match = $settings | Select-String 'java.specification.version = (\d+)' | Select-Object -First 1
+  $major = if ($match) { [int]$match.Matches[0].Groups[1].Value } else { 0 }
+  if ($major -lt 25) { throw "[cozy] JDK 25가 필요합니다 (지금: $major)" }
 }
 
 function Install-Cozy([string]$Destination) {

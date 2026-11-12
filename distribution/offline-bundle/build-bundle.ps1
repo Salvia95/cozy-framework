@@ -19,8 +19,13 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 # 루트 target\은 빌드의 clean이 지우므로 build\에 만든다
 if (-not $Output) { $Output = Join-Path $Root 'build\offline-bundle' }
 
-$javaVersion = (& java -XshowSettings:properties -version 2>&1 | Select-String 'java.specification.version = (\d+)').Matches[0].Groups[1].Value
-if ([int]$javaVersion -lt 25) { throw "[cozy] JDK 25가 필요합니다 (지금: $javaVersion)" }
+# java는 설정을 stderr에 쓴다. Windows PowerShell 5.1은 Stop일 때 2>&1로 받은 stderr를 오류로 바꿔 멈추므로 잠시 Continue로 둔다
+$ErrorActionPreference = 'Continue'
+try { $javaSettings = @(& java -XshowSettings:properties -version 2>&1 | ForEach-Object { "$_" }) }
+finally { $ErrorActionPreference = 'Stop' }
+$javaMatch = $javaSettings | Select-String 'java.specification.version = (\d+)' | Select-Object -First 1
+$javaVersion = if ($javaMatch) { [int]$javaMatch.Matches[0].Groups[1].Value } else { 0 }
+if ($javaVersion -lt 25) { throw "[cozy] JDK 25가 필요합니다 (지금: $javaVersion)" }
 
 $Version = ([xml](Get-Content -Raw -Encoding UTF8 (Join-Path $Root 'cozy-parent\pom.xml'))).project.properties.'cozy.version'
 $Bundle = Join-Path $Output "cozy-offline-bundle-$Version"
