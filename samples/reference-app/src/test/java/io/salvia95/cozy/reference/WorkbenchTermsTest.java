@@ -57,15 +57,16 @@ class WorkbenchTermsTest {
 
 	@Test
 	void theMenuUsesTheGlossaryAndCarriesTheWordmark() throws Exception {
-		String html = page("");
+		String html = page("?spec=memo-list");
 		assertThat(texts(html, "<a class=\"nav-link[^\"]*\"[^>]*>\\s*([^<]+)<")).as("메뉴와 보기 탭")
-			.containsExactly("화면", "모듈", "코드 생성", "검사", "컴포넌트", "미리보기", "템플릿", "화면 명세", "속성", "샘플 데이터");
+			.containsExactly("개요", "화면", "모듈", "코드 생성", "검사", "컴포넌트", "미리보기", "템플릿", "화면 명세", "속성", "샘플 데이터");
 		assertThat(html).contains("class=\"cozy-workbench-wordmark\"").contains("aria-label=\"Cozy Workbench\"");
 	}
 
 	@Test
 	void retiredWordsAreGone() throws Exception {
-		for (String path : List.of("", "?spec=memo-list&view=fixture", "/map", "/check", "/commands", "/commands?recipe=listener")) {
+		for (String path : List.of("", "?spec=memo-list&view=fixture", "?spec=memo-list&view=states", "/map", "/check", "/commands",
+				"/commands?recipe=listener", "/search?q=memo")) {
 			assertThat(visible(page(path))).as(path)
 				.doesNotContain("지도")
 				.doesNotContain("빈칸")

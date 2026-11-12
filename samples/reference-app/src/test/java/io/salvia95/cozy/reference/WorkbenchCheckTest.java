@@ -89,6 +89,7 @@ class WorkbenchCheckTest {
 			for (String path : new String[] { "/cozy/dev/workbench", "/cozy/dev/workbench/check", "/cozy/dev/workbench/map" }) {
 				assertThat(page(path)).as(path)
 					.contains("href=\"/cozy/dev/workbench\"")
+					.contains("href=\"/cozy/dev/workbench/screens\"")
 					.contains("href=\"/cozy/dev/workbench/check\"")
 					.contains("href=\"/cozy/dev/workbench/map\"");
 			}

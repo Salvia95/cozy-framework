@@ -51,6 +51,32 @@
     });
   });
 
+  // 머리의 검색 칸: 글을 적는 중이 아니면 /를 눌러 옮겨 간다
+  var search = document.querySelector('[data-cozy-workbench-search]');
+  if (search) {
+    document.addEventListener('keydown', function (event) {
+      var target = event.target;
+      var typing = target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+      if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        search.focus();
+      }
+    });
+  }
+
+  // 전체 상태 보기: 고정 크기로 그린 미리보기를 칸 폭에 맞게 줄인다(--cozy-thumb-w는 그린 폭)
+  var thumbs = document.querySelectorAll('[data-cozy-workbench-thumb]');
+  if (thumbs.length && window.ResizeObserver) {
+    var fit = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var thumb = entry.target;
+        var width = parseFloat(getComputedStyle(thumb).getPropertyValue('--cozy-thumb-w')) || 1280;
+        thumb.style.setProperty('--cozy-thumb-scale', String(thumb.clientWidth / width));
+      });
+    });
+    thumbs.forEach(function (thumb) { fit.observe(thumb); });
+  }
+
   // 코드 생성 폼: 모듈을 고르면 그 모듈의 선택지만 보인다. 아이콘 칸은 적은 아이콘을 앞에 그린다
   var commandForm = document.querySelector('[data-cozy-command-form]');
   if (commandForm) {

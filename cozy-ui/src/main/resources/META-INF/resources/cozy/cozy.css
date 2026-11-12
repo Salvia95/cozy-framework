@@ -81,6 +81,8 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-bar { background: var(--tblr-bg-surface); border-bottom: 1px solid var(--tblr-border-color); min-height: 3.25rem; }
 /* 워드마크: viewBox 723×113의 비율로 폭을 정한다. Tabler가 제목과 상표 안의 svg를 아이콘 크기로 줄이므로 같은 자리에서 다시 정한다 */
 .navbar-brand .cozy-workbench-wordmark { display: block; flex: none; height: 1.5rem; width: 9.6rem; margin: 0; color: var(--tblr-body-color); }
+/* 머리: 워드마크 옆에 메뉴, 오른쪽 끝에 검색 칸. 검색 칸이 없는 화면에서도 메뉴 자리는 같다 */
+.cozy-workbench-bar .cozy-workbench-nav { margin-left: 1rem; margin-right: auto; }
 .cozy-workbench-nav .nav-link { padding: .375rem .75rem; border-radius: var(--tblr-border-radius); color: var(--tblr-secondary); }
 .cozy-workbench-nav .nav-link.active { background: var(--cozy-info-bg); color: var(--cozy-info-fg); font-weight: var(--tblr-font-weight-medium); }
 /* 머리와 알림을 뺀 나머지 높이를 세 칸이 채운다. 알림이 생겨도 페이지가 넘치지 않는다 */
@@ -239,6 +241,39 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-arg-result .alert { margin-bottom: .5rem; }
 .cozy-workbench-arg-result { scroll-margin-top: .75rem; }
 .cozy-workbench-arg-result:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: -2px; }
+/* 머리의 검색 칸 */
+.cozy-workbench-search { width: 16rem; max-width: 100%; margin: .25rem 0; }
+.cozy-workbench-search .form-control, .cozy-workbench-search-page .form-control { border-color: var(--tblr-secondary); }
+.cozy-workbench-search .form-control:focus, .cozy-workbench-search-page .form-control:focus { border-color: var(--tblr-primary); box-shadow: 0 0 0 2px var(--tblr-primary); }
+@media (max-width: 767.98px) { .cozy-workbench-search { width: 100%; } }
+/* 검색 화면: 읽는 폭으로 줄인다 */
+.cozy-workbench-search-page { max-width: 56rem; margin: 0 auto; }
+.cozy-workbench-search-context { overflow-wrap: anywhere; }
+/* 개요 */
+.cozy-workbench-overview-group th { background: var(--tblr-bg-surface-secondary); text-transform: none; font-size: var(--tblr-font-size-h5); color: var(--tblr-body-color); }
+.cozy-workbench-overview .card-actions a { font-size: var(--tblr-font-size-h5); }
+.cozy-workbench-overview-table code { white-space: nowrap; }
+/* 화면 표는 줄어들지 않고 칸 안에서 가로로 스크롤한다(좁은 화면) */
+.cozy-workbench-overview-screens { min-width: 40rem; }
+/* 화면 낭독기용 머리 글자(position: absolute)가 스크롤 상자 밖으로 나가 페이지를 넓히지 않게 한다 */
+.cozy-workbench-overview .table-responsive { position: relative; }
+/* 전체 상태 보기: 상태마다 고른 너비(full은 1280px)로 그린 미리보기를 카드 폭에 맞게 줄인다. 줄이는 비율은 workbench.js가 정한다 */
+.cozy-workbench-states { list-style: none; margin: 0; padding: 0; width: 100%; align-self: flex-start; display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
+.cozy-workbench-states-390 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); }
+.cozy-workbench-state { margin: 0; }
+.cozy-workbench-state > .card-header { min-height: 2.5rem; padding: .5rem .75rem; }
+.cozy-workbench-state-current { border-color: var(--tblr-primary); box-shadow: inset 0 0 0 1px var(--tblr-primary); }
+.cozy-workbench-state .stretched-link:focus-visible { outline: none; }
+.cozy-workbench-state:has(.stretched-link:focus-visible) { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
+.cozy-workbench-state:hover { border-color: var(--tblr-primary); }
+.cozy-workbench-thumb { --cozy-thumb-w: 1280; --cozy-thumb-h: 800; position: relative; overflow: hidden; aspect-ratio: var(--cozy-thumb-w) / var(--cozy-thumb-h);
+  background: var(--tblr-bg-surface); border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.cozy-workbench-thumb-1024 { --cozy-thumb-w: 1024; --cozy-thumb-h: 768; }
+.cozy-workbench-thumb-768 { --cozy-thumb-w: 768; --cozy-thumb-h: 1024; }
+.cozy-workbench-thumb-390 { --cozy-thumb-w: 390; --cozy-thumb-h: 844; }
+.cozy-workbench-thumb iframe { position: absolute; top: 0; left: 0; border: 0; width: calc(var(--cozy-thumb-w) * 1px); height: calc(var(--cozy-thumb-h) * 1px);
+  transform: scale(var(--cozy-thumb-scale, .25)); transform-origin: 0 0; }
 .cozy-workbench-fixture-subtitle, .cozy-workbench-grid-wrap { scroll-margin-top: .75rem; }
 .table.cozy-workbench-grid td { padding: .25rem; vertical-align: middle; }
 .table.cozy-workbench-grid .cozy-workbench-grid-number { width: 1%; padding-left: .5rem; padding-right: .5rem; background: var(--tblr-bg-surface-secondary); color: var(--tblr-secondary); font-weight: var(--tblr-font-weight-normal); text-align: right; font-family: var(--tblr-font-monospace); }

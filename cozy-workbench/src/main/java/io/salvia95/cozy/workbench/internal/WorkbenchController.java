@@ -52,7 +52,7 @@ public class WorkbenchController {
 	/** 미리보기 폭. {@code full}은 칸 전체 */
 	static final List<String> WIDTHS = List.of("full", "1024", "768", "390");
 
-	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec");
+	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec", "states");
 
 	private final FragmentManifest manifest;
 
@@ -70,9 +70,33 @@ public class WorkbenchController {
 	public record Line(int number, String text) {
 	}
 
+	/**
+	 * 화면을 고르지 않았으면({@code spec}이 없으면) 개요, 골랐으면 그 화면의 보기.
+	 */
 	@GetMapping
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
 			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view, Model model) {
+		if (spec == null) {
+			return overview(model);
+		}
+		return screen(spec, state, w, view, model);
+	}
+
+	/** 메뉴의 "화면": 첫 화면으로 간다. 화면이 없으면 빈 화면 보기 */
+	@GetMapping("/screens")
+	String screens(Model model) {
+		List<ScreenSpec> specs = this.screenSpecs.all();
+		if (specs.isEmpty()) {
+			return screen(null, null, "full", "preview", model);
+		}
+		return "redirect:" + org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
+			.queryParam("spec", specs.getFirst().screen())
+			.build()
+			.encode()
+			.toUriString();
+	}
+
+	private String screen(String spec, String state, String w, String view, Model model) {
 		if (!WIDTHS.contains(w)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] w는 " + WIDTHS + " 가운데 하나입니다: " + w);
 		}
@@ -94,6 +118,8 @@ public class WorkbenchController {
 		model.addAttribute("view", view);
 		// 주소 뒤에 붙일 view: 기본값이면 붙이지 않는다
 		model.addAttribute("fixtureSuffix", view.equals("fixture") ? "&view=fixture" : "");
+		// 화면이나 너비를 바꿔도 이어지는 보기: 샘플 데이터와 전체 상태 보기
+		model.addAttribute("viewSuffix", (view.equals("fixture") || view.equals("states")) ? "&view=" + view : "");
 		model.addAttribute("centerSuffix", (view.equals("fixture") || view.equals("preview")) ? "" : "&view=" + view);
 		if (specs.isEmpty()) {
 			return "cozy/dev/workbench";
@@ -148,6 +174,114 @@ public class WorkbenchController {
 		model.addAttribute("sourceFile", sourceFile);
 		model.addAttribute("sourceLines", (sourceFile != null) ? lines(sourceFile) : List.of());
 		return "cozy/dev/workbench";
+	}
+
+	// ── 개요: 화면, 모듈, 검사, 미구현 항목을 한 화면에 ─────────────────────────────
+
+	/** 개요에 보일 위반의 수. 나머지는 검사 화면에서 본다 */
+	static final int OVERVIEW_VIOLATIONS = 5;
+
+	/** 개요에 보일 미구현 항목의 수 */
+	static final int OVERVIEW_SLOTS = 10;
+
+	/**
+	 * 개요의 화면 한 줄.
+	 *
+	 * @param states 상태 이름 → 표시 이름
+	 * @param violations 그 화면의 템플릿이나 화면 명세에 있는 위반 수
+	 */
+	public record ScreenRow(ScreenSpec spec, Map<String, String> states, long violations) {
+	}
+
+	/** 개요의 미구현 항목 하나 ({@code cozy describe}의 {@code slots[]}) */
+	public record SlotRow(String slot, String file, int line, String what) {
+	}
+
+	@SuppressWarnings("unchecked")
+	private String overview(Model model) {
+		model.addAttribute("engineAvailable", this.engine.available());
+		model.addAttribute("specProblem", this.screenSpecs.problem());
+		WorkbenchEngine.Check check = check();
+		model.addAttribute("errors", check.errors());
+		model.addAttribute("check", check);
+		Map<String, Long> counts = violationCounts(check);
+		Map<String, List<ScreenRow>> screens = new LinkedHashMap<>();
+		List<ScreenSpec> specs = this.screenSpecs.all();
+		specs.forEach((s) -> screens.computeIfAbsent(module(s), (m) -> new ArrayList<>())
+			.add(new ScreenRow(s, WorkbenchTerms.states(s.states().keySet()), counts.getOrDefault(s.screen(), 0L))));
+		model.addAttribute("screenGroups", screens);
+		model.addAttribute("screenCount", specs.size());
+		List<Finding> findings = new ArrayList<>();
+		check.violations().forEach((v) -> findings.add(new Finding(v, link(v).orElse(null))));
+		model.addAttribute("findings", findings.subList(0, Math.min(OVERVIEW_VIOLATIONS, findings.size())));
+		model.addAttribute("findingCount", findings.size());
+
+		Map<String, Object> described = this.engine.available() ? this.engine.describe() : null;
+		model.addAttribute("app", (described != null && described.get("app") instanceof Map<?, ?> app) ? app : null);
+		List<ModuleGraph.Node> modules = List.of();
+		List<SlotRow> slots = new ArrayList<>();
+		if (described != null) {
+			List<Map<String, Object>> list = new ArrayList<>();
+			if (described.get("modules") instanceof List<?> m) {
+				m.forEach((item) -> list.add((Map<String, Object>) item));
+			}
+			modules = ModuleGraph.of(list, null).nodes().stream().sorted(java.util.Comparator.comparing(ModuleGraph.Node::name)).toList();
+			if (described.get("slots") instanceof List<?> found) {
+				for (Object item : found) {
+					Map<?, ?> slot = (Map<?, ?>) item;
+					slots.add(new SlotRow(String.valueOf(slot.get("slot")), String.valueOf(slot.get("file")),
+							(slot.get("line") instanceof Number n) ? n.intValue() : 0,
+							(slot.get("what") != null) ? String.valueOf(slot.get("what")) : ""));
+				}
+			}
+		}
+		model.addAttribute("modules", modules);
+		model.addAttribute("slots", slots.subList(0, Math.min(OVERVIEW_SLOTS, slots.size())));
+		model.addAttribute("slotCount", slots.size());
+		return "cozy/dev/workbench-overview";
+	}
+
+	// ── 검색: 화면, 컴포넌트, 생성 항목, 모듈 ─────────────────────────────────────
+
+	/** 카탈로그의 묶음 이름 (패턴 카탈로그와 같다) */
+	private static final Map<String, String> CATALOG_GROUPS = Map.of("pattern", "패턴", "component", "컴포넌트", "icon", "아이콘", "layout",
+			"레이아웃", "spi", "앱 공개 fragment");
+
+	@GetMapping("/search")
+	@SuppressWarnings("unchecked")
+	String search(@RequestParam(defaultValue = "") String q, Model model) {
+		model.addAttribute("engineAvailable", this.engine.available());
+		model.addAttribute("errors", check().errors());
+		List<WorkbenchSearch.Entry> entries = new ArrayList<>();
+		for (ScreenSpec spec : this.screenSpecs.all()) {
+			entries.add(new WorkbenchSearch.Entry("화면", spec.title().isEmpty() ? spec.screen() : spec.title(), spec.screen(), "",
+					module(spec) + " · " + spec.template(), PATH + "?spec=" + spec.screen(), List.of(spec.template())));
+		}
+		for (FragmentManifest.Entry fragment : this.manifest.fragments()) {
+			entries.add(new WorkbenchSearch.Entry("컴포넌트", fragment.displayName(), fragment.id(),
+					CATALOG_GROUPS.getOrDefault(fragment.group(), fragment.group()), fragment.purpose(),
+					"/cozy/dev/catalog#fragment-" + fragment.id().replace('/', '-'), List.of(fragment.purpose(), fragment.signature())));
+		}
+		for (WorkbenchEngine.Recipe recipe : this.engine.recipes()) {
+			entries.add(new WorkbenchSearch.Entry("생성 항목", recipe.title(), recipe.commandText(), recipe.group(), recipe.does(),
+					PATH + "/commands?recipe=" + recipe.name(), List.of(recipe.does(), recipe.name())));
+		}
+		if (this.engine.available() && this.engine.describe().get("modules") instanceof List<?> modules) {
+			List<Map<String, Object>> list = new ArrayList<>();
+			modules.forEach((item) -> list.add((Map<String, Object>) item));
+			for (ModuleGraph.Node node : ModuleGraph.of(list, null).nodes()) {
+				Object pkg = list.stream().filter((m) -> node.name().equals(m.get("name"))).findFirst().map((m) -> m.get("package")).orElse("");
+				entries.add(new WorkbenchSearch.Entry("모듈", node.name(), String.valueOf(pkg), "", node.summary(),
+						PATH + "/map?module=" + node.name(), List.of()));
+			}
+		}
+		String query = q.strip();
+		List<WorkbenchSearch.Group> groups = WorkbenchSearch.search(query, entries);
+		model.addAttribute("query", query);
+		model.addAttribute("searched", !WorkbenchSearch.terms(query).isEmpty());
+		model.addAttribute("results", groups);
+		model.addAttribute("total", groups.stream().mapToInt((g) -> g.hits().size()).sum());
+		return "cozy/dev/workbench-search";
 	}
 
 	/** 화면의 모듈: 템플릿 경로의 첫 마디 */

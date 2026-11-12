@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--/*
+  워크벤치의 검색 (/cozy/dev/workbench/search?q=). 화면, 컴포넌트, 생성 항목, 모듈을 한글 이름과 식별자로 찾는다(WorkbenchSearch).
+  찾은 항목은 그 화면, 카탈로그의 그 컴포넌트, 그 생성 항목의 폼, 그 모듈로 이어진다.
+*/-->
+<html th:replace="~{cozy/layout/base :: base('워크벤치 검색', ~{::main})}">
+<body>
+<main>
+  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('search', ${errors}, null)}"></div>
+  <div class="container-fluid py-3">
+    <div class="cozy-workbench-search-page">
+      <h2 class="page-title mb-3">검색</h2>
+      <form class="d-flex gap-2 mb-2" role="search" method="get" th:action="@{/cozy/dev/workbench/search}">
+        <div class="input-icon flex-fill">
+          <span class="input-icon-addon"><svg th:replace="~{cozy/icon/tabler :: icon('search')}"></svg></span>
+          <input class="form-control" type="search" name="q" autocomplete="off" maxlength="100" th:value="${query}"
+                 aria-label="화면, 컴포넌트, 생성 항목, 모듈 검색" placeholder="예: 메모 목록, badge, crud" th:autofocus="${!searched}">
+        </div>
+        <button type="submit" class="btn btn-primary">검색</button>
+      </form>
+      <p class="text-secondary small mb-4">화면, 컴포넌트, 생성 항목, 모듈을 한글 이름이나 식별자로 찾습니다. 띄어쓰기와 대소문자는 구분하지 않습니다.</p>
+
+      <th:block th:if="${searched and total == 0}">
+        <div class="card"><div class="card-body">
+          <div th:replace="~{cozy/component/empty-state :: emptyState('search', '검색 결과 없음', |'${query}'와 일치하는 항목이 없습니다. 다른 이름이나 식별자로 검색하세요.|)}"></div>
+        </div></div>
+      </th:block>
+
+      <th:block th:if="${total > 0}">
+        <p class="mb-3" role="status"><strong th:text="|'${query}' 검색 결과 ${total}건|">'메모' 검색 결과 7건</strong></p>
+        <section class="card mb-3" th:each="group, it : ${results}" th:aria-labelledby="|search-group-${it.index}|">
+          <div class="card-header">
+            <h3 class="card-title" th:id="|search-group-${it.index}|" th:text="${group.kind}">화면</h3>
+            <span class="text-secondary ms-2" th:text="|${group.hits.size()}건|">2건</span>
+          </div>
+          <div class="list-group list-group-flush">
+            <a class="list-group-item list-group-item-action" th:each="hit : ${group.hits}" th:with="entry=${hit.entry}" th:href="${entry.href}">
+              <span class="d-flex flex-wrap align-items-baseline column-gap-2">
+                <span class="fw-medium" th:text="${entry.label}">메모 목록</span>
+                <code class="cozy-workbench-id" th:if="${entry.id != entry.label}" th:text="${entry.id}">memo-list</code>
+              </span>
+              <span class="d-block text-secondary small cozy-workbench-search-context" th:if="${!entry.type.isEmpty() or !entry.context.isEmpty()}"
+                    th:text="${entry.type.isEmpty()} ? ${entry.context} : (${entry.context.isEmpty()} ? ${entry.type} : |${entry.type} · ${entry.context}|)">memo · memo/api/list</span>
+            </a>
+          </div>
+        </section>
+      </th:block>
+    </div>
+  </div>
+  <script th:src="@{/cozy/workbench.js}" defer></script>
+</main>
+</body>
+</html>

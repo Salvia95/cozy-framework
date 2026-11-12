@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--/*
+  워크벤치의 개요 (/cozy/dev/workbench, 화면을 고르지 않았을 때). 숫자 카드 줄 아래에 화면 목록, 규칙 위반, 모듈, 미구현 항목.
+  화면과 화면 명세는 앱의 화면 명세에서, 나머지는 cozy check와 cozy describe에서 읽는다.
+*/-->
+<html th:replace="~{cozy/layout/base :: base('워크벤치 개요', ~{::main})}">
+<body>
+<main>
+  <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('overview', ${errors}, null)}"></div>
+  <div class="container-fluid py-3 cozy-workbench-overview">
+    <th:block th:if="${specProblem != null}">
+      <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 화면 명세를 읽지 못해 빌드된 화면 명세를 표시합니다. ' + specProblem})}"></div>
+    </th:block>
+    <th:block th:if="${!engineAvailable}">
+      <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 모듈, 검사, 미구현 항목을 읽을 수 없습니다. 화면 목록만 표시합니다.')}"></div>
+    </th:block>
+
+    <div class="d-flex flex-wrap align-items-baseline column-gap-3 row-gap-1 mb-3">
+      <h2 class="page-title mb-0">개요</h2>
+      <th:block th:if="${app != null}">
+        <code class="cozy-workbench-id" th:text="${app.basePackage}">io.salvia95.cozy.reference</code>
+        <span class="text-secondary small" th:text="|Cozy ${app.cozyVersion}|">Cozy 1.2.0</span>
+      </th:block>
+    </div>
+
+    <div class="row row-deck row-cards mb-3">
+      <div class="col-sm-6 col-xl-3">
+        <div th:replace="~{cozy/component/stat :: stat('layout-dashboard', |${screenCount}개|, '화면')}"></div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div th:replace="~{cozy/component/stat :: stat('packages', ${engineAvailable} ? |${modules.size()}개| : '—', '모듈')}"></div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div th:replace="~{cozy/component/stat :: stat(${findingCount > 0} ? 'alert-triangle' : 'circle-check', ${engineAvailable and check.failure == null} ? |${findingCount}건| : '—', '규칙 위반')}"></div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div th:replace="~{cozy/component/stat :: stat('list-check', ${engineAvailable} ? |${slotCount}건| : '—', '미구현 항목')}"></div>
+      </div>
+    </div>
+
+    <div class="row row-cards">
+      <div class="col-xl-7">
+        <section class="card" aria-labelledby="overview-screens">
+          <div class="card-header">
+            <h3 class="card-title" id="overview-screens">화면</h3>
+            <div class="card-actions"><a th:href="@{/cozy/dev/workbench/screens}">화면 보기</a></div>
+          </div>
+          <div class="card-body" th:if="${screenGroups.isEmpty()}">
+            <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
+          </div>
+          <div class="table-responsive" th:if="${!screenGroups.isEmpty()}">
+            <table class="table card-table table-vcenter cozy-workbench-overview-table cozy-workbench-overview-screens">
+              <thead><tr><th>화면</th><th>상태</th><th>규칙 위반</th><th><span class="visually-hidden">보기</span></th></tr></thead>
+              <tbody th:each="group : ${screenGroups}">
+                <tr class="cozy-workbench-overview-group">
+                  <th colspan="4" scope="colgroup"><span th:text="${group.key}">memo</span> <span class="text-secondary fw-normal" th:text="|${group.value.size()}개|">4개</span></th>
+                </tr>
+                <tr th:each="row : ${group.value}" th:with="spec=${row.spec}, name=${spec.title.isEmpty()} ? ${spec.screen} : ${spec.title}">
+                  <td>
+                    <a th:href="@{/cozy/dev/workbench(spec=${spec.screen})}" th:text="${name}">메모 목록</a>
+                    <code class="cozy-workbench-id ms-1" th:if="${!spec.title.isEmpty()}" th:text="${spec.screen}">memo-list</code>
+                  </td>
+                  <td th:text="${#strings.listJoin(row.states.values(), ', ')}">기본, 데이터 없음</td>
+                  <td>
+                    <span class="badge cozy-tone-critical" th:if="${row.violations > 0}" th:text="|위반 ${row.violations}건|">위반 1건</span>
+                    <span class="text-secondary" th:if="${row.violations == 0}">없음</span>
+                  </td>
+                  <td class="text-end text-nowrap">
+                    <a th:href="@{/cozy/dev/workbench(spec=${spec.screen},view='states')}" th:aria-label="|${name} 전체 상태 보기|">전체 상태 보기</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-xl-5 d-flex flex-column gap-3">
+        <section class="card" aria-labelledby="overview-check">
+          <div class="card-header">
+            <h3 class="card-title" id="overview-check">규칙 위반</h3>
+            <div class="card-actions"><a th:href="@{/cozy/dev/workbench/check}">검사 결과 보기</a></div>
+          </div>
+          <div class="card-body" th:if="${!engineAvailable}">
+            <p class="text-secondary mb-0">앱 프로젝트 폴더에서 실행할 때만 검사합니다.</p>
+          </div>
+          <div class="card-body" th:if="${engineAvailable and check.failure != null}">
+            <div th:replace="~{cozy/component/alert :: alert('critical', ${'검사를 실행할 수 없습니다. ' + check.failure})}"></div>
+          </div>
+          <div class="card-body" th:if="${engineAvailable and check.failure == null and findingCount == 0}">
+            <p class="d-flex align-items-center gap-2 mb-0">
+              <svg th:replace="~{cozy/icon/tabler :: icon('circle-check')}"></svg>위반이 없습니다.
+            </p>
+            <p class="text-secondary small mt-1 mb-0">컴파일과 렌더링 검사는 mvn -o verify로 확인하세요.</p>
+          </div>
+          <th:block th:if="${engineAvailable and check.failure == null and findingCount > 0}">
+            <div class="card-body pb-2">
+              <strong th:text="|오류 ${check.errors}건|">오류 0건</strong><span th:if="${check.warnings > 0}" th:text="|, 경고 ${check.warnings}건|">, 경고 0건</span>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item" th:each="finding : ${findings}" th:with="v=${finding.violation}">
+                <div class="d-flex flex-wrap align-items-baseline gap-2">
+                  <span class="badge" th:classappend="${v.error} ? 'cozy-tone-critical' : 'cozy-tone-warning'" th:text="|${v.error ? '오류' : '경고'} ${v.id}|">오류 R3</span>
+                  <span th:text="${v.name().isEmpty()} ? ${v.message} : ${v.name()}">다른 모듈 템플릿 참조</span>
+                </div>
+                <div class="cozy-workbench-file small mt-1" th:if="${v.file != null}">
+                  <a th:if="${finding.link != null and v.line > 0}" th:href="@{/cozy/dev/workbench(spec=${finding.link.screen},view=${finding.link.view})} + '#L' + ${v.line}"
+                     th:text="|${v.file}:${v.line}|">src/main/resources/templates/memo/api/list.html:9</a>
+                  <code th:unless="${finding.link != null and v.line > 0}" th:text="${v.line > 0} ? |${v.file}:${v.line}| : ${v.file}">파일</code>
+                </div>
+              </li>
+            </ul>
+            <div class="card-footer text-secondary small" th:if="${findingCount > findings.size()}"
+                 th:text="|나머지 ${findingCount - findings.size()}건은 검사 결과에서 확인하세요.|">나머지</div>
+          </th:block>
+        </section>
+
+        <section class="card" aria-labelledby="overview-modules">
+          <div class="card-header">
+            <h3 class="card-title" id="overview-modules">모듈</h3>
+            <div class="card-actions"><a th:href="@{/cozy/dev/workbench/map}">모듈 의존성 보기</a></div>
+          </div>
+          <div class="card-body" th:if="${modules.isEmpty()}">
+            <p class="text-secondary mb-0" th:text="${engineAvailable} ? '모듈이 없습니다.' : '앱 프로젝트 폴더에서 실행할 때만 모듈을 읽습니다.'">모듈이 없습니다.</p>
+          </div>
+          <div class="table-responsive" th:if="${!modules.isEmpty()}">
+            <table class="table card-table cozy-workbench-overview-table">
+              <thead><tr><th>모듈</th><th>의존 모듈</th><th>참조하는 모듈</th></tr></thead>
+              <tbody>
+                <tr th:each="module : ${modules}">
+                  <td>
+                    <a th:href="@{/cozy/dev/workbench/map(module=${module.name})}" th:text="${module.name}">memo</a>
+                    <span class="d-block text-secondary small" th:if="${!module.summary.isEmpty()}" th:text="${module.summary}">화면 4</span>
+                  </td>
+                  <td th:text="${module.uses.isEmpty()} ? '—' : ${#strings.listJoin(module.uses, ', ')}">—</td>
+                  <td th:text="${module.usedBy.isEmpty()} ? '—' : ${#strings.listJoin(module.usedBy, ', ')}">activity, dashboard</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="overview-slots">
+          <div class="card-header"><h3 class="card-title" id="overview-slots">미구현 항목</h3></div>
+          <div class="card-body" th:if="${slots.isEmpty()}">
+            <p class="text-secondary mb-0" th:text="${engineAvailable} ? '미구현 항목이 없습니다.' : '앱 프로젝트 폴더에서 실행할 때만 읽습니다.'">미구현 항목이 없습니다.</p>
+          </div>
+          <th:block th:if="${!slots.isEmpty()}">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item" th:each="slot : ${slots}">
+                <div th:text="${slot.what.isEmpty()} ? ${slot.slot} : ${slot.what}">조회 메서드 구현</div>
+                <code class="cozy-workbench-file small" th:text="${slot.line > 0} ? |${slot.file}:${slot.line}| : ${slot.file}">src/main/java/…:12</code>
+              </li>
+            </ul>
+            <div class="card-footer text-secondary small" th:if="${slotCount > slots.size()}"
+                 th:text="|나머지 ${slotCount - slots.size()}건은 cozy describe로 확인하세요.|">나머지</div>
+          </th:block>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script th:src="@{/cozy/workbench.js}" defer></script>
+</main>
+</body>
+</html>

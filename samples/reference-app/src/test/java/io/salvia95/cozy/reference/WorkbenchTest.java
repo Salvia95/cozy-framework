@@ -54,8 +54,9 @@ class WorkbenchTest {
 		}
 
 		@Test
-		void theFirstScreenAndItsDefaultStateOpenWithoutParameters() throws Exception {
-			String html = page("");
+		void theScreensMenuOpensTheFirstScreenAndItsDefaultState() throws Exception {
+			String target = this.mvc.perform(get("/cozy/dev/workbench/screens")).andReturn().getResponse().getRedirectedUrl();
+			String html = page(target.substring("/cozy/dev/workbench".length()));
 			assertThat(html).contains("워크벤치").contains("dashboard-index").contains("memo-list").contains("state=default");
 		}
 
