@@ -99,7 +99,7 @@ foreach ($path in @('bin', 'lib', 'jdk', 'docs', 'licenses')) {
 }
 if (Test-Path $dir) {
   $left = @(Get-ChildItem -Path $dir -Recurse -File)
-  Write-Host "[cozy] 참고: 지운 뒤 남은 파일 $($left.Count)개 (설치 뒤 Maven이 저장소에 만든 파일)"
+  Write-Host "[cozy] 참고: 지운 뒤 남은 파일 $($left.Count)개 (설치 뒤 Maven이 저장소에 만든 파일: repository\.locks의 잠금 파일 등)"
   $left | Select-Object -First 10 | ForEach-Object { Write-Host "  $($_.FullName)" }
   Remove-Item -Recurse -Force $dir
 }
@@ -111,3 +111,5 @@ Check (-not (Test-Path (Join-Path $env:ProgramFiles 'Cozy'))) "$env:ProgramFiles
 Check (-not (Test-Path (Join-Path $dir 'bin'))) "$dir\bin이 생기지 않았다"
 
 Write-Host "[cozy] MSI 검증 통과: $Msi"
+# 위에서 일부러 실패시킨 mvn의 $LASTEXITCODE가 스크립트의 종료 코드로 남지 않게 한다
+exit 0

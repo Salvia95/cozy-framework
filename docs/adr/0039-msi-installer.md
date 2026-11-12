@@ -84,7 +84,7 @@ zip 번들의 설치는 네 단계였다.
 - 릴리스 자산: MSI, 두 zip 번들, JDK 소스 묶음, `SHA256SUMS`.
 - 새 Maven 의존성과 플러그인은 없다. 빌드 도구(WiX, CI에서만)와 Windows 러너가 늘었다.
 - 설치 방법이 두 가지(MSI, zip)가 된다. 둘이 같은 폴더 모양과 같은 설정을 쓰도록 MSI는 `cozy install` 결과를 그대로 묶는다.
-- 제거해도 Maven이 저장소에 만든 파일(앱을 `mvn install`한 결과 등)은 남는다. 폴더를 지우려면 제거 뒤 `%LOCALAPPDATA%\Programs\Cozy`를 지운다.
+- 제거해도 Maven이 저장소에 만든 파일은 남는다. Maven 3.10은 저장소를 읽을 때마다 `repository\.locks\`에 아티팩트별 잠금 파일을 만든다(CI 확인 때 앱 하나로 1,070개). 앱을 `mvn install`한 결과도 남는다. 폴더를 지우려면 제거 뒤 `%LOCALAPPDATA%\Programs\Cozy`를 지운다.
 
 ## 도입 검토 (CLAUDE.md: 이유, 라이선스, 폐쇄망 반입 영향)
 
