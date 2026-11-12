@@ -88,11 +88,12 @@ function Install-Cozy([string]$Destination) {
   ) -join "`r`n"
   [System.IO.File]::WriteAllText((Join-Path $bin 'mvn.cmd'), $mvnCmd + "`r`n", (New-Object System.Text.ASCIIEncoding))
 
+  # 저장소는 Maven 폴더 옆이다. 절대 경로를 쓰지 않으므로 설치 폴더를 옮기거나 MSI가 다른 곳에 깔아도 맞다
   $settings = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Cozy 오프라인 번들 ${Version}: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
-  <localRepository>$repo</localRepository>
+  <localRepository>`${maven.home}/../repository</localRepository>
   <offline>true</offline>
 </settings>
 "@

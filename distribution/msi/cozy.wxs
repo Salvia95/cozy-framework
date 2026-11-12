@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cozy 개발 도구 설치 파일 (Windows x64). build-msi.ps1이 만든다.
+
+  - 사용자별 설치: %LOCALAPPDATA%\Programs\Cozy. 관리자 권한이 필요 없다.
+    사용자별·컴퓨터별 겸용 패키지(기본은 사용자별)로 만들고 컴퓨터별 설치는 막는다.
+    컴퓨터별로 깔면 Program Files 아래의 Maven 저장소에 사용자가 쓸 수 없어 앱 빌드가 실패한다.
+  - 내용: Windows x64 오프라인 번들을 cozy install로 펼친 폴더 그대로(bindpath Staging).
+  - PATH: 사용자 PATH 끝에 <설치 폴더>\bin을 더하고, 지우면 뺀다.
+  - 업그레이드: UpgradeCode가 같은 이전 판을 지우고 새 판을 깐다. UpgradeCode는 바꾸지 않는다.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Cozy" Manufacturer="Cozy" Version="$(CozyMsiVersion)"
+           UpgradeCode="F191D6D6-32AC-47DD-A32E-BE21E5045AF9"
+           Scope="perUserOrMachine" Language="1042" Codepage="949" Compressed="yes">
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="더 새로운 Cozy가 이미 설치되어 있습니다. 먼저 제거한 뒤 설치하세요." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Launch Condition="Installed OR (MSIINSTALLPERUSER = 1 AND NOT ALLUSERS = 1)"
+            Message="Cozy는 사용자별로만 설치합니다(%LOCALAPPDATA%\Programs\Cozy). ALLUSERS=1 없이 설치하세요." />
+
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPCOMMENTS" Value="Cozy $(CozyVersion): JDK, Maven, 오프라인 Maven 저장소, cozy 명령" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="Cozy" />
+    </StandardDirectory>
+
+    <Feature Id="Cozy">
+      <Files Directory="INSTALLFOLDER" Include="!(bindpath.Staging)\**" />
+      <Component Id="UserPath" Directory="INSTALLFOLDER" Guid="3DCCFC9B-6D79-43DA-8CEA-9589A08AD0F0">
+        <Environment Id="UserPath" Name="PATH" Value="[INSTALLFOLDER]bin" Part="last" Action="set" System="no" />
+        <RegistryValue Root="HKMU" Key="Software\Cozy" Name="UserPath" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </Feature>
+  </Package>
+</Wix>

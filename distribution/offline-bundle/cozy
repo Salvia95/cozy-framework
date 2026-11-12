@@ -80,11 +80,12 @@ exec "\$COZY_HOME/$(basename "$maven_dir")/bin/mvn" "\$@"
 SH
   chmod +x "$dest/bin/mvn"
 
+  # 저장소는 Maven 폴더 옆이다. 절대 경로를 쓰지 않으므로 설치 폴더를 옮겨도 맞다
   cat > "$maven_dir/conf/settings.xml" <<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Cozy 오프라인 번들 $VERSION: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
-  <localRepository>$dest/repository</localRepository>
+  <localRepository>\${maven.home}/../repository</localRepository>
   <offline>true</offline>
 </settings>
 XML

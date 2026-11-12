@@ -125,6 +125,11 @@ class BundleCommandsTest {
 			assertThat(install.code()).as(install.output()).isZero();
 			assertThat(dest.resolve("jdk/bin/java")).isExecutable();
 			assertThat(dest.resolve("bin/mvn")).isExecutable();
+			// 저장소는 Maven 폴더 옆을 가리킨다. 설치 폴더의 절대 경로가 들어가지 않는다
+			assertThat(Files.readString(dest.resolve("apache-maven-3.10.0/conf/settings.xml")))
+				.contains("<localRepository>${maven.home}/../repository</localRepository>")
+				.contains("<offline>true</offline>")
+				.doesNotContain(dest.toString());
 			// PATH에는 bin 하나만 더한다. bin의 mvn이 설치 폴더의 Maven을 부른다
 			assertThat(install.output()).contains("export PATH=\"" + dest.resolve("bin") + ":$PATH\"")
 				.doesNotContain("apache-maven-3.10.0/bin");
