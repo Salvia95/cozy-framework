@@ -95,6 +95,27 @@ class BundleCommandsTest {
 	}
 
 	/**
+	 * PowerShell 변수 이름에는 한글도 들어간다. {@code "$path가 없습니다"}는 {@code $path가}라는 빈 변수가 되어 메시지에서 값이
+	 * 사라진다. 한글이 바로 붙으면 {@code ${path}}로 쓴다.
+	 */
+	@Test
+	void powershellVariablesAreNotGluedToHangul() throws IOException {
+		Pattern glued = Pattern.compile("\\$[A-Za-z_][A-Za-z0-9_]*[\\uAC00-\\uD7A3]");
+		List<String> found = new ArrayList<>();
+		try (var paths = Files.walk(BUNDLE.getParent())) {
+			for (Path script : paths.filter((path) -> path.toString().endsWith(".ps1")).sorted().toList()) {
+				List<String> lines = Files.readAllLines(script, StandardCharsets.UTF_8);
+				for (int i = 0; i < lines.size(); i++) {
+					if (!lines.get(i).strip().startsWith("#") && glued.matcher(lines.get(i)).find()) {
+						found.add(BUNDLE.getParent().relativize(script) + ":" + (i + 1) + " " + lines.get(i).strip());
+					}
+				}
+			}
+		}
+		assertThat(found).isEmpty();
+	}
+
+	/**
 	 * bash의 cozy가 번들의 JDK({@code jdk/})를 쓰는 방식. 가짜 JDK와 가짜 Maven으로 번들 모양을 만들고, 시스템 JDK 자리에는 부르면
 	 * 실패하는 java를 둔다.
 	 */

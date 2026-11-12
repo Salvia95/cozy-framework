@@ -29,7 +29,7 @@ $staging = Join-Path $work 'staging'
 & (Join-Path $root.FullName 'cozy.cmd') install $staging
 if ($LASTEXITCODE -ne 0) { throw "[cozy] cozy install 실패 (종료 코드 $LASTEXITCODE)" }
 foreach ($path in @('bin\cozy.cmd', 'bin\mvn.cmd', 'lib\cozy.ps1', 'jdk\bin\java.exe', 'repository', 'COZY_VERSION')) {
-  if (-not (Test-Path (Join-Path $staging $path))) { throw "[cozy] 설치 폴더에 $path가 없습니다" }
+  if (-not (Test-Path (Join-Path $staging $path))) { throw "[cozy] 설치 폴더에 ${path}가 없습니다" }
 }
 
 # 2. MSI

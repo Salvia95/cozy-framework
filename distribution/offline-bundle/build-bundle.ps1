@@ -86,7 +86,7 @@ if ($MavenZip -match '^https?://') {
 }
 else { Copy-Item $MavenZip $Bundle }
 if ((Get-FileHash -Algorithm SHA512 $mavenTarget).Hash.ToLowerInvariant() -ne $MavenSha512) {
-  throw "[cozy] $MavenFile의 SHA-512가 맞지 않습니다 (다른 판이면 -MavenSha512를 주세요)"
+  throw "[cozy] ${MavenFile}의 SHA-512가 맞지 않습니다 (다른 판이면 -MavenSha512를 주세요)"
 }
 # cozy-cli: 실행 jar와 그 의존(cozy-rules, AttoParser, SnakeYAML). 같은 jar가 repository\에도 있어 라이선스 목록에 든다
 $cliLib = New-Item -ItemType Directory -Force -Path (Join-Path $Bundle 'lib\cli\lib')

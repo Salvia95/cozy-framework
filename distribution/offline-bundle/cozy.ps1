@@ -21,7 +21,8 @@ $Root = if (Test-Path (Join-Path $PSScriptRoot 'COZY_VERSION')) { $PSScriptRoot 
 $VersionFile = Join-Path $Root 'COZY_VERSION'
 $Version = if (Test-Path $VersionFile) { (Get-Content -Raw $VersionFile).Trim() } else { 'unknown' }
 $Action = if ($args.Count -gt 0) { [string]$args[0] } else { 'help' }
-$Rest = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
+# @(...)로 감싼다. if의 결과는 펼쳐지므로 인수가 하나면 배열이 아니라 문자열이 되고, $Rest[0]이 첫 글자가 된다
+$Rest = @(if ($args.Count -gt 1) { $args[1..($args.Count - 1)] })
 
 # 번들의 JDK는 이 명령(과 여기서 부르는 Maven) 안에서만 쓴다. 시스템의 JAVA_HOME과 PATH 설정은 바꾸지 않는다
 $BundledJdk = Join-Path $Root 'jdk'
@@ -131,7 +132,7 @@ function New-CozyApp([object[]]$MvnArgs) {
 function Invoke-CozyCli([object[]]$CliArgs) {
   $jar = Join-Path $Root 'lib\cli\cozy-cli.jar'
   if (-not (Test-Path $jar)) {
-    Write-Host "[cozy] $jar가 없습니다. 번들을 다시 설치하세요."
+    Write-Host "[cozy] ${jar}가 없습니다. 번들을 다시 설치하세요."
     exit 2
   }
   Assert-Java

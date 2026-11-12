@@ -93,7 +93,7 @@ $code = Invoke-Msiexec @('/x', "`"$Msi`"") (Join-Path $Work 'uninstall.log')
 Check ($code -eq 0) "msiexec /x 종료 코드 0 (지금 $code)"
 Check (-not (Test-UserPath "$dir\bin")) "사용자 PATH에서 $dir\bin이 빠졌다"
 foreach ($path in @('bin', 'lib', 'jdk', 'docs', 'licenses')) {
-  Check (-not (Test-Path (Join-Path $dir $path))) "지운 뒤 $path가 없다"
+  Check (-not (Test-Path (Join-Path $dir $path))) "지운 뒤 ${path}가 없다"
 }
 if (Test-Path $dir) {
   $left = @(Get-ChildItem -Path $dir -Recurse -File)
