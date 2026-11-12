@@ -27,7 +27,7 @@
 ```bash
 mvn install                                 # JDK 25, Maven 3.10
 mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCatalog=local \
-  -DarchetypeGroupId=io.salvia95.cozy -DarchetypeArtifactId=cozy-archetype -DarchetypeVersion=1.2.2
+  -DarchetypeGroupId=io.salvia95.cozy -DarchetypeArtifactId=cozy-archetype -DarchetypeVersion=1.3.0-SNAPSHOT
 ```
 
 ## 문서
