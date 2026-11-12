@@ -1,6 +1,7 @@
 package io.salvia95.cozy.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.yaml.snakeyaml.Yaml;
 
 import io.salvia95.cozy.cli.CozyCliTest.Result;
 
@@ -240,6 +242,21 @@ class RecipeCommandTest {
 		assertThat(ok("add", "crud", "memo", "--entity", "Memo", "--label", "메모", "--icon", "notes", "--field", "title:text!:제목",
 				"--field", "body:longtext:본문", "--field", "pinned:bool:고정", "--publish", "created")
 			.out()).contains("[cozy] 바뀐 것 없음");
+	}
+
+	@Test
+	void crudSpecsStayValidYamlWhateverTheLabelsContain() throws IOException {
+		// 라벨이 YAML 기호(? [ # :)로 시작하거나 그것을 담아도 스펙이 YAML로 읽힌다. 따옴표 없이 쓰면 앱 빌드의 스펙 읽기가 실패한다
+		app();
+		ok("add", "crud", "memo", "--entity", "Memo", "--label", "[메모] #1", "--icon", "notes", "--field",
+				"title:text!:? 제목: [핵심] #1", "--field", "body:longtext:# 본문");
+		try (var specs = Files.list(this.dir.resolve("src/main/resources/specs"))) {
+			for (Path spec : specs.filter((p) -> p.getFileName().toString().startsWith("memo-")).toList()) {
+				assertThatCode(() -> new Yaml().load(Files.readString(spec))).as(spec.getFileName().toString())
+					.doesNotThrowAnyException();
+			}
+		}
+		assertThat(read("src/main/resources/specs/memo-form.yml")).contains("title: \"? 제목: [핵심] #1을(를) 입력하세요\"");
 	}
 
 	@Test

@@ -143,6 +143,8 @@ final class CrudRecipe {
 				.put("name", name.name()).put("Name", name.pascal()).put("nameLabel", name.label())
 				.put("nameColumn", name.column())
 				.put("nameRequired", Names.objectParticle(name.label()) + " 입력하세요")
+				// 스펙(YAML)에 넣는 값은 따옴표로 감싼다. 라벨이 ?, [, #처럼 YAML 기호로 시작해도 읽힌다
+				.put("nameRequiredYaml", Field.quote(Names.objectParticle(name.label()) + " 입력하세요"))
 				.put("nameSample", name.sample());
 
 			// Java 선언과 인자

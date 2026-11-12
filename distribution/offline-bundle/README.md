@@ -4,6 +4,8 @@
 
 ## 번들 두 가지
 
+Windows PC는 보통 번들 대신 같은 릴리스의 설치 파일 `cozy-{버전}-windows-x64.msi`를 쓴다. 더블클릭하면 아래 Windows x64 번들의 내용을 `%LOCALAPPDATA%\Programs\Cozy`에 설치하고(관리자 권한 불필요) 사용자 PATH에 `bin`을 등록한다. 제거는 "설치된 앱"에서 한다(ADR-0039). zip 번들은 MSI를 쓸 수 없는 PC와 Linux·WSL용이다.
+
 | 번들 | 쓰는 곳 |
 | --- | --- |
 | `cozy-offline-bundle-{버전}-windows-x64.zip` | Windows x64 PC. JDK 25(Eclipse Temurin)가 `jdk/`에 들어 있어 따로 설치하지 않는다 |
@@ -83,6 +85,7 @@ mvn -o -Pdist package
   - 로컬 저장소를 번들 저장소로 둔다.
   - `offline=true`로 둔다.
   - 이 Maven으로는 네트워크에 나가지 않는다.
+  - 저장소는 `${maven.home}/../repository`(Maven 폴더 옆)로 적는다. 절대 경로가 없어 설치 폴더를 옮겨도 맞는다.
 - **JDK**: 번들에 `jdk\`가 있으면 설치 폴더에 복사한다. 이전 설치의 `jdk\`는 지운다.
   - `cozy`와 `bin\mvn.cmd`는 그 JDK로 돈다. Maven이 그 JDK로 돌면 테스트, 패키징(`jpackage`)도 같은 JDK를 쓴다.
   - 시스템의 `JAVA_HOME`과 PATH 설정은 바꾸지 않는다. 다른 Java 프로그램에는 영향이 없다.

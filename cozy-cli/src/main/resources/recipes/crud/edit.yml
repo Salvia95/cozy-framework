@@ -17,4 +17,4 @@ states:
     item: {{detailSample}}
     form: {{formInvalid}}
     _errors:
-      form: { {{name}}: {{nameRequired}} }
+      form: { {{name}}: {{nameRequiredYaml}} }

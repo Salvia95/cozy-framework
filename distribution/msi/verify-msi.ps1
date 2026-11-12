@@ -59,6 +59,8 @@ Check ((& cozy version) -eq $version) "cozy version = $version"
 $mvnVersion = (& mvn -v) -join "`n"
 Check ($LASTEXITCODE -eq 0 -and $mvnVersion.Contains("runtime: $dir\jdk")) "mvn -v의 runtime이 $dir\jdk"
 
+# 한글 인수: java와 Maven은 Windows의 ANSI 코드 페이지로 인수를 받는다. 한국어 Windows(949)에서는 그대로지만,
+# 영어 Windows(1252, CI 러너)에서는 ?로 바뀐다. 여기서는 그래도 빌드가 되는지(스펙의 따옴표)를 보고, 한글이 그대로인지는 사람이 본다
 $apps = Join-Path $Work 'apps'
 New-Item -ItemType Directory -Force -Path $apps | Out-Null
 Push-Location $apps
