@@ -11,7 +11,7 @@ class RuleNamesTest {
 
 	@Test
 	void everyRuleThatCozyCheckReportsHasAName() {
-		Stream.concat(IntStream.rangeClosed(1, 15).mapToObj((n) -> "R" + n), Stream.of("C8", "C9"))
+		Stream.concat(IntStream.rangeClosed(1, 16).mapToObj((n) -> "R" + n), Stream.of("C8", "C9"))
 			.forEach((id) -> assertThat(RuleNames.of(id)).as(id).isNotBlank());
 		assertThat(RuleNames.of("X1")).isEmpty();
 	}

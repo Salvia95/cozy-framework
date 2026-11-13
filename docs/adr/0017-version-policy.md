@@ -45,7 +45,7 @@
 | exec-maven-plugin | 3.7.0 | cozy-parent |
 | license-maven-plugin | 2.9.0 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
 | GitHub Actions: checkout 7.0.1, setup-java 6.2.0, upload-artifact 7.0.2, download-artifact 8.0.2 | 커밋 SHA로 고정 | 릴리스 워크플로 (ADR-0028, 제안) |
-| Tabler | 1.7.4 | cozy-ui 벤더 자산 |
+| Tabler | 1.7.5 | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Alpine.js CSP 빌드 (`@alpinejs/csp`) | 3.17.5 | cozy-ui 벤더 자산. 표준 빌드(`alpinejs`)는 쓰지 않는다 (ADR-0040, 승인 2026-11-13) |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
@@ -69,5 +69,6 @@
 - 2026-11-10(워크벤치 첫 마일스톤): Tabler 1.7.4와 Tabler Icons 3.51.0(외곽선 5,233개)으로 올리고 화면을 확인했다.
 - 2026-11-12(M27 보완): 다시 확인했다. JDK 25.0.5(Temurin)가 나와 빌드 PC를 올리고 전체 빌드를 통과시켰다. agent-browser를 0.42.0으로 올렸다(Chrome 157). 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 플러그인, Tabler 1.7.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9).
 - 2026-11-12(릴리스 1.2.0): 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Framework 7.0.10, Security 7.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.0, 플러그인, Tabler 1.7.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9, GitHub Actions). 더 새로운 것은 LTS가 아닌 JDK 26·27(ADR-0001이 JDK 25), `next` 태그의 htmx 4, RC인 Maven 4뿐이라 올리지 않는다.
+- 2026-11-13(M31): 시작할 때 다시 확인했다. Tabler가 1.7.5 GA(11-12)로 나와 올렸다. Alpine.js CSP 빌드 3.17.5를 더했다(ADR-0040). 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9). Boot 4.2와 Modulith 2.2는 RC라 올리지 않는다.
 - 2026-11-13(MSI): WiX Toolset 7.0.1(2026-10-26, NuGet `wix`)로 MSI를 만든다(ADR-0039). 7.0.0의 다음 GA다. GitHub Actions 러너는 `windows-2025`로 고정한다.
 - 2026-11-12(번들 JDK): Windows x64 번들에 Temurin JDK 25.0.5+8을 담는다(ADR-0025 보완). 빌드 PC의 JDK와 같은 판이다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 Adoptium API와 릴리스 자산의 `.sha256.txt`가 같다.

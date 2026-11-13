@@ -2,7 +2,7 @@
 
 PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이나 검사에서 실패해야 한다. `mvn verify`가 둘 다 실행한다.
 
-## rules/ — 템플릿 규칙 R1~R15
+## rules/ — 템플릿 규칙 R1~R16
 
 | 폴더 | 위반 |
 | --- | --- |
@@ -21,9 +21,16 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 | `R13-unknown-icon` | Tabler Icons에 없는 아이콘 이름 `icon('pluss')` |
 | `R14-raw-color` | 앱 화면이 색 클래스 `bg-blue-lt`를 직접 쓴다 |
 | `R15-action-order` | 주 버튼(저장)이 버튼 묶음의 맨 오른쪽이 아니다 |
+| `R16-shorthand` | 줄임 표기 `@click` (긴 이름 `x-on:click`으로 써야 한다) |
+| `R16-inline-data` | `x-data="{ open: false }"` (등록된 컴포넌트 이름만 쓴다) |
+| `R16-other-module` | memo 화면이 wiki 모듈의 컴포넌트 `wikiPicker`를 쓴다 |
+| `R16-directive` | `x-html` |
+| `R16-thymeleaf-attribute` | `th:attr="x-data=${component}"` (Thymeleaf로 Alpine 속성을 만든다) |
+| `R16-expression` | `x-on:click="() => copy()"` (CSP 빌드가 읽지 못하는 화살표 함수) |
+| `R16-registration` | 모듈 폴더 밖 `static/app.js`에서 컴포넌트를 등록한다 |
 
-- 폴더 구성: `templates/`, `modules.properties`(모듈 구조: `모듈=허용 의존`), `fragments.yml`(앱 매니페스트, 선택)
-- 프레임워크 템플릿과 매니페스트는 실제 cozy-ui jar의 것을 쓴다.
+- 폴더 구성: `templates/`, `modules.properties`(모듈 구조: `모듈=허용 의존`), `fragments.yml`(앱 매니페스트, 선택), `static/`(앱 JS, 선택)
+- 프레임워크 템플릿, 매니페스트, Alpine 컴포넌트(`cozy.js`)는 실제 cozy-ui jar의 것을 쓴다.
 - `RuleFixturesTest`가 각 폴더의 위반이 하나 이상이고 모두 폴더 이름의 규칙 ID인지 검사한다.
 
 ## checks/ — cozy-test 검사 C1~C9

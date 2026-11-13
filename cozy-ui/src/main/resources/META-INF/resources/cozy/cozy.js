@@ -9,6 +9,11 @@
  * - 검증 오류(.is-invalid)가 있으면 첫 칸으로 포커스를 옮긴다 (페이지 로드, htmx 교체 뒤)
  * - 만들기·수정 폼(form-page 패턴 안의 POST 폼)에 바뀐 입력이 있으면 떠날 때 브라우저가 확인한다
  * - 카탈로그 미리보기(iframe[data-cozy-autosize])는 내용 높이에 맞춘다
+ *
+ * Alpine 컴포넌트 (화면 안의 상태. 서버를 거치는 동작은 htmx가 한다)
+ * - Alpine은 CSP 빌드다. 템플릿은 x-data="이름"과 이 객체의 속성·메서드 이름만 쓴다 (docs/conventions/ui.md)
+ * - 서버 값은 x-data 요소의 data-* 속성으로 받는다 (this.$root.dataset)
+ * - cozyCopy: data-copy-text의 글자를 복사하고 토스트로 알린다. 버튼에 x-on:click="copy"
  */
 (function () {
   'use strict';
@@ -146,6 +151,27 @@
   document.addEventListener('DOMContentLoaded', function () {
     focusFirstError(document);
     document.querySelectorAll('iframe[data-cozy-autosize]').forEach(autosize);
+  });
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return Promise.reject(new Error('clipboard'));
+  }
+
+  document.addEventListener('alpine:init', function () {
+    window.Alpine.data('cozyCopy', function () {
+      return {
+        copy: function () {
+          copyText(this.$root.dataset.copyText || '').then(function () {
+            toast('복사했습니다', 'success');
+          }, function () {
+            toast('복사하지 못했습니다. 글자를 직접 선택해 복사하세요.', 'critical');
+          });
+        }
+      };
+    });
   });
 
   window.Cozy = { toast: toast };

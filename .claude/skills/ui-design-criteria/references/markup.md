@@ -1,6 +1,6 @@
 # 마크업 작성
 
-화면 템플릿의 마크업을 직접 쓰거나 고칠 때의 규칙이다. 원문은 `docs/conventions/ui.md`, `docs/conventions/structure.md`의 "템플릿", `docs/conventions/rules.md`의 R1~R15다.
+화면 템플릿의 마크업을 직접 쓰거나 고칠 때의 규칙이다. 원문은 `docs/conventions/ui.md`, `docs/conventions/structure.md`의 "템플릿", `docs/conventions/rules.md`의 R1~R16다.
 
 ## 화면 한 장의 골격
 

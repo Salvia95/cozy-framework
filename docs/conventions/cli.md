@@ -21,7 +21,7 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 cozy <동작> [옵션]
 
   describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
-  check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9
+  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9
   recipes [--json]    구조를 만드는 명령 목록
   add <레시피> …       구조 만들기 [--dry-run] [--json]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
@@ -94,7 +94,7 @@ cozy <동작> [옵션]
 
 | 검사 | 입력 | cozy-test와 다른 점 |
 | --- | --- | --- |
-| C2 (R1~R15) | 앱 템플릿, cozy-ui jar의 템플릿·매니페스트·아이콘, 앱 매니페스트, `cozy.rules.allow-same-layer` | 없음 |
+| C2 (R1~R16) | 앱 템플릿, cozy-ui jar의 템플릿·매니페스트·아이콘, 앱 매니페스트, `cozy.rules.allow-same-layer` | 없음 |
 | C8 | Java 소스(javac 파서). 이름은 import, 같은 패키지, 와일드카드 import로 푼다 | 메타 애너테이션을 모른다. 알려진 스프링 애너테이션(`@Controller`, `@RestController`, `@Component`, `@Service`, `@Repository`, `@Configuration`, `@ControllerAdvice`)만 본다 |
 | C9 | `src/main` 아래 모든 파일 | 없음 |
 
@@ -105,7 +105,7 @@ cozy <동작> [옵션]
 
 ```text
 [C8] it.cozy.app.memo.MemoService — 모듈 루트(it.cozy.app.memo)에는 package-info.java만 둡니다. ...
-[cozy check] 오류 7건 (R1~R15, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.
+[cozy check] 오류 7건 (R1~R16, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.
 ```
 
 `--json`은 다음과 같다.

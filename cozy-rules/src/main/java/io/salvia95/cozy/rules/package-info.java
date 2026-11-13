@@ -2,7 +2,7 @@
  * Cozy 앱의 규칙 판단.
  *
  * <ul>
- * <li>템플릿 경계·fragment 규칙 R1~R15: {@link io.salvia95.cozy.rules.TemplateRules#check}. 입력은
+ * <li>템플릿 경계·fragment 규칙 R1~R16: {@link io.salvia95.cozy.rules.TemplateRules#check}. 입력은
  * {@link io.salvia95.cozy.rules.RulesInput}(템플릿 파일, 모듈 모델, fragment 매니페스트)</li>
  * <li>모듈 안 구조 C8: {@link io.salvia95.cozy.rules.LayerRules#check}. 자리는 {@link io.salvia95.cozy.rules.Layer}, 자리 표는
  * {@link io.salvia95.cozy.rules.Role}. 입력은 {@link io.salvia95.cozy.rules.JavaType}</li>

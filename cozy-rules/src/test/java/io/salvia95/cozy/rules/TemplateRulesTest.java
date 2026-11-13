@@ -628,10 +628,146 @@ class TemplateRulesTest {
 		}
 	}
 
+	@Nested
+	class Alpine {
+
+		static final String COZY_JS = """
+				document.addEventListener('alpine:init', function () {
+				  Alpine.data('cozyDisclosure', function () { return { open: false, toggle: function () { this.open = !this.open; } }; });
+				  Alpine.data("cozyCopy", function () { return {}; });
+				});""";
+
+		Fixture withComponents() {
+			Fixture f = fixture();
+			f.frameworkScript("cozy/cozy.js", COZY_JS);
+			return f;
+		}
+
+		@Test
+		void registeredComponentWithLongFormsPasses() {
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", "document.addEventListener('alpine:init', () => { Alpine.data('memoEditor', () => ({ count: 0 })); });");
+			f.app("memo/api/list.html", """
+					<div x-data="cozyDisclosure" x-cloak>
+					  <button type="button" x-on:click="toggle" x-bind:aria-expanded="open ? 'true' : 'false'">필터</button>
+					  <div x-show="open" x-transition x-transition:enter.duration.200ms x-on:keydown.escape.window="close" x-ref="panel">
+					    <input aria-label="q" x-model.number="count" x-on:htmx:after-swap="reset">
+					    <template x-for="(item, index) in items"><span x-bind:key="index" x-text="item.title + ' ' + (count + 1)"></span></template>
+					    <template x-if="!open &amp;&amp; count > 0"><span x-text="'Math와 window는 글자일 뿐'"></span></template>
+					  </div>
+					  <section x-data="memoEditor" x-init="start" x-effect="sync" x-id="['memo']" x-ignore></section>
+					</div>""");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
+		void shorthandFails() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div x-data="cozyDisclosure"><button @click="toggle" :class="open">필터</button></div>""");
+			assertThat(f.rules()).containsExactly("R16", "R16");
+			assertThat(f.check().get(0).format()).contains("x-on:click");
+			assertThat(f.check().get(1).format()).contains("x-bind:class");
+		}
+
+		@Test
+		void xDataMustNameRegisteredComponent() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div x-data="{ open: false }"></div>
+					<div x-data></div>
+					<div x-data="cozyDisclosure(true)"></div>
+					<div x-data="cozyDisclosur"></div>""");
+			assertThat(f.rules()).containsExactly("R16", "R16", "R16", "R16");
+			assertThat(f.check().get(3).format()).contains("cozyDisclosure");
+		}
+
+		@Test
+		void componentNamesMissingFailClosed() {
+			Fixture f = fixture();
+			f.app("memo/api/list.html", "<div x-data=\"cozyDisclosure\"></div>");
+			assertThat(f.rules()).containsExactly("R16");
+		}
+
+		@Test
+		void appTemplateUsesOnlyCozyAndOwnModuleComponents() {
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", "Alpine.data('memoEditor', () => ({}));");
+			f.appScript("wiki/wiki.js", "Alpine.data('wikiPicker', () => ({}));");
+			f.app("memo/api/list.html", "<div x-data=\"memoEditor\"></div><div x-data=\"wikiPicker\"></div>");
+			f.app("fragments/component/chip.html", "<span th:fragment=\"chip()\" x-data=\"memoEditor\"></span>");
+			f.manifest("component/chip", "fragments/component/chip", "chip()");
+			assertThat(f.check()).extracting(Violation::location, Violation::ruleId)
+				.containsExactly(org.assertj.core.groups.Tuple.tuple("templates/fragments/component/chip.html", "R16"),
+						org.assertj.core.groups.Tuple.tuple("templates/memo/api/list.html", "R16"));
+		}
+
+		@Test
+		void unsupportedDirectivesFail() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div x-data="cozyDisclosure"><p x-html="body"></p><template x-teleport="body"></template><p x-foo="a"></p></div>""");
+			assertThat(f.rules()).containsExactly("R16", "R16", "R16");
+		}
+
+		@Test
+		void thymeleafMustNotBuildAlpineAttributes() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div th:attr="x-data=${name}"></div>
+					<div x-data="cozyDisclosure"><p th:x-text="${a}"></p><p data-th-x-show="${b}"></p></div>""");
+			assertThat(f.rules()).containsExactly("R16", "R16", "R16");
+		}
+
+		@Test
+		void expressionsTheCspBuildCannotReadFail() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div x-data="cozyDisclosure">
+					  <button x-on:click="() => toggle()">a</button>
+					  <span x-text="`열림 ${open}`"></span>
+					  <span x-text="Math.max(count, 1)"></span>
+					  <button x-on:click="user.name = 'x'">b</button>
+					  <span x-bind:class="{ ...classes }"></span>
+					  <button x-on:click="console.log(open)">c</button>
+					</div>""");
+			assertThat(f.rules()).containsExactly("R16", "R16", "R16", "R16", "R16", "R16");
+		}
+
+		@Test
+		void registrationsAreCheckedInScripts() {
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", """
+					Alpine.data(name, () => ({}));
+					Alpine.data('editor', () => ({}));
+					Alpine.data('cozyMemo', () => ({}));
+					Alpine.data('memoEditor', () => ({}));""");
+			f.appScript("app.js", "Alpine.data('appShell', () => ({}));");
+			f.appScript("wiki/wiki.js", "Alpine.data('memoEditor', () => ({}));");
+			assertThat(f.check()).extracting(Violation::location, Violation::line)
+				.containsExactly(org.assertj.core.groups.Tuple.tuple("static/app.js", 1),
+						org.assertj.core.groups.Tuple.tuple("static/memo/memo.js", 1),
+						org.assertj.core.groups.Tuple.tuple("static/memo/memo.js", 2),
+						org.assertj.core.groups.Tuple.tuple("static/memo/memo.js", 3),
+						org.assertj.core.groups.Tuple.tuple("static/wiki/wiki.js", 1));
+			assertThat(f.rules()).containsOnly("R16");
+		}
+	}
+
 	/** 검사 입력을 조립한다 */
 	static final class Fixture {
 
 		final List<TemplateFile> templates = new ArrayList<>();
+
+		final List<ScriptFile> scripts = new ArrayList<>();
+
+		void frameworkScript(String path, String content) {
+			this.scripts.add(new ScriptFile(path, Origin.FRAMEWORK, "[cozy-ui] META-INF/resources/" + path, content));
+		}
+
+		void appScript(String path, String content) {
+			this.scripts.add(new ScriptFile(path, Origin.APP, "static/" + path, content));
+		}
 
 		final List<FragmentDeclaration> manifest = new ArrayList<>();
 
@@ -657,7 +793,7 @@ class TemplateRulesTest {
 
 		List<Violation> check() {
 			return TemplateRules.check(new RulesInput(this.templates, this.modules, this.manifest, this.allowSameLayer,
-					this.icons, this.filledIcons));
+					this.icons, this.filledIcons, this.scripts));
 		}
 
 		List<String> rules() {

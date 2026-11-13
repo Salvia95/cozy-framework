@@ -12,11 +12,14 @@ import nu.validator.client.EmbeddedValidator;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import io.salvia95.cozy.rules.AlpineAttributes;
+
 /**
  * Nu Html Checker(vnu)로 렌더링 결과를 검사한다 (C4). 네트워크 없이 jar 안의 스키마만 쓴다.
  *
- * <p>htmx 속성은 HTML 표준 밖이라 vnu가 오류로 본다. Cozy가 쓰는 htmx 속성 이름만 허용 목록으로 걸러낸다. 목록에 없는
- * {@code hx-*}(오타, 인라인 스크립트인 {@code hx-on})는 그대로 오류다.
+ * <p>htmx와 Alpine 속성은 HTML 표준 밖이라 vnu가 오류로 본다. Cozy가 쓰는 이름만 허용 목록으로 걸러낸다. 목록에 없는
+ * {@code hx-*}(오타, 인라인 스크립트인 {@code hx-on}), {@code x-*}({@code x-html} 등), 줄임 표기({@code @click},
+ * {@code :class})는 그대로 오류다. Alpine 목록은 템플릿 규칙 R16과 같다({@link AlpineAttributes}).
  */
 public final class CozyHtmlValidator {
 
@@ -28,7 +31,7 @@ public final class CozyHtmlValidator {
 			"hx-history-elt", "hx-inherit", "hx-disinherit", "hx-preserve", "hx-prompt", "hx-request", "hx-validate");
 
 	private static final Pattern ATTRIBUTE_NOT_ALLOWED = Pattern
-		.compile("Attribute “(hx-[^”]+)” not allowed on element “[^”]+” at this point\\.");
+		.compile("Attribute “([^”]+)” not allowed on element “[^”]+” at this point\\.");
 
 	private static final JsonMapper JSON = new JsonMapper();
 
@@ -70,7 +73,8 @@ public final class CozyHtmlValidator {
 			}
 			String message = node.path("message").asString("");
 			Matcher attribute = ATTRIBUTE_NOT_ALLOWED.matcher(message);
-			if (attribute.matches() && HTMX_ATTRIBUTES.contains(attribute.group(1))) {
+			if (attribute.matches()
+					&& (HTMX_ATTRIBUTES.contains(attribute.group(1)) || AlpineAttributes.allowed(attribute.group(1)))) {
 				continue;
 			}
 			String effective = type.equals("info") ? "warning" : type;

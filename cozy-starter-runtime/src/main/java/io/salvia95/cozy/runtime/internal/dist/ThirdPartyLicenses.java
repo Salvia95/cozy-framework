@@ -27,7 +27,7 @@ import java.util.zip.ZipFile;
  * 라이선스가 하나 이상 있는지 확인한다. 플러그인도 같은 목록으로 검사하지만, 이 검사를 한 번 더 두어 플러그인 설정이나
  * 동작이 바뀌어도 실패로 닫는다. 이중 라이선스(예: EPL-2.0 또는 LGPL-2.1)는 하나만 허용 목록에 있으면 된다.</li>
  * <li>웹 자산: 클래스패스 jar의 {@code META-INF/resources/cozy/vendor/{이름}/{버전}/LICENSE}를 함께 담는다
- * (Tabler, htmx, Pretendard). Maven 의존성이 아니라 플러그인 목록에 나오지 않는다.</li>
+ * (Tabler, Tabler Icons, htmx, Alpine.js, Pretendard). Maven 의존성이 아니라 플러그인 목록에 나오지 않는다.</li>
  * <li>Cozy 자신: 이 jar의 {@code META-INF/cozy/LICENSE}, {@code NOTICE}(Apache-2.0)를 함께 담는다.</li>
  * </ul>
  *

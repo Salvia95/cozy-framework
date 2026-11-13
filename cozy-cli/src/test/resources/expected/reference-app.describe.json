@@ -288,7 +288,7 @@
           "outline": [
             {
               "line": 6,
-              "endLine": 53,
+              "endLine": 59,
               "depth": 0,
               "kind": "replace",
               "target": "cozy/layout/base",
@@ -301,7 +301,7 @@
             },
             {
               "line": 9,
-              "endLine": 50,
+              "endLine": 56,
               "depth": 1,
               "kind": "replace",
               "target": "cozy/pattern/details",
@@ -354,7 +354,7 @@
             },
             {
               "line": 15,
-              "endLine": 49,
+              "endLine": 55,
               "depth": 2,
               "kind": "slot",
               "target": "",
@@ -363,8 +363,20 @@
               "args": []
             },
             {
-              "line": 33,
-              "endLine": 33,
+              "line": 22,
+              "endLine": 22,
+              "depth": 3,
+              "kind": "replace",
+              "target": "cozy/icon/tabler",
+              "fragment": "icon",
+              "id": null,
+              "args": [
+                "'copy'"
+              ]
+            },
+            {
+              "line": 39,
+              "endLine": 39,
               "depth": 3,
               "kind": "replace",
               "target": "cozy/component/badge",

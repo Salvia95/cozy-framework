@@ -111,9 +111,9 @@
 
 | 마일스톤 | 내용 | 완료 기준 |
 | --- | --- | --- |
-| M31 기반 | 벤더 자산 반입(fetch.sh, vendor.lock, 라이선스 목록, NOTICE), `base` 로드 순서, `cozy` 컴포넌트 첫 묶음(`cozyDisclosure`, `cozyCopy`), C4 허용 목록, R16(없앤 속성 항목은 M34), ui.md·rules.md·testing.md | reference-app의 Alpine 동작이 CSP 위반 없이 된다(runtime-verifier, 콘솔 오류 0). R16의 항목마다 위반 픽스처가 빌드를 실패시킨다. `x-on:click`이 C4를 통과하고 목록 밖의 `x-*`는 실패한다 |
+| M31 기반 | 벤더 자산 반입(fetch.sh, vendor.lock, 라이선스 목록, NOTICE), `base` 로드 순서, 첫 `cozy` 컴포넌트(`cozyCopy`, reference-app 메모 상세의 본문 복사), C4 허용 목록, R16(없앤 속성 항목은 M34), ui.md·rules.md·testing.md | reference-app의 Alpine 동작이 CSP 위반 없이 된다(runtime-verifier, 콘솔 오류 0). R16의 항목마다 위반 픽스처가 빌드를 실패시킨다. `x-on:click`이 C4를 통과하고 목록 밖의 `x-*`는 실패한다 |
 | M32 워크벤치 htmx | 서버를 거치는 동작을 htmx 부분 갱신으로 | 스크립트를 끄면 지금처럼 전체 페이지로 동작한다. 켜면 바뀐 영역만 다시 그린다. 결과 파일은 터미널의 같은 명령과 바이트 단위로 같다(ADR-0036 M20 기준 유지) |
-| M33 워크벤치 Alpine | `workbench.js`의 동작을 컴포넌트로. 앱에도 쓸 동작은 `cozy` 컴포넌트로 cozy-ui에 | `workbench.js`에 `querySelectorAll(…).forEach(… addEventListener …)` 방식의 직접 등록이 남지 않는다. 모든 워크벤치 화면이 옮기기 전과 같게 동작한다(runtime-verifier). 워크벤치 컴포넌트에 앱 화면에도 쓰는 동작이 없다 |
+| M33 워크벤치 Alpine | `workbench.js`의 동작을 컴포넌트로. 앱에도 쓸 동작은 `cozy` 컴포넌트로 cozy-ui에(칸 접기 → `cozyDisclosure`) | `workbench.js`에 `querySelectorAll(…).forEach(… addEventListener …)` 방식의 직접 등록이 남지 않는다. 모든 워크벤치 화면이 옮기기 전과 같게 동작한다(runtime-verifier). 워크벤치 컴포넌트에 앱 화면에도 쓰는 동작이 없다 |
 | M34 cozy-ui | `cozy.js`의 화면 안 동작을 `cozy` 컴포넌트로. 패턴·컴포넌트 적용. 동작 속성 `data-cozy-*` 제거, `cozy migrate alpine`, R16의 없앤 속성 항목 | 카탈로그의 모든 항목과 reference-app의 모든 상태가 C3·C4를 통과한다. 옮기기 전과 같은 동작을 runtime-verifier로 확인한다. 옛 속성을 쓰는 픽스처 앱이 `cozy check`에서 실패하고, `cozy migrate alpine` 뒤 `mvn verify`를 통과한다. 두 번째 실행은 바꾸는 파일이 없다 |
 | M35 앱 컴포넌트와 명령 | `static/{모듈}/`, 레이아웃의 모듈 JS 로드, `cozy add behavior`, `describe`의 컴포넌트, 화면 레시피와 아키타입, 에이전트 문서, 2.0.0 옮기는 절차 | 레시피 픽스처와 아키타입 3조합이 `mvn verify`를 통과한다. `add behavior` 결과는 빈칸이 남아 C9가 실패하고, 채우면 통과한다. 다른 모듈의 컴포넌트를 쓰면 R16이 실패한다 |
 
@@ -129,3 +129,13 @@
 - **2.0.0으로 올리는 앱은 템플릿을 옮겨야 한다.** `cozy migrate alpine`이 공개 속성을 옮기지만, 앱이 문서에 없는 프레임워크 속성(`data-cozy-autosize` 등)을 직접 썼다면 명령이 모양을 알 수 없다. 그런 속성도 R16이 오류로 보이고, 고치는 법은 글로 안내한다.
 - **워크벤치를 먼저 바꾸므로 `cozy` 컴포넌트의 모양이 워크벤치에 맞춰질 수 있다.** M34에서 앱 화면에 적용하면서 컴포넌트를 바꾸게 되면 워크벤치도 함께 고친다. 같은 레포, 같은 빌드에서 테스트가 잡는다.
 - **에이전트가 Alpine 표준 문법(인라인 객체, 줄임 표기)을 쓰기 쉽다.** 학습 데이터 대부분이 그 모양이다. R16이 고치는 법을 함께 보이고, 플레이북에 예시를 둔다. 작은 모델이 잘 따르는지는 사용자의 내부 평가로 확인한다.
+
+## M31 (2026-11-13, 사용자 지시 "바로 진행해줘")
+
+- **콜론 속성 확인**: Thymeleaf 3.1.5는 `x-on:click`, `x-transition:enter.duration.200ms`, `@click`, `:class`를 바꾸지 않고 그대로 출력한다. vnu 26.11.4는 모두 `Attribute “…” not allowed on element “…” at this point.` 하나로 보고한다. 그래서 htmx와 같은 허용 목록으로 거른다. 위험 항목의 첫째가 풀렸다.
+- **목록 하나**: R16과 C4가 같은 디렉티브 목록(`AlpineAttributes`)을 쓴다. cozy-test는 이미 cozy-rules에 의존하므로 의존 방향은 그대로다.
+- **컴포넌트 이름의 출처**: 프레임워크는 `META-INF/resources/cozy/*.js`(벤더 제외), 앱은 `static/**/*.js`의 `Alpine.data('이름', …)`이다. `RulesInput`에 `scripts`를 더했다. 앱 컴포넌트의 위치와 이름 규칙(§5)도 지금 검사한다. layout이 앱 JS를 싣는 것은 M35다.
+- **`cozyDisclosure`는 M33으로 옮겼다.** reference-app에 펼치기를 쓸 자연스러운 자리가 없다. 쓰는 화면 없이 만들면 브라우저에서 확인할 수 없어서, 처음 쓰는 워크벤치 칸 접기와 함께 만든다. M31의 첫 컴포넌트는 메모 상세의 본문 복사에 쓰는 `cozyCopy`다.
+- **`cozyCopy`는 `data-copy-text`를 읽는다.** 아이콘 카탈로그의 `[data-copy]` 클릭 처리(`cozy.js`)가 문서 전체에서 동작하므로 이름이 겹치지 않게 했다. 카탈로그는 M34에서 옮긴다.
+- **Tabler 1.7.5**: 시작할 때 확인한 최신 GA다(ADR-0017).
+

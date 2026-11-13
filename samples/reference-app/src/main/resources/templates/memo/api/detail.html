@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--/*
   메모 상세 화면(api): details 패턴(읽기 전용). 경로 메모 › 제목, 머리 오른쪽에 [삭제(확인 창)] [수정(주 버튼)].
-  본문은 넓은 칸, 상태와 시각은 옆 칸(datagrid). 수정은 /memo/{id}/edit 화면에서 한다.
+  본문은 넓은 칸(머리에 본문 복사), 상태와 시각은 옆 칸(datagrid). 수정은 /memo/{id}/edit 화면에서 한다.
 */-->
 <html th:replace="~{cozy/layout/base :: appShell(${memo.title}, ~{::main})}">
 <body>
@@ -15,7 +15,13 @@
     <div id="memo-body" class="row row-cards">
       <div class="col-lg-8">
         <div class="card">
-          <div class="card-header"><h3 class="card-title">본문</h3></div>
+          <div class="card-header">
+            <h3 class="card-title">본문</h3>
+            <div class="card-actions" th:unless="${memo.bodyLines.isEmpty()}">
+              <button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
+                      th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}"><svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>복사</button>
+            </div>
+          </div>
           <div class="card-body">
             <th:block th:if="${memo.bodyLines.isEmpty()}"><p class="text-secondary mb-0">본문이 없습니다.</p></th:block>
             <p class="mb-2" th:each="line : ${memo.bodyLines}" th:text="${line}">본문</p>

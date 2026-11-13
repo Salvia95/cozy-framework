@@ -27,7 +27,7 @@ import io.salvia95.cozy.cli.internal.AppResources;
 import io.salvia95.cozy.cli.internal.Recipes;
 
 /**
- * reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R15), 모듈 구조(C8), 빈칸(C9)의
+ * reference-app의 describe가 기대 파일과 같고, check가 템플릿 규칙(R1~R16), 모듈 구조(C8), 빈칸(C9)의
  * 위반 픽스처를 모두 잡는다. 픽스처는 samples/violations의 것을 그대로 쓴다.
  */
 class CozyCliTest {
@@ -185,14 +185,14 @@ class CozyCliTest {
 			assertThat(lines(result.out(), "[R")).singleElement().asString().startsWith("[R3] templates/voc/api/list.html:2");
 		}
 
-		/** samples/violations/rules의 R1~R15 픽스처를 앱 프로젝트로 감싸 check한다. 위반은 모두 그 규칙 ID의 오류다 */
+		/** samples/violations/rules의 R1~R16 픽스처를 앱 프로젝트로 감싸 check한다. 위반은 모두 그 규칙 ID의 오류다 */
 		@TestFactory
 		Stream<DynamicTest> everyTemplateRuleFixtureFailsWithItsRule(@TempDir Path dir) throws IOException {
 			List<Path> fixtures;
 			try (Stream<Path> dirs = Files.list(VIOLATIONS.resolve("rules"))) {
 				fixtures = dirs.filter(Files::isDirectory).sorted().toList();
 			}
-			assertThat(fixtures).hasSize(15);
+			assertThat(fixtures).hasSize(22);
 			return fixtures.stream().map((fixture) -> DynamicTest.dynamicTest(fixture.getFileName().toString(), () -> {
 				String name = fixture.getFileName().toString();
 				String rule = name.substring(0, name.indexOf('-'));
@@ -477,6 +477,14 @@ class CozyCliTest {
 			for (Path file : files.filter(Files::isRegularFile).toList()) {
 				app.file("src/main/resources/templates/" + fixture.resolve("templates").relativize(file).toString().replace('\\', '/'),
 						Files.readString(file, StandardCharsets.UTF_8));
+			}
+		}
+		if (Files.isDirectory(fixture.resolve("static"))) {
+			try (Stream<Path> files = Files.walk(fixture.resolve("static"))) {
+				for (Path file : files.filter(Files::isRegularFile).toList()) {
+					app.file("src/main/resources/static/" + fixture.resolve("static").relativize(file).toString().replace('\\', '/'),
+							Files.readString(file, StandardCharsets.UTF_8));
+				}
 			}
 		}
 		if (Files.isRegularFile(fixture.resolve("fragments.yml"))) {

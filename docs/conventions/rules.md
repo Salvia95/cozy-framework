@@ -32,6 +32,7 @@
 | R13 | `cozy/icon/tabler :: icon('이름')`, `iconFilled('이름')`에 글자로 쓴 이름은 Tabler Icons에 있어야 한다 | `icon('pluss')` |
 | R14 | 앱 템플릿은 색 클래스를 직접 쓰지 않는다. 색은 tone을 받는 컴포넌트가 고른다. 글자로 쓴 tone은 neutral, info, success, warning, critical 중 하나다 ([design.md](design.md) §4) | `class="badge bg-blue-lt"`, `badge('고정', 'blue')` |
 | R15 | 버튼 묶음(`btn-list`)에 주 버튼(`btn-primary`, `btn-danger`, 확인 창의 삭제)은 하나만, 맨 오른쪽(마지막)에 둔다 ([design.md](design.md) §1) | `[저장] [취소]` |
+| R16 | Alpine 속성은 CSP 빌드가 읽는 모양으로만 쓴다. 긴 이름만(`x-on:click`), `x-data`에는 등록된 컴포넌트 이름만, 쓰는 디렉티브만, Thymeleaf로 만들지 않고, CSP 빌드가 읽는 식만 쓴다. JS 파일의 등록은 글자 이름으로, 앱 컴포넌트는 `static/{모듈}/`에서 모듈 이름으로 시작한다 ([ui.md](ui.md) "화면 안의 상태") | `@click="toggle"`, `x-data="{ open: false }"`, `x-html`, `th:attr="x-data=${c}"`, `x-on:click="() => save()"` |
 
 ### 세부 기준
 
@@ -67,6 +68,15 @@
   - 동작 안쪽은 세지 않는다.
   - 주 버튼이 없는 묶음은 통과한다.
 - **R13 범위**: 글자로 쓴 이름만 본다. 변수로 넘긴 이름(`icon(${link.icon})`)은 Java 쪽이 확인한다(`CozyIcons.requireOutline`, `CozyNavItem`). 아이콘 목록이 없으면(cozy-ui가 클래스패스에 없으면) 글자로 쓴 아이콘은 모두 실패한다.
+- **R16 범위**:
+  - 템플릿(앱과 프레임워크)의 `x-*` 속성, 줄임 표기(`@…`, `:…`), Alpine 속성을 만드는 Thymeleaf 속성(`th:x-*`, `data-th-x-*`, `x-`·`@`·`:` 대상이 있는 `th:attr`·`th:attrappend`·`th:attrprepend`)을 본다.
+  - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`(수식어 포함), `x-text`, `x-ref`, `x-cloak`, `x-transition`(수식어·단계 포함), `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. 목록은 `AlpineAttributes`에 있고 C4(vnu)도 같은 목록을 쓴다.
+  - `x-data`의 값은 식별자 하나다. 인자(`cozyCopy(true)`), 인라인 객체, 빈 값은 오류다.
+  - 컴포넌트 이름은 JS 파일의 `Alpine.data('이름', …)`에서 읽는다. 프레임워크는 클래스패스의 `META-INF/resources/cozy/*.js`(벤더 자산 제외), 앱은 `src/main/resources/static/**/*.js`다. 이름을 변수로 등록하면 오류다.
+  - 앱 모듈 템플릿은 프레임워크 컴포넌트와 자기 모듈(`static/{모듈}/`)의 컴포넌트만 쓴다. `fragments/`와 `error/`, 프레임워크 템플릿은 프레임워크 컴포넌트만 쓴다.
+  - 앱 컴포넌트는 `static/{모듈}/` 아래에서 등록하고, 이름은 모듈 이름 + 대문자로 시작한다(`memoEditor`). `cozy`로 시작하는 이름은 프레임워크 것이다. 같은 이름을 두 번 등록하면 오류다.
+  - 식 검사: 문자열 리터럴을 지운 뒤 화살표 함수(`=>`), 템플릿 문자열(백틱), 전개(`...`), 속성 대입(`a.b = …`, `a.b++`), 전역 이름(`window`, `document`, `console`, `Math`, `JSON`, `fetch`, `htmx`, `Alpine` 등)을 찾는다. `x-for`는 ` in ` 뒤의 식만 본다. `x-data`, `x-ref`, `x-cloak`, `x-ignore`, `x-transition`은 식이 아니라서 보지 않는다.
+  - 컴포넌트 목록이 없으면(cozy-ui가 클래스패스에 없으면) `x-data`는 모두 실패한다.
 - **속성 순서**: 검사는 Thymeleaf의 속성 우선순위(th:insert/replace → th:each → th:if·th:unless·th:switch·th:case → th:object·th:with → 나머지)대로 지역 변수가 생기는 시점을 따른다.
 
 ## 실패 메시지
@@ -83,6 +93,9 @@
 [R15] templates/memo/internal/fields.html:2 → class="btn-list" — 주 버튼(btn-primary, btn-danger)은 버튼 묶음의 맨 오른쪽(마지막)에 둡니다. 예: [취소] [저장], [삭제] [수정].
 [R11] templates/memo/internal/table.html:2 → th:each + th:replace — 같은 요소에 쓰면 th:replace(th:insert)가 th:each보다 먼저 실행되어 반복 변수가 아직 없습니다. <th:block th:each="..."> 안쪽 요소에 th:replace를 두세요.
 [R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
+[R16] templates/memo/api/detail.html:2 → @click="copy" — 줄임 표기는 쓰지 않습니다. x-on:click처럼 긴 이름으로 쓰세요.
+[R16] templates/memo/api/list.html:4 → x-data="cozyDisclosur" — 등록된 컴포넌트 'cozyDisclosur'가 없습니다. 비슷한 이름: cozyDisclosure. 새 컴포넌트는 static/memo/memo.js에 Alpine.data('cozyDisclosur', …)로 등록합니다.
+[R16] static/app.js:2 → memoEditor — 앱 컴포넌트는 모듈 폴더 static/{모듈}/{모듈}.js에 둡니다. 모듈 이름(memo)의 폴더로 옮기세요.
 [R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.
 ```
 
@@ -101,11 +114,15 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
         templates,        // List<TemplateFile>: 앱(APP)과 cozy-ui(FRAMEWORK) 템플릿
         moduleModel,      // ModuleModel: 모듈 이름 → allowedDependencies, Named Interface
         manifest,         // List<FragmentDeclaration>: 프레임워크와 앱 매니페스트 항목
-        allowSameLayer));
+        allowSameLayer,
+        icons, filledIcons, // Set<String>: Tabler Icons 이름 (R13)
+        scripts));        // List<ScriptFile>: Alpine 컴포넌트를 등록하는 앱과 cozy-ui의 JS (R16)
 ```
 
 - `check`는 예외를 던지지 않고 위반 목록(`Violation`: 위치, 줄, 규칙 ID, 심각도, 참조, 메시지, 고치는 명령)만 돌려준다.
-- `TemplateFile.fromDirectory(root, origin, prefix)`는 디렉터리 아래의 `.html`을 모두 읽는다.
+- `TemplateFile.fromDirectory(root, origin, prefix)`는 디렉터리 아래의 `.html`을 모두 읽는다. `ScriptFile.fromDirectory(root, origin, prefix)`는 `.js`를 읽는다. `ScriptFile.path`는 정적 자원 루트 기준이다(앱 `memo/memo.js`, 프레임워크 `cozy/cozy.js`).
+- 인자가 적은 생성자(아이콘, JS 파일 없이)도 있다. 없는 목록은 비어 있는 것으로 보고 실패로 닫는다(R13, R16).
+- `AlpineAttributes.allowed(name)`은 Cozy가 쓰는 Alpine 속성 이름인지 알려 준다. R16과 C4가 같이 쓴다.
 - `TemplateRules.declaredFragments(file)`는 그 템플릿이 선언한 fragment 이름을 돌려준다.
 - 모듈 이름은 Modulith 규칙을 따른다. 메인 패키지 바로 아래 패키지의 단순 이름이고, `@ApplicationModule(id = ...)`이 있으면 그 이름이다.
 

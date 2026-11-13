@@ -26,7 +26,7 @@ import io.salvia95.cozy.rules.Violation;
  *
  * <ul>
  * <li>{@code describe [--json]}: 앱의 지도(모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 빈칸)</li>
- * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R15, C8, C9). 최종 판단은 {@code mvn verify}</li>
+ * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R16, C8, C9). 최종 판단은 {@code mvn verify}</li>
  * <li>{@code recipes [--json]}: 구조를 만드는 명령 목록</li>
  * <li>{@code add <레시피>}, {@code link}, {@code enable events|workbench}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
  * <li>{@code sync agents [--force]}: 앱의 AGENTS.md와 cozy-helper 스킬을 이 cozy 명령에 든 것과 같게 맞춘다</li>
@@ -46,7 +46,7 @@ public final class CozyCli {
 			cozy 명령. 앱 폴더(또는 그 아래)에서 실행한다.
 
 			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
-			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R15, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)
+			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)
 			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link, enable)
 			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
@@ -229,7 +229,7 @@ public final class CozyCli {
 		else {
 			findings.forEach((f) -> out.println(f.violation().format()));
 			out.println("[cozy check] " + ((errors == 0) ? "이상 없음" : "오류 " + errors + "건") + ((warnings > 0) ? ", 경고 "
-					+ warnings + "건" : "") + " (R1~R15, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.");
+					+ warnings + "건" : "") + " (R1~R16, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.");
 		}
 		return (errors == 0) ? OK : VIOLATIONS;
 	}

@@ -54,5 +54,5 @@
 
 ## 결과
 
-- reference-app 기준 의존성 81개(cozy 모듈 4개 포함. Apache-2.0 76, EPL-2.0 3, MIT 2)와 웹 자산 3개(Tabler, htmx, Pretendard)가 목록에 들어간다. 2026-11-06부터 Tabler Icons를 더해 4개다(ADR-0030).
+- reference-app 기준 의존성 81개(cozy 모듈 4개 포함. Apache-2.0 76, EPL-2.0 3, MIT 2)와 웹 자산 3개(Tabler, htmx, Pretendard)가 목록에 들어간다. 2026-11-06부터 Tabler Icons를 더해 4개다(ADR-0030). 2026-11-13부터 Alpine.js CSP 빌드를 더해 5개다(ADR-0040, MIT). 라이선스 파일은 npm 패키지에 없어 같은 태그의 GitHub 원본을 받는다.
 - 허용 목록 밖 라이선스의 의존성을 더하면 `-Pdist`가 실패한다. 이때 의존성과 라이선스가 메시지에 나온다.

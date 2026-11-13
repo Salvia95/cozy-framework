@@ -85,6 +85,9 @@ body { font-variant-numeric: tabular-nums; }
 .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
 .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
 
+/* Alpine이 시작하기 전에는 x-cloak 요소를 숨긴다. 스크립트가 있어야 동작하는 요소(복사 버튼 등)에만 쓴다 */
+[x-cloak] { display: none !important; }
+
 /* 요청 중 화면 맨 위 진행 막대 */
 .cozy-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 2000; background: var(--tblr-primary); transition: width 300ms ease; }
 html.cozy-busy .cozy-progress { width: 70%; }

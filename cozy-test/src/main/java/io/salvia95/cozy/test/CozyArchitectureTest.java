@@ -11,6 +11,7 @@ import org.opentest4j.AssertionFailedError;
 import org.springframework.modulith.core.ApplicationModules;
 
 import io.salvia95.cozy.rules.RulesInput;
+import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.TemplateRules;
@@ -27,7 +28,7 @@ import io.salvia95.cozy.rules.Violation;
  * <ul>
  * <li>C1: {@code ApplicationModules.of(앱 클래스).verify()}. 다른 모듈의 spi를 쓰는데 의존 선언이 빠졌으면 고치는 명령
  * ({@code cozy link})을 함께 낸다</li>
- * <li>C2: 템플릿 규칙 R1~R15. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
+ * <li>C2: 템플릿 규칙 R1~R16. 위반이 있으면 전체 목록을 실패 메시지로 낸다. 경고는 표준 출력에 보고한다.</li>
  * <li>C6: 이벤트 리스너 파라미터는 CozyEvent, 이벤트마다 버전별 직렬화 샘플과 호환 (cozy-starter-events를 쓰는 앱)</li>
  * <li>C8: 모듈 안의 패키지(api, spi, internal/app·domain·infra·config)와 레이어 방향, 인터페이스 + Impl</li>
  * <li>C9: {@code src/main} 아래에 채우지 않은 빈칸({@code cozy:slot} 표시)이 없다</li>
@@ -57,6 +58,11 @@ public abstract class CozyArchitectureTest {
 	/** 앱 매니페스트 */
 	protected Path manifestFile() {
 		return CozyProject.MANIFEST;
+	}
+
+	/** 앱의 Alpine 컴포넌트를 찾을 정적 자원 루트 (R16) */
+	protected Path staticRoot() {
+		return CozyProject.STATIC;
 	}
 
 	protected boolean allowSameLayer() {
@@ -126,8 +132,11 @@ public abstract class CozyArchitectureTest {
 	public final void templatesFollowBoundaryRules() {
 		List<TemplateFile> templates = new ArrayList<>(CozyProject.appTemplates(templateRoot()));
 		templates.addAll(CozyProject.frameworkTemplates());
+		List<ScriptFile> scripts = new ArrayList<>(CozyProject.appScripts(staticRoot()));
+		scripts.addAll(CozyProject.frameworkScripts());
 		RulesInput input = new RulesInput(templates, CozyModules.model(CozyModules.of(applicationClass())),
-				CozyProject.manifest(manifestFile()), allowSameLayer(), CozyProject.icons(), CozyProject.filledIcons());
+				CozyProject.manifest(manifestFile()), allowSameLayer(), CozyProject.icons(), CozyProject.filledIcons(),
+				scripts);
 		List<Violation> violations = TemplateRules.check(input);
 		violations.stream().filter((v) -> !v.isError()).forEach((v) -> System.out.println(v.format()));
 		List<Violation> errors = violations.stream().filter(Violation::isError).toList();

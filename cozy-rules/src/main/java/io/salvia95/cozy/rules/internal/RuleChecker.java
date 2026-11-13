@@ -25,7 +25,7 @@ import io.salvia95.cozy.rules.internal.ParsedTemplate.Problem;
 import io.salvia95.cozy.rules.internal.ParsedTemplate.Reference;
 
 /**
- * R1~R15 검사. 참조 하나에는 처음 걸린 규칙 하나만 보고한다.
+ * R1~R16 검사. 참조 하나에는 처음 걸린 규칙 하나만 보고한다. R16(Alpine 속성)은 {@link AlpineChecker}가 본다.
  *
  * <p>모듈 템플릿은 {@code {모듈}/api/}(컨트롤러가 렌더링하는 화면), {@code {모듈}/spi/}(다른 모듈이 부르는 fragment),
  * {@code {모듈}/internal/}(모듈 안의 재료 조각)로 나눈다. api는 같은 모듈의 spi·internal과 허용된 모듈의 spi를, spi는
@@ -99,6 +99,7 @@ public final class RuleChecker {
 			checkDesign(template);
 		}
 		checkManifest();
+		AlpineChecker.check(this.input.scripts(), this.all, this.input.modules(), this.violations);
 	}
 
 	// ── R1, R2: 위치 ───────────────────────────────────────────
@@ -353,7 +354,7 @@ public final class RuleChecker {
 	}
 
 	/** 편집 거리 (오타 제안용) */
-	private static int distance(String a, String b) {
+	static int distance(String a, String b) {
 		int[] previous = new int[b.length() + 1];
 		int[] current = new int[b.length() + 1];
 		for (int j = 0; j <= b.length(); j++) {

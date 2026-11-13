@@ -20,10 +20,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import io.salvia95.cozy.rules.Origin;
+import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.TemplateFile;
 
 /**
- * cozy-ui jar의 프레임워크 자원: 템플릿({@code templates/cozy/}, {@code templates/error/}), 매니페스트, Tabler Icons 스프라이트.
+ * cozy-ui jar의 프레임워크 자원: 템플릿({@code templates/cozy/}, {@code templates/error/}), 매니페스트, Tabler Icons 스프라이트,
+ * Alpine 컴포넌트를 등록하는 JS({@code META-INF/resources/cozy/*.js}, 벤더 자산 제외).
  * cozy 명령은 cozy-ui의 클래스를 쓰지 않고 jar를 zip으로(또는 풀어 놓은 폴더를) 읽는다.
  */
 public final class FrameworkJar {
@@ -35,7 +37,12 @@ public final class FrameworkJar {
 	private static final Pattern SPRITE = Pattern.compile(
 			"META-INF/resources/cozy/vendor/tabler-icons/[^/]+/tabler-sprite(-filled)?\\.svg");
 
+	/** 프레임워크 JS: 벤더 폴더가 아닌 {@code cozy/} 바로 아래 파일 */
+	private static final Pattern SCRIPT = Pattern.compile("META-INF/resources/(cozy/[^/]+\\.js)");
+
 	private final List<TemplateFile> templates = new ArrayList<>();
+
+	private final List<ScriptFile> scripts = new ArrayList<>();
 
 	private String manifest;
 
@@ -70,6 +77,11 @@ public final class FrameworkJar {
 			else if (name.equals("cozy/fragments.yml")) {
 				result.manifest = content;
 			}
+			else if (SCRIPT.matcher(name).matches()) {
+				Matcher script = SCRIPT.matcher(name);
+				script.matches();
+				result.scripts.add(new ScriptFile(script.group(1), Origin.FRAMEWORK, "[cozy-ui] " + name, content));
+			}
 			else {
 				Matcher sprite = SPRITE.matcher(name);
 				if (sprite.matches()) {
@@ -84,10 +96,10 @@ public final class FrameworkJar {
 		return result;
 	}
 
-	/** 읽을 자원인가: 프레임워크 템플릿, 매니페스트, 아이콘 스프라이트 */
+	/** 읽을 자원인가: 프레임워크 템플릿, 매니페스트, 아이콘 스프라이트, 프레임워크 JS */
 	private static boolean wanted(String name) {
 		return ((name.startsWith("templates/cozy/") || name.startsWith("templates/error/")) && name.endsWith(".html"))
-				|| name.equals("cozy/fragments.yml") || SPRITE.matcher(name).matches();
+				|| name.equals("cozy/fragments.yml") || SPRITE.matcher(name).matches() || SCRIPT.matcher(name).matches();
 	}
 
 	/** 이름 순서의 자원 이름 → 내용 */
@@ -126,6 +138,11 @@ public final class FrameworkJar {
 
 	public List<TemplateFile> templates() {
 		return List.copyOf(this.templates);
+	}
+
+	/** Alpine 컴포넌트를 등록하는 프레임워크 JS (R16) */
+	public List<ScriptFile> scripts() {
+		return List.copyOf(this.scripts);
 	}
 
 	/** 프레임워크 매니페스트(YAML). 없으면 {@code null} */

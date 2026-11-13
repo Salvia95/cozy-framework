@@ -12,6 +12,7 @@ import io.salvia95.cozy.rules.FragmentDeclaration;
 import io.salvia95.cozy.rules.LayerRules;
 import io.salvia95.cozy.rules.Origin;
 import io.salvia95.cozy.rules.RulesInput;
+import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.Severity;
 import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.TemplateFile;
@@ -19,7 +20,7 @@ import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * {@code cozy check}: 컴파일 없이 소스로 판단할 수 있는 검사. 템플릿 규칙 R1~R15(C2), 모듈 안 구조 C8, 빈칸 C9. 판단은 cozy-test와 같은
+ * {@code cozy check}: 컴파일 없이 소스로 판단할 수 있는 검사. 템플릿 규칙 R1~R16(C2), 모듈 안 구조 C8, 빈칸 C9. 판단은 cozy-test와 같은
  * cozy-rules가 한다. C1, C3~C7은 앱을 컴파일하고 띄워야 하므로 {@code mvn verify}가 한다.
  */
 public final class Checks {
@@ -65,8 +66,11 @@ public final class Checks {
 			manifest.addAll(manifest(read(appManifest), "src/main/resources/cozy/fragments.yml", problems));
 		}
 		boolean allowSameLayer = Boolean.parseBoolean(AppResources.appProperty(project.dir(), ALLOW_SAME_LAYER));
+		List<ScriptFile> scripts = new ArrayList<>(
+				ScriptFile.fromDirectory(project.dir().resolve("src/main/resources/static"), Origin.APP, "static/"));
+		scripts.addAll(framework.scripts());
 		return TemplateRules.check(new RulesInput(templates, project.moduleModel(), manifest, allowSameLayer,
-				framework.icons(), framework.filledIcons()));
+				framework.icons(), framework.filledIcons(), scripts));
 	}
 
 	private static List<FragmentDeclaration> manifest(String text, String source, List<Violation> problems) {
@@ -80,13 +84,13 @@ public final class Checks {
 		}
 	}
 
-	/** 메시지의 위치를 프로젝트 파일로: 템플릿, 소스, 타입 이름(C8), 패키지 이름(C8) */
+	/** 메시지의 위치를 프로젝트 파일로: 템플릿, 앱 JS, 소스, 타입 이름(C8), 패키지 이름(C8) */
 	static String fileOf(AppProject project, Violation v, Map<String, String> typeFiles) {
 		String location = v.location();
 		if (location.startsWith("[")) {
 			return null;
 		}
-		if (location.startsWith("templates/")) {
+		if (location.startsWith("templates/") || location.startsWith("static/")) {
 			return "src/main/resources/" + location;
 		}
 		if (location.startsWith("src/") || location.startsWith("cozy/")) {

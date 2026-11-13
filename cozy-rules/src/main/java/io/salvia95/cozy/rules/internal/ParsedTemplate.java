@@ -46,6 +46,9 @@ final class ParsedTemplate {
 	/** 같은 요소의 th:each + th:replace/th:insert (R11) */
 	final List<Problem> eachWithInsertion = new ArrayList<>();
 
+	/** Alpine 속성({@code x-*}, 줄임 표기)과 Alpine 속성을 만드는 Thymeleaf 속성 (R16) */
+	final List<AlpineAttribute> alpine = new ArrayList<>();
+
 	ParsedTemplate(TemplateFile file) {
 		this.file = file;
 	}
@@ -74,5 +77,12 @@ final class ParsedTemplate {
 	}
 
 	record Problem(String text, String why, int line) {
+	}
+
+	/**
+	 * @param name 속성 이름 (소문자, {@code x-on:click}, {@code th:attr})
+	 * @param value 엔티티를 푼 값
+	 */
+	record AlpineAttribute(String name, String value, int line) {
 	}
 }

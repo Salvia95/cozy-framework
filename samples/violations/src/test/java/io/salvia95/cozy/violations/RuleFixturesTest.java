@@ -19,6 +19,7 @@ import org.junit.jupiter.api.TestFactory;
 
 import io.salvia95.cozy.rules.ModuleModel;
 import io.salvia95.cozy.rules.RulesInput;
+import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
@@ -41,8 +42,10 @@ class RuleFixturesTest {
 		try (Stream<Path> dirs = Files.list(RULES)) {
 			fixtures = dirs.filter(Files::isDirectory).sorted().toList();
 		}
+		// 규칙마다 픽스처가 하나 이상 있다. R16은 항목(줄임 표기, x-data, 모듈, 디렉티브, Thymeleaf, 식, 등록)마다 있다
 		assertThat(fixtures).extracting(RuleFixturesTest::rule)
-			.containsExactlyInAnyOrder("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15");
+			.containsOnly("R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16")
+			.hasSize(22);
 		return fixtures.stream().map((fixture) -> DynamicTest.dynamicTest(fixture.getFileName().toString(), () -> {
 			String rule = rule(fixture);
 			List<Violation> violations = check(fixture);
@@ -65,8 +68,11 @@ class RuleFixturesTest {
 	static List<Violation> check(Path fixture) throws IOException {
 		List<TemplateFile> templates = new ArrayList<>(CozyProject.appTemplates(fixture.resolve("templates")));
 		templates.addAll(CozyProject.frameworkTemplates());
+		List<ScriptFile> scripts = new ArrayList<>(CozyProject.appScripts(fixture.resolve("static")));
+		scripts.addAll(CozyProject.frameworkScripts());
 		return TemplateRules.check(new RulesInput(templates, modules(fixture.resolve("modules.properties")),
-				CozyProject.manifest(fixture.resolve("fragments.yml")), false, CozyProject.icons(), CozyProject.filledIcons()));
+				CozyProject.manifest(fixture.resolve("fragments.yml")), false, CozyProject.icons(), CozyProject.filledIcons(),
+				scripts));
 	}
 
 	static ModuleModel modules(Path file) throws IOException {

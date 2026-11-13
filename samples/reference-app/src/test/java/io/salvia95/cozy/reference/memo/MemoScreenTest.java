@@ -113,6 +113,16 @@ class MemoScreenTest {
 	}
 
 	@Test
+	void detailCopiesTheBodyWithTheCozyCopyComponent() throws Exception {
+		long id = this.memos.create("복사 메모", "첫 줄\n둘째 줄", false);
+		String detail = body(this.mvc.perform(get("/memo/" + id)).andExpect(status().isOk()).andReturn());
+		assertThat(detail).contains("x-data=\"cozyCopy\"").contains("x-on:click=\"copy\"").contains("x-cloak")
+			.containsPattern("data-copy-text=\"첫 줄(\n|&#10;|&#xa;)둘째 줄\"");
+		long empty = this.memos.create("빈 메모", "", false);
+		assertThat(body(this.mvc.perform(get("/memo/" + empty)).andReturn())).doesNotContain("cozyCopy");
+	}
+
+	@Test
 	void editOnItsOwnPageThenSaveOrNoChange() throws Exception {
 		long id = this.memos.create("고칠 메모", "", false);
 		String edit = body(this.mvc.perform(get("/memo/" + id + "/edit")).andExpect(status().isOk()).andReturn());
@@ -169,7 +179,8 @@ class MemoScreenTest {
 			for (String asset : distinct) {
 				this.mvc.perform(get(asset)).andExpect(status().isOk());
 			}
-			assertThat(distinct).as(path).hasSize(8).contains("/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg");
+			assertThat(distinct).as(path).hasSize(9).contains("/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg")
+				.contains("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js");
 		}
 	}
 

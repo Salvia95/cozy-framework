@@ -15,7 +15,7 @@ public final class RuleNames {
 			Map.entry("R6", "참조 대상과 인자 개수"), Map.entry("R7", "동적 참조 금지"), Map.entry("R8", "매니페스트 등록"),
 			Map.entry("R9", "모듈 내부 참조 방향"), Map.entry("R10", "프래그먼트 변수 범위"), Map.entry("R11", "반복과 삽입 동시 사용"),
 			Map.entry("R12", "프래그먼트 이름 충돌"), Map.entry("R13", "아이콘 이름"), Map.entry("R14", "색상 클래스 사용"),
-			Map.entry("R15", "주 버튼 위치"), Map.entry("C8", "모듈 내부 구조"), Map.entry("C9", "미구현 항목"));
+			Map.entry("R15", "주 버튼 위치"), Map.entry("R16", "Alpine 속성"), Map.entry("C8", "모듈 내부 구조"), Map.entry("C9", "미구현 항목"));
 
 	/** 규칙의 이름. 모르는 ID면 빈 문자열 */
 	public static String of(String id) {

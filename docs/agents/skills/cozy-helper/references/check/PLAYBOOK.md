@@ -31,7 +31,7 @@ cozy check [--json]
 
 ```text
 [R3] templates/voc/api/list.html:1 → wiki/spi/card :: card(1개 인자) — voc의 allowedDependencies에 wiki가 없습니다. … 고치는 명령: cozy link voc --uses wiki
-[cozy check] 오류 1건 (R1~R15, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.
+[cozy check] 오류 1건 (R1~R16, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.
 ```
 
 - Each violation reads `[ID] location → target — how to fix`.

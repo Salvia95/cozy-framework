@@ -22,6 +22,7 @@ import org.springframework.util.ClassUtils;
 
 import io.salvia95.cozy.rules.FragmentDeclaration;
 import io.salvia95.cozy.rules.Origin;
+import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.TemplateFile;
 
 /**
@@ -39,6 +40,12 @@ public final class CozyProject {
 	public static final Path TEMPLATES = RESOURCES.resolve("templates");
 
 	public static final Path MANIFEST = RESOURCES.resolve("cozy/fragments.yml");
+
+	/** 앱의 정적 자원. 모듈의 Alpine 컴포넌트는 {@code static/{모듈}/}에 둔다 */
+	public static final Path STATIC = RESOURCES.resolve("static");
+
+	/** 프레임워크의 Alpine 컴포넌트 등록 파일 ({@code META-INF/resources/cozy/*.js}, 벤더 자산 제외) */
+	private static final String FRAMEWORK_SCRIPT_PATTERN = "classpath*:META-INF/resources/cozy/*.js";
 
 	private static final List<String> FRAMEWORK_TEMPLATE_PATTERNS = List.of("classpath*:templates/cozy/**/*.html",
 			"classpath*:templates/error/**/*.html");
@@ -74,10 +81,32 @@ public final class CozyProject {
 				String url = url(resource).toString();
 				int index = Math.max(url.lastIndexOf("/templates/cozy/"), url.lastIndexOf("/templates/error/"));
 				String path = url.substring(index + "/templates/".length());
-				files.add(new TemplateFile(path, Origin.FRAMEWORK, "[" + origin(url) + "] templates/" + path,
+				files.add(new TemplateFile(path, Origin.FRAMEWORK, "[" + origin(url, "/templates/") + "] templates/" + path,
 						read(resource)));
 			}
 		}
+		return files;
+	}
+
+	/** 앱의 JS 파일 ({@code src/main/resources/static}) */
+	public static List<ScriptFile> appScripts(Path root) {
+		return ScriptFile.fromDirectory(root, Origin.APP, "static/");
+	}
+
+	/** 클래스패스에 있는 프레임워크 JS 파일 ({@code META-INF/resources/cozy/*.js}). Alpine 컴포넌트 이름을 읽는다 (R16) */
+	public static List<ScriptFile> frameworkScripts() {
+		List<ScriptFile> files = new ArrayList<>();
+		for (Resource resource : resources(FRAMEWORK_SCRIPT_PATTERN)) {
+			if (isAppResource(resource)) {
+				continue;
+			}
+			String url = url(resource).toString();
+			String marker = "/META-INF/resources/";
+			String path = url.substring(url.lastIndexOf(marker) + marker.length());
+			files.add(new ScriptFile(path, Origin.FRAMEWORK, "[" + origin(url, marker) + "] META-INF/resources/" + path,
+					read(resource)));
+		}
+		files.sort(java.util.Comparator.comparing(ScriptFile::location));
 		return files;
 	}
 
@@ -179,9 +208,9 @@ public final class CozyProject {
 	}
 
 	/** 메시지용 출처 이름: jar 파일 이름(버전 제외) 또는 모듈 디렉터리 */
-	private static String origin(String url) {
+	private static String origin(String url, String marker) {
 		int bang = url.indexOf("!/");
-		String base = (bang >= 0) ? url.substring(0, bang) : url.substring(0, url.lastIndexOf("/templates/"));
+		String base = (bang >= 0) ? url.substring(0, bang) : url.substring(0, url.lastIndexOf(marker));
 		String name = base.substring(base.lastIndexOf('/') + 1);
 		if (name.equals("classes")) {
 			String parent = base.substring(0, base.lastIndexOf('/'));

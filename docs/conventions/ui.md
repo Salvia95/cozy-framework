@@ -156,6 +156,45 @@ fragments:
 - **이름 규칙**: fragment를 받는 fragment는 모든 파라미터 이름이 `cozy`로 시작해야 한다(ADR-0021).
 - **YAML 따옴표**: `{ }` 안의 값에 `,`, `?`, `{}`, `: `가 들어가면 따옴표로 감싼다.
 
+## 화면 안의 상태 (Alpine.js)
+
+서버를 거치는 동작은 htmx가, 서버를 거치지 않는 화면 안의 상태는 Alpine.js가 맡는다. 모달, 드롭다운, 툴팁은 Tabler(Bootstrap) JS를 그대로 쓴다.
+
+| 맡는 것 | 도구 | 예 |
+| --- | --- | --- |
+| 서버를 거치는 모든 것. 서버가 돌려준 fragment가 기준이다 | htmx | 조회, 필터, 페이지 이동, 저장, 검증 오류 폼, 삭제 |
+| 서버를 거치지 않는 화면 안의 상태 | Alpine.js | 펼치기·접기, 탭, 선택 수에 따른 버튼 활성, 입력 미리보기, 복사 |
+| 이미 있는 컴포넌트 | Tabler JS | 모달, 드롭다운, 툴팁 |
+
+- **판단 기준**: 새로고침해도 남아야 하는 값이면 서버(htmx)이고, 아니면 Alpine이다.
+- **Alpine 컴포넌트는 서버에 요청하지 않는다.** `fetch`, `XMLHttpRequest`, `htmx.ajax`를 쓰지 않는다. 서버가 필요하면 `$dispatch`로 이벤트를 보내고 htmx가 `hx-trigger`로 받는다. 서버가 Alpine 상태를 바꿔야 하면 `HX-Trigger` 헤더의 이벤트로 알린다.
+- **htmx가 바꾼 영역**은 Alpine이 새 요소로 다시 초기화한다. 그 안의 Alpine 상태는 사라지고 서버가 다시 그린 상태가 기준이다.
+- **CSP 빌드**: CSP(`script-src 'self'`)가 eval을 막으므로 Alpine의 CSP 빌드(`@alpinejs/csp`)를 쓴다. 표준 빌드는 쓰지 않는다.
+
+### 작성 규칙 (R16이 검사한다)
+
+- 속성은 긴 이름만 쓴다: `x-on:click`, `x-bind:class`. 줄임 표기(`@click`, `:class`)는 쓰지 않는다.
+- `x-data`에는 등록된 컴포넌트 이름만 쓴다: `x-data="cozyCopy"`. 인라인 객체(`x-data="{ open: false }"`)와 인자는 쓰지 않는다.
+- 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `this.$root.dataset`에서 읽는다. Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
+- 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`, `x-text`, `x-ref`, `x-cloak`, `x-transition`, `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. `x-html`과 `x-teleport`는 쓰지 않는다.
+- 식은 짧게 쓴다. 속성 읽기, 메서드 호출, 변수 대입(`open = !open`), 비교만 쓴다. 화살표 함수, 템플릿 문자열, 전개, 속성 대입(`user.name = …`), 전역(`window`, `console`, `Math` 등)은 CSP 빌드가 읽지 못한다. 그런 로직은 컴포넌트의 getter와 메서드로 옮긴다.
+- `x-cloak`은 Alpine이 시작할 때까지 요소를 숨긴다(`cozy.css`). 스크립트가 있어야만 쓸모 있는 요소(복사 버튼 등)에만 쓴다. 보기와 저장 같은 기본 동작은 스크립트 없이도 된다.
+
+### 프레임워크 컴포넌트
+
+`cozy.js`가 등록한다. 이름은 `cozy`로 시작한다.
+
+| 이름 | 받는 `data-*` | 메서드·속성 | 동작 |
+| --- | --- | --- | --- |
+| `cozyCopy` | `data-copy-text`: 복사할 글자 | `copy()` | 글자를 복사하고 "복사했습니다" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다 |
+
+```html
+<button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
+        th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}">복사</button>
+```
+
+- 앱 컴포넌트의 자리는 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js`이고, 이름은 모듈 이름으로 시작한다(`memoEditor`). 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. R16은 이 규칙을 이미 검사하지만, layout이 앱의 모듈 JS를 싣는 기능은 아직 없다. 지금은 `cozy` 컴포넌트만 쓴다.
+
 ## 설정과 자산
 
 | 속성 | 기본값 | 설명 |
@@ -166,7 +205,8 @@ fragments:
 - **`ScreenSpec.verify()`**: 모든 상태의 fixture를 모델 타입으로 바꿔 본다. 렌더링할 때와 같은 변환이고, 맞지 않으면 상태와 모델 이름을 담아 실패한다.
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
-- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.4, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
+- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
+- **스크립트 순서**: layout은 Tabler → htmx → `cozy.js` → Alpine 순서로 `defer`로 싣는다. `cozy.js`가 `alpine:init`에서 컴포넌트를 등록하고 Alpine이 마지막에 시작한다.
 - **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
 - **아이콘 목록**: `/cozy/dev/catalog/icons`(카탈로그가 켜진 앱)에서 이름으로 찾고, 칸을 누르면 `icon('이름')`이 복사된다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
