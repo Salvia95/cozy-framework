@@ -36,6 +36,7 @@
     <sqlite-jdbc.version>3.54.1.0</sqlite-jdbc.version>
     <nu-validator.version>26.11.4</nu-validator.version>
     <attoparser.version>2.0.10.RELEASE</attoparser.version>
+    <closure-compiler.version>v20261109</closure-compiler.version>
 
     <!-- Boot가 관리하는 플러그인 중 더 새로운 GA가 있는 것은 덮어쓴다 -->
     <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
@@ -151,6 +152,13 @@
         <groupId>nu.validator</groupId>
         <artifactId>validator</artifactId>
         <version>${nu-validator.version}</version>
+      </dependency>
+
+      <!-- 모듈 JS의 문법 검사 (cozy-test, test scope). 의존성 없는 한 jar다 -->
+      <dependency>
+        <groupId>com.google.javascript</groupId>
+        <artifactId>closure-compiler</artifactId>
+        <version>${closure-compiler.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

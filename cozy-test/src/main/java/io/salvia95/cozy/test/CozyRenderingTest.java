@@ -25,7 +25,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 
 /**
- * 렌더링 검사 (C3, C4, C5). 앱은 한 줄만 쓴다.
+ * 렌더링 검사 (C3, C4, C5, C10). 앱은 한 줄만 쓴다.
  *
  * <pre>
  * class RenderingTest extends CozyRenderingTest {
@@ -39,6 +39,8 @@ import io.salvia95.cozy.ui.catalog.ScreenSpec;
  * <li>C5: 스펙이 없는 화면 템플릿({@code {모듈}/api/}), 매니페스트에 없는 공개 fragment({@code {모듈}/spi/})가 있으면
  * 실패한다. 공개 fragment의 파라미터 타입은 spi DTO나 기본 타입이어야 한다(api·internal 타입 금지). {@code {모듈}/internal/}은
  * 그것을 조합하는 화면과 공개 fragment의 렌더링으로 검사된다.</li>
+ * <li>C10: 모듈의 Alpine 컴포넌트 파일({@code static/{모듈}/{모듈}.js})이 JavaScript 문법에 맞아야 한다. 레이아웃이 모든 모듈의 파일을
+ * 한 묶음으로 싣으므로 한 파일의 문법 오류는 모든 모듈의 컴포넌트를 멈춘다.</li>
  * </ul>
  * 문서: docs/conventions/testing.md
  */
@@ -86,6 +88,13 @@ public abstract class CozyRenderingTest {
 						get(CATALOG + "/render").param("id", entry.id()).param("state", state), false);
 			}
 		}
+		report.assertClean();
+	}
+
+	@Test
+	public final void everyModuleScriptParses() {
+		Report report = new Report();
+		ModuleScripts.problems(CozyProject.STATIC).forEach(report::fail);
 		report.assertClean();
 	}
 

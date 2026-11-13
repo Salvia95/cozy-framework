@@ -24,7 +24,7 @@
   <script th:src="@{/cozy/vendor/tabler/1.7.5/js/tabler.min.js}" defer></script>
   <script th:src="@{/cozy/vendor/htmx/2.0.11/htmx.min.js}" defer></script>
   <script th:src="@{/cozy/cozy.js}" defer></script>
-  <script th:if="${cozyModuleScript != null}" th:src="@{${cozyModuleScript}}" defer></script>
+  <script th:if="${cozyModuleScript != null}" th:src="@{${cozyModuleScript.src}}" th:data-cozy-parts="${cozyModuleScript.parts}" defer></script>
   <th:block th:if="${cozyScripts != null}"><script th:each="script : ${cozyScripts}" th:src="@{${script}}" defer></script></th:block>
   <script th:src="@{/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js}" defer></script>
 </head>

@@ -39,7 +39,17 @@ public final class CozyModuleScripts {
 	 * @param version 내용의 SHA-256 앞 12자 (파일이 없으면 빈 문자열)
 	 * @param files 넣은 파일 ({@code static/memo/memo.js}, 모듈 이름 순서)
 	 */
-	public record Bundle(String content, String version, List<String> files) {
+	public record Bundle(String content, String version, List<String> files, String parts) {
+	}
+
+	/**
+	 * 레이아웃이 싣는 스크립트.
+	 *
+	 * @param src 주소 ({@code /cozy/modules.js?v=…})
+	 * @param parts 부분마다 원래 파일과 묶음에서의 첫 줄({@code static/memo/memo.js:2;static/wiki/wiki.js:40}). 브라우저 오류의 줄을 원래
+	 * 파일의 줄로 바꾸는 데 쓴다
+	 */
+	public record Script(String src, String parts) {
 	}
 
 	private final ResourcePatternResolver resources;
@@ -54,10 +64,10 @@ public final class CozyModuleScripts {
 		this.bundle = read();
 	}
 
-	/** 레이아웃이 싣는 주소. 모듈 파일이 없으면 {@code null} */
-	public @Nullable String src() {
+	/** 레이아웃이 싣는 스크립트. 모듈 파일이 없으면 {@code null} */
+	public @Nullable Script script() {
 		Bundle current = bundle();
-		return current.files().isEmpty() ? null : PATH + "?v=" + current.version();
+		return current.files().isEmpty() ? null : new Script(PATH + "?v=" + current.version(), current.parts());
 	}
 
 	public Bundle bundle() {
@@ -87,20 +97,25 @@ public final class CozyModuleScripts {
 				}
 			}
 			StringBuilder content = new StringBuilder();
+			List<String> parts = new java.util.ArrayList<>();
+			int line = 1;
 			for (Map.Entry<String, Resource> entry : found.entrySet()) {
 				String file = "static/" + entry.getKey() + "/" + entry.getKey() + ".js";
 				String part;
 				try (InputStream in = entry.getValue().getInputStream()) {
 					part = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 				}
-				content.append("/* ").append(file).append(" */\n").append(part);
 				if (!part.endsWith("\n")) {
-					content.append('\n');
+					part = part + "\n";
 				}
+				parts.add(file + ":" + (line + 1));
+				// 끝의 ;는 다음 파일의 첫 줄이 앞 파일의 끝과 이어 읽히지 않게 한다
+				content.append("/* ").append(file).append(" */\n").append(part).append(";\n");
+				line += 2 + (int) part.chars().filter((c) -> c == '\n').count();
 			}
 			List<String> files = found.keySet().stream().map((m) -> "static/" + m + "/" + m + ".js").toList();
 			String text = content.toString();
-			return new Bundle(text, files.isEmpty() ? "" : hash(text), files);
+			return new Bundle(text, files.isEmpty() ? "" : hash(text), files, String.join(";", parts));
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException("[cozy] 모듈의 static/{모듈}/{모듈}.js를 읽지 못했습니다", ex);

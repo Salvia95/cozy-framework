@@ -41,18 +41,19 @@ class CozyModuleScriptsTest {
 		write("static/img/sprite.svg", "<svg/>");
 		CozyModuleScripts.Bundle bundle = scripts().bundle();
 		assertThat(bundle.files()).containsExactly("static/memo/memo.js", "static/wiki/wiki.js");
-		assertThat(bundle.content()).contains("/* static/memo/memo.js */\nmemoPart();\n")
-			.contains("/* static/wiki/wiki.js */\nwikiPart();\n")
-			.doesNotContain("extraPart");
+		// 부분마다 원래 파일 이름을 앞에 두고, 끝에 ;를 두어 다음 파일과 이어 읽히지 않게 한다
+		assertThat(bundle.content()).isEqualTo("/* static/memo/memo.js */\nmemoPart();\n;\n/* static/wiki/wiki.js */\nwikiPart();\n;\n");
+		// 브라우저 오류의 줄 번호(묶음 기준)를 원래 파일의 줄로 바꾸는 데 쓴다: 파일:첫 줄
+		assertThat(scripts().script().parts()).isEqualTo("static/memo/memo.js:2;static/wiki/wiki.js:5");
 		assertThat(bundle.content().indexOf("memoPart")).isLessThan(bundle.content().indexOf("wikiPart"));
 		assertThat(bundle.version()).matches("[0-9a-f]{12}");
-		assertThat(scripts().src()).isEqualTo("/cozy/modules.js?v=" + bundle.version());
+		assertThat(scripts().script().src()).isEqualTo("/cozy/modules.js?v=" + bundle.version());
 	}
 
 	@Test
 	void anAppWithoutModuleFilesLoadsNothing() throws IOException {
 		write("static/img/logo.svg", "<svg/>");
-		assertThat(scripts().src()).isNull();
+		assertThat(scripts().script()).isNull();
 		assertThat(scripts().bundle().files()).isEmpty();
 	}
 
@@ -65,6 +66,6 @@ class CozyModuleScriptsTest {
 		write("static/wiki/wiki.js", "wiki();\n");
 		assertThat(scripts.bundle().content()).contains("second()").contains("wiki()").doesNotContain("first()");
 		assertThat(scripts.bundle().version()).isNotEqualTo(before);
-		assertThat(scripts.src()).endsWith(scripts.bundle().version());
+		assertThat(scripts.script().src()).endsWith(scripts.bundle().version());
 	}
 }

@@ -37,6 +37,7 @@
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
+| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261109 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
 | maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
 | maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |

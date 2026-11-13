@@ -220,7 +220,9 @@ fragments:
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.
-  - **오류**: 각 부분 앞에 `/* static/memo/memo.js */` 주석이 있다. 브라우저 오류의 줄 번호는 묶음 기준이다. 한 파일의 문법 오류는 묶음 전체를 멈춰 모든 모듈의 컴포넌트가 없어진다.
+  - **오류**: 각 부분 앞에 `/* static/memo/memo.js */` 주석을, 끝에 `;` 한 줄을 둔다(다음 파일과 이어 읽히지 않게). 한 파일의 문법 오류는 묶음 전체를 멈춰 모든 모듈의 컴포넌트가 없어진다.
+    - **빌드에서 막는다**: `mvn verify`의 C10이 모듈마다 그 파일의 문법을 읽어 본다([testing.md](testing.md)).
+    - **실행 중에 알린다**: 스크립트의 `data-cozy-parts`(`static/memo/memo.js:2;…`, 파일과 묶음에서의 첫 줄)로 `cozy.js`가 브라우저 오류의 묶음 줄을 원래 파일의 줄로 바꿔 콘솔에 낸다(`[cozy] static/memo/memo.js 7줄: …`). 문법 오류면 "화면 동작을 불러오지 못했습니다" 토스트도 띄운다.
   - 폴더 이름과 파일 이름이 다른 JS는 넣지 않는다. 모듈마다 따로 주는 주소는 없다(`/memo/memo.js`는 모듈의 화면 경로 `/memo/{id}`와 겹친다).
 - **쓰는 곳**: 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. `fragments/`와 `error/`는 `cozy` 컴포넌트만 쓴다(R16).
 - **예**: reference-app의 `memoBodyCount`(메모 본문 아래 글자 수)가 `memo/internal/fields`에서 쓴다.

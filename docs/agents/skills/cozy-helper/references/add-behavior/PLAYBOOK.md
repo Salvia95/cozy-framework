@@ -47,6 +47,7 @@ cozy add behavior memo char-count
 | `모양이 아닙니다` | Add the `window.Alpine.data(…)` call by hand inside the file's `alpine:init` listener. |
 | `소문자와 하이픈` | Rename the behavior in lowercase with hyphens (`pin-toggle`). |
 | `R16` and `모듈의 컴포넌트입니다` | Use only `cozy` components and components of the template's own module. |
+| `[C10]` | Fix the syntax error at the printed line, because one broken file stops the components of every module. |
 
 ## Next
 

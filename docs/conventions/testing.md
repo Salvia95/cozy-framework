@@ -35,6 +35,7 @@ class RenderingTest extends CozyRenderingTest {
 | C7 | 컨트롤러·뷰 모듈 | 앱의 모든 MockMvc 테스트 | 컨트롤러의 모듈과 반환한 뷰 이름의 첫 경로가 다름. 뷰가 `{모듈}/api/`나 `{모듈}/spi/` 아래가 아님 |
 | C8 | 모듈 안 구조 | `CozyArchitectureTest.modulesFollowLayerRules` | api·spi·internal 배치, 이름(`*Facade`·`*Finder`·`*Impl`…), 레이어 방향 위반([structure.md](structure.md)) |
 | C9 | 빈칸 | `CozyArchitectureTest.slotsAreFilled` | `src/main` 아래에 `cozy:slot` 표시가 남아 있음 (ADR-0032) |
+| C10 | 모듈 스크립트 | `CozyRenderingTest.everyModuleScriptParses` | `static/{모듈}/{모듈}.js`의 JavaScript 문법 오류. 레이아웃이 모든 모듈의 파일을 한 묶음으로 싣으므로 한 파일의 오류가 모든 모듈의 컴포넌트를 멈춘다([ui.md](ui.md)의 앱 컴포넌트) |
 
 ### 검사별 세부
 
@@ -51,6 +52,7 @@ class RenderingTest extends CozyRenderingTest {
 - **C4 fragment 감싸기**: htmx 부분 갱신 fragment(스펙의 `fragments`)는 최소 문서로 감싼 뒤 검사한다. `<tr>`, `<li>`처럼 부모 요소가 필요한 fragment는 알맞은 부모로 감싼다.
 - **C5 화면 템플릿**: `templates/{모듈}/api/` 아래의 템플릿이 화면 템플릿이다. 스펙 이름은 `api/`를 뺀 경로의 `/`를 `-`로 바꾼 것이다(`memo/api/list` → `memo-list`). `{모듈}/spi/`의 fragment는 매니페스트에 있어야 하고, `{모듈}/internal/`은 대상이 아니다(그것을 쓰는 화면과 fragment로 검사된다). `cozy/`, `fragments/`, `error/`도 대상이 아니다. `fragments/`의 fragment는 매니페스트(R8)가 대신한다.
 - **C8 대상**: 앱 메인 클래스 중 모듈에 속한 것. 어긴 곳마다 `[C8] 클래스 — 고치는 법` 또는 `[C8] 클래스 → 대상 — 고치는 법` 한 줄을 내고, 모두 모아 한 번에 실패한다. 예외 목록은 없다. 판단은 cozy-rules의 `LayerRules`가 하고, cozy-test는 컴파일된 클래스를 읽어 넘긴다([rules.md](rules.md#모듈-구조와-빈칸-api-cozy-rules)).
+- **C10 모듈 스크립트**: 폴더 이름과 같은 이름의 파일(`static/memo/memo.js`)만 읽는다. Closure Compiler의 파서로 최신 문법까지 읽고, 타입과 선언은 보지 않는다. 메시지는 `[C10] src/main/resources/static/memo/memo.js:7 — 파서의 설명. 레이아웃이 …`이다.
 - **C9 빈칸**: cozy 명령은 에이전트가 채울 자리에 빈칸 표시를 남긴다. 표시가 남아 있으면 빌드가 실패한다. 다 채웠으면 표시를 지운다.
   - 형식: `cozy:slot {id} — {무엇을}`. id는 영문·숫자·`-`·`_`·`.`이다. 설명은 대시(—, -) 뒤부터 주석 끝이나 `"`, `;`, 줄 끝까지다.
 
@@ -123,7 +125,7 @@ states:                               # default와 empty는 필수
 
 ## 위반 픽스처
 
-`samples/violations/`에 규칙(R1~R16)과 검사(C1~C9)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
+`samples/violations/`에 규칙(R1~R16)과 검사(C1~C10)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
 
 ## 배포 종단 검증
 

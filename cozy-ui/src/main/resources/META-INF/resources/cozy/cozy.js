@@ -5,6 +5,7 @@
  * - 요청 중이면 화면 맨 위에 진행 막대를 보인다
  * - 서버는 HX-Trigger: {"cozy:toast": {"message": "...", "kind": "success"}}로 토스트를 띄울 수 있다
  * - 검증 오류(.is-invalid)가 있으면 첫 칸으로 포커스를 옮긴다 (페이지 로드, htmx 교체 뒤)
+ * - 앱 모듈의 컴포넌트 묶음(/cozy/modules.js)에서 난 오류를 원래 파일과 줄로 알린다. 문법 오류면 묶음 전체가 실행되지 않으므로 토스트도 띄운다
  *
  * Alpine 컴포넌트 (화면 안의 상태. 서버를 거치는 동작은 htmx가 한다)
  * - Alpine은 CSP 빌드다. 템플릿은 x-data="이름"과 이 객체의 속성·메서드 이름만 쓴다 (docs/conventions/ui.md)
@@ -63,6 +64,29 @@
   document.addEventListener('htmx:sendError', function () {
     toast('서버에 연결할 수 없습니다. 앱이 실행 중인지 확인하세요.', 'critical');
   });
+  // 묶음의 줄 번호를 원래 파일의 줄로: data-cozy-parts는 "파일:묶음에서의 첫 줄;…"
+  function moduleLine(parts, line) {
+    var where = 'cozy/modules.js ' + line + '줄';
+    (parts || '').split(';').forEach(function (part) {
+      var colon = part.lastIndexOf(':');
+      var first = parseInt(part.substring(colon + 1), 10);
+      if (colon > 0 && line >= first) { where = part.substring(0, colon) + ' ' + (line - first + 1) + '줄'; }
+    });
+    return where;
+  }
+
+  window.addEventListener('error', function (event) {
+    if (!event.filename || event.filename.indexOf('/cozy/modules.js') < 0) { return; }
+    var script = document.querySelector('script[data-cozy-parts]');
+    var where = moduleLine(script ? script.getAttribute('data-cozy-parts') : '', event.lineno);
+    var syntax = !!(event.error && event.error.name === 'SyntaxError');
+    console.error('[cozy] ' + where + ': ' + event.message
+      + (syntax ? ' — 모듈 컴포넌트 묶음이 실행되지 않아 모든 모듈의 컴포넌트가 없습니다' : ''));
+    if (syntax) {
+      toast('화면 동작을 불러오지 못했습니다. 앱을 만든 사람에게 ' + where + '을 알려 주세요.', 'critical');
+    }
+  });
+
   document.addEventListener('cozy:toast', function (event) {
     toast(event.detail.message, event.detail.kind);
   });
@@ -88,17 +112,28 @@
     focusFirstError(document);
   });
 
-  // 미리보기 높이: 처음 그릴 때와, 나중에 내용이 바뀔 때(글꼴, 아이콘, htmx 갱신)마다 맞춘다. 새 문서마다 한 번 지켜본다
+  // 미리보기 높이: 처음 그릴 때와, 나중에 내용이 바뀔 때(글꼴, 아이콘, htmx 갱신)마다 맞춘다. 새 문서마다 한 번 지켜본다.
+  // Tabler는 body를 틀 높이(100%)로 두므로 그대로 재면 틀에 따라 다시 바뀌어 끝없이 돈다. 틀 안의 문서를 내용 높이로 두고(cozy-fit)
+  // 문서 요소의 높이(틀 높이와 상관없다)에 틀의 테두리를 더한다
   function fitFrame(frame) {
     try {
       var doc = frame.contentDocument;
-      if (!doc || !doc.documentElement) { return; }
-      var fit = function () { frame.style.height = Math.max(64, doc.documentElement.scrollHeight) + 'px'; };
+      // 주소가 있는 틀의 처음 빈 문서(about:blank)는 곧 바뀐다. 실제 문서는 load에서 다시 부른다
+      if (!doc || !doc.documentElement || (doc.URL === 'about:blank' && frame.getAttribute('src'))) { return; }
+      doc.documentElement.classList.add('cozy-fit');
+      var fit = function () {
+        var content = Math.ceil(doc.documentElement.getBoundingClientRect().height);
+        var height = Math.max(64, content + frame.offsetHeight - frame.clientHeight) + 'px';
+        if (frame.style.height !== height) { frame.style.height = height; }
+      };
       fit();
       var View = frame.contentWindow && frame.contentWindow.ResizeObserver;
-      if (View && frame.cozyObserved !== doc && doc.body) {
+      if (View && frame.cozyObserved !== doc) {
+        // 앞 문서를 지켜보던 것은 끊는다. 남겨 두면 떨어진 문서를 계속 지켜보며 그림마다 오류를 낸다
+        if (frame.cozyObserver) { frame.cozyObserver.disconnect(); }
         frame.cozyObserved = doc;
-        new View(fit).observe(doc.body);
+        frame.cozyObserver = new View(fit);
+        frame.cozyObserver.observe(doc.documentElement);
       }
     } catch (e) { /* 다른 출처면 그대로 둔다 */ }
   }

@@ -7,6 +7,6 @@ def log = new File(basedir, "build.log").getText("UTF-8")
   "[C9] src/main/java/it/cozy/app/report/internal/app/command/ReportAuditListener.java",
   "[C9] src/main/resources/db/migration/V202611081000__report_create_report.sql",
   "ArchitectureTest.slotsAreFilled",
-  "Tests run: 9, Failures: 1, Errors: 0, Skipped: 0",
+  "Tests run: 10, Failures: 1, Errors: 0, Skipped: 0",
 ].each { assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it }
 return true

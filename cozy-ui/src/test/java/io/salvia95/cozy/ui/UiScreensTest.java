@@ -110,7 +110,9 @@ class UiScreensTest {
 	void moduleScriptsLoadAsOneBundleBeforeAlpine() throws Exception {
 		// 모듈마다 static/{모듈}/{모듈}.js 하나. 레이아웃은 그것들을 이은 묶음 하나를 싣는다
 		String html = body(this.mvc.perform(get("/uitest")).andExpect(status().isOk()).andReturn());
-		Matcher src = Pattern.compile("<script src=\"(/cozy/modules\\.js\\?v=([0-9a-f]{12}))\" defer></script>").matcher(html);
+		Matcher src = Pattern
+			.compile("<script src=\"(/cozy/modules\\.js\\?v=([0-9a-f]{12}))\" data-cozy-parts=\"static/uitest/uitest.js:2\" defer></script>")
+			.matcher(html);
 		assertThat(src.find()).as(html).isTrue();
 		assertThat(src.find()).as("묶음은 한 번만 싣는다").isFalse();
 		assertThat(html).doesNotContain("/cozy/modules/").doesNotContain("uitest.js\"");
