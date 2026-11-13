@@ -292,7 +292,11 @@
             "empty"
           ],
           "components": [
-            "cozyCopy"
+            {
+              "name": "cozyCopy",
+              "template": "memo/api/detail",
+              "line": 21
+            }
           ],
           "outline": [
             {
@@ -406,7 +410,13 @@
             "empty",
             "invalid"
           ],
-          "components": [],
+          "components": [
+            {
+              "name": "memoBodyCount",
+              "template": "memo/internal/fields",
+              "line": 6
+            }
+          ],
           "outline": [
             {
               "line": 4,
@@ -490,7 +500,13 @@
             "empty",
             "invalid"
           ],
-          "components": [],
+          "components": [
+            {
+              "name": "memoBodyCount",
+              "template": "memo/internal/fields",
+              "line": 6
+            }
+          ],
           "outline": [
             {
               "line": 4,

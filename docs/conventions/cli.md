@@ -64,12 +64,21 @@ cozy <동작> [옵션]
 | 키 | 값 |
 | --- | --- |
 | `app` | `basePackage`, `mainClass`, `cozyVersion`(cozy-parent 버전), `starters`(pom에 직접 적은 cozy 의존. 간접 의존은 빠진다) |
-| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `events[]`(`type`, `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]` 발행하는 파일), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면 템플릿에 직접 쓴 `x-data` 이름. 넣은 fragment 안의 것은 그 fragment의 템플릿에 있다), `fragments[]`(공개 fragment `id`, `signature`) |
+| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `events[]`(`type`, `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]` 발행하는 파일), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트"), `fragments[]`(공개 fragment `id`, `signature`) |
 | `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
 - **발행하는 파일**: 소스에서 `이벤트.of(`나 `new 이벤트(`를 찾는다. 이 목록이 비면 아직 발행하지 않는 이벤트다.
 - **모듈 판정**: Spring Modulith와 같다. 메인 클래스 패키지 바로 아래 패키지가 모듈이고, `@ApplicationModule(id)`가 있으면 그 이름을 쓴다. 의존 선언(`allowedDependencies`)이 없으면 open이다.
+
+### 화면의 컴포넌트 (`screens[].components`)
+
+화면이 쓰는 `x-data`를 쓴 곳과 함께 문서 순서로 싣는다. 항목은 `name`(컴포넌트), `template`(`x-data`를 쓴 템플릿), `line`(그 줄)이다. 글 출력은 `· 컴포넌트 memoBodyCount(memo/internal/fields:6)`다.
+
+- 화면 템플릿에서 시작해, 앱 템플릿을 넣는 `th:replace`·`th:insert`를 따라간다. 같은 파일 안의 fragment(`~{::memoHint}`)도 따라간다.
+- fragment 이름이 있으면 그 선언의 줄 범위만 보고, 없으면(`~{memo/internal/panel}`) 템플릿 전체를 본다. 그 안의 삽입도 다시 따라간다.
+- 같은 fragment를 두 번 넣어도 한 번만 싣고, 서로 넣는 fragment에서 멈춘다.
+- 프레임워크 fragment(`cozy/…`)는 따라가지 않는다. `form-page`의 `cozyDirtyForm`처럼 패턴이 붙이는 것은 [ui.md](ui.md)에 있다. 없는 템플릿도 따라가지 않는다(`cozy check`가 알린다). 주석 안은 보지 않는다.
 
 ### 화면의 구조 (`--json`의 `screens[].outline`)
 
@@ -272,7 +281,7 @@ cozy enable workbench
 - **behavior** (ADR-0040 §5): 화면 안의 상태를 맡는 Alpine 컴포넌트 하나를 `static/{모듈}/{모듈}.js`에 더한다. 이름은 소문자와 하이픈(`body-count`)이고 컴포넌트는 모듈 이름 + 카멜 표기(`memoBodyCount`)다.
   - 파일이 없으면 `document.addEventListener('alpine:init', …)` 하나와 등록 하나로 만든다. 있으면 그 끝 `});` 앞에 더한다. 끝이 그 모양이 아니면 실패한다(손으로 고친 파일을 깨지 않는다).
   - 등록은 `init`에서 `root = this.$root`를 잡아 두고, 빈칸 `behavior-{컴포넌트}`를 남긴다. 상태(속성)와 로직(메서드)은 에이전트가 채운다(C9).
-  - 같은 컴포넌트가 이미 있으면 바뀐 것 없음이다. 레이아웃은 모듈마다 이 파일 하나를 싣고(`/cozy/modules/{모듈}/{모듈}.js`), R16은 다른 파일의 등록을 오류로 본다.
+  - 같은 컴포넌트가 이미 있으면 바뀐 것 없음이다. 레이아웃은 모든 모듈의 이 파일을 이은 묶음 하나(`/cozy/modules.js`)를 싣고, R16은 다른 파일의 등록을 오류로 본다.
 - **field** (ADR-0037): `cozy add crud`가 만든 한 벌에 필드 하나를 더한다. 형식은 crud의 필드와 같고 `instant`는 받지 않는다. 남기는 빈칸이 없다.
 
   | 곳 | 더하는 것 (예: `--field dueOn:date:마감일`) |

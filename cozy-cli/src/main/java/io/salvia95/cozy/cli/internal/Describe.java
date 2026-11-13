@@ -222,8 +222,7 @@ public final class Describe {
 				AppResources.Spec spec = specs.stream().filter((s) -> template.equals(s.template())).findFirst().orElse(null);
 				screen.put("spec", (spec != null) ? spec.file() : null);
 				screen.put("states", (spec != null) ? spec.states() : List.of());
-				String content = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
-				screen.put("components", usedComponents(content));
+				screen.put("components", usedComponents(project.dir().resolve("src/main/resources/templates"), template));
 				screen.put("outline", outline(file, template));
 				screens.add(screen);
 			}
@@ -240,14 +239,88 @@ public final class Describe {
 	private static final java.util.regex.Pattern REGISTRATION = java.util.regex.Pattern
 		.compile("Alpine\\s*\\.\\s*data\\s*\\(\\s*([\"'])([A-Za-z_$][\\w$]*)\\1");
 
-	/** 화면이 붙인 Alpine 컴포넌트({@code x-data}의 이름). 문서 순서, 겹치지 않게. 주석은 보지 않는다 */
-	static List<Object> usedComponents(String template) {
-		java.util.regex.Matcher m = X_DATA.matcher(template.replaceAll("(?s)<!--.*?-->", ""));
-		java.util.Set<String> names = new java.util.LinkedHashSet<>();
-		while (m.find()) {
-			names.add(m.group(2));
+	/**
+	 * 화면이 쓰는 Alpine 컴포넌트({@code x-data}의 이름)와 쓴 곳. 화면 템플릿과, 거기서 넣는 앱 템플릿의 fragment를 따라가며 문서
+	 * 순서로 모은다. fragment 이름이 있으면 그 선언의 줄 범위만, 없으면 템플릿 전체를 본다. 이미 본 fragment는 다시 보지 않는다.
+	 * 프레임워크 fragment({@code cozy/…})와 없는 템플릿은 따라가지 않는다. 주석은 보지 않는다.
+	 */
+	static List<Object> usedComponents(Path templates, String template) {
+		List<Object> found = new ArrayList<>();
+		collect(templates, template, null, new java.util.HashSet<>(), found);
+		return found;
+	}
+
+	private static void collect(Path templates, String template, String fragment, java.util.Set<String> seen, List<Object> found) {
+		if (template.startsWith("cozy/") || !seen.add(template + "::" + fragment)) {
+			return;
 		}
-		return new ArrayList<>(names);
+		Path file = templates.resolve(template + ".html");
+		if (!Files.isRegularFile(file)) {
+			return;
+		}
+		String content;
+		try {
+			content = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
+		}
+		catch (IOException ex) {
+			throw new java.io.UncheckedIOException(ex);
+		}
+		List<TemplateOutline.Node> nodes = TemplateOutline
+			.of(new TemplateFile(template + ".html", Origin.APP, "templates/" + template + ".html", content));
+		int from = 1;
+		int to = Integer.MAX_VALUE;
+		if (fragment != null) {
+			TemplateOutline.Node declaration = nodes.stream()
+				.filter((n) -> n.kind().equals("fragment") && fragment.equals(n.fragment()))
+				.findFirst()
+				.orElse(null);
+			if (declaration == null) {
+				return;
+			}
+			from = declaration.line();
+			to = declaration.endLine();
+		}
+		// x-data와 삽입을 줄 순서로 (같은 줄이면 x-data 먼저)
+		java.util.TreeMap<Integer, List<Runnable>> steps = new java.util.TreeMap<>();
+		java.util.regex.Matcher m = X_DATA.matcher(withoutComments(content));
+		while (m.find()) {
+			int line = lineOf(content, m.start());
+			if (line >= from && line <= to) {
+				String name = m.group(2);
+				steps.computeIfAbsent(line, (l) -> new ArrayList<>())
+					.add(() -> found.add(ordered("name", name, "template", template, "line", line)));
+			}
+		}
+		for (TemplateOutline.Node node : nodes) {
+			if ((node.kind().equals("replace") || node.kind().equals("insert")) && node.line() >= from && node.line() <= to
+					&& node.target().matches("[A-Za-z0-9_/\\-]*")) {
+				String target = node.target().isEmpty() ? template : node.target();
+				steps.computeIfAbsent(node.line(), (l) -> new ArrayList<>())
+					.add(() -> collect(templates, target, node.fragment(), seen, found));
+			}
+		}
+		steps.values().forEach((list) -> list.forEach(Runnable::run));
+	}
+
+	/** 주석을 같은 수의 줄바꿈으로 바꾼다 (줄 번호는 그대로) */
+	private static String withoutComments(String content) {
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?s)<!--.*?-->").matcher(content);
+		StringBuilder out = new StringBuilder();
+		while (m.find()) {
+			m.appendReplacement(out, m.group().replaceAll("[^\n]", " "));
+		}
+		m.appendTail(out);
+		return out.toString();
+	}
+
+	private static int lineOf(String content, int index) {
+		int line = 1;
+		for (int i = 0; i < index; i++) {
+			if (content.charAt(i) == '\n') {
+				line++;
+			}
+		}
+		return line;
 	}
 
 	/** 모듈이 static/{모듈}/{모듈}.js에 등록한 Alpine 컴포넌트 (레이아웃이 싣는 파일) */
@@ -327,7 +400,10 @@ public final class Describe {
 					.append((screen.get("spec") != null) ? screen.get("spec") + ": " + join((List<Object>) screen.get("states"), "")
 							: "스펙 없음")
 					.append(((List<Object>) screen.get("components")).isEmpty() ? ""
-							: " · 컴포넌트 " + join((List<Object>) screen.get("components"), ""))
+							: " · 컴포넌트 " + String.join(", ", ((List<Object>) screen.get("components")).stream()
+								.map((c) -> (Map<String, Object>) c)
+								.map((c) -> c.get("name") + "(" + c.get("template") + ":" + c.get("line") + ")")
+								.toList()))
 					.append('\n');
 			}
 			for (Object f : (List<Object>) m.get("fragments")) {

@@ -44,18 +44,16 @@ class UiScreensTest {
 		assertThat(html.indexOf(">항목<")).isLessThan(html.indexOf(">둘째<"));
 		assertThat(html).containsPattern("class=\"nav-item active\"[\\s\\S]*?항목");
 		// 모든 자산이 로컬이고 실제로 내려온다 (네트워크를 끊어도 같게 그려진다)
-		Matcher m = Pattern.compile("(?:href|src)=\"(/cozy/[^\"#]+)(?:#[^\"]*)?\"").matcher(html);
+		Matcher m = Pattern.compile("(?:href|src)=\"(/cozy/[^\"#?]+)(\\?[^\"#]*)?(?:#[^\"]*)?\"").matcher(html);
 		java.util.Set<String> assets = new java.util.TreeSet<>();
 		while (m.find()) {
 			assets.add(m.group(1));
-		}
-		for (String asset : assets) {
-			this.mvc.perform(get(asset)).andExpect(status().isOk());
+			this.mvc.perform(get(m.group(1) + ((m.group(2) != null) ? m.group(2) : ""))).andExpect(status().isOk());
 		}
 		assertThat(assets).containsExactlyInAnyOrder("/cozy/vendor/pretendard/1.3.9/pretendardvariable.css",
 				"/cozy/vendor/tabler/1.7.5/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.5/js/tabler.min.js",
 				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js",
-				"/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg", "/cozy/favicon.svg", "/cozy/modules/uitest/uitest.js");
+				"/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg", "/cozy/favicon.svg", "/cozy/modules.js");
 		// Alpine은 컴포넌트를 등록하는 cozy.js 뒤에 시작한다 (모두 defer라 문서 순서대로 실행된다)
 		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js"));
 		assertThat(html).doesNotContainPattern("(?:href|src)=\"(?:https?:)?//");
@@ -109,21 +107,35 @@ class UiScreensTest {
 	}
 
 	@Test
-	void moduleScriptsLoadBeforeAlpineFromTheirOwnPath() throws Exception {
-		// 모듈마다 static/{모듈}/{모듈}.js 하나. 모듈 경로(/uitest/{id})와 겹치지 않게 /cozy/modules/ 아래에서 준다
+	void moduleScriptsLoadAsOneBundleBeforeAlpine() throws Exception {
+		// 모듈마다 static/{모듈}/{모듈}.js 하나. 레이아웃은 그것들을 이은 묶음 하나를 싣는다
 		String html = body(this.mvc.perform(get("/uitest")).andExpect(status().isOk()).andReturn());
-		assertThat(html).contains("<script src=\"/cozy/modules/uitest/uitest.js\" defer></script>")
-			.doesNotContain("extra.js")
-			.doesNotContain("sprite.js");
-		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/modules/uitest/uitest.js"));
-		assertThat(html.indexOf("/cozy/modules/uitest/uitest.js")).isLessThan(html.indexOf("alpinejs-csp"));
-		String script = this.mvc.perform(get("/cozy/modules/uitest/uitest.js"))
+		Matcher src = Pattern.compile("<script src=\"(/cozy/modules\\.js\\?v=([0-9a-f]{12}))\" defer></script>").matcher(html);
+		assertThat(src.find()).as(html).isTrue();
+		assertThat(src.find()).as("묶음은 한 번만 싣는다").isFalse();
+		assertThat(html).doesNotContain("/cozy/modules/").doesNotContain("uitest.js\"");
+		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/modules.js"));
+		assertThat(html.indexOf("/cozy/modules.js")).isLessThan(html.indexOf("alpinejs-csp"));
+		src.reset().find();
+
+		// 주소의 해시가 지금 내용과 같으면 오래 캐시한다. 내용이 바뀌면 주소도 바뀐다
+		MvcResult current = this.mvc.perform(get(src.group(1)))
 			.andExpect(status().isOk())
 			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("javascript")))
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-		assertThat(script).contains("uitestSample");
+			.andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("immutable")))
+			.andReturn();
+		assertThat(body(current)).contains("/* static/uitest/uitest.js */").contains("uitestSample").doesNotContain("extra");
+
+		// 옛 주소나 해시 없는 주소는 지금 내용을 캐시하지 않고 준다
+		for (String stale : java.util.List.of("/cozy/modules.js?v=000000000000", "/cozy/modules.js")) {
+			MvcResult result = this.mvc.perform(get(stale))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", "no-cache"))
+				.andReturn();
+			assertThat(body(result)).contains("uitestSample");
+		}
+		// 모듈마다 따로 주던 주소는 없다
+		this.mvc.perform(get("/cozy/modules/uitest/uitest.js")).andExpect(status().isNotFound());
 	}
 
 	@Test

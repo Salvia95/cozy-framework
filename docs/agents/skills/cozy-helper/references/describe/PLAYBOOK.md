@@ -33,10 +33,14 @@ cozy describe [--json]
   읽기 MemoFinder
     Optional<MemoItem> find(long id)
   이벤트 MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java
+  컴포넌트 memoBodyCount
+  화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid · 컴포넌트 memoBodyCount(memo/internal/fields:6)
 ```
 
 - `의존: 없음` means the module uses no other module.
 - An event without a `발행:` file is not published anywhere yet.
+- `컴포넌트` under a module lists the Alpine components that `static/{module}/{module}.js` registers.
+- `컴포넌트` on a screen lists the components the screen uses, including those inside the app fragments it includes, with the template and line to edit.
 
 ## Failures
 
