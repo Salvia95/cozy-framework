@@ -3,6 +3,7 @@
   워크벤치의 구조 트리. 마디마다 줄 하나(표시 이름, 식별자, 줄 번호)와 숨겨진 속성 표가 있고, 안의 마디는 접고 펼 수 있다.
   nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbench.js가 읽는다.
   매개변수 가운데 문자열은 고칠 수 있다: POST /cozy/dev/workbench/arg가 cozy set arg로 변경 파일을 보이고 적용한다.
+  htmx는 그 결과로 오른쪽 칸, 구조, 알림, 검사 오류 수를 바꾼다. 이 폼은 선택할 때 오른쪽 칸으로 복제되고, workbench.js가 htmx에 알린다.
 */-->
 <html lang="ko">
 <body>
@@ -40,7 +41,8 @@
                 <td th:if="${!arg.editable or item.fragment.isEmpty()}"><code th:text="${arg.value}">값</code></td>
                 <!--/* 문자열 인자: 고친 값으로 cozy set arg의 변경 파일을 확인한다. 이 표는 선택할 때 복사되므로 id를 두지 않는다 */-->
                 <td th:if="${arg.editable and !item.fragment.isEmpty()}">
-                  <form class="cozy-workbench-arg-form" method="post" th:action="@{/cozy/dev/workbench/arg}">
+                  <form class="cozy-workbench-arg-form" method="post" th:action="@{/cozy/dev/workbench/arg}"
+                        th:hx-post="@{/cozy/dev/workbench/arg}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">
                     <input type="hidden" name="spec" th:value="${screen.screen}">
                     <input type="hidden" name="state" th:value="${state}">
                     <input type="hidden" name="w" th:value="${w}">

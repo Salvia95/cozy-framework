@@ -56,6 +56,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 - **화면 스펙**: 화면 템플릿마다 `specs/{모듈}-{화면}.yml`을 둔다. 형식은 [testing.md](testing.md)에 있다.
 - **입력과 출력**: 입력은 getter와 setter가 있는 폼 클래스로 받고, 출력은 `api/dto` 패키지의 record로 넘긴다. 컨트롤러는 spi(`*Facade`, `*Finder`)만 부르고 spi DTO를 화면 DTO로 바꾼다. 도메인 객체를 템플릿에 직접 넘기지 않는다.
 - **리다이렉트**: `CozyViews.redirect`는 `"redirect:" + path`와 같다. htmx 요청이면 인터셉터가 200 빈 응답과 `HX-Redirect`로 바꾸고, 플래시도 전달된다.
+  - 받은 화면에서 영역을 고르는 요소(`hx-select`, `hx-select-oob`)는 `hx-headers='{"X-Cozy-Redirect": "follow"}'`를 단다(`CozyViews.FOLLOW_REDIRECT_HEADER`). 그 요청은 바꾸지 않는다. 브라우저가 리다이렉트를 따라가 다음 화면(플래시 포함)을 받고, htmx가 고른 영역만 바꾼다. `hx-push-url="true"`면 주소는 리다이렉트된 주소가 된다. 워크벤치가 이렇게 쓴다.
 - **htmx 헤더**: `HtmxRequest`를 메서드 인자로 받으면 htmx 헤더를 읽을 수 있다(`htmx()`, `partial()`, `target()`, `trigger()`). boost 요청은 부분 갱신으로 보지 않는다.
 - **선택지 (`CozyOptions`)**: `selectField`, `checkboxGroup`, `radioGroup`에 넘기는 값과 이름의 목록이다. 컨트롤러가 화면 DTO나 모델에 담는다. 보이는 순서는 목록의 순서이고, 같은 값이 두 번 있거나 값·이름이 비면 예외다.
 

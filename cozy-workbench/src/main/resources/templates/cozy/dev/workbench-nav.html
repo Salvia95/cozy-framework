@@ -24,7 +24,7 @@
       <a class="nav-link" th:classappend="${cozyActive == 'commands'} ? 'active'" th:aria-current="${cozyActive == 'commands'} ? 'page'" th:href="@{/cozy/dev/workbench/commands}">코드 생성</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" th:classappend="${cozyActive == 'check'} ? 'active'" th:aria-current="${cozyActive == 'check'} ? 'page'" th:href="@{/cozy/dev/workbench/check}"
+      <a class="nav-link" id="workbench-errors" th:classappend="${cozyActive == 'check'} ? 'active'" th:aria-current="${cozyActive == 'check'} ? 'page'" th:href="@{/cozy/dev/workbench/check}"
          th:data-cozy-errors="${cozyErrors}">검사<span class="badge cozy-tone-critical ms-2" th:if="${cozyErrors > 0}" th:text="${cozyErrors}">0</span></a>
     </li>
     <li class="nav-item"><a class="nav-link" th:href="@{/cozy/dev/catalog}">컴포넌트</a></li>

@@ -16,6 +16,9 @@ import io.salvia95.cozy.ui.HtmxRequest;
  * <p>htmx는 XHR로 302를 따라가 리다이렉트된 페이지 전체를 대상 요소에 끼워 넣는다. 그래서 200 빈 응답에
  * {@code HX-Redirect}를 실어 브라우저가 전체 페이지를 다시 읽게 한다. Spring이 {@code redirect:}일 때 출력 플래시 맵에
  * 옮겨 둔 플래시 속성은 여기서 저장하므로 다음 화면에 그대로 전달된다.
+ *
+ * <p>받은 화면에서 영역을 고르는 요소({@code hx-select})는 {@link CozyViews#FOLLOW_REDIRECT_HEADER}{@code : follow}를 보낸다. 그
+ * 요청은 바꾸지 않는다. 브라우저가 리다이렉트를 따라가 다음 화면을 받고, htmx가 고른 영역만 바꾼다.
  */
 public class HtmxRedirectInterceptor implements HandlerInterceptor {
 
@@ -25,7 +28,8 @@ public class HtmxRedirectInterceptor implements HandlerInterceptor {
 	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
 			ModelAndView modelAndView) {
 		if (modelAndView == null || modelAndView.getViewName() == null
-				|| !modelAndView.getViewName().startsWith(REDIRECT) || !HtmxRequest.from(request).htmx()) {
+				|| !modelAndView.getViewName().startsWith(REDIRECT) || !HtmxRequest.from(request).htmx()
+				|| "follow".equals(request.getHeader(CozyViews.FOLLOW_REDIRECT_HEADER))) {
 			return;
 		}
 		String target = modelAndView.getViewName().substring(REDIRECT.length());

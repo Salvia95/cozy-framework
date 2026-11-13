@@ -349,3 +349,32 @@ Playbook: .agents/skills/cozy-helper/references/screens/PLAYBOOK.md
 ## 화면 규칙
 
 워크벤치 자신의 화면도 Tabler 구조와 [design.md](design.md)를 따른다. 인라인 스크립트와 스타일이 없고, 보정은 `cozy.css`의 `cozy-workbench-*`에 있다. 스크립트는 `/cozy/workbench.js` 하나이고 워크벤치 화면에서만 읽는다.
+
+### 부분 갱신 (htmx)
+
+서버를 거치는 동작은 htmx가 받은 화면에서 바뀐 영역만 바꾼다. 서버는 htmx 요청에도 같은 응답(리다이렉트, 전체 화면)을 돌려준다. 그래서 스크립트가 없으면 같은 링크와 폼이 전체 페이지로 동작하고, 쓰는 파일은 어느 쪽이든 같다.
+
+| 영역 (id) | 내용 |
+| --- | --- |
+| `workbench-flash` | 알림(플래시, 스펙을 읽지 못함, 프로젝트 폴더 없음) |
+| `workbench-side` | 화면 목록과 구조 트리 |
+| `workbench-center` | 미리보기나 소스 |
+| `workbench-inspector` | 속성이나 샘플 데이터 |
+| `workbench-compare` | 상태 비교 창의 자리 |
+| `workbench-errors` | 머리의 "검사" 링크(오류 수) |
+| `workbench-command` | 코드 생성의 폼과 결과 |
+| `workbench-results` | 검색 결과 |
+
+| 동작 | 바꾸는 영역 | 주소 |
+| --- | --- | --- |
+| 상태, 화면 너비 | center, inspector, flash, compare | 새 주소를 남긴다 |
+| 샘플 데이터 저장, 행 버튼, 상태 복제 | inspector, center, flash, compare | 리다이렉트된 주소 |
+| 매개변수 변경 파일 확인, 적용, 취소 | inspector, side, flash, errors | 리다이렉트된 주소 |
+| 코드 생성의 변경 파일 확인, 적용, 행 버튼 | command | 그대로 |
+| 검색(입력하는 동안 300ms 뒤, 검색 버튼) | results | 검색어를 남긴다 |
+
+- **리다이렉트하는 폼**은 `hx-headers='{"X-Cozy-Redirect": "follow"}'`를 단다. cozy-ui는 htmx 요청의 `redirect:`를 `HX-Redirect`로 바꾸는데, 이 헤더가 있으면 바꾸지 않는다([ui.md](ui.md)의 리다이렉트). 브라우저가 리다이렉트를 따라가 다음 화면(플래시 포함)을 받고, htmx는 `hx-select`·`hx-select-oob`로 고른 영역만 바꾼다.
+- **매개변수는 미리보기를 바꾸지 않는다.** 템플릿을 고친 결과는 다시 빌드해야 보이기 때문이다.
+- **`workbench.js`는 영역을 바꿀 때마다 다시 시작한다.** 이전 이벤트는 모두 뗀다(`AbortController`). 오른쪽 칸을 바꾸는 요청은 그 칸의 스크롤 위치를 지킨다. 코드 생성에서 변경 파일 확인과 적용은 결과로 옮기고, 행 버튼은 그 자리에 둔다.
+- **선택한 화면과 상태**(`data-cozy-workbench-selection`)는 오른쪽 칸에 있다. 상태가 바뀌면 함께 바뀌어 에이전트 전달 내용이 새 상태를 가리킨다.
+- `WorkbenchHtmxTest`가 확인한다: htmx 요청마다 같은 주소의 `href`·`action`이 있고, 바꿀 영역의 id가 화면에 하나씩 있고, 받은 화면에서 같은 영역을 고른다.

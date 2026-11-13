@@ -6,6 +6,10 @@
   구성은 세 칸이다. 왼쪽은 모듈별 화면 목록과 선택한 화면의 구조 트리, 가운데는 미리보기나 소스, 오른쪽은 속성이나 샘플 데이터.
   구조 트리의 마디마다 속성 표가 숨겨져 있고, 마디나 미리보기의 요소를 선택하면 스크립트가 그 표를 오른쪽 칸에 보인다.
   미리보기는 패턴 카탈로그의 /cozy/dev/catalog/screen을 그대로 쓴다.
+  서버를 거치는 동작은 htmx가 받은 화면에서 바뀐 영역만 바꾼다(hx-select). 영역은 workbench-flash(알림), workbench-side(화면 목록과 구조),
+  workbench-center(미리보기나 소스), workbench-inspector(속성이나 샘플 데이터), workbench-compare(상태 비교 창)다.
+  상태·화면 너비는 가운데와 오른쪽, 샘플 데이터 저장·상태 복제는 오른쪽과 미리보기, 매개변수는 오른쪽과 구조를 바꾼다.
+  서버는 htmx 요청에도 같은 리다이렉트를 돌려주고, 스크립트가 없으면 같은 링크와 폼이 전체 페이지로 동작한다.
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치', ~{::main})}">
 <body>
@@ -13,25 +17,25 @@
   <div th:replace="~{cozy/dev/workbench-nav :: workbenchHeader('screens', ${errors}, null)}"></div>
 
   <div class="container-fluid py-3">
-    <div th:replace="~{cozy/component/alert :: flash()}"></div>
-    <th:block th:if="${specProblem != null}">
-      <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 화면 명세를 읽지 못해 빌드된 화면 명세를 표시합니다. ' + specProblem})}"></div>
-    </th:block>
-    <th:block th:if="${!engineAvailable}">
-      <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 표시합니다.')}"></div>
-    </th:block>
+    <div id="workbench-flash">
+      <div th:replace="~{cozy/component/alert :: flash()}"></div>
+      <th:block th:if="${specProblem != null}">
+        <div th:replace="~{cozy/component/alert :: alert('critical', ${'소스 폴더의 화면 명세를 읽지 못해 빌드된 화면 명세를 표시합니다. ' + specProblem})}"></div>
+      </th:block>
+      <th:block th:if="${!engineAvailable}">
+        <div th:replace="~{cozy/component/alert :: alert('warning', '앱 프로젝트 폴더(pom.xml과 src/main/java가 있는 폴더)에서 실행하지 않아 구조와 소스를 읽을 수 없습니다. 미리보기만 표시합니다.')}"></div>
+      </th:block>
+    </div>
 
     <div th:if="${specs.isEmpty()}">
       <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
     </div>
 
-    <div class="cozy-workbench-panes" th:if="${screen != null}" data-cozy-workbench-selection
-         th:classappend="${view == 'fixture'} ? 'cozy-workbench-panes-fixture'"
-         th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
-         th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
+    <div class="cozy-workbench-panes" th:if="${screen != null}"
+         th:classappend="${view == 'fixture'} ? 'cozy-workbench-panes-fixture'">
 
       <!--/* 왼쪽: 화면 목록과 구조 */-->
-      <div class="cozy-workbench-side">
+      <div class="cozy-workbench-side" id="workbench-side">
         <nav class="card cozy-workbench-pane cozy-workbench-screens" aria-label="화면">
           <div class="card-header"><h3 class="card-title">화면</h3></div>
           <div class="list-group list-group-flush cozy-workbench-scroll">
@@ -69,7 +73,7 @@
       </div>
 
       <!--/* 가운데: 미리보기나 소스 */-->
-      <section class="card cozy-workbench-pane cozy-workbench-main" aria-label="미리보기와 소스">
+      <section class="card cozy-workbench-pane cozy-workbench-main" id="workbench-center" aria-label="미리보기와 소스">
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" aria-label="가운데 보기">
             <li class="nav-item">
@@ -106,6 +110,8 @@
                 <a class="btn btn-sm" th:each="name : ${screen.states.keySet()}"
                    th:classappend="${name == state} ? 'active'" th:aria-current="${name == state} ? 'true'"
                    th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}"
+                   th:hx-get="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}"
+                   hx-target="#workbench-center" hx-select="#workbench-center" hx-swap="outerHTML" hx-select-oob="#workbench-inspector,#workbench-flash,#workbench-compare" hx-push-url="true"
                    th:title="${name}" th:text="${stateLabels.get(name)}">기본</a>
               </div>
               <!--/* 여러 상태를 나란히 본다: 아래의 상태 비교 창 */-->
@@ -119,6 +125,8 @@
                 <a class="btn btn-sm" th:each="width : ${widths}"
                    th:classappend="${width == w} ? 'active'" th:aria-current="${width == w} ? 'true'"
                    th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})} + ${fixtureSuffix}"
+                   th:hx-get="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${width})} + ${fixtureSuffix}"
+                   hx-target="#workbench-center" hx-select="#workbench-center" hx-swap="outerHTML" hx-select-oob="#workbench-inspector,#workbench-flash,#workbench-compare" hx-push-url="true"
                    th:text="${width == 'full'} ? '전체' : ${width}">전체</a>
               </div>
             </div>
@@ -162,7 +170,10 @@
       </section>
 
       <!--/* 오른쪽: 속성이나 샘플 데이터 */-->
-      <section class="card cozy-workbench-pane cozy-workbench-inspector" aria-label="속성과 샘플 데이터">
+      <!--/* 선택한 화면과 상태: workbench.js가 에이전트 전달 내용에 쓴다. 상태가 바뀌면 이 칸과 함께 바뀐다 */-->
+      <section class="card cozy-workbench-pane cozy-workbench-inspector" id="workbench-inspector" aria-label="속성과 샘플 데이터"
+               data-cozy-workbench-selection th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
+               th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" aria-label="오른쪽 보기">
             <li class="nav-item">
@@ -207,7 +218,8 @@
               <button type="button" class="btn btn-sm flex-shrink-0" th:data-cozy-copy="${change.command}">명령 복사</button>
             </div>
             <form method="post" th:action="@{/cozy/dev/workbench/arg}" th:if="${change.dryRun and outcome.error == null and !outcome.changesNothing()}"
-                  class="d-flex flex-wrap justify-content-end gap-2">
+                  class="d-flex flex-wrap justify-content-end gap-2"
+                  th:hx-post="@{/cozy/dev/workbench/arg}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">
               <input type="hidden" name="spec" th:value="${screen.screen}">
               <input type="hidden" name="state" th:value="${state}">
               <input type="hidden" name="w" th:value="${w}">
@@ -217,7 +229,9 @@
               <input type="hidden" name="from" th:value="${change.from}">
               <input type="hidden" name="value" th:value="${change.value}">
               <input type="hidden" name="name" th:value="${change.name}">
-              <a class="btn btn-sm" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.line})}">취소</a>
+              <a class="btn btn-sm" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.line})}"
+                 th:hx-get="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.line})}"
+                 hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">취소</a>
               <button type="submit" class="btn btn-sm btn-primary" name="step" value="apply">적용</button>
             </form>
             <th:block th:if="${!change.dryRun and outcome.error == null and !outcome.changesNothing()}">
@@ -261,7 +275,8 @@
             <p class="text-secondary mb-0">앱 프로젝트 폴더에서 실행할 때만 샘플 데이터를 수정할 수 있습니다.</p>
           </div>
           <th:block th:if="${fixtureSections != null}">
-            <form class="cozy-workbench-fixture-form" method="post" th:action="@{/cozy/dev/workbench/fixture}">
+            <form class="cozy-workbench-fixture-form" method="post" th:action="@{/cozy/dev/workbench/fixture}"
+                  th:hx-post="@{/cozy/dev/workbench/fixture}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-center,#workbench-flash,#workbench-compare" hx-push-url="true">
               <input type="hidden" name="spec" th:value="${screen.screen}">
               <input type="hidden" name="state" th:value="${state}">
               <input type="hidden" name="hash" th:value="${fixtureHash}">
@@ -280,7 +295,8 @@
                 <button type="submit" class="btn btn-primary">저장</button>
               </div>
             </form>
-            <form class="card-body border-top" method="post" th:action="@{/cozy/dev/workbench/state}">
+            <form class="card-body border-top" method="post" th:action="@{/cozy/dev/workbench/state}"
+                  th:hx-post="@{/cozy/dev/workbench/state}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-center,#workbench-flash,#workbench-compare" hx-push-url="true">
               <input type="hidden" name="spec" th:value="${screen.screen}">
               <input type="hidden" name="from" th:value="${state}">
               <input type="hidden" name="hash" th:value="${fixtureHash}">
@@ -298,6 +314,8 @@
   </div>
 
   <!--/* 상태 비교: 고른 상태(compareLimit개까지)만 축소 미리보기를 그려 나란히 놓는다. 미리보기는 창을 열 때 불러온다(workbench.js) */-->
+  <!--/* 상태를 복제하면 창이 새로 생길 수 있어 자리는 늘 둔다 */-->
+  <div id="workbench-compare">
   <div class="modal modal-blur fade" id="state-compare" tabindex="-1" role="dialog" aria-labelledby="state-compare-title" aria-hidden="true"
        th:if="${screen != null and screen.states.size() > 1}"
        data-cozy-compare th:data-cozy-compare-open="${compareOpen == true}" th:data-cozy-compare-limit="${compareLimit}">
@@ -349,6 +367,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
   <script th:src="@{/cozy/workbench.js}" defer></script>
 </main>

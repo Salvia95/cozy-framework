@@ -97,6 +97,18 @@ class UiScreensTest {
 	}
 
 	@Test
+	void htmxRequestThatFollowsRedirectsKeepsThePostRedirectGet() throws Exception {
+		// 받은 화면에서 영역을 고르는 요소(hx-select)는 리다이렉트를 따라가 다음 화면을 받는다
+		MockHttpSession session = new MockHttpSession();
+		this.mvc.perform(post("/uitest").with(csrf()).header("HX-Request", "true").header(CozyViews.FOLLOW_REDIRECT_HEADER, "follow")
+			.session(session))
+			.andExpect(status().isFound())
+			.andExpect(redirectedUrl("/uitest"))
+			.andExpect(header().doesNotExist("HX-Redirect"));
+		assertThat(body(this.mvc.perform(get("/uitest").session(session)).andReturn())).contains("저장했습니다");
+	}
+
+	@Test
 	void htmxHeadersAreResolved() throws Exception {
 		String text = this.mvc
 			.perform(get("/uitest/htmx").header("HX-Request", "true").header("HX-Target", "result").header("HX-Trigger", "filter"))
