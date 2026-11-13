@@ -63,7 +63,7 @@
 | 고민 | 고르는 기준 |
 | --- | --- |
 | `alert` / `flash()` / `toast` | 만들기·수정·삭제 결과는 컨트롤러의 `CozyFlash` → `flash()`. 화면에 머물 안내는 `alert`. 사소한 확인과 요청 실패만 `toast` |
-| `modal` / `deleteConfirm` | 삭제면 항상 `deleteConfirm`. 그 밖의 확인은 `modal`이나 폼의 `data-cozy-confirm` |
+| `modal` / `deleteConfirm` | 삭제면 항상 `deleteConfirm`. 그 밖의 확인은 `modal`이나 폼의 `cozyConfirm` |
 | `emptyState` / `emptyStateAction` / `noResults` | 조건 때문이면 `noResults`. 아니면 사용자가 만들 수 있을 때 `emptyStateAction`, 없을 때 `emptyState` |
 | `badge` / 글자 | 상태나 분류를 짧게 표시하면 `badge`. 값이 없음을 알리는 것은 배지가 아니라 `text-secondary` 글자 |
 | `stat` / 카드 | 숫자 하나는 `stat`. 숫자에 설명이나 목록이 붙으면 보통 카드 |

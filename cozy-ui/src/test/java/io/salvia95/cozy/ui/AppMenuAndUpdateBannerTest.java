@@ -39,7 +39,7 @@ class AppMenuAndUpdateBannerTest {
 	void appShellHasDiagnosticsAndShutdownForms() throws Exception {
 		String html = body(this.mvc.perform(get("/uitest")).andExpect(status().isOk()).andReturn());
 		assertThat(html).containsPattern("<form class=\"m-0\" method=\"post\" action=\"/cozy/diagnostics\">\\s*<input type=\"hidden\" name=\"_csrf\"")
-			.containsPattern("<form class=\"m-0\" method=\"post\" action=\"/cozy/shutdown\" data-cozy-confirm=\"앱을 종료할까요\\?\">\\s*<input type=\"hidden\" name=\"_csrf\"")
+			.containsPattern("<form class=\"m-0\" method=\"post\" action=\"/cozy/shutdown\" x-data=\"cozyConfirm\" x-on:submit=\"ask\" data-confirm-message=\"앱을 종료할까요\\?\">\\s*<input type=\"hidden\" name=\"_csrf\"")
 			.contains("#tabler-file-download").contains("#tabler-power");
 	}
 
@@ -50,7 +50,7 @@ class AppMenuAndUpdateBannerTest {
 			.contains("필수 업데이트입니다.")
 			.contains("새 버전 2.0.0이 있습니다.")
 			.contains("검색 개선")
-			.containsPattern("<form method=\"post\" action=\"/cozy/update\"[^>]*data-cozy-confirm=")
+			.containsPattern("<form method=\"post\" action=\"/cozy/update\" x-data=\"cozyConfirm\" x-on:submit=\"ask\"\\s+data-confirm-message=")
 			.contains("<input type=\"hidden\" name=\"version\" value=\"2.0.0\">")
 			.contains("v1.0.1 업데이트를 시작하지 못해 v1.0.0으로 되돌렸습니다.");
 	}

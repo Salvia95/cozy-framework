@@ -1,0 +1,8 @@
+# 2.0.0 전의 템플릿: 동작을 붙이던 data-cozy-confirm, data-cozy-copy를 쓴다. cozy check(R16)가 실패하고, cozy migrate alpine 뒤에 통과한다
+cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목
+hand migrate
+cozy? check
+cozy migrate alpine
+# 두 번째 실행은 바꾸는 파일이 없다
+rerun migrate
+cozy check

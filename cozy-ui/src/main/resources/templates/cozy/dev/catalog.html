@@ -63,13 +63,13 @@
             </table>
           </div>
           <div class="card-body border-top">
-            <div class="cozy-catalog-preview" th:each="state : ${entry.samples.keySet()}">
+            <div class="cozy-catalog-preview" x-data="cozyAutoHeight" x-on:load.capture="fit" th:each="state : ${entry.samples.keySet()}">
               <div class="d-flex align-items-center mb-1">
                 <span class="text-secondary small" th:text="|상태: ${state}|">상태</span>
                 <a class="ms-auto small" target="_blank" rel="noopener"
                    th:href="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}">새 창에서 보기</a>
               </div>
-              <iframe class="cozy-catalog-frame" data-cozy-autosize
+              <iframe class="cozy-catalog-frame"
                       th:src="@{/cozy/dev/catalog/render(id=${entry.id},state=${state})}" th:title="|${entry.id} ${state}|"></iframe>
             </div>
           </div>
@@ -87,13 +87,13 @@
             <div class="card-actions"><span class="text-secondary small" th:text="${spec.source}">specs/memo-list.yml</span></div>
           </div>
           <div class="card-body">
-            <div class="cozy-catalog-preview" th:each="state : ${spec.states.keySet()}">
+            <div class="cozy-catalog-preview" x-data="cozyAutoHeight" x-on:load.capture="fit" th:each="state : ${spec.states.keySet()}">
               <div class="d-flex align-items-center mb-1">
                 <span class="text-secondary small" th:text="|상태: ${state}|">상태</span>
                 <a class="ms-auto small" target="_blank" rel="noopener"
                    th:href="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}">새 창에서 보기</a>
               </div>
-              <iframe class="cozy-catalog-frame" data-cozy-autosize
+              <iframe class="cozy-catalog-frame"
                       th:src="@{/cozy/dev/catalog/screen(spec=${spec.screen},state=${state})}" th:title="|${spec.screen} ${state}|"></iframe>
             </div>
           </div>

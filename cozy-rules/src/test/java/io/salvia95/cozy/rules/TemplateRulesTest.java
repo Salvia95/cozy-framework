@@ -715,6 +715,28 @@ class TemplateRulesTest {
 		}
 
 		@Test
+		void removedBehaviourAttributesFailWithTheirReplacement() {
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<form method="post" data-cozy-confirm="지울까요?"></form>
+					<form method="post" th:data-cozy-confirm="${message}"></form>
+					<button type="button" th:data-cozy-copy="${code}">복사</button>
+					<iframe title="a" data-cozy-autosize></iframe>
+					<input aria-label="q" data-cozy-icon-filter="#icons">
+					<form method="post" x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="지울까요?"></form>""");
+			f.frameworkScript("cozy/more.js", "Alpine.data('cozyConfirm', function () { return {}; });");
+			List<Violation> violations = f.check();
+			assertThat(violations).extracting(Violation::line).containsExactly(1, 2, 3, 4, 5);
+			assertThat(violations).extracting(Violation::ruleId).containsOnly("R16");
+			assertThat(violations.get(0).format()).contains("cozyConfirm").contains("cozy migrate alpine");
+			assertThat(violations.get(2).format()).contains("cozyCopy").contains("cozy migrate alpine");
+			assertThat(violations.get(3).format()).contains("cozyAutoHeight").doesNotContain("cozy migrate alpine");
+			assertThat(violations.get(4).format()).contains("cozyIconList");
+			assertThat(AlpineAttributes.removed("data-cozy-confirm")).isPresent();
+			assertThat(AlpineAttributes.removed("data-cozy-line")).as("값을 담는 속성은 그대로다").isEmpty();
+		}
+
+		@Test
 		void iframesCarryNoAlpineExpressions() {
 			// CSP 빌드는 iframe 요소에서 식을 실행하지 않고, 그 컴포넌트의 나머지 초기화를 멈춘다
 			Fixture f = withComponents();

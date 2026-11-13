@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,6 +87,9 @@ final class AlpineChecker {
 		if (name.startsWith("x-") || name.startsWith("@") || name.startsWith(":")) {
 			return true;
 		}
+		if (AlpineAttributes.removed(name).isPresent() || (thName != null && AlpineAttributes.removed(thName).isPresent())) {
+			return true;
+		}
 		return thName != null && (thName.startsWith("x-") || thName.equals("attr") || thName.equals("attrappend")
 				|| thName.equals("attrprepend"));
 	}
@@ -159,6 +163,12 @@ final class AlpineChecker {
 		if (name.startsWith("@") || name.startsWith(":")) {
 			String longName = (name.startsWith("@") ? "x-on:" : "x-bind:") + name.substring(1);
 			error(file, attribute.line(), display, "줄임 표기는 쓰지 않습니다. " + longName + "처럼 긴 이름으로 쓰세요.");
+			return;
+		}
+		String plain = name.startsWith("th:") ? name.substring(3) : name.startsWith("data-th-") ? name.substring(8) : name;
+		Optional<String> removed = AlpineAttributes.removed(plain);
+		if (removed.isPresent()) {
+			error(file, attribute.line(), display, removed.get());
 			return;
 		}
 		if (!name.startsWith("x-")) {

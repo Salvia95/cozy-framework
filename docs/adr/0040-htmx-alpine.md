@@ -156,3 +156,14 @@
 - **R16을 좁혔다.** `cozy`로 시작하지 않는 프레임워크 컴포넌트(`workbench…`)는 프레임워크 템플릿만 쓴다. 워크벤치는 dev에만 있어서 앱 화면이 쓰면 실행할 때 없다. 완료 기준의 "워크벤치 컴포넌트에 앱 화면에도 쓰는 동작이 없다"는 `WorkbenchScriptTest`(이름이 `workbench`로 시작한다)와 이 규칙으로 지킨다.
 - **안쪽 요소에서 부른 메서드의 `$root`**: 다른 컴포넌트 안의 버튼에서 `cozyDisclosure.toggle`을 부르면 `$root`는 그 안쪽 컴포넌트다. 컴포넌트가 자기 요소의 `data-*`를 쓰려면 `init`에서 읽어 둔다. cozy 컴포넌트를 만들 때(M34) 같은 규칙을 따른다.
 
+## M34 (2026-11-13, 사용자 지시 "다음 바로 진행해줘")
+
+- **시작할 때 확인한 최신 GA**: 바뀐 것이 없다(`@alpinejs/csp` 3.17.5, htmx 2.0.11, Tabler 1.7.5).
+- **옮긴 동작**: 제출 전 확인 → `cozyConfirm`, 떠날 때 확인 → `cozyDirtyForm`(`form-page` 패턴이 붙인다), 미리보기 높이 → `cozyAutoHeight`, 아이콘 거르기와 복사 → `cozyIconList`. `cozy.js`가 문서 전체에 다는 이벤트는 htmx 전역 설정, `cozy:toast`, 검증 오류 포커스뿐이다(`CozyScriptTest`).
+- **앱이 쓰던 공개 속성은 `data-cozy-confirm` 하나였다.** 레포 안의 앱(reference-app, 아키타입, 레시피 템플릿)은 쓰지 않았고, cozy-ui의 `base` 레이아웃(종료, 업데이트)만 썼다. 문서에 없던 `data-cozy-copy`(워크벤치에서 M33에 없앰)도 `cozy migrate alpine`이 바꾼다. 앱이 직접 쓸 이유가 적은 `data-cozy-autosize`, `data-cozy-icon-filter`는 R16이 고치는 법을 글로 보인다.
+- **`cozyConfirm`은 일반 POST 폼에만 쓴다.** htmx는 `submit`을 자기 처리기로 받아 Alpine의 `preventDefault`를 보지 않으므로, htmx로 내는 폼은 `hx-confirm`을 쓴다. 지우기는 그대로 `component/delete-confirm`(Tabler 모달)이다.
+- **카탈로그 미리보기**: M33에서 찾은 CSP 빌드의 제한(iframe에서 식을 실행하지 않는다) 때문에 `cozyAutoHeight`는 iframe을 감싸는 요소가 `x-on:load.capture`로 load를 받는다. 미리보기 문서가 바뀌면 그 문서를 새로 지켜본다(전에는 iframe마다 한 번이라, 처음 빈 문서를 지켜본 뒤 실제 문서를 놓칠 수 있었다).
+- **`cozy migrate alpine`**: 다른 명령과 같은 계획 형식, 원자적 적용, 멱등이다. 요소에 `x-data`가 이미 있으면 한 요소에 컴포넌트를 둘 둘 수 없으므로 바꾸지 않고 손으로 할 일로 알린다. 레시피 픽스처 `migrate`가 완료 기준(옛 속성 → `cozy check` 실패 → 명령 → 두 번째 실행은 바뀐 것 없음 → `mvn verify` 통과)을 확인한다.
+- **R16 항목**: 없앤 속성과 그 `th:`·`data-th-` 모양. 위반 픽스처 `R16-removed`와, M33에서 더한 iframe 항목의 `R16-iframe`을 더했다.
+- **htmx는 자기가 받은 `submit`에 `preventDefault`를 한다.** 그래서 `cozyDirtyForm`은 `defaultPrevented`로 "취소한 제출"을 가리지 않는다. 확인 창에서 취소하면 `cozyConfirm`이 이벤트가 올라가지 않게 막는다. runtime-verifier가 찾았다(htmx로 저장해도 떠날 때 확인이 떴다).
+

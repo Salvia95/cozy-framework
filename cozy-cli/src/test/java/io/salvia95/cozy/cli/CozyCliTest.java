@@ -192,7 +192,7 @@ class CozyCliTest {
 			try (Stream<Path> dirs = Files.list(VIOLATIONS.resolve("rules"))) {
 				fixtures = dirs.filter(Files::isDirectory).sorted().toList();
 			}
-			assertThat(fixtures).hasSize(22);
+			assertThat(fixtures).hasSize(24);
 			return fixtures.stream().map((fixture) -> DynamicTest.dynamicTest(fixture.getFileName().toString(), () -> {
 				String name = fixture.getFileName().toString();
 				String rule = name.substring(0, name.indexOf('-'));

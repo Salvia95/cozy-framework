@@ -176,7 +176,7 @@ fragments:
 
 - 속성은 긴 이름만 쓴다: `x-on:click`, `x-bind:class`. 줄임 표기(`@click`, `:class`)는 쓰지 않는다.
 - `x-data`에는 등록된 컴포넌트 이름만 쓴다: `x-data="cozyCopy"`. 인라인 객체(`x-data="{ open: false }"`)와 인자는 쓰지 않는다.
-- 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `this.$root.dataset`에서 읽는다. Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
+- 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `init`에서 `this.$root`를 잡아 두고 그 `dataset`에서 읽는다(다른 컴포넌트 안의 요소에서 부르면 `$root`가 그 안쪽 컴포넌트이기 때문이다). Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
 - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`, `x-text`, `x-ref`, `x-cloak`, `x-transition`, `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. `x-html`과 `x-teleport`는 쓰지 않는다.
 - `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 실행하지 않고 그 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소의 `x-on:load.capture`로 받는다.
 - 식은 짧게 쓴다. 속성 읽기, 메서드 호출, 변수 대입(`open = !open`), 비교만 쓴다. 화살표 함수, 템플릿 문자열, 전개, 속성 대입(`user.name = …`), 전역(`window`, `console`, `Math` 등)은 CSP 빌드가 읽지 못한다. 그런 로직은 컴포넌트의 getter와 메서드로 옮긴다.
@@ -191,6 +191,10 @@ fragments:
 | `cozyCopy` | `data-copy-text`: 복사할 글자 | `copy()` | 글자를 복사하고 "복사했습니다" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다 |
 | `cozyDisclosure` | `data-disclosure-closed`: 처음에 접힌 부분의 이름(공백으로 구분). `data-disclosure-remember`: 접은 부분을 브라우저에 기억할 이름(선택) | `toggle(이름)`, `isOpen(이름)`, `isClosed(이름)` | 이름 붙인 부분을 펼치고 접는다. 한 요소 안에 여러 부분을 둘 수 있다. 기억하면 다시 열어도 그대로다(저장소를 쓸 수 없으면 기억하지 않는다) |
 | `cozyFocusKey` | `data-focus-key`: 누를 글쇠(기본 `/`) | `focusOnKey(event)` | 글을 적는 중이 아닐 때 그 글쇠를 누르면 이 칸으로 옮겨 간다. 칸에 `x-on:keydown.window="focusOnKey"`를 단다 |
+| `cozyConfirm` | `data-confirm-message`: 물을 문장 | `ask(event)` | 폼에 `x-on:submit="ask"`. 취소하면 내지 않는다. 일반 POST 폼에 쓴다(앱 메뉴의 종료, 업데이트). htmx로 내는 폼은 `hx-confirm`, 지우기는 `component/delete-confirm`(확인 창)을 쓴다 |
+| `cozyDirtyForm` | 없음 | `mark`, `clean`, `settled`, `warn` | 안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. htmx가 오류 폼을 돌려주어도 저장되지 않은 것으로 본다. `pattern/form-page`가 붙이므로 화면이 따로 쓰지 않는다 |
+| `cozyAutoHeight` | 없음 | `fit(event)` | 안의 iframe을 내용 높이에 맞추고, 내용이 바뀌면 다시 맞춘다. iframe에는 식을 달 수 없어 감싸는 요소에 `x-on:load.capture="fit"`을 단다. 카탈로그 미리보기가 쓴다 |
+| `cozyIconList` | 칸의 `data-name`(거를 이름), `data-copy-text`(복사할 글자) | `filter(event)`, `copy(event)` | 입력에 `x-on:input="filter"`, 목록에 `x-on:click="copy"`. 아이콘 목록이 쓴다 |
 
 ```html
 <button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
@@ -202,7 +206,11 @@ fragments:
 </div>
 
 <input class="form-control" type="search" name="q" aria-keyshortcuts="/" x-data="cozyFocusKey" x-on:keydown.window="focusOnKey">
+
+<form method="post" th:action="@{/memo/archive}" x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="모두 보관할까요?">…</form>
 ```
+
+- **없앤 속성 (2.0.0)**: 동작을 붙이던 `data-cozy-confirm`, `data-cozy-copy`, `data-cozy-autosize`, `data-cozy-icon-filter`는 없앴다. R16이 오류로 보이고, `cozy migrate alpine`이 confirm과 copy를 새 모양으로 바꾼다([cli.md](cli.md)).
 
 - **프레임워크 화면의 스크립트**: `alpine:init`에서 컴포넌트를 등록하는 스크립트는 Alpine보다 먼저 실려야 한다. 모델의 `cozyScripts`(경로 목록)가 있으면 `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 싣는다. 워크벤치가 쓴다(`/cozy/workbench.js`). 앱 모듈의 JS를 싣는 방법은 따로 정한다.
 
@@ -227,7 +235,7 @@ fragments:
 - **업데이트 배너**: 새 버전이 있으면 layout 맨 위에 배너가 뜬다. 필수 업데이트면 빨간색이다. 설치할 수 있으면 "지금 업데이트" 버튼이 있고, 없으면 이유가 보인다. 직전 업데이트의 결과(성공, 롤백)도 같은 자리에 한 번 보인다([distribution.md](distribution.md)).
 - **cozy.js**:
   - 변경 요청에 CSRF 헤더를 넣는다.
-  - `data-cozy-confirm="문장"`이 있는 폼은 제출 전에 확인을 받는다.
   - 4xx·5xx 응답과 연결 실패는 토스트로 알리고, 요청 중에는 맨 위 진행 막대를 보인다.
   - 검증 오류(`.is-invalid`)가 있으면 첫 칸으로 포커스를 옮긴다.
-  - `form-page` 안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.
+  - 서버는 `HX-Trigger: {"cozy:toast": {"message": "…", "kind": "success"}}`로 토스트를 띄울 수 있다.
+  - 화면 안의 동작(확인, 떠날 때 확인, 복사, 미리보기 높이, 아이콘 거르기)은 위의 cozy 컴포넌트다. 문서 전체에 이벤트를 다는 것은 htmx 전역 설정과 검증 오류 포커스뿐이다(`CozyScriptTest`).

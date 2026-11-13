@@ -2,9 +2,11 @@
   만들기·수정 폼 화면. 폭은 가운데 좁게(48rem), 머리와 폼의 왼쪽 끝이 맞는다.
   form: <form class="card" th:object> — 안에 card-body(입력 칸)와 component/form-actions(오른쪽 아래 [취소] [주 버튼]).
   backLabel·backUrl: 돌아갈 상위 화면(경로 표시). 검증 오류면 컨트롤러가 같은 화면이나 폼 fragment를 돌려준다.
+  저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다(cozyDirtyForm). htmx가 오류 폼을 돌려주어도 입력은 저장되지 않은 것으로 본다.
 */-->
 <th:block th:fragment="formPage(cozyHeading, cozyBackLabel, cozyBackUrl, cozyForm)">
-  <div class="cozy-width-form">
+  <div class="cozy-width-form" x-data="cozyDirtyForm" x-on:input="mark" x-on:change="mark" x-on:submit="clean"
+       x-on:htmx:after-settle.camel="settled" x-on:beforeunload.window="warn">
     <div th:replace="~{cozy/component/page-header :: pageHeader(${cozyHeading}, ${cozyBackLabel}, ${cozyBackUrl}, ~{})}"></div>
     <div class="page-body">
       <div class="container-xl">

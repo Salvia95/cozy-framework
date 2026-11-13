@@ -28,6 +28,8 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 | `R16-thymeleaf-attribute` | `th:attr="x-data=${component}"` (Thymeleaf로 Alpine 속성을 만든다) |
 | `R16-expression` | `x-on:click="() => copy()"` (CSP 빌드가 읽지 못하는 화살표 함수) |
 | `R16-registration` | 모듈 폴더 밖 `static/app.js`에서 컴포넌트를 등록한다 |
+| `R16-iframe` | `<iframe x-on:load="copy">` (CSP 빌드는 iframe에서 식을 실행하지 않는다) |
+| `R16-removed` | 없앤 동작 속성 `data-cozy-confirm` (`cozyConfirm`으로 쓴다. `cozy migrate alpine`이 바꾼다) |
 
 - 폴더 구성: `templates/`, `modules.properties`(모듈 구조: `모듈=허용 의존`), `fragments.yml`(앱 매니페스트, 선택), `static/`(앱 JS, 선택)
 - 프레임워크 템플릿, 매니페스트, Alpine 컴포넌트(`cozy.js`)는 실제 cozy-ui jar의 것을 쓴다.

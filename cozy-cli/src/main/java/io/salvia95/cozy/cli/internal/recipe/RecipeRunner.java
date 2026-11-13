@@ -92,6 +92,14 @@ public final class RecipeRunner {
 		report("set arg", plan, List.of(), next, false, dryRun, json, out);
 	}
 
+	/** {@code cozy migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다 */
+	public static void migrate(List<String> rest, AppProject project, boolean dryRun, boolean json, PrintStream out) {
+		Plan plan = new Plan(project.dir());
+		List<Context.Manual> manual = new ArrayList<>();
+		String next = MigrateAlpine.run(plan, manual, project, rest);
+		report("migrate alpine", plan, manual, next, false, dryRun, json, out);
+	}
+
 	/**
 	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
 	 *

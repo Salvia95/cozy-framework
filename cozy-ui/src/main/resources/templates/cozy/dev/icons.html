@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* 아이콘 목록 (cozy.dev.catalog.enabled=true). 화면에서는 ~{cozy/icon/tabler :: icon('이름')}으로 쓴다. 검색은 cozy.js가 한다. */-->
+<!--/* 아이콘 목록 (cozy.dev.catalog.enabled=true). 화면에서는 ~{cozy/icon/tabler :: icon('이름')}으로 쓴다. 검색과 복사는 cozyIconList(cozy.js)가 한다. */-->
 <html th:replace="~{cozy/layout/base :: base('아이콘 목록', ~{::main})}">
 <body>
 <main class="container-xl py-4">
@@ -13,24 +13,27 @@
       <div class="col-auto"><a class="btn" th:href="@{/cozy/dev/catalog}">카탈로그로</a></div>
     </div>
   </div>
+  <!--/* 이름으로 거르고, 칸을 누르면 그 호출을 복사한다(cozyIconList) */-->
+  <div x-data="cozyIconList">
   <div class="input-icon mb-4">
     <span class="input-icon-addon"><svg th:replace="~{cozy/icon/tabler :: icon('search')}"></svg></span>
     <input class="form-control" type="search" placeholder="이름으로 찾기 (예: arrow, user, file)" aria-label="아이콘 찾기"
-           data-cozy-icon-filter="#cozy-icons">
+           x-on:input="filter">
   </div>
-  <div id="cozy-icons">
+  <div id="cozy-icons" x-on:click="copy">
     <h3 class="mb-3">외곽선 <code>icon('이름')</code></h3>
     <div class="cozy-icon-grid mb-5">
-      <button type="button" class="cozy-icon-cell" th:each="name : ${outline}" th:attr="data-name=${name},data-copy=|icon('${name}')|">
+      <button type="button" class="cozy-icon-cell" th:each="name : ${outline}" th:data-name="${name}" th:data-copy-text="|icon('${name}')|">
         <svg th:replace="~{cozy/icon/tabler :: icon(${name})}"></svg><span th:text="${name}">plus</span>
       </button>
     </div>
     <h3 class="mb-3">채운 아이콘 <code>iconFilled('이름')</code></h3>
     <div class="cozy-icon-grid">
-      <button type="button" class="cozy-icon-cell" th:each="name : ${filled}" th:attr="data-name=${name},data-copy=|iconFilled('${name}')|">
+      <button type="button" class="cozy-icon-cell" th:each="name : ${filled}" th:data-name="${name}" th:data-copy-text="|iconFilled('${name}')|">
         <svg th:replace="~{cozy/icon/tabler :: iconFilled(${name})}"></svg><span th:text="${name}">star</span>
       </button>
     </div>
+  </div>
   </div>
 </main>
 </body>

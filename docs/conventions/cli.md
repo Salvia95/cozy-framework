@@ -26,6 +26,7 @@ cozy <동작> [옵션]
   add <레시피> …       구조 만들기 [--dry-run] [--json]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
   set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
+  migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -33,7 +34,7 @@ cozy <동작> [옵션]
 | `--project <폴더>` | 현재 폴더 | 앱 폴더. 위로 올라가며 `pom.xml`과 `src/main/java`가 함께 있는 폴더를 찾는다 |
 | `--repository <폴더>` | `COZY_REPOSITORY`, 없으면 `~/.m2/repository` | cozy jar가 있는 Maven 저장소(저장소 배치). `check`가 cozy-ui jar를 여기서 찾는다 |
 | `--json` | 끔 | 기계가 읽는 출력 (아래 형식) |
-| `--dry-run` | 끔 | (`add`, `link`, `enable`, `sync`, `set`) 계획만 보이고 파일을 쓰지 않는다 |
+| `--dry-run` | 끔 | (`add`, `link`, `enable`, `sync`, `set`, `migrate`) 계획만 보이고 파일을 쓰지 않는다 |
 
 | 종료 코드 | 뜻 |
 | --- | --- |
@@ -405,6 +406,26 @@ cozy set arg memo/api/list --line 47 --fragment badge --index 2 --from neutral -
 - **글자**: 큰따옴표와 `&`는 문자 참조(`&quot;`, `&amp;`), 역슬래시는 `\\`로 적는다. 작은따옴표와 줄바꿈은 거절한다(Thymeleaf가 fragment 인자의 `\'`를 읽지 못한다).
 - **거절하는 경우**: 그 줄에 그 fragment의 호출이 없거나 둘 이상, 인자 번호가 범위 밖, 작은따옴표로 감싼 속성, 지금 값이 다름. 종료 코드 2이고 파일은 바뀌지 않는다.
 - **출력**: 다른 명령과 같은 계획 형식이다. `바꿈  {템플릿 파일}    badge(…) 2번째 인자 tone: 'neutral' → 'info'`. `--json`의 `recipe`는 `set arg`이고 `slots`는 늘 비어 있다.
+
+## migrate alpine
+
+2.0.0에서 동작을 붙이던 `data-cozy-*` 속성을 없애고 같은 뜻의 cozy 컴포넌트(Alpine.js)로 바꿨다([ui.md](ui.md)의 화면 안의 상태). 이 명령이 앱 템플릿(`src/main/resources/templates/**/*.html`)의 옛 속성을 새 모양으로 바꾼다. 남은 옛 속성은 `cozy check`(R16)가 오류로 보이고 이 명령을 알려 준다.
+
+```bash
+cozy migrate alpine --dry-run   # 바꿀 파일만 본다
+cozy migrate alpine
+cozy check
+```
+
+| 옛 속성 | 새 모양 |
+| --- | --- |
+| `data-cozy-confirm="…"` | `x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="…"` |
+| `data-cozy-copy="…"` | `x-data="cozyCopy" x-on:click="copy" data-copy-text="…"` |
+
+- **그대로 두는 것**: `th:`·`data-th-` 접두(`th:data-cozy-confirm="${…}"` → `th:data-confirm-message="${…}"`), 따옴표, 줄바꿈, 다른 속성. 주석 안은 보지 않는다.
+- **손으로 할 일**: 요소에 `x-data`가 이미 있음(한 요소에 컴포넌트는 하나다. 감싸는 요소를 하나 더 둔다), 값이 없는 속성, 바꾸는 모양이 정해지지 않은 프레임워크 속성(`data-cozy-autosize`, `data-cozy-icon-filter`. 문서에 없던 속성이다). 출력의 "남은 일"에 `파일:줄`과 고치는 법이 나온다. 그 요소는 바꾸지 않는다.
+- **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 두 번째 실행은 "바뀐 것 없음"이다.
+- **출력**: `바꿈  {템플릿 파일}    data-cozy-confirm → cozyConfirm 1곳`. `--json`의 `recipe`는 `migrate alpine`이고, 손으로 할 일은 `manual`에 있다.
 
 ## 의존
 

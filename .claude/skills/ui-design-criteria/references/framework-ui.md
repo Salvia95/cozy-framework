@@ -82,9 +82,9 @@ cozy-ui의 레이아웃·패턴·컴포넌트를 새로 만들거나 시그니�
 
 ## `cozy.js`
 
-- 모든 앱 화면에 공통인 동작만 둔다: CSRF 헤더, `data-cozy-confirm`, 4xx·5xx·연결 실패 토스트, 진행 막대, 첫 오류 칸 포커스, 떠나기 전 확인, `cozy:toast` 이벤트.
-- 화면은 `data-cozy-*` 속성으로 동작을 요청한다. 화면에 스크립트를 쓰지 않는다.
-- 워크벤치 동작은 `/cozy/workbench.js`에 두고 워크벤치 화면에서만 읽는다.
+- 문서 전체에 거는 것은 htmx 전역 설정뿐이다: CSRF 헤더, 4xx·5xx·연결 실패 토스트, 진행 막대, 첫 오류 칸 포커스, `cozy:toast` 이벤트.
+- 화면 안의 동작은 `cozy` 컴포넌트(Alpine.js CSP 빌드)다: `cozyConfirm`, `cozyDirtyForm`(form-page가 붙인다), `cozyCopy`, `cozyDisclosure`, `cozyFocusKey`, `cozyAutoHeight`, `cozyIconList`. 화면은 `x-data="이름"`으로 붙이고 스크립트를 쓰지 않는다. 동작을 붙이던 `data-cozy-*`는 없앴다(`cozy migrate alpine`).
+- 워크벤치 동작은 `/cozy/workbench.js`의 `workbench…` 컴포넌트이고 워크벤치 화면에서만 읽는다.
 
 ## 벤더 자산
 

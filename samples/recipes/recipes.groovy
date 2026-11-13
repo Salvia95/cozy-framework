@@ -1,9 +1,10 @@
 // 픽스처 준비 (각 픽스처의 setup.groovy가 부른다). 기본 앱(base/)을 복사하고 recipe.txt를 위에서부터 실행한다.
 //   cozy <인자...>      cozy 명령. 실패하면 픽스처가 실패한다. 큰따옴표로 공백이 있는 인자를 묶는다
 //   cozy! <인자...>     실패해야 하는 cozy 명령 (종료 코드 2). 파일이 하나도 바뀌지 않았는지도 확인한다
+//   cozy? <인자...>     위반을 찾아야 하는 cozy 명령 (cozy check, 종료 코드 1). 파일이 하나도 바뀌지 않았는지도 확인한다
 //   hand <폴더>         hand/<폴더>의 파일을 앱에 그대로 덮어쓴다 (에이전트가 빈칸을 채운 결과)
 //   rerun               지금까지 실행한 cozy 명령을 다시 실행하고, 모두 "바뀐 것 없음"인지 확인한다 (멱등)
-//   rerun <레시피>...    그 레시피(add 뒤의 이름)만 다시 실행한다. 빈칸을 채운 뒤에는 2단계(query, command)만 다시 실행할 수 있다
+//   rerun <레시피>...    그 레시피(add 뒤의 이름)나 그 동작(migrate 등)만 다시 실행한다. 빈칸을 채운 뒤에는 2단계(query, command)만 다시 실행할 수 있다
 // 출력은 recipes.log에 남는다. 시각은 cozy.cli.now로 고정해 마이그레이션 이름이 늘 같다.
 import java.nio.file.Files
 import java.nio.file.Path
@@ -75,6 +76,14 @@ new File(basedir, "recipe.txt").readLines("UTF-8").each { raw ->
                 throw new IllegalStateException("실패하고 아무것도 바꾸지 않아야 합니다(종료 코드 " + code + "): " + line + "\n" + output)
             }
             break
+        case "cozy?":
+            def before = snapshot()
+            def (code, output) = cozy(parts.drop(1))
+            if (code != 1 || snapshot() != before) {
+                new File(basedir, "recipes.log").setText(log.toString(), "UTF-8")
+                throw new IllegalStateException("위반을 찾고 아무것도 바꾸지 않아야 합니다(종료 코드 " + code + "): " + line + "\n" + output)
+            }
+            break
         case "hand":
             copyTree(home.resolve("hand").resolve(parts[1]), app)
             log << "\$ hand " << parts[1] << "\n\n"
@@ -82,7 +91,7 @@ new File(basedir, "recipe.txt").readLines("UTF-8").each { raw ->
         case "rerun":
             def before = snapshot()
             def only = parts.drop(1)
-            done.findAll { only.isEmpty() || (it[0] == "add" && only.contains(it[1])) }.each { args ->
+            done.findAll { only.isEmpty() || only.contains(it[0]) || (it[0] == "add" && only.contains(it[1])) }.each { args ->
                 def (code, output) = cozy(args)
                 if (code != 0 || !output.contains("바뀐 것 없음")) {
                     new File(basedir, "recipes.log").setText(log.toString(), "UTF-8")

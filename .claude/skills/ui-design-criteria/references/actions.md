@@ -29,7 +29,7 @@
 - 삭제처럼 되돌릴 수 없는 동작은 주 자리에 두지 않는다. 상세 머리에 보조 버튼(critical 글자, `cozy-btn-critical`)으로 두고 주 버튼(수정)의 왼쪽에 놓는다: [삭제] [수정].
 - 누르면 확인 창이 열린다. 확인 창 안에서는 삭제가 그 창의 주 버튼이고 맨 오른쪽이다: [취소] [삭제].
 - 직접 만들지 않고 `deleteConfirm(id, 대상 종류, 대상 이름, 삭제 주소)`를 쓴다. 창의 제목, 본문, 버튼 순서가 그 안에 들어 있다.
-- 그 밖의 확인이 필요한 POST 폼은 `data-cozy-confirm="문장"`을 붙인다(`cozy.js`가 제출 전에 묻는다).
+- 그 밖의 확인이 필요한 POST 폼은 `x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="문장"`을 붙인다(`cozyConfirm`이 제출 전에 묻는다). htmx로 내는 폼은 `hx-confirm`을 쓴다.
 
 ## 경로 표시
 

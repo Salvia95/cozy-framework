@@ -47,8 +47,8 @@
           <span class="text-secondary" th:if="${!#strings.isEmpty(cozyUpdate.notes)}" th:text="${cozyUpdate.notes}">변경 내용</span>
           <span class="text-secondary" th:unless="${cozyUpdate.installable}" th:text="${cozyUpdate.reason}">설치할 수 없는 이유</span>
         </div>
-        <form th:if="${cozyUpdate.installable}" method="post" th:action="@{/cozy/update}"
-              data-cozy-confirm="앱을 종료하고 새 버전으로 바꿉니다. 저장하지 않은 입력은 사라집니다. 계속할까요?">
+        <form th:if="${cozyUpdate.installable}" method="post" th:action="@{/cozy/update}" x-data="cozyConfirm" x-on:submit="ask"
+              data-confirm-message="앱을 종료하고 새 버전으로 바꿉니다. 저장하지 않은 입력은 사라집니다. 계속할까요?">
           <input type="hidden" name="version" th:value="${cozyUpdate.version}">
           <button type="submit" class="btn btn-sm btn-primary">지금 업데이트</button>
         </form>
@@ -97,7 +97,7 @@
               </form>
             </li>
             <li class="nav-item">
-              <form class="m-0" method="post" th:action="@{/cozy/shutdown}" data-cozy-confirm="앱을 종료할까요?">
+              <form class="m-0" method="post" th:action="@{/cozy/shutdown}" x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="앱을 종료할까요?">
                 <button type="submit" class="nav-link cozy-nav-button">
                   <span class="nav-link-icon"><svg th:replace="~{cozy/icon/tabler :: icon('power')}"></svg></span>
                   <span class="nav-link-title">종료</span>
