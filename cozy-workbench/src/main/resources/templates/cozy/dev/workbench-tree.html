@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!--/*
   워크벤치의 구조 트리. 마디마다 줄 하나(표시 이름, 식별자, 줄 번호)와 숨겨진 속성 표가 있고, 안의 마디는 접고 펼 수 있다.
-  nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbench.js가 읽는다.
+  nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbenchPicker가 읽는다.
   매개변수 가운데 문자열은 고칠 수 있다: POST /cozy/dev/workbench/arg가 cozy set arg로 변경 파일을 보이고 적용한다.
-  htmx는 그 결과로 오른쪽 칸, 구조, 알림, 검사 오류 수를 바꾼다. 이 폼은 선택할 때 오른쪽 칸으로 복제되고, workbench.js가 htmx에 알린다.
+  htmx는 그 결과로 오른쪽 칸, 구조, 알림, 검사 오류 수를 바꾼다. 이 폼은 선택할 때 오른쪽 칸으로 복제되고, workbenchPicker가 htmx에 알린다.
 */-->
 <html lang="ko">
 <body>
@@ -13,9 +13,10 @@
       <summary th:remove="${node.children.isEmpty()} ? 'tag'">
         <span class="cozy-workbench-node" th:classappend="|cozy-workbench-kind-${item.kind}|" th:title="|${item.kindLabel} · ${item.location}|"
               th:data-cozy-line="${item.line}" th:data-cozy-end="${item.endLine}" th:data-cozy-kind="${item.kind}"
-              th:data-cozy-target="${item.target}" th:data-cozy-name="${item.label}" th:data-cozy-code="${item.code}">
+              th:data-cozy-target="${item.target}" th:data-cozy-name="${item.label}" th:data-cozy-code="${item.code}"
+              x-on:mouseenter="hoverRow" x-on:mouseleave="hideHover">
           <span class="cozy-workbench-text">
-            <button type="button" class="cozy-workbench-label" data-cozy-workbench-node th:text="${item.label}">목록 탐색</button>
+            <button type="button" class="cozy-workbench-label" x-on:click.prevent="selectNode" th:text="${item.label}">목록 탐색</button>
             <code class="cozy-workbench-id" th:if="${!item.detail.isEmpty()}" th:text="${item.detail}">list-with-filter</code>
           </span>
           <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"

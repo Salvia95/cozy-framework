@@ -14,6 +14,9 @@
  * - Alpine은 CSP 빌드다. 템플릿은 x-data="이름"과 이 객체의 속성·메서드 이름만 쓴다 (docs/conventions/ui.md)
  * - 서버 값은 x-data 요소의 data-* 속성으로 받는다 (this.$root.dataset)
  * - cozyCopy: data-copy-text의 글자를 복사하고 토스트로 알린다. 버튼에 x-on:click="copy"
+ * - cozyDisclosure: 이름 붙인 부분을 펼치고 접는다(toggle('이름'), isOpen('이름'), isClosed('이름')). data-disclosure-closed는 처음에 접힌
+ *   부분, data-disclosure-remember는 접은 부분을 브라우저에 기억할 이름이다
+ * - cozyFocusKey: 글을 적는 중이 아닐 때 data-focus-key(기본 /)를 누르면 그 칸으로 옮겨 간다. 칸에 x-on:keydown.window="focusOnKey"
  */
 (function () {
   'use strict';
@@ -160,7 +163,70 @@
     return Promise.reject(new Error('clipboard'));
   }
 
+  function readStored(key) {
+    try {
+      var value = JSON.parse(window.localStorage.getItem(key) || 'null');
+      return Array.isArray(value) ? value : null;
+    }
+    catch (error) {
+      // 저장소를 쓸 수 없거나 값이 깨졌으면 기억하지 않은 것으로 본다
+      return null;
+    }
+  }
+
+  function store(key, value) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+    catch (error) {
+      // 기억하지 못해도 펼치고 접기는 된다
+    }
+  }
+
   document.addEventListener('alpine:init', function () {
+    window.Alpine.data('cozyDisclosure', function () {
+      // 안쪽 요소(다른 컴포넌트 안의 버튼)에서 부르면 $root가 그 컴포넌트다. 기억할 이름은 처음에 읽어 둔다
+      var remember = null;
+      return {
+        closed: {},
+        init: function () {
+          var data = this.$root.dataset;
+          remember = data.disclosureRemember || null;
+          var names = (data.disclosureRemember && readStored(data.disclosureRemember))
+              || (data.disclosureClosed || '').split(/\s+/).filter(Boolean);
+          var closed = {};
+          names.forEach(function (name) { closed[name] = true; });
+          this.closed = closed;
+        },
+        isOpen: function (name) {
+          return !this.closed[name];
+        },
+        isClosed: function (name) {
+          return !!this.closed[name];
+        },
+        toggle: function (name) {
+          this.closed[name] = !this.closed[name];
+          if (remember) {
+            var closed = this.closed;
+            store(remember, Object.keys(closed).filter(function (n) { return closed[n]; }));
+          }
+        }
+      };
+    });
+
+    window.Alpine.data('cozyFocusKey', function () {
+      return {
+        focusOnKey: function (event) {
+          var target = event.target;
+          var typing = target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+          if (event.key === (this.$root.dataset.focusKey || '/') && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            event.preventDefault();
+            this.$root.focus();
+          }
+        }
+      };
+    });
+
     window.Alpine.data('cozyCopy', function () {
       return {
         copy: function () {

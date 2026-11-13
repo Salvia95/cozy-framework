@@ -1,262 +1,56 @@
-/* 워크벤치(/cozy/dev/workbench): 복사 버튼, 그리고 미리보기의 요소와 구조 트리를 잇는다.
-   미리보기의 요소에는 data-cozy-src="템플릿:줄"이 있고(SourceLocationDialect), 구조 트리의 줄에는 시작·끝 줄과 삽입 대상이 있다.
-   요소를 누르면 화면 템플릿에서의 위치, 감싸는 구조, 에이전트에게 넘길 글을 보인다.
-   서버를 거치는 동작은 htmx가 받은 화면의 영역을 바꾼다. 바뀐 요소에는 이벤트가 없으므로, 바꿀 때마다 이전 이벤트를 모두 떼고(AbortController)
-   start()를 다시 부른다. */
+/* 워크벤치(/cozy/dev/workbench)의 Alpine 컴포넌트. 템플릿이 x-data와 x-on으로 붙이고, 여기서는 등록만 한다.
+   앱 화면에도 쓰는 동작(칸 접기, 복사, 검색 칸 단축키)은 cozy-ui의 cozy 컴포넌트(cozy.js)다. 레이아웃이 이 파일을 Alpine보다 먼저 싣는다.
+
+   - workbenchPicker: 미리보기의 요소와 구조 트리를 잇는다. 미리보기의 요소에는 data-cozy-src="템플릿:줄"이 있고(SourceLocationDialect),
+     구조 트리의 줄에는 시작·끝 줄과 삽입 대상이 있다. 요소를 누르면 화면 템플릿에서의 위치, 감싸는 구조, 에이전트에게 넘길 글을 보인다.
+     htmx가 바꾸지 않는 칸 묶음(.cozy-workbench-panes)에 있고, 바뀌는 칸의 요소는 부를 때마다 x-ref로 찾는다.
+     미리보기(iframe) 안의 문서는 Alpine이 닿지 않으므로 그 문서와 창에만 이벤트를 직접 단다.
+   - workbenchCompare: 상태 비교 창. 고른 상태만 보이고, 창이 열려 있을 때 그 미리보기를 불러온다.
+   CSP 빌드는 iframe 요소에서 식을 실행하지 않으므로, iframe의 load와 src는 감싸는 요소와 메서드가 다룬다.
+   - workbenchThumb: 고정 크기로 그린 축소 미리보기를 칸 폭에 맞게 줄인다(--cozy-thumb-w는 그린 폭).
+   - workbenchCommand: 코드 생성 폼. 모듈을 고르면 그 모듈의 선택지만 보이고, 아이콘 칸은 적은 아이콘을 앞에 그린다. 결과가 있으면 결과로 옮긴다. */
 (function () {
   'use strict';
 
-  var controller = null;
-
-  function start() {
-    if (controller) {
-      controller.abort();
+  function toast(message, kind) {
+    if (window.Cozy && window.Cozy.toast) {
+      window.Cozy.toast(message, kind);
     }
-    controller = new AbortController();
-    var signal = controller.signal;
-    var listen = { signal: signal };
-    var capture = { capture: true, signal: signal };
+  }
 
-    function copied() {
-      if (window.Cozy && window.Cozy.toast) {
-        window.Cozy.toast('복사했습니다', 'success');
-      }
-    }
-
-    // 검사 화면의 고치는 명령 등: data-cozy-copy의 값을 복사한다
-    document.querySelectorAll('[data-cozy-copy]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(button.dataset.cozyCopy).then(copied, function () {});
-        }
-      }, listen);
-    });
-
-    // 좌우 칸 접기: 접은 상태를 브라우저에 기억해 화면을 옮겨도 유지한다
-    var panes = document.querySelector('.cozy-workbench-panes');
-    document.querySelectorAll('[data-cozy-workbench-fold]').forEach(function (button) {
-      var name = button.dataset.cozyWorkbenchFold;
-      var key = 'cozy.workbench.fold.' + name;
-      function apply(folded) {
-        panes.classList.toggle('cozy-workbench-fold-' + name, folded);
-        button.setAttribute('aria-pressed', folded ? 'true' : 'false');
-        button.classList.toggle('active', folded);
-      }
-      var stored = false;
-      try {
-        stored = window.localStorage.getItem(key) === '1';
-      }
-      catch (error) {
-        // 저장소를 쓸 수 없으면 기억하지 않는다
-      }
-      apply(stored);
-      button.addEventListener('click', function () {
-        var folded = !panes.classList.contains('cozy-workbench-fold-' + name);
-        apply(folded);
-        try {
-          window.localStorage.setItem(key, folded ? '1' : '0');
-        }
-        catch (error) {
-          // 기억하지 못해도 접기는 된다
-        }
-        // 미리보기 폭이 바뀌었으니 선택 표시를 다시 놓는다
-        window.dispatchEvent(new Event('resize'));
-      }, listen);
-    });
-
-    // 머리의 검색 칸: 글을 적는 중이 아니면 /를 눌러 옮겨 간다
-    var search = document.querySelector('[data-cozy-workbench-search]');
-    if (search) {
-      document.addEventListener('keydown', function (event) {
-        var target = event.target;
-        var typing = target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
-        if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault();
-          search.focus();
-        }
-      }, listen);
-    }
-
-    // 축소 미리보기: 고정 크기로 그린 미리보기를 칸 폭에 맞게 줄인다(--cozy-thumb-w는 그린 폭). 상태 비교 창이 쓴다
-    var thumbs = document.querySelectorAll('[data-cozy-workbench-thumb]');
-    if (thumbs.length && window.ResizeObserver) {
-      var fit = new ResizeObserver(function (entries) {
-        entries.forEach(function (entry) {
-          var thumb = entry.target;
-          var width = parseFloat(getComputedStyle(thumb).getPropertyValue('--cozy-thumb-w')) || 1280;
-          // 그린 크기보다 키우지 않는다(카드가 넓으면 가운데에 그린 크기 그대로)
-          thumb.style.setProperty('--cozy-thumb-scale', String(Math.min(1, thumb.clientWidth / width)));
-        });
-      });
-      thumbs.forEach(function (thumb) { fit.observe(thumb); });
-      signal.addEventListener('abort', function () { fit.disconnect(); });
-    }
-
-    // 상태 비교 창: 고른 상태만 보이고, 창이 열려 있을 때 그 미리보기를 불러온다. 한 번에 data-cozy-compare-limit개까지 고른다
-    var compare = document.querySelector('[data-cozy-compare]');
-    if (compare) {
-      var limit = parseInt(compare.dataset.cozyCompareLimit, 10) || 4;
-      var picks = Array.prototype.slice.call(compare.querySelectorAll('[data-cozy-compare-pick]'));
-      var grid = compare.querySelector('[data-cozy-compare-grid]');
-      var note = compare.querySelector('[data-cozy-compare-note]');
-      var empty = compare.querySelector('[data-cozy-compare-empty]');
-      var opened = false;
-      var cardOf = function (name) {
-        return Array.prototype.find.call(grid.children, function (card) { return card.dataset.cozyCompareState === name; });
-      };
-      var update = function () {
-        var count = 0;
-        picks.forEach(function (pick) {
-          var card = cardOf(pick.value);
-          card.hidden = !pick.checked;
-          if (pick.checked) {
-            count++;
-            var frame = card.querySelector('iframe');
-            if (opened && !frame.getAttribute('src')) {
-              frame.setAttribute('src', frame.dataset.src);
-            }
-          }
-        });
-        picks.forEach(function (pick) { pick.disabled = !pick.checked && count >= limit; });
-        note.hidden = !(count >= limit && picks.length > limit);
-        empty.hidden = count > 0;
-      };
-      picks.forEach(function (pick) { pick.addEventListener('change', update, listen); });
-      compare.querySelectorAll('[data-cozy-compare-width]').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-          grid.querySelectorAll('[data-cozy-workbench-thumb]').forEach(function (thumb) {
-            thumb.className = thumb.className.replace(/cozy-workbench-thumb-\S+/, 'cozy-workbench-thumb-' + radio.value);
-          });
-          // 카드를 누르면 고른 너비로 그 상태를 연다
-          grid.querySelectorAll('a[href]').forEach(function (link) {
-            var url = new URL(link.href, window.location.href);
-            url.searchParams.set('w', radio.value);
-            link.setAttribute('href', url.pathname + url.search);
-          });
-        }, listen);
-      });
-      compare.addEventListener('shown.bs.modal', function () {
-        opened = true;
-        update();
-      }, listen);
-      update();
-      if (compare.dataset.cozyCompareOpen === 'true') {
-        var button = document.querySelector('[data-cozy-compare-button]');
-        if (button) {
-          button.click();
-        }
-      }
-    }
-
-    // 코드 생성 폼: 모듈을 고르면 그 모듈의 선택지만 보인다. 아이콘 칸은 적은 아이콘을 앞에 그린다
-    var commandForm = document.querySelector('[data-cozy-command-form]');
-    if (commandForm) {
-      var moduleSelect = commandForm.querySelector('[data-cozy-command-module]');
-      var filterByModule = function () {
-        var module = moduleSelect.value.trim();
-        commandForm.querySelectorAll('optgroup[data-cozy-module]').forEach(function (group) {
-          var other = module !== '' && group.dataset.cozyModule !== module;
-          group.hidden = other;
-          group.disabled = other;
-        });
-        commandForm.querySelectorAll('select').forEach(function (select) {
-          var chosen = select.selectedOptions[0];
-          if (chosen && chosen.parentElement.disabled) {
-            // 다른 모듈의 값이 골라져 있으면 보이는 첫 값으로 바꾼다
-            var first = Array.prototype.find.call(select.options, function (option) {
-              return !option.parentElement.disabled;
-            });
-            select.value = first ? first.value : '';
-          }
-        });
-      };
-      if (moduleSelect) {
-        moduleSelect.addEventListener('change', filterByModule, listen);
-        moduleSelect.addEventListener('input', filterByModule, listen);
-        filterByModule();
-      }
-      var iconList = document.getElementById('command-icons');
-      var icons = new Set(iconList ? Array.prototype.map.call(iconList.options, function (option) {
-        return option.value;
-      }) : []);
-      commandForm.querySelectorAll('[data-cozy-icon-input]').forEach(function (input) {
-        var use = input.parentElement.querySelector('[data-cozy-icon-preview] use');
-        var href = use.getAttribute('href');
-        var sprite = href.substring(0, href.indexOf('#') + 1);
-        input.addEventListener('input', function () {
-          var name = input.value.trim();
-          use.setAttribute('href', sprite + 'tabler-' + (icons.has(name) ? name : 'question-mark'));
-        }, listen);
-      });
-    }
-
-    var frame = document.querySelector('[data-cozy-workbench-frame]');
-    var panel = document.querySelector('[data-cozy-workbench-selection]');
-    var propsBox = panel ? panel.querySelector('[data-cozy-workbench-props]') : null;
-    if (!frame || !panel || !propsBox || !document.querySelector('[data-cozy-workbench-pick]')) {
-      return;
-    }
-    // 아무것도 선택하지 않았을 때 보이는 화면의 속성
-    var screenProps = Array.prototype.slice.call(propsBox.children);
-
-    /** 오른쪽 칸의 속성 표를 바꾼다 */
-    function showProps(nodes) {
-      while (propsBox.firstChild) {
-        propsBox.removeChild(propsBox.firstChild);
-      }
-      nodes.forEach(function (node) {
-        propsBox.appendChild(node);
-      });
-      // 복제한 표의 매개변수 폼(hx-post)을 htmx에 알린다
-      if (window.htmx) {
-        window.htmx.process(propsBox);
-      }
-    }
-
-    /** 구조의 줄에 딸린 속성 표의 사본. 상위 경로를 채우고, 다른 템플릿이 그린 요소면 그 위치를 덧붙인다 */
-    function propsOf(row, names, rendered, guessed) {
-      var source = row.closest('li').querySelector('[data-cozy-workbench-node-props]');
-      var copy = Array.prototype.map.call(source.children, function (child) {
-        return child.cloneNode(true);
-      });
-      copy.forEach(function (node) {
-        var path = node.querySelector('[data-cozy-prop="path"]');
-        if (path) {
-          path.textContent = names.length > 1 ? names.slice(0, -1).join(' › ') : '없음';
-        }
-        var body = node.querySelector('tbody');
-        if (body && rendered) {
-          var extra = document.createElement('tr');
-          var head = document.createElement('th');
-          head.scope = 'row';
-          head.textContent = '렌더링한 템플릿';
-          var cell = document.createElement('td');
-          var code = document.createElement('code');
-          code.textContent = rendered;
-          cell.appendChild(code);
-          if (guessed) {
-            cell.appendChild(document.createTextNode(' 삽입 위치는 추정'));
-          }
-          extra.appendChild(head);
-          extra.appendChild(cell);
-          body.appendChild(extra);
-        }
-      });
-      return copy;
-    }
-    var pick = document.querySelector('[data-cozy-workbench-pick]');
-    var hint = panel.querySelector('[data-cozy-workbench-hint]');
-    var chainText = panel.querySelector('[data-cozy-workbench-chain]');
-    var contextText = panel.querySelector('[data-cozy-workbench-context]');
-    var contextDetails = panel.querySelector('[data-cozy-workbench-context-details]');
-    var copyButtons = panel.querySelectorAll('[data-cozy-workbench-copy]');
-    var hoverBox = document.querySelector('[data-cozy-workbench-hover]');
-    var selectedBox = document.querySelector('[data-cozy-workbench-selected]');
-    var rows = Array.prototype.slice.call(document.querySelectorAll('[data-cozy-line]'));
-    var template = panel.dataset.template;
-    var templateFile = 'src/main/resources/templates/' + template + '.html';
+  function workbenchPicker() {
+    var self = null;
+    // 고른 요소(미리보기 문서의 요소)와 복사할 글. 반응형 상태에 두지 않는다
     var selectedElements = [];
     var copies = { location: '', context: '' };
+    // 이벤트를 단 미리보기 문서
+    var attached = new WeakSet();
+    // 미리보기 틀의 크기가 바뀌면(창 크기, 칸 접기) 선택 표시를 다시 놓는다
+    var resizer = window.ResizeObserver ? new ResizeObserver(function () { place(refs().selected, selectedElements); }) : null;
+    var observed = null;
+    var keptScroll = null;
+
+    function refs() {
+      return self.$refs;
+    }
+
+    /** 고르기를 쓰는 보기인가 (샘플 데이터 보기에는 속성 칸이 없다) */
+    function active() {
+      var r = refs();
+      return !!(r.frame && r.selection && r.props && r.pick);
+    }
+
+    function selection() {
+      return refs().selection.dataset;
+    }
+
+    function template() {
+      return selection().template;
+    }
+
+    function rows() {
+      return Array.prototype.slice.call(self.$root.querySelectorAll('#workbench-side [data-cozy-line]'));
+    }
 
     /** 요소의 data-cozy-src: {template, line} */
     function source(element) {
@@ -284,23 +78,23 @@
     }
 
     /** 줄을 감싸는 구조의 줄들 (바깥에서 안으로) */
-    function enclosing(line) {
-      return rows.filter(function (row) {
+    function enclosing(all, line) {
+      return all.filter(function (row) {
         return number(row, 'cozyLine') <= line && line <= number(row, 'cozyEnd');
       });
     }
 
     /** 구조의 줄 하나와 그것을 감싸는 줄들 (같은 줄에서 시작하는 더 안쪽 줄은 뺀다) */
-    function enclosingRow(row) {
-      var index = rows.indexOf(row);
-      return enclosing(number(row, 'cozyLine')).filter(function (other) {
-        return rows.indexOf(other) <= index;
+    function enclosingRow(all, row) {
+      var index = all.indexOf(row);
+      return enclosing(all, number(row, 'cozyLine')).filter(function (other) {
+        return all.indexOf(other) <= index;
       });
     }
 
     /** 프레임워크나 다른 모듈의 템플릿이 그린 요소: 그 템플릿을 넣은 구조의 줄 */
-    function insertionOf(own, after) {
-      var candidates = rows.filter(function (row) {
+    function insertionOf(all, own, after) {
+      var candidates = all.filter(function (row) {
         return row.dataset.cozyTarget === own.template;
       });
       for (var i = 0; i < candidates.length; i++) {
@@ -328,10 +122,10 @@
     }
 
     /** 앱 요소(줄) 바로 아래의 삽입 가운데 요소를 담거나 요소 앞에 있는 마지막 것. 없으면 첫 삽입 */
-    function insertionUnder(line, element) {
-      var depth = enclosing(line).length;
-      var candidates = rows.filter(function (row) {
-        return row.dataset.cozyTarget && number(row, 'cozyLine') > line && enclosingRow(row).length === depth + 1;
+    function insertionUnder(all, line, element) {
+      var depth = enclosing(all, line).length;
+      var candidates = all.filter(function (row) {
+        return row.dataset.cozyTarget && number(row, 'cozyLine') > line && enclosingRow(all, row).length === depth + 1;
       });
       var chosen = null;
       candidates.forEach(function (row) {
@@ -363,7 +157,11 @@
     }
 
     function place(box, elements) {
-      if (!elements.length) {
+      var frame = refs().frame;
+      if (!box) {
+        return;
+      }
+      if (!elements.length || !frame) {
         box.hidden = true;
         return;
       }
@@ -393,19 +191,86 @@
       box.hidden = false;
     }
 
+    function hide(box) {
+      if (box) {
+        box.hidden = true;
+      }
+    }
+
+    /** 오른쪽 칸의 속성 표를 바꾼다. 처음 표(화면의 속성)는 그 칸에 기억해 둔다 */
+    function showProps(nodes) {
+      var box = refs().props;
+      while (box.firstChild) {
+        box.removeChild(box.firstChild);
+      }
+      nodes.forEach(function (node) {
+        box.appendChild(node);
+      });
+      // 복제한 표의 매개변수 폼(hx-post)을 htmx에 알린다
+      if (window.htmx) {
+        window.htmx.process(box);
+      }
+    }
+
+    function screenProps() {
+      var box = refs().props;
+      if (!box.cozyScreenProps) {
+        box.cozyScreenProps = Array.prototype.slice.call(box.children);
+      }
+      return box.cozyScreenProps;
+    }
+
+    /** 구조의 줄에 딸린 속성 표의 사본. 상위 경로를 채우고, 다른 템플릿이 그린 요소면 그 위치를 덧붙인다 */
+    function propsOf(row, names, rendered, guessed) {
+      var found = row.closest('li').querySelector('[data-cozy-workbench-node-props]');
+      var copy = Array.prototype.map.call(found.children, function (child) {
+        return child.cloneNode(true);
+      });
+      copy.forEach(function (node) {
+        var path = node.querySelector('[data-cozy-prop="path"]');
+        if (path) {
+          path.textContent = names.length > 1 ? names.slice(0, -1).join(' › ') : '없음';
+        }
+        var body = node.querySelector('tbody');
+        if (body && rendered) {
+          var extra = document.createElement('tr');
+          var head = document.createElement('th');
+          head.scope = 'row';
+          head.textContent = '렌더링한 템플릿';
+          var cell = document.createElement('td');
+          var code = document.createElement('code');
+          code.textContent = rendered;
+          cell.appendChild(code);
+          if (guessed) {
+            cell.appendChild(document.createTextNode(' 삽입 위치는 추정'));
+          }
+          extra.appendChild(head);
+          extra.appendChild(cell);
+          body.appendChild(extra);
+        }
+      });
+      return copy;
+    }
+
+    function highlight(all, row) {
+      all.forEach(function (other) {
+        other.classList.toggle('cozy-workbench-node-selected', other === row);
+      });
+    }
+
     /**
      * 고른 것을 보인다.
      * line: 화면 템플릿의 줄 (모르면 null), chain: 감싸는 구조의 줄들, framework: 요소를 실제로 그린 다른 템플릿의 위치 (없으면 null)
      */
-    function show(elements, line, chain, framework, description, guessed) {
+    function show(all, elements, line, chain, framework, description, guessed) {
+      var r = refs();
+      var data = selection();
+      var templateFile = 'src/main/resources/templates/' + data.template + '.html';
       selectedElements = elements;
-      place(selectedBox, elements);
-      rows.forEach(function (row) {
-        row.classList.remove('cozy-workbench-node-selected');
-      });
+      place(r.selected, elements);
+      highlight(all, chain.length ? chain[chain.length - 1] : null);
       if (chain.length) {
         var innermost = chain[chain.length - 1];
-        innermost.classList.add('cozy-workbench-node-selected');
         for (var folded = innermost.parentElement; folded; folded = folded.parentElement) {
           if (folded.tagName === 'DETAILS') {
             folded.open = true;
@@ -422,12 +287,12 @@
         return row.dataset.cozyCode;
       });
       var rendered = framework ? 'templates/' + framework.template + '.html:' + framework.line : '';
-      showProps(chain.length ? propsOf(chain[chain.length - 1], names, rendered, guessed) : screenProps);
-      hint.hidden = true;
+      showProps(chain.length ? propsOf(chain[chain.length - 1], names, rendered, guessed) : screenProps());
+      r.hint.hidden = true;
       // 구조에 없는 요소는 속성 표가 없으므로 위치를 글로 보인다
-      chainText.textContent = names.length ? '' : '구조에 없는 요소 · ' + where;
+      r.chain.textContent = names.length ? '' : '구조에 없는 요소 · ' + where;
 
-      var lines = ['Screen: ' + panel.dataset.screen + ' (state: ' + panel.dataset.state + ')'];
+      var lines = ['Screen: ' + data.screen + ' (state: ' + data.state + ')'];
       if (description) {
         lines.push('Element: ' + description);
       }
@@ -441,21 +306,20 @@
       if (guessed) {
         lines.push('Note: Source is the nearest insertion in the screen template and may be one level off.');
       }
-      if (panel.dataset.specFile) {
-        lines.push('Spec: ' + panel.dataset.specFile);
+      if (data.specFile) {
+        lines.push('Spec: ' + data.specFile);
       }
-      lines.push('Playbook: ' + panel.dataset.playbook);
-      copies.location = where;
-      copies.context = lines.join('\n');
-      contextText.textContent = copies.context;
-      copyButtons.forEach(function (button) {
-        button.disabled = false;
-      });
+      lines.push('Playbook: ' + data.playbook);
+      copies = { location: where, context: lines.join('\n') };
+      r.context.textContent = copies.context;
+      self.canCopy = true;
     }
 
     function selectElement(element) {
+      var all = rows();
+      var screenTemplate = template();
       var app = nearest(element, function (found) {
-        return found.template === template;
+        return found.template === screenTemplate;
       });
       var own = nearest(element, function () {
         return true;
@@ -463,68 +327,79 @@
       if (!own) {
         return;
       }
-      if (own.source.template === template) {
-        show([own.element], own.source.line, enclosing(own.source.line), null, describe(element), false);
+      if (own.source.template === screenTemplate) {
+        show(all, [own.element], own.source.line, enclosing(all, own.source.line), null, describe(element), false);
         return;
       }
       // 다른 템플릿이 그린 요소: 가까운 조상부터, 화면 템플릿이 넣은 템플릿을 찾는다 (패턴 안의 컴포넌트는 패턴의 줄로 간다)
       var row = null;
       for (var node = own.element; node && node.nodeType === 1 && !row; node = node.parentElement) {
         var found = source(node);
-        if (found && found.template === template) {
+        if (found && found.template === screenTemplate) {
           break;
         }
         if (found) {
-          row = insertionOf(found, app ? app.source.line : 0);
+          row = insertionOf(all, found, app ? app.source.line : 0);
         }
       }
       var guessed = false;
       if (!row && app) {
         // 넣은 템플릿이 다시 넣은 템플릿이 그린 요소(패턴 안의 제목 등): 가까운 앱 요소 바로 아래의 삽입 가운데에서 고른다
-        row = insertionUnder(app.source.line, element);
+        row = insertionUnder(all, app.source.line, element);
         guessed = row !== null;
       }
       if (row) {
-        show([element], number(row, 'cozyLine'), enclosingRow(row), own.source, describe(element), guessed);
+        show(all, [element], number(row, 'cozyLine'), enclosingRow(all, row), own.source, describe(element), guessed);
       }
       else {
-        show([element], null, [], own.source, describe(element), false);
+        show(all, [element], null, [], own.source, describe(element), false);
       }
     }
 
     function selectRow(row) {
-      var doc = previewDocument();
-      var line = number(row, 'cozyLine');
-      var elements = doc ? elementsOf(row) : [];
-      show(elements, line, enclosingRow(row), null, elements.length ? describe(elements[0]) : '', false);
+      var all = rows();
+      var elements = elementsOf(row);
+      show(all, elements, number(row, 'cozyLine'), enclosingRow(all, row), null, elements.length ? describe(elements[0]) : '', false);
     }
 
-    var previewUrl = frame.getAttribute('src');
-    var previewPath = previewUrl.split('?')[0];
+    /** 구조의 줄이 미리보기에서 차지하는 요소들 */
+    function elementsOf(row) {
+      var doc = previewDocument();
+      if (!doc) {
+        return [];
+      }
+      var elements = row.dataset.cozyTarget ? rootsOf(row.dataset.cozyTarget) : [];
+      if (!elements.length) {
+        elements = Array.prototype.slice.call(doc.querySelectorAll('[data-cozy-src="' + template() + ':' + number(row, 'cozyLine') + '"]'));
+      }
+      return elements;
+    }
 
     /** 고른 것을 지운다. 미리보기가 다시 그려지면 고른 요소가 사라지기 때문이다 */
     function clear(message) {
+      var r = refs();
       selectedElements = [];
-      selectedBox.hidden = true;
-      hoverBox.hidden = true;
-      rows.forEach(function (row) {
-        row.classList.remove('cozy-workbench-node-selected');
-      });
-      showProps(screenProps);
-      hint.hidden = false;
-      chainText.textContent = message || '';
-      contextText.textContent = '요소를 선택하면 여기에 표시됩니다.';
+      hide(r.selected);
+      hide(r.hover);
+      highlight(rows(), null);
+      showProps(screenProps());
+      r.hint.hidden = false;
+      r.chain.textContent = message || '';
+      r.context.textContent = '요소를 선택하면 여기에 표시됩니다.';
       copies = { location: '', context: '' };
-      copyButtons.forEach(function (button) {
-        button.disabled = true;
-      });
+      self.canCopy = false;
+    }
+
+    function previewPath() {
+      return refs().frame.getAttribute('src').split('?')[0];
     }
 
     /** 틀 안의 문서가 미리보기인가. 앱 화면은 틀 안에 넣을 수 없어서, 미리보기 밖으로 나가면 읽지 못하는 문서가 된다 */
     function previewDocument() {
+      var frame = refs().frame;
       try {
-        var doc = frame.contentDocument;
-        if (doc && doc.documentElement && frame.contentWindow.location.pathname.indexOf(previewPath) >= 0) {
+        var doc = frame && frame.contentDocument;
+        if (doc && doc.documentElement && frame.contentWindow.location.pathname.indexOf(previewPath()) >= 0) {
           return doc;
         }
       }
@@ -534,153 +409,344 @@
       return null;
     }
 
-    function attach() {
-      var doc = previewDocument();
-      if (!doc) {
-        // 고르기를 끄고 링크를 눌러 미리보기 밖으로 나갔다: 처음 미리보기로 되돌린다
-        clear(chainText.dataset.left);
-        frame.setAttribute('src', previewUrl);
-        return;
+    /** 매개변수를 고친 뒤(?node=줄) 다시 고를 구조의 줄 */
+    function wantedRow() {
+      var line = selection().node;
+      return line ? rows().find(function (row) {
+        return row.dataset.cozyLine === line && row.querySelector('.cozy-workbench-label');
+      }) : null;
+    }
+
+    /** 고친 결과(변경 파일이나 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다 */
+    function revealResult() {
+      var result = refs().argResult;
+      if (result) {
+        result.scrollIntoView({ block: 'start' });
+        result.focus({ preventScroll: true });
       }
-      if (selectedElements.length) {
-        clear('');
-      }
-      doc.addEventListener('click', function (event) {
-        if (!pick.checked) {
+    }
+
+    /** 클립보드를 쓸 수 없으면 글을 펼쳐 골라 둔다 (Ctrl+C로 복사) */
+    function showText() {
+      var r = refs();
+      r.contextDetails.open = true;
+      var range = document.createRange();
+      range.selectNodeContents(r.context);
+      var picked = window.getSelection();
+      picked.removeAllRanges();
+      picked.addRange(range);
+    }
+
+    function inspectorScroll() {
+      return self.$root.querySelector('#workbench-inspector .cozy-workbench-scroll');
+    }
+
+    return {
+      canCopy: false,
+
+      init: function () {
+        self = this;
+      },
+
+      destroy: function () {
+        if (resizer) {
+          resizer.disconnect();
+        }
+      },
+
+      /** 오른쪽 칸이 처음 그려지거나 htmx가 바꿨을 때(x-init): 이전 선택을 지우고, 고칠 줄이 있으면 다시 고른다 */
+      restore: function () {
+        if (!active()) {
           return;
         }
-        event.preventDefault();
-        event.stopPropagation();
-        selectElement(event.target);
-      }, capture);
-      doc.addEventListener('mousemove', function (event) {
-        place(hoverBox, pick.checked ? [event.target] : []);
-      }, capture);
-      doc.addEventListener('mouseleave', function () {
-        hoverBox.hidden = true;
-      }, capture);
-      frame.contentWindow.addEventListener('scroll', function () {
-        hoverBox.hidden = true;
-        place(selectedBox, selectedElements);
-      }, capture);
-    }
+        selectedElements = [];
+        copies = { location: '', context: '' };
+        this.canCopy = false;
+        hide(refs().selected);
+        hide(refs().hover);
+        var row = wantedRow();
+        if (row) {
+          selectRow(row);
+        }
+        revealResult();
+        var doc = previewDocument();
+        if (doc && doc.readyState === 'complete') {
+          this.attach();
+        }
+      },
 
-    frame.addEventListener('load', attach, listen);
-    if (previewDocument() && frame.contentDocument.readyState === 'complete') {
-      attach();
-    }
-    window.addEventListener('resize', function () {
-      place(selectedBox, selectedElements);
-    }, listen);
-    pick.addEventListener('change', function () {
-      hoverBox.hidden = true;
-    }, listen);
-    /** 구조의 줄이 미리보기에서 차지하는 요소들 */
-    function elementsOf(row) {
-      var doc = previewDocument();
-      if (!doc) {
-        return [];
-      }
-      var elements = row.dataset.cozyTarget ? rootsOf(row.dataset.cozyTarget) : [];
-      if (!elements.length) {
-        elements = Array.prototype.slice.call(doc.querySelectorAll('[data-cozy-src="' + template + ':' + number(row, 'cozyLine') + '"]'));
-      }
-      return elements;
-    }
+      /** 미리보기가 그려졌을 때(감싸는 요소의 x-on:load.capture): 그 문서에 고르기를 단다 */
+      attach: function (event) {
+        if (!active()) {
+          return;
+        }
+        var r = refs();
+        var frame = r.frame;
+        if (event && event.target !== frame) {
+          return;
+        }
+        if (resizer && observed !== frame) {
+          if (observed) {
+            resizer.unobserve(observed);
+          }
+          resizer.observe(frame);
+          observed = frame;
+        }
+        var doc = previewDocument();
+        if (!doc) {
+          // 고르기를 끄고 링크를 눌러 미리보기 밖으로 나갔다: 처음 미리보기로 되돌린다
+          clear(r.chain.dataset.left);
+          frame.setAttribute('src', frame.getAttribute('src'));
+          return;
+        }
+        var row = wantedRow();
+        if (row) {
+          selectRow(row);
+          revealResult();
+        }
+        else if (selectedElements.length) {
+          clear('');
+        }
+        if (attached.has(doc)) {
+          return;
+        }
+        attached.add(doc);
+        var view = frame.contentWindow;
+        doc.addEventListener('click', function (event) {
+          if (!refs().pick || !refs().pick.checked) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          selectElement(event.target);
+        }, true);
+        doc.addEventListener('mousemove', function (event) {
+          place(refs().hover, refs().pick && refs().pick.checked ? [event.target] : []);
+        }, true);
+        doc.addEventListener('mouseleave', function () {
+          hide(refs().hover);
+        }, true);
+        view.addEventListener('scroll', function () {
+          hide(refs().hover);
+          place(refs().selected, selectedElements);
+        }, true);
+      },
 
-    document.querySelectorAll('[data-cozy-workbench-node]').forEach(function (button) {
-      button.addEventListener('click', function (event) {
-        // 접고 펴는 줄 안에 있어도 이름을 누르면 선택만 한다
-        event.preventDefault();
-        selectRow(button.closest('[data-cozy-line]'));
-      }, listen);
-    });
-    rows.forEach(function (row) {
-      row.addEventListener('mouseenter', function () {
-        place(hoverBox, elementsOf(row));
-      }, listen);
-      row.addEventListener('mouseleave', function () {
-        hoverBox.hidden = true;
-      }, listen);
-    });
-    copyButtons.forEach(function (button) {
-      button.addEventListener('click', function () {
-        var text = copies[button.dataset.cozyWorkbenchCopy];
+      /** 구조의 이름을 눌렀다: 접고 펴는 줄 안에 있어도 선택만 한다(x-on:click.prevent) */
+      selectNode: function (event) {
+        if (active()) {
+          selectRow(event.currentTarget.closest('[data-cozy-line]'));
+        }
+      },
+
+      hoverRow: function (event) {
+        if (active()) {
+          place(refs().hover, elementsOf(event.currentTarget));
+        }
+      },
+
+      hideHover: function () {
+        hide(refs().hover);
+      },
+
+      /** kind: location(경로) 또는 context(에이전트 전달 내용) */
+      copyPicked: function (kind) {
+        var text = copies[kind];
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(copied, showText);
+          navigator.clipboard.writeText(text).then(function () { toast('복사했습니다', 'success'); }, showText);
         }
         else {
           showText();
         }
-      }, listen);
-    });
+      },
 
-    // 매개변수를 고친 뒤 돌아오면(?node=줄) 그 줄을 다시 선택한다. 미리보기가 그려지면 선택 표시도 다시 놓는다
-    var wanted = new URLSearchParams(window.location.search).get('node');
-    var initialRow = wanted ? rows.find(function (row) {
-      return row.dataset.cozyLine === wanted && row.querySelector('[data-cozy-workbench-node]');
-    }) : null;
-    // 고친 결과(변경 파일이나 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다
-    var argResult = document.querySelector('[data-cozy-arg-result]');
-    function revealResult() {
-      if (argResult) {
-        argResult.scrollIntoView({ block: 'start' });
-        argResult.focus({ preventScroll: true });
+      /** 오른쪽 칸을 바꾸는 요청(샘플 데이터 저장, 행, 매개변수)은 그 칸의 스크롤 위치를 지킨다 */
+      keepScroll: function (event) {
+        var scroll = inspectorScroll();
+        var target = event.detail && event.detail.target;
+        keptScroll = (scroll && target && target.id === 'workbench-inspector') ? scroll.scrollTop : null;
+      },
+
+      restoreScroll: function () {
+        var scroll = inspectorScroll();
+        if (keptScroll !== null && scroll) {
+          scroll.scrollTop = keptScroll;
+        }
+        keptScroll = null;
       }
-    }
-    if (initialRow) {
-      selectRow(initialRow);
-      frame.addEventListener('load', function again() {
-        frame.removeEventListener('load', again);
-        selectRow(initialRow);
-        revealResult();
-      }, listen);
-    }
-    revealResult();
-
-    /** 클립보드를 쓸 수 없으면 글을 펼쳐 골라 둔다 (Ctrl+C로 복사) */
-    function showText() {
-      contextDetails.open = true;
-      var range = document.createRange();
-      range.selectNodeContents(contextText);
-      var selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
+    };
   }
 
-  // ── htmx가 영역을 바꾼 뒤 ──────────────────────────────────────────
-  // 오른쪽 칸을 바꾸는 요청(샘플 데이터 저장, 행, 매개변수)은 그 칸의 스크롤 위치를 지킨다
-  var keptScroll = null;
-  // 코드 생성에서 변경 파일 확인·적용을 눌렀으면 결과로 옮긴다 (행 버튼은 그 자리에 둔다)
-  var revealCommand = false;
-  var pending = null;
+  function workbenchCompare() {
+    return {
+      picked: [],
+      width: 'full',
+      limit: 4,
+      total: 0,
+      opened: false,
 
-  function inspectorScroll() {
-    return document.querySelector('#workbench-inspector .cozy-workbench-scroll');
+      init: function () {
+        var root = this.$root;
+        var boxes = Array.prototype.slice.call(root.querySelectorAll('.cozy-workbench-compare-picks input[type="checkbox"]'));
+        this.picked = boxes.filter(function (box) { return box.checked; }).map(function (box) { return box.value; });
+        this.total = boxes.length;
+        this.limit = parseInt(root.dataset.limit, 10) || 4;
+        var width = root.querySelector('input[type="radio"]:checked');
+        this.width = width ? width.value : 'full';
+        if (root.dataset.open === 'true') {
+          // 개요의 "상태 비교"로 왔다: 창을 열어 둔다
+          this.$nextTick(function () {
+            var button = document.querySelector('[data-bs-target="#' + root.id + '"]');
+            if (button) {
+              button.click();
+            }
+          });
+        }
+      },
+
+      /** 창이 열렸다(x-on:shown-bs-modal.dot) */
+      open: function () {
+        this.opened = true;
+      },
+
+      get full() {
+        return this.picked.length >= this.limit;
+      },
+
+      get noteShown() {
+        return this.full && this.total > this.limit;
+      },
+
+      get nothingPicked() {
+        return this.picked.length === 0;
+      },
+
+      get thumbClass() {
+        return 'cozy-workbench-thumb-' + this.width;
+      },
+
+      /** 다 고른 동안에는 고르지 않은 상태를 막는다 */
+      blocked: function (box) {
+        return this.full && this.picked.indexOf(box.value) < 0;
+      },
+
+      shows: function (card) {
+        return this.picked.indexOf(card.dataset.state) >= 0;
+      },
+
+      /** 창이 열려 있으면 고른 상태의 미리보기를 불러온다(x-effect). 한 번 불러온 것은 그대로 둔다.
+          CSP 빌드는 iframe에서 식을 실행하지 않으므로 src는 여기서 정한다 */
+      loadPicked: function () {
+        if (!this.opened) {
+          return;
+        }
+        var picked = this.picked.slice();
+        Array.prototype.forEach.call(this.$root.querySelectorAll('[data-state] iframe[data-src]'), function (frame) {
+          if (picked.indexOf(frame.closest('[data-state]').dataset.state) >= 0 && !frame.getAttribute('src')) {
+            frame.setAttribute('src', frame.dataset.src);
+          }
+        });
+      },
+
+      /** 카드를 누르면 고른 너비로 그 상태를 연다 */
+      hrefOf: function (link) {
+        if (!link.cozyHref) {
+          link.cozyHref = link.getAttribute('href');
+        }
+        var url = new URL(link.cozyHref, window.location.href);
+        url.searchParams.set('w', this.width);
+        return url.pathname + url.search;
+      }
+    };
   }
 
-  document.addEventListener('htmx:configRequest', function (event) {
-    var parameters = event.detail.parameters;
-    var step = parameters && ((typeof parameters.get === 'function') ? parameters.get('step') : parameters.step);
-    revealCommand = event.detail.target && event.detail.target.id === 'workbench-command' && !!step;
-    var scroll = inspectorScroll();
-    keptScroll = (scroll && event.detail.target && event.detail.target.id === 'workbench-inspector') ? scroll.scrollTop : null;
-  });
-  document.addEventListener('htmx:afterSettle', function () {
-    if (keptScroll !== null && inspectorScroll()) {
-      inspectorScroll().scrollTop = keptScroll;
-    }
-    keptScroll = null;
-    var result = document.getElementById('command-result');
-    if (revealCommand && result) {
-      result.scrollIntoView({ block: 'start' });
-    }
-    revealCommand = false;
-    // 바꾼 영역이 여럿이면(hx-select-oob) 이벤트도 여러 번 온다: 한 번만 다시 시작한다
-    clearTimeout(pending);
-    pending = setTimeout(start, 0);
-  });
+  function workbenchThumb() {
+    var observer = null;
+    return {
+      init: function () {
+        var thumb = this.$root;
+        if (!window.ResizeObserver) {
+          return;
+        }
+        observer = new ResizeObserver(function () {
+          var width = parseFloat(getComputedStyle(thumb).getPropertyValue('--cozy-thumb-w')) || 1280;
+          // 그린 크기보다 키우지 않는다(카드가 넓으면 가운데에 그린 크기 그대로)
+          thumb.style.setProperty('--cozy-thumb-scale', String(Math.min(1, thumb.clientWidth / width)));
+        });
+        observer.observe(thumb);
+      },
 
-  start();
+      destroy: function () {
+        if (observer) {
+          observer.disconnect();
+        }
+      }
+    };
+  }
+
+  function workbenchCommand() {
+    function filterByModule(form) {
+      var choice = form.querySelector('[data-module-choice]');
+      if (!choice) {
+        return;
+      }
+      var module = choice.value.trim();
+      Array.prototype.forEach.call(form.querySelectorAll('optgroup[data-cozy-module]'), function (group) {
+        var other = module !== '' && group.dataset.cozyModule !== module;
+        group.hidden = other;
+        group.disabled = other;
+      });
+      Array.prototype.forEach.call(form.querySelectorAll('select'), function (select) {
+        var chosen = select.selectedOptions[0];
+        if (chosen && chosen.parentElement.disabled) {
+          // 다른 모듈의 값이 골라져 있으면 보이는 첫 값으로 바꾼다
+          var first = Array.prototype.find.call(select.options, function (option) {
+            return !option.parentElement.disabled;
+          });
+          select.value = first ? first.value : '';
+        }
+      });
+    }
+
+    function previewIcon(input) {
+      var list = document.getElementById('command-icons');
+      var use = input.closest('.cozy-workbench-icon-input').querySelector('svg use');
+      var href = use.getAttribute('href');
+      var sprite = href.substring(0, href.indexOf('#') + 1);
+      var name = input.value.trim();
+      var known = list && Array.prototype.some.call(list.options, function (option) { return option.value === name; });
+      use.setAttribute('href', sprite + 'tabler-' + (known ? name : 'question-mark'));
+    }
+
+    return {
+      init: function () {
+        var form = this.$refs.form;
+        if (form) {
+          filterByModule(form);
+        }
+        // 변경 파일 확인이나 적용의 결과: htmx가 이 열을 바꾼 뒤에도 결과를 보인다 (행 버튼의 응답에는 결과가 없다)
+        if (this.$refs.result) {
+          this.$refs.result.scrollIntoView({ block: 'start' });
+        }
+      },
+
+      /** 폼의 칸이 바뀌었다(x-on:input, x-on:change) */
+      edited: function (event) {
+        var target = event.target;
+        if (target.hasAttribute('data-module-choice')) {
+          filterByModule(this.$refs.form);
+        }
+        if (target.closest('.cozy-workbench-icon-input')) {
+          previewIcon(target);
+        }
+      }
+    };
+  }
+
+  document.addEventListener('alpine:init', function () {
+    window.Alpine.data('workbenchPicker', workbenchPicker);
+    window.Alpine.data('workbenchCompare', workbenchCompare);
+    window.Alpine.data('workbenchThumb', workbenchThumb);
+    window.Alpine.data('workbenchCommand', workbenchCommand);
+  });
 })();

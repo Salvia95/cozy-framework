@@ -703,6 +703,33 @@ class TemplateRulesTest {
 		}
 
 		@Test
+		void frameworkComponentsOutsideCozyAreOnlyForFrameworkTemplates() {
+			// 워크벤치처럼 dev에만 있는 프레임워크 화면의 컴포넌트: 앱 화면에서는 실행할 때 없다
+			Fixture f = withComponents();
+			f.frameworkScript("cozy/workbench.js", "Alpine.data('workbenchPicker', function () { return {}; });");
+			f.framework("cozy/dev/workbench.html", "<div x-data=\"workbenchPicker\"></div><div x-data=\"cozyDisclosure\"></div>");
+			f.app("memo/api/list.html", "<div x-data=\"workbenchPicker\"></div><div x-data=\"cozyCopy\"></div>");
+			assertThat(f.check()).extracting(Violation::location, Violation::ruleId)
+				.containsExactly(org.assertj.core.groups.Tuple.tuple("templates/memo/api/list.html", "R16"));
+			assertThat(f.check().get(0).format()).contains("cozy 컴포넌트만");
+		}
+
+		@Test
+		void iframesCarryNoAlpineExpressions() {
+			// CSP 빌드는 iframe 요소에서 식을 실행하지 않고, 그 컴포넌트의 나머지 초기화를 멈춘다
+			Fixture f = withComponents();
+			f.app("memo/api/list.html", """
+					<div x-data="cozyDisclosure" x-on:load.capture="toggle">
+					  <iframe title="a" x-on:load="toggle"></iframe>
+					  <iframe title="b" x-bind:src="open"></iframe>
+					  <iframe title="c" x-ref="frame"></iframe>
+					  <script x-init="toggle"></script>
+					</div>""");
+			assertThat(f.check()).extracting(Violation::line).containsExactly(2, 3, 5);
+			assertThat(f.check().get(0).format()).contains("iframe");
+		}
+
+		@Test
 		void unsupportedDirectivesFail() {
 			Fixture f = withComponents();
 			f.app("memo/api/list.html", """

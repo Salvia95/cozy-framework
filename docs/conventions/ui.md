@@ -178,6 +178,7 @@ fragments:
 - `x-data`에는 등록된 컴포넌트 이름만 쓴다: `x-data="cozyCopy"`. 인라인 객체(`x-data="{ open: false }"`)와 인자는 쓰지 않는다.
 - 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `this.$root.dataset`에서 읽는다. Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
 - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`, `x-text`, `x-ref`, `x-cloak`, `x-transition`, `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. `x-html`과 `x-teleport`는 쓰지 않는다.
+- `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 실행하지 않고 그 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소의 `x-on:load.capture`로 받는다.
 - 식은 짧게 쓴다. 속성 읽기, 메서드 호출, 변수 대입(`open = !open`), 비교만 쓴다. 화살표 함수, 템플릿 문자열, 전개, 속성 대입(`user.name = …`), 전역(`window`, `console`, `Math` 등)은 CSP 빌드가 읽지 못한다. 그런 로직은 컴포넌트의 getter와 메서드로 옮긴다.
 - `x-cloak`은 Alpine이 시작할 때까지 요소를 숨긴다(`cozy.css`). 스크립트가 있어야만 쓸모 있는 요소(복사 버튼 등)에만 쓴다. 보기와 저장 같은 기본 동작은 스크립트 없이도 된다.
 
@@ -188,11 +189,22 @@ fragments:
 | 이름 | 받는 `data-*` | 메서드·속성 | 동작 |
 | --- | --- | --- | --- |
 | `cozyCopy` | `data-copy-text`: 복사할 글자 | `copy()` | 글자를 복사하고 "복사했습니다" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다 |
+| `cozyDisclosure` | `data-disclosure-closed`: 처음에 접힌 부분의 이름(공백으로 구분). `data-disclosure-remember`: 접은 부분을 브라우저에 기억할 이름(선택) | `toggle(이름)`, `isOpen(이름)`, `isClosed(이름)` | 이름 붙인 부분을 펼치고 접는다. 한 요소 안에 여러 부분을 둘 수 있다. 기억하면 다시 열어도 그대로다(저장소를 쓸 수 없으면 기억하지 않는다) |
+| `cozyFocusKey` | `data-focus-key`: 누를 글쇠(기본 `/`) | `focusOnKey(event)` | 글을 적는 중이 아닐 때 그 글쇠를 누르면 이 칸으로 옮겨 간다. 칸에 `x-on:keydown.window="focusOnKey"`를 단다 |
 
 ```html
 <button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
         th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}">복사</button>
+
+<div x-data="cozyDisclosure" data-disclosure-closed="filter">
+  <button type="button" class="btn" x-on:click="toggle('filter')" x-bind:aria-expanded="isOpen('filter')" aria-controls="memo-filter">필터</button>
+  <div id="memo-filter" x-show="isOpen('filter')" x-cloak>…</div>
+</div>
+
+<input class="form-control" type="search" name="q" aria-keyshortcuts="/" x-data="cozyFocusKey" x-on:keydown.window="focusOnKey">
 ```
+
+- **프레임워크 화면의 스크립트**: `alpine:init`에서 컴포넌트를 등록하는 스크립트는 Alpine보다 먼저 실려야 한다. 모델의 `cozyScripts`(경로 목록)가 있으면 `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 싣는다. 워크벤치가 쓴다(`/cozy/workbench.js`). 앱 모듈의 JS를 싣는 방법은 따로 정한다.
 
 - 앱 컴포넌트의 자리는 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js`이고, 이름은 모듈 이름으로 시작한다(`memoEditor`). 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. R16은 이 규칙을 이미 검사하지만, layout이 앱의 모듈 JS를 싣는 기능은 아직 없다. 지금은 `cozy` 컴포넌트만 쓴다.
 

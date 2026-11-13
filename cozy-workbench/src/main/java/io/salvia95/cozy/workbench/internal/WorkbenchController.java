@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -73,19 +74,27 @@ public class WorkbenchController {
 	public record Line(int number, String text) {
 	}
 
+	/** 워크벤치 화면의 Alpine 컴포넌트. 레이아웃이 Alpine보다 먼저 싣는다 */
+	@ModelAttribute("cozyScripts")
+	List<String> scripts() {
+		return List.of("/cozy/workbench.js");
+	}
+
 	/**
 	 * 화면을 고르지 않았으면({@code spec}이 없으면) 개요, 골랐으면 그 화면의 보기.
 	 *
 	 * @param compare 참이면 상태 비교 창을 열어 둔다 (개요의 "상태 비교")
+	 * @param node 매개변수를 고친 뒤 다시 고를 구조의 줄 (없으면 null)
 	 */
 	@GetMapping
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
 			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view,
-			@RequestParam(defaultValue = "false") boolean compare, Model model) {
+			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node, Model model) {
 		if (spec == null) {
 			return overview(model);
 		}
 		model.addAttribute("compareOpen", compare);
+		model.addAttribute("node", node);
 		return screen(spec, state, w, view, model);
 	}
 

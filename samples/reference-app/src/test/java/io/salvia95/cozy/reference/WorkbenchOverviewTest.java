@@ -117,29 +117,33 @@ class WorkbenchOverviewTest {
 	void stateComparisonIsAModalAndThePreviewShowsOneState() throws Exception {
 		String html = page("?spec=memo-list&w=768").replaceAll("\\s+", " ");
 		assertThat(html).as("미리보기는 상태 하나")
-			.contains("data-cozy-workbench-frame")
+			.contains("x-ref=\"frame\"")
 			.contains("src=\"/cozy/dev/catalog/screen?spec=memo-list&amp;state=default&amp;inspect=1\"")
 			.as("상태 비교 버튼이 창을 연다")
-			.contains("data-bs-toggle=\"modal\" data-bs-target=\"#state-compare\" aria-haspopup=\"dialog\" data-cozy-compare-button")
+			.contains("data-bs-toggle=\"modal\" data-bs-target=\"#state-compare\" aria-haspopup=\"dialog\"")
 			.contains("id=\"state-compare\"")
-			.contains("data-cozy-compare-open=\"false\" data-cozy-compare-limit=\"4\"");
+			.contains("x-data=\"workbenchCompare\"")
+			.contains("data-open=\"false\" data-limit=\"4\"");
 		assertThat(html).as("확인 창과 같은 제목 구조")
 			.contains("role=\"dialog\" aria-labelledby=\"state-compare-title\"")
 			.contains("<h2 class=\"modal-title\" id=\"state-compare-title\">");
 		String modal = html.substring(html.indexOf("id=\"state-compare\""));
 		for (String state : List.of("default", "empty", "noResults", "paged")) {
 			assertThat(modal).as(state)
-				.contains("value=\"" + state + "\" data-cozy-compare-pick checked=\"checked\"")
+				.containsPattern("<input (?=[^>]*value=\"" + state + "\")(?=[^>]*checked=\"checked\")[^>]*x-model=\"picked\"")
 				.as("미리보기는 창을 열 때 불러온다")
 				.contains("data-src=\"/cozy/dev/catalog/screen?spec=memo-list&amp;state=" + state + "\"")
 				.contains("href=\"/cozy/dev/workbench?spec=memo-list&amp;state=" + state + "&amp;w=768\"");
 		}
 		assertThat(modal).doesNotContain(" src=\"/cozy/dev/catalog/screen")
-			.contains("cozy-workbench-thumb-768")
+			.as("축소 미리보기의 너비는 고른 너비(창 안의 단추)를 따른다")
+			.contains("x-data=\"workbenchThumb\" x-bind:class=\"thumbClass\"")
+			.doesNotContain("cozy-workbench-thumb-768")
 			.contains("지금 보는 상태")
-			.contains("id=\"compare-width-768\" value=\"768\" data-cozy-compare-width checked=\"checked\"");
-		assertThat(page("?spec=memo-list&compare=true")).contains("data-cozy-compare-open=\"true\"");
-		assertThat(page("?spec=memo-detail")).as("상태가 둘이면 둘 다").contains("value=\"empty\" data-cozy-compare-pick checked=\"checked\"");
+			.containsPattern("<input (?=[^>]*id=\"compare-width-768\")(?=[^>]*checked=\"checked\")[^>]*x-model=\"width\"");
+		assertThat(page("?spec=memo-list&compare=true")).contains("data-open=\"true\"");
+		assertThat(page("?spec=memo-detail")).as("상태가 둘이면 둘 다")
+			.containsPattern("<input (?=[^>]*value=\"empty\")(?=[^>]*checked=\"checked\")[^>]*x-model=\"picked\"");
 		this.mvc.perform(get(URL + "?spec=memo-list&view=states")).andExpect(status().isBadRequest());
 		valid(html, "상태 비교");
 	}

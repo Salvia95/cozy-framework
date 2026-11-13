@@ -145,3 +145,14 @@
 - **ADR-0021 §4를 보완했다.** htmx 요청의 `redirect:`를 `HX-Redirect`로 바꾸면 영역을 고를 수 없다(브라우저가 전체 페이지를 다시 읽는다). 요청이 `X-Cozy-Redirect: follow`를 보내면 바꾸지 않는다(`CozyViews.FOLLOW_REDIRECT_HEADER`). 기본 동작은 그대로라 앱은 영향이 없다.
 - **`workbench.js`는 영역을 바꿀 때마다 다시 시작한다.** 이벤트를 `AbortController`로 묶어 떼고 붙인다. M33에서 Alpine 컴포넌트로 옮기면 이 처리는 없어진다.
 - **선택 정보(`data-cozy-workbench-selection`)를 오른쪽 칸으로 옮겼다.** 상태를 바꿀 때 구조 칸은 그대로 두므로, 선택 정보가 바뀌는 칸에 있어야 에이전트 전달 내용이 새 상태를 가리킨다.
+
+## M33 (2026-11-13, 사용자 지시 "다음 진행해줘")
+
+- **시작할 때 확인한 최신 GA**: 바뀐 것이 없다(`@alpinejs/csp` 3.17.5, htmx 2.0.11, Tabler 1.7.5, Tabler Icons 3.51.0).
+- **컴포넌트**: 앱 화면에도 쓸 동작은 cozy-ui에 넣었다. `cozyDisclosure`(칸 접기, 이름 붙인 부분 여럿, 기억), `cozyFocusKey`(`/`로 검색 칸), 그리고 이미 있는 `cozyCopy`다. 워크벤치에만 있는 동작은 `workbenchPicker`, `workbenchCompare`, `workbenchThumb`, `workbenchCommand`다.
+- **스크립트를 싣는 순서**: Alpine CDN 빌드는 자기 스크립트 바로 뒤에 시작한다. `<main>` 끝의 `workbench.js`는 등록이 늦는다. `base` 레이아웃이 모델의 `cozyScripts`를 Alpine 앞에 싣게 했다. 앱 모듈 JS를 싣는 방법(M35)은 이것과 따로 정한다.
+- **htmx와 함께 쓰는 모양**: 요소 고르기는 htmx가 바꾸지 않는 칸 묶음에 두고, 바뀌는 칸의 요소는 부를 때마다 `x-ref`로 찾는다. 다시 초기화하는 처리(M32의 `AbortController`)는 없앴다.
+- **CSP 빌드는 `iframe`과 `script` 요소에서 식을 실행하지 않는다.** 실행하려 하면 오류를 내고 그 컴포넌트의 나머지 초기화를 멈춘다. runtime-verifier가 찾았다(미리보기의 `x-on:load`, 축소 미리보기의 `x-bind:src`). R16에 항목을 더했고, load는 감싸는 요소의 `x-on:load.capture`로 받는다. 미리보기 문서 안의 이벤트는 Alpine이 닿지 않으므로 스크립트가 직접 단다.
+- **R16을 좁혔다.** `cozy`로 시작하지 않는 프레임워크 컴포넌트(`workbench…`)는 프레임워크 템플릿만 쓴다. 워크벤치는 dev에만 있어서 앱 화면이 쓰면 실행할 때 없다. 완료 기준의 "워크벤치 컴포넌트에 앱 화면에도 쓰는 동작이 없다"는 `WorkbenchScriptTest`(이름이 `workbench`로 시작한다)와 이 규칙으로 지킨다.
+- **안쪽 요소에서 부른 메서드의 `$root`**: 다른 컴포넌트 안의 버튼에서 `cozyDisclosure.toggle`을 부르면 `$root`는 그 안쪽 컴포넌트다. 컴포넌트가 자기 요소의 `data-*`를 쓰려면 `init`에서 읽어 둔다. cozy 컴포넌트를 만들 때(M34) 같은 규칙을 따른다.
+

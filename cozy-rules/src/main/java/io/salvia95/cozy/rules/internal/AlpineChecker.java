@@ -185,6 +185,11 @@ final class AlpineChecker {
 			return;
 		}
 		if (!NOT_EXPRESSION.matcher(name).matches()) {
+			if ("iframe".equals(attribute.element()) || "script".equals(attribute.element())) {
+				error(file, attribute.line(), display, "Alpine CSP 빌드는 " + attribute.element() + " 요소에서 식을 실행하지 않고, 그 컴포넌트의 나머지 초기화도 멈춥니다. "
+						+ "load는 감싸는 요소에서 x-on:load.capture로 받고, src 같은 값은 컴포넌트의 메서드가 정하세요.");
+				return;
+			}
 			expression(file, attribute, display);
 		}
 	}
@@ -207,9 +212,16 @@ final class AlpineChecker {
 		}
 		Component component = this.components.get(value);
 		String module = moduleOf(file);
-		boolean usable = component != null && (component.script().origin() == Origin.FRAMEWORK
+		boolean usable = component != null && ((component.script().origin() == Origin.FRAMEWORK
+				&& (value.startsWith("cozy") || file.origin() == Origin.FRAMEWORK))
 				|| (file.origin() == Origin.APP && module != null && module.equals(moduleOf(component.script()))));
 		if (usable) {
+			return;
+		}
+		if (component != null && component.script().origin() == Origin.FRAMEWORK) {
+			// 프레임워크 화면(워크벤치 등)만 쓰는 컴포넌트: 앱이 실행할 때는 없을 수 있다
+			error(file, attribute.line(), display, "'" + value + "'는 프레임워크 화면 전용 컴포넌트입니다. 앱 템플릿은 cozy 컴포넌트만 씁니다"
+					+ ((module != null) ? "(그리고 " + module + " 모듈의 컴포넌트)" : "") + ". 같이 쓸 동작이면 cozy 컴포넌트로 요청하세요.");
 			return;
 		}
 		if (component != null) {

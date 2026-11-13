@@ -293,7 +293,8 @@ final class TemplateScanner {
 			for (Attribute attribute : this.attributes.values()) {
 				String thName = thName(attribute.name());
 				if (AlpineChecker.relevant(attribute.name(), thName)) {
-					this.parsed.alpine.add(new ParsedTemplate.AlpineAttribute(attribute.name(), attribute.value(), attribute.line()));
+					this.parsed.alpine.add(new ParsedTemplate.AlpineAttribute(attribute.name(), attribute.value(), attribute.line(),
+							this.elementName));
 				}
 				if (thName != null && INSERTION.contains(thName)) {
 					insertion(thName, attribute);

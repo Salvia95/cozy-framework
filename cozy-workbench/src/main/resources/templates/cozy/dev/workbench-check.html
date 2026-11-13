@@ -52,7 +52,7 @@
               <td>
                 <div class="d-flex align-items-start gap-2" th:if="${v.command != null}">
                   <code class="cozy-workbench-command" th:text="${v.command}">cozy link dashboard --uses memo</code>
-                  <button type="button" class="btn btn-sm" th:data-cozy-copy="${v.command}">복사</button>
+                  <button type="button" class="btn btn-sm cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${v.command}">복사</button>
                 </div>
                 <span class="text-secondary" th:if="${v.command == null}">직접 수정</span>
               </td>
@@ -62,7 +62,6 @@
       </div>
     </section>
   </th:block>
-  <script th:src="@{/cozy/workbench.js}" defer></script>
   </div>
 </main>
 </body>

@@ -85,7 +85,7 @@ class WorkbenchLayoutTest {
 	@Test
 	void theInspectorShowsTheScreenUntilSomethingIsSelected() throws Exception {
 		String html = page("?spec=memo-list");
-		String box = html.substring(html.indexOf("data-cozy-workbench-props"));
+		String box = html.substring(html.indexOf("x-ref=\"props\""));
 		assertThat(box).contains(">메모 목록<")
 			.contains("<code>memo-list</code>")
 			.contains("src/main/resources/specs/memo-list.yml")
@@ -96,8 +96,8 @@ class WorkbenchLayoutTest {
 	@Test
 	void sampleDataSitsBesideThePreview() throws Exception {
 		String html = page("?spec=memo-list&view=fixture");
-		assertThat(html).contains("data-cozy-workbench-frame").contains("name=\"v.filter/q\"").contains("view=fixture");
-		assertThat(html.indexOf("data-cozy-workbench-frame")).isLessThan(html.indexOf("name=\"v.filter/q\""));
-		assertThat(page("?spec=memo-list&view=template")).as("소스는 가운데에 보인다").contains("id=\"L7\"").doesNotContain("data-cozy-workbench-frame");
+		assertThat(html).contains("x-ref=\"frame\"").contains("name=\"v.filter/q\"").contains("view=fixture");
+		assertThat(html.indexOf("x-ref=\"frame\"")).isLessThan(html.indexOf("name=\"v.filter/q\""));
+		assertThat(page("?spec=memo-list&view=template")).as("소스는 가운데에 보인다").contains("id=\"L7\"").doesNotContain("x-ref=\"frame\"");
 	}
 }

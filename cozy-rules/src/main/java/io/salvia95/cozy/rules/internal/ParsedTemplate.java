@@ -82,7 +82,8 @@ final class ParsedTemplate {
 	/**
 	 * @param name 속성 이름 (소문자, {@code x-on:click}, {@code th:attr})
 	 * @param value 엔티티를 푼 값
+	 * @param element 속성이 있는 요소 이름 (소문자)
 	 */
-	record AlpineAttribute(String name, String value, int line) {
+	record AlpineAttribute(String name, String value, int line, String element) {
 	}
 }

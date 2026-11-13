@@ -31,8 +31,11 @@
       <div th:replace="~{cozy/component/empty-state :: emptyState('layout-dashboard', '화면이 없습니다', '코드 생성에서 CRUD 화면이나 조회 화면을 추가하면 여기에 표시됩니다.')}"></div>
     </div>
 
-    <div class="cozy-workbench-panes" th:if="${screen != null}"
-         th:classappend="${view == 'fixture'} ? 'cozy-workbench-panes-fixture'">
+    <!--/* 칸 접기(cozyDisclosure)는 바깥 틀에, 요소 고르기(workbenchPicker)는 htmx가 바꾸지 않는 칸 묶음에 있다 */-->
+    <div class="cozy-workbench-layout" th:if="${screen != null}" x-data="cozyDisclosure" data-disclosure-remember="cozy.workbench.panes">
+    <div class="cozy-workbench-panes" th:classappend="${view == 'fixture'} ? 'cozy-workbench-panes-fixture'" x-data="workbenchPicker"
+         x-bind:class="{ 'cozy-workbench-fold-side': isClosed('side'), 'cozy-workbench-fold-inspector': isClosed('inspector') }"
+         x-on:htmx:config-request.camel="keepScroll" x-on:htmx:after-settle.camel="restoreScroll">
 
       <!--/* 왼쪽: 화면 목록과 구조 */-->
       <div class="cozy-workbench-side" id="workbench-side">
@@ -89,13 +92,15 @@
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='spec')}">화면 명세</a>
             </li>
           </ul>
-          <!--/* 좌우 칸을 접어 가운데를 넓힌다. 접은 상태는 브라우저가 기억한다(workbench.js) */-->
+          <!--/* 좌우 칸을 접어 가운데를 넓힌다. 접은 상태는 브라우저가 기억한다(cozyDisclosure) */-->
           <div class="btn-list ms-auto flex-nowrap">
-            <button type="button" class="btn btn-icon btn-sm" data-cozy-workbench-fold="side" aria-pressed="false"
+            <button type="button" class="btn btn-icon btn-sm cozy-workbench-fold" aria-pressed="false"
+                    x-on:click="toggle('side')" x-bind:aria-pressed="isClosed('side')" x-bind:class="isClosed('side') ? 'active' : ''"
                     aria-label="화면 목록과 구조 접기" title="화면 목록과 구조 접기">
               <svg th:replace="~{cozy/icon/tabler :: icon('layout-sidebar')}"></svg>
             </button>
-            <button type="button" class="btn btn-icon btn-sm" data-cozy-workbench-fold="inspector" aria-pressed="false"
+            <button type="button" class="btn btn-icon btn-sm cozy-workbench-fold" aria-pressed="false"
+                    x-on:click="toggle('inspector')" x-bind:aria-pressed="isClosed('inspector')" x-bind:class="isClosed('inspector') ? 'active' : ''"
                     aria-label="속성 접기" title="속성 접기">
               <svg th:replace="~{cozy/icon/tabler :: icon('layout-sidebar-right')}"></svg>
             </button>
@@ -116,7 +121,7 @@
               </div>
               <!--/* 여러 상태를 나란히 본다: 아래의 상태 비교 창 */-->
               <button type="button" class="btn btn-sm" th:if="${screen.states.size() > 1}"
-                      data-bs-toggle="modal" data-bs-target="#state-compare" aria-haspopup="dialog" data-cozy-compare-button>
+                      data-bs-toggle="modal" data-bs-target="#state-compare" aria-haspopup="dialog">
                 <svg th:replace="~{cozy/icon/tabler :: icon('layout-columns')}"></svg>상태 비교</button>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -131,20 +136,21 @@
               </div>
             </div>
             <label class="form-check form-switch mb-0 ms-auto">
-              <input class="form-check-input" type="checkbox" checked data-cozy-workbench-pick>
+              <input class="form-check-input" type="checkbox" checked x-ref="pick" x-on:change="hideHover">
               <span class="form-check-label">요소 선택</span>
             </label>
             <a class="small text-nowrap" target="_blank" rel="noopener"
                th:href="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state})}">새 창에서 보기</a>
           </div>
           <div class="card-body cozy-workbench-stage">
-            <div class="cozy-workbench-canvas">
+            <!--/* CSP 빌드는 iframe에서 식을 실행하지 않는다: 미리보기의 load는 감싸는 요소가 받는다(load는 올라오지 않아 capture로) */-->
+            <div class="cozy-workbench-canvas" x-on:load.capture="attach">
               <iframe class="cozy-workbench-frame" th:classappend="${w != 'full'} ? |cozy-workbench-frame-${w}|"
-                      data-cozy-workbench-frame
+                      x-ref="frame"
                       th:src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${state},inspect=1)}"
                       th:title="|${screen.screen} ${state}|"></iframe>
-              <div class="cozy-workbench-box cozy-workbench-box-hover" data-cozy-workbench-hover hidden></div>
-              <div class="cozy-workbench-box cozy-workbench-box-selected" data-cozy-workbench-selected hidden></div>
+              <div class="cozy-workbench-box cozy-workbench-box-hover" x-ref="hover" hidden></div>
+              <div class="cozy-workbench-box cozy-workbench-box-selected" x-ref="selected" hidden></div>
             </div>
           </div>
         </th:block>
@@ -170,9 +176,10 @@
       </section>
 
       <!--/* 오른쪽: 속성이나 샘플 데이터 */-->
-      <!--/* 선택한 화면과 상태: workbench.js가 에이전트 전달 내용에 쓴다. 상태가 바뀌면 이 칸과 함께 바뀐다 */-->
+      <!--/* 선택한 화면과 상태: workbenchPicker가 에이전트 전달 내용에 쓴다. 상태가 바뀌면 이 칸과 함께 바뀐다.
+           node는 매개변수를 고친 뒤 다시 고를 구조의 줄이다. htmx가 이 칸을 바꾸면 restore가 이전 선택을 지운다 */-->
       <section class="card cozy-workbench-pane cozy-workbench-inspector" id="workbench-inspector" aria-label="속성과 샘플 데이터"
-               data-cozy-workbench-selection th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
+               x-ref="selection" x-init="restore" th:data-node="${node}" th:data-screen="${screen.screen}" th:data-state="${state}" th:data-template="${screen.template}"
                th:data-spec-file="${specFile}" data-playbook=".agents/skills/cozy-helper/references/screens/PLAYBOOK.md">
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs" aria-label="오른쪽 보기">
@@ -189,7 +196,7 @@
 
         <div class="cozy-workbench-scroll" th:if="${view != 'fixture'}">
           <!--/* 속성 패널에서 고친 매개변수: cozy set arg의 변경 파일이나 적용 결과 */-->
-          <section class="card-body border-bottom cozy-workbench-arg-result" th:if="${argChange != null}" tabindex="-1" data-cozy-arg-result th:with="change=${argChange}, outcome=${argChange.outcome}"
+          <section class="card-body border-bottom cozy-workbench-arg-result" th:if="${argChange != null}" tabindex="-1" x-ref="argResult" th:with="change=${argChange}, outcome=${argChange.outcome}"
                    aria-labelledby="arg-result-title">
             <h4 class="subheader mb-2" id="arg-result-title" th:text="${change.dryRun} ? '매개변수 변경 파일' : '매개변수 적용 결과'">매개변수 변경 파일</h4>
             <p class="fw-medium mb-2" th:if="${!change.name.isEmpty()}" th:text="${change.name}">배지 · 색상</p>
@@ -215,7 +222,7 @@
             </th:block>
             <div class="d-flex align-items-start gap-2 mb-2">
               <code class="cozy-workbench-command small flex-fill" th:text="${change.command}">cozy set arg …</code>
-              <button type="button" class="btn btn-sm flex-shrink-0" th:data-cozy-copy="${change.command}">명령 복사</button>
+              <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${change.command}">명령 복사</button>
             </div>
             <form method="post" th:action="@{/cozy/dev/workbench/arg}" th:if="${change.dryRun and outcome.error == null and !outcome.changesNothing()}"
                   class="d-flex flex-wrap justify-content-end gap-2"
@@ -239,7 +246,7 @@
             </th:block>
           </section>
           <!--/* 선택한 것이 없을 때: 화면의 속성. 선택하면 스크립트가 그 마디의 표로 바꾼다 */-->
-          <div data-cozy-workbench-props>
+          <div x-ref="props">
             <table class="table table-sm cozy-workbench-props mb-0">
               <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
               <tbody>
@@ -256,16 +263,16 @@
             </table>
           </div>
           <div class="card-body border-top" th:if="${view == 'preview'}">
-            <p class="text-secondary small mb-2" data-cozy-workbench-hint>미리보기나 구조에서 요소를 선택하면 속성이 표시됩니다.</p>
-            <p class="cozy-workbench-chain text-secondary small mb-2" data-cozy-workbench-chain
+            <p class="text-secondary small mb-2" x-ref="hint">미리보기나 구조에서 요소를 선택하면 속성이 표시됩니다.</p>
+            <p class="cozy-workbench-chain text-secondary small mb-2" x-ref="chain"
                data-left="미리보기에서 다른 화면으로 이동할 수 없어 처음 화면으로 되돌렸습니다. 다른 화면은 화면 목록에서 선택하거나 새 창에서 확인하세요."></p>
             <div class="btn-list justify-content-end">
-              <button type="button" class="btn btn-sm" data-cozy-workbench-copy="location" disabled>경로 복사</button>
-              <button type="button" class="btn btn-sm" data-cozy-workbench-copy="context" disabled>에이전트용 복사</button>
+              <button type="button" class="btn btn-sm cozy-workbench-copy" disabled x-on:click="copyPicked('location')" x-bind:disabled="!canCopy">경로 복사</button>
+              <button type="button" class="btn btn-sm cozy-workbench-copy" disabled x-on:click="copyPicked('context')" x-bind:disabled="!canCopy">에이전트용 복사</button>
             </div>
-            <details class="mt-2" data-cozy-workbench-context-details>
+            <details class="mt-2" x-ref="contextDetails">
               <summary class="text-secondary small">에이전트 전달 내용</summary>
-              <pre class="cozy-workbench-context mt-2 mb-0" data-cozy-workbench-context>요소를 선택하면 여기에 표시됩니다.</pre>
+              <pre class="cozy-workbench-context mt-2 mb-0" x-ref="context">요소를 선택하면 여기에 표시됩니다.</pre>
             </details>
           </div>
         </div>
@@ -311,14 +318,15 @@
         </div>
       </section>
     </div>
+    </div>
   </div>
 
-  <!--/* 상태 비교: 고른 상태(compareLimit개까지)만 축소 미리보기를 그려 나란히 놓는다. 미리보기는 창을 열 때 불러온다(workbench.js) */-->
+  <!--/* 상태 비교(workbenchCompare): 고른 상태(compareLimit개까지)만 축소 미리보기를 그려 나란히 놓는다. 미리보기는 창을 열 때 불러온다 */-->
   <!--/* 상태를 복제하면 창이 새로 생길 수 있어 자리는 늘 둔다 */-->
   <div id="workbench-compare">
   <div class="modal modal-blur fade" id="state-compare" tabindex="-1" role="dialog" aria-labelledby="state-compare-title" aria-hidden="true"
        th:if="${screen != null and screen.states.size() > 1}"
-       data-cozy-compare th:data-cozy-compare-open="${compareOpen == true}" th:data-cozy-compare-limit="${compareLimit}">
+       x-data="workbenchCompare" x-on:shown-bs-modal.dot="open" x-effect="loadPicked" th:data-open="${compareOpen == true}" th:data-limit="${compareLimit}">
     <div class="modal-dialog modal-dialog-scrollable cozy-workbench-compare-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -331,7 +339,8 @@
             <fieldset class="cozy-workbench-compare-picks">
               <legend class="form-label mb-1">비교할 상태 <span class="text-secondary fw-normal small" th:text="|${compareLimit}개까지|">4개까지</span></legend>
               <label class="form-check form-check-inline mb-0" th:each="name : ${screen.states.keySet()}">
-                <input class="form-check-input" type="checkbox" th:value="${name}" th:checked="${compared.contains(name)}" data-cozy-compare-pick>
+                <input class="form-check-input" type="checkbox" th:value="${name}" th:checked="${compared.contains(name)}"
+                       x-model="picked" x-bind:disabled="blocked($el)">
                 <span class="form-check-label"><span th:text="${stateLabels.get(name)}">기본</span>
                   <code class="cozy-workbench-id ms-1" th:if="${stateLabels.get(name) != name}" th:text="${name}">default</code></span>
               </label>
@@ -341,25 +350,26 @@
               <div class="btn-group cozy-workbench-toggle" role="radiogroup" aria-labelledby="compare-width-label">
                 <th:block th:each="width : ${widths}">
                   <input type="radio" class="btn-check" name="compare-width" th:id="|compare-width-${width}|" th:value="${width}"
-                         th:checked="${width == w}" data-cozy-compare-width>
+                         th:checked="${width == w}" x-model="width">
                   <label class="btn btn-sm" th:for="|compare-width-${width}|" th:text="${width == 'full'} ? '전체' : ${width}">전체</label>
                 </th:block>
               </div>
             </div>
           </div>
-          <p class="text-secondary small" data-cozy-compare-note aria-live="polite" hidden
+          <p class="text-secondary small" aria-live="polite" hidden x-bind:hidden="!noteShown"
              th:text="|한 번에 ${compareLimit}개까지 비교합니다. 다른 상태를 해제하면 고를 수 있습니다.|">한 번에 4개까지 비교합니다.</p>
-          <p class="text-secondary" data-cozy-compare-empty hidden>비교할 상태를 고르세요.</p>
-          <ul class="cozy-workbench-states cozy-workbench-compare-grid" aria-label="고른 상태의 미리보기" data-cozy-compare-grid>
-            <li class="card cozy-workbench-state" th:each="name : ${screen.states.keySet()}" th:data-cozy-compare-state="${name}"
-                th:hidden="${!compared.contains(name)}" th:classappend="${name == state} ? 'cozy-workbench-state-current'">
+          <p class="text-secondary" hidden x-bind:hidden="!nothingPicked">비교할 상태를 고르세요.</p>
+          <ul class="cozy-workbench-states cozy-workbench-compare-grid" aria-label="고른 상태의 미리보기">
+            <li class="card cozy-workbench-state" th:each="name : ${screen.states.keySet()}" th:data-state="${name}"
+                th:hidden="${!compared.contains(name)}" x-bind:hidden="!shows($el)" th:classappend="${name == state} ? 'cozy-workbench-state-current'">
               <div class="card-header">
-                <a class="stretched-link fw-medium" th:aria-current="${name == state} ? 'true'"
+                <a class="stretched-link fw-medium" th:aria-current="${name == state} ? 'true'" x-bind:href="hrefOf($el)"
                    th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${name},w=${w})} + ${fixtureSuffix}" th:text="${stateLabels.get(name)}">기본</a>
                 <code class="cozy-workbench-id ms-2" th:if="${stateLabels.get(name) != name}" th:text="${name}">default</code>
                 <span class="text-secondary small ms-auto" th:if="${name == state}">지금 보는 상태</span>
               </div>
-              <div class="cozy-workbench-thumb" th:classappend="|cozy-workbench-thumb-${w}|" data-cozy-workbench-thumb inert>
+              <!--/* 너비 클래스는 고른 너비(workbenchCompare.width)만 붙인다. 정적 클래스는 Alpine이 지우지 않아 둘이 겹친다 */-->
+              <div class="cozy-workbench-thumb" x-data="workbenchThumb" x-bind:class="thumbClass" inert>
                 <iframe th:data-src="@{/cozy/dev/catalog/screen(spec=${screen.screen},state=${name})}" th:title="|${stateLabels.get(name)} 상태|"></iframe>
               </div>
             </li>
@@ -369,7 +379,6 @@
     </div>
   </div>
   </div>
-  <script th:src="@{/cozy/workbench.js}" defer></script>
 </main>
 </body>
 </html>

@@ -136,7 +136,9 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .cozy-workbench-fold-inspector { grid-template-columns: 18rem minmax(0, 1fr); }
 .cozy-workbench-fold-side.cozy-workbench-fold-inspector { grid-template-columns: minmax(0, 1fr); }
 .cozy-workbench-fold-side .cozy-workbench-side, .cozy-workbench-fold-inspector .cozy-workbench-inspector { display: none; }
-[data-cozy-workbench-fold].active { background: var(--cozy-info-bg); color: var(--cozy-info-fg); }
+.cozy-workbench-fold.active { background: var(--cozy-info-bg); color: var(--cozy-info-fg); }
+/* 칸 접기의 상태(cozyDisclosure)를 담는 틀. 상자를 만들지 않아 칸 배치는 그대로다 */
+.cozy-workbench-layout { display: contents; }
 .cozy-workbench-side { display: grid; grid-template-rows: fit-content(40%) minmax(0, 1fr); gap: 1rem; min-height: 0; }
 .cozy-workbench-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; margin: 0; }
 .cozy-workbench-pane > .card-header { flex: none; min-height: 2.75rem; padding-top: .5rem; padding-bottom: .5rem; }
@@ -220,7 +222,7 @@ html.cozy-busy .cozy-progress { width: 70%; }
 .table.cozy-workbench-matrix > tbody > tr.cozy-workbench-matrix-selected > * { background-color: var(--cozy-info-bg); box-shadow: inset 0 0 0 9999px var(--cozy-info-bg); }
 .table.cozy-workbench-matrix > tbody > tr.cozy-workbench-matrix-selected > th { box-shadow: inset 0 0 0 9999px var(--cozy-info-bg), inset 2px 0 0 var(--tblr-primary); }
 .cozy-workbench-file, .cozy-workbench-file code { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-.cozy-workbench-nav .nav-link:focus-visible, [data-cozy-copy]:focus-visible, [data-cozy-workbench-copy]:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
+.cozy-workbench-nav .nav-link:focus-visible, .cozy-workbench-copy:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
 .cozy-workbench-findings td { vertical-align: top; }
 .cozy-workbench-findings th:nth-child(1), .cozy-workbench-findings td:nth-child(1) { width: 11rem; }
 .cozy-workbench-findings th:nth-child(2), .cozy-workbench-findings td:nth-child(2) { width: 4rem; }

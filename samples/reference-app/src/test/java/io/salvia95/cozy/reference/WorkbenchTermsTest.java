@@ -96,7 +96,7 @@ class WorkbenchTermsTest {
 	void everyStructureNodeHasAReadableNameBeforeItsIdentifier() throws Exception {
 		for (ScreenSpec spec : ScreenSpec.load(getClass().getClassLoader())) {
 			String html = page("?spec=" + spec.screen());
-			List<String> labels = texts(html, "data-cozy-workbench-node(?:=\"\")?>([^<]+)<");
+			List<String> labels = texts(html, "x-on:click.prevent=\"selectNode\">([^<]+)<");
 			assertThat(labels).as(spec.screen()).isNotEmpty().allMatch((label) -> HANGUL.matcher(label).find());
 		}
 		String list = page("?spec=memo-list");

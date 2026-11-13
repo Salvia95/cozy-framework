@@ -73,9 +73,11 @@
   - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`(수식어 포함), `x-text`, `x-ref`, `x-cloak`, `x-transition`(수식어·단계 포함), `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. 목록은 `AlpineAttributes`에 있고 C4(vnu)도 같은 목록을 쓴다.
   - `x-data`의 값은 식별자 하나다. 인자(`cozyCopy(true)`), 인라인 객체, 빈 값은 오류다.
   - 컴포넌트 이름은 JS 파일의 `Alpine.data('이름', …)`에서 읽는다. 프레임워크는 클래스패스의 `META-INF/resources/cozy/*.js`(벤더 자산 제외), 앱은 `src/main/resources/static/**/*.js`다. 이름을 변수로 등록하면 오류다.
-  - 앱 모듈 템플릿은 프레임워크 컴포넌트와 자기 모듈(`static/{모듈}/`)의 컴포넌트만 쓴다. `fragments/`와 `error/`, 프레임워크 템플릿은 프레임워크 컴포넌트만 쓴다.
+  - 앱 모듈 템플릿은 `cozy` 컴포넌트와 자기 모듈(`static/{모듈}/`)의 컴포넌트만 쓴다. `fragments/`와 `error/`는 `cozy` 컴포넌트만 쓴다.
+  - 프레임워크 템플릿은 프레임워크 컴포넌트를 모두 쓴다. `cozy`로 시작하지 않는 프레임워크 컴포넌트(워크벤치의 `workbench…`)는 프레임워크 화면 전용이다. dev에만 있으므로 앱 템플릿이 쓰면 오류다.
   - 앱 컴포넌트는 `static/{모듈}/` 아래에서 등록하고, 이름은 모듈 이름 + 대문자로 시작한다(`memoEditor`). `cozy`로 시작하는 이름은 프레임워크 것이다. 같은 이름을 두 번 등록하면 오류다.
   - 식 검사: 문자열 리터럴을 지운 뒤 화살표 함수(`=>`), 템플릿 문자열(백틱), 전개(`...`), 속성 대입(`a.b = …`, `a.b++`), 전역 이름(`window`, `document`, `console`, `Math`, `JSON`, `fetch`, `htmx`, `Alpine` 등)을 찾는다. `x-for`는 ` in ` 뒤의 식만 본다. `x-data`, `x-ref`, `x-cloak`, `x-ignore`, `x-transition`은 식이 아니라서 보지 않는다.
+  - `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 그 요소에서 식을 실행하지 않고, 같은 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소에서 `x-on:load.capture`로 받고, `src`는 컴포넌트가 정한다. `x-ref`는 된다.
   - 컴포넌트 목록이 없으면(cozy-ui가 클래스패스에 없으면) `x-data`는 모두 실패한다.
 - **속성 순서**: 검사는 Thymeleaf의 속성 우선순위(th:insert/replace → th:each → th:if·th:unless·th:switch·th:case → th:object·th:with → 나머지)대로 지역 변수가 생기는 시점을 따른다.
 
