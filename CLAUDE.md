@@ -1,13 +1,13 @@
 # Cozy 프레임워크 레포 작업 지침
 
-Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레임워크다. 스택은 Spring MVC, Thymeleaf, MyBatis, SQLite, Tabler, htmx다.
+Cozy는 폐쇄망 Windows PC에서 도는 내부 도구를 위한 경량 프레임워크다. 스택은 Spring MVC, Thymeleaf, MyBatis, SQLite, Tabler, htmx, Alpine.js(CSP 빌드)다.
 
 - 기준 문서: PRD "Cozy 프레임워크 뼈대 PRD" (https://claude.ai/artifact/AmuNQaeQB6XQfBksbdvka5)
 - 결정 기록: `docs/adr/`
 
 ## 진행 방식 (PRD §14)
 
-- M0~M14를 순서대로, 한 번에 한 마일스톤씩 진행한다. M8~M11은 ADR-0032(구조는 cozy 명령, 로직은 에이전트), M12~M14는 ADR-0033(2단계 레시피)이다. 그 뒤는 ADR마다 마일스톤을 잇는다(M15 ADR-0035, M17~M21 ADR-0036, M22~M23 ADR-0037, M24~M30 ADR-0038).
+- M0~M14를 순서대로, 한 번에 한 마일스톤씩 진행한다. M8~M11은 ADR-0032(구조는 cozy 명령, 로직은 에이전트), M12~M14는 ADR-0033(2단계 레시피)이다. 그 뒤는 ADR마다 마일스톤을 잇는다(M15 ADR-0035, M17~M21 ADR-0036, M22~M23 ADR-0037, M24~M30 ADR-0038, M31~M35 ADR-0040).
 - 완료 기준을 먼저 테스트로 쓰고, 테스트가 통과한 뒤 다음으로 넘어간다.
 - 마일스톤이 끝나면 커밋한다. 그리고 변경 요약, 통과한 완료 기준, 남은 위험을 보고한다.
 - PRD §3의 결정(`docs/adr/0001`~`0015`)은 바꾸지 않는다. 바꿔야 한다면 ADR 개정안을 먼저 제안한다.

@@ -47,6 +47,7 @@
 | GitHub Actions: checkout 7.0.1, setup-java 6.2.0, upload-artifact 7.0.2, download-artifact 8.0.2 | 커밋 SHA로 고정 | 릴리스 워크플로 (ADR-0028, 제안) |
 | Tabler | 1.7.4 | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
+| Alpine.js CSP 빌드 (`@alpinejs/csp`) | 3.17.5 | cozy-ui 벤더 자산. 표준 빌드(`alpinejs`)는 쓰지 않는다 (ADR-0040, 승인 2026-11-13) |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
 | Tabler Icons (`@tabler/icons-sprite`) | 3.51.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
 | agent-browser | 0.42.0 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
