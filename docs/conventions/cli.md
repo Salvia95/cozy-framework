@@ -115,7 +115,7 @@ cozy <동작> [옵션]
 
 ```text
 [C8] it.cozy.app.memo.MemoService — 모듈 루트(it.cozy.app.memo)에는 package-info.java만 둡니다. ...
-[cozy check] 오류 7건 (R1~R16, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.
+[cozy check] 오류 7건 (R1~R16, C8, C9). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.
 ```
 
 `--json`은 다음과 같다.

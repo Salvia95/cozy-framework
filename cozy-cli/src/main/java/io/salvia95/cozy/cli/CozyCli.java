@@ -235,7 +235,7 @@ public final class CozyCli {
 		else {
 			findings.forEach((f) -> out.println(f.violation().format()));
 			out.println("[cozy check] " + ((errors == 0) ? "이상 없음" : "오류 " + errors + "건") + ((warnings > 0) ? ", 경고 "
-					+ warnings + "건" : "") + " (R1~R16, C8, C9). 컴파일과 렌더링 검사(C1, C3~C7)는 mvn verify가 합니다.");
+					+ warnings + "건" : "") + " (R1~R16, C8, C9). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.");
 		}
 		return (errors == 0) ? OK : VIOLATIONS;
 	}

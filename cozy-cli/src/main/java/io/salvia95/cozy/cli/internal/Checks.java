@@ -21,7 +21,7 @@ import io.salvia95.cozy.rules.Violation;
 
 /**
  * {@code cozy check}: 컴파일 없이 소스로 판단할 수 있는 검사. 템플릿 규칙 R1~R16(C2), 모듈 안 구조 C8, 빈칸 C9. 판단은 cozy-test와 같은
- * cozy-rules가 한다. C1, C3~C7은 앱을 컴파일하고 띄워야 하므로 {@code mvn verify}가 한다.
+ * cozy-rules가 한다. C1, C3~C7은 앱을 컴파일하고 띄워야 하고 C10은 JavaScript 파서가 필요하므로 {@code mvn verify}가 한다.
  */
 public final class Checks {
 
