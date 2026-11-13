@@ -81,7 +81,12 @@ templates/memo/
 ├── api/        list.html, form.html, detail.html     화면 (컨트롤러 뷰 "memo/api/list")
 ├── spi/        summary.html                          다른 모듈용 fragment (cozy/fragments.yml에 등록)
 └── internal/   fields.html                           form·detail이 같이 쓰는 입력 칸과 버튼
+
+static/memo/
+└── memo.js                                           모듈의 Alpine 컴포넌트(memoBodyCount 등). 모듈마다 이 파일 하나
 ```
+
+- **Alpine 컴포넌트**: 모듈의 화면 안 상태는 `static/{모듈}/{모듈}.js`에 모듈 이름으로 시작하는 이름(`memoBodyCount`)으로 등록한다. 레이아웃이 모든 모듈의 파일을 싣는다. 같은 모듈의 템플릿만 쓴다(R16). 만드는 명령은 `cozy add behavior`다([ui.md](ui.md)의 앱 컴포넌트).
 
 ### 참조와 모델 (R1, R3, R9, R10)
 

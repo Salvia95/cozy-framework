@@ -167,3 +167,14 @@
 - **R16 항목**: 없앤 속성과 그 `th:`·`data-th-` 모양. 위반 픽스처 `R16-removed`와, M33에서 더한 iframe 항목의 `R16-iframe`을 더했다.
 - **htmx는 자기가 받은 `submit`에 `preventDefault`를 한다.** 그래서 `cozyDirtyForm`은 `defaultPrevented`로 "취소한 제출"을 가리지 않는다. 확인 창에서 취소하면 `cozyConfirm`이 이벤트가 올라가지 않게 막는다. runtime-verifier가 찾았다(htmx로 저장해도 떠날 때 확인이 떴다).
 
+## M35 (2026-11-13, 사용자 지시 "M35 진행해줘")
+
+- **모듈 JS를 주는 경로**: Spring Boot는 `static/`을 앱의 맨 위 경로에서 주지만 `/memo/memo.js`는 모듈의 화면 경로 `/memo/{id}`와 겹친다(컨트롤러가 먼저 받아 400이 된다). 그래서 cozy-ui가 `/cozy/modules/*/*.js`를 `classpath:/static/`에서 준다. 레이아웃은 시작할 때 찾은 `static/{모듈}/{모듈}.js`(폴더 이름과 파일 이름이 같은 것)를 모듈 이름 순서로 싣는다(`cozyModuleScripts`). 모든 화면이 모든 모듈의 파일을 싣는다. 내부 도구의 작은 파일이고, 컴포넌트 이름은 어차피 전역이며 쓰는 곳은 R16이 막는다.
+- **R16을 좁혔다.** 레이아웃이 모듈마다 그 파일 하나만 싣으므로 `static/{모듈}/` 아래의 다른 파일에서 등록하면 오류다. 검사를 통과해도 실행할 때 없는 컴포넌트를 막는다.
+- **`cozyScripts`와 따로 둔다.** `cozyScripts`는 화면 하나에만 필요한 프레임워크 스크립트(워크벤치)이고 컨트롤러가 모델에 넣는다. 앱 모듈의 파일은 레이아웃이 알아서 싣는다. 순서는 `cozy.js` → 모듈 → `cozyScripts` → Alpine이다.
+- **`cozy add behavior`**: 1단계 레시피다(구조와 빈칸). 파일이 없으면 만들고, 있으면 `alpine:init`의 끝 `});` 앞에 더한다. 끝이 그 모양이 아니면 손으로 고친 파일이라 실패한다. 빈칸 설명에는 큰따옴표를 쓰지 않는다(C9가 따옴표를 설명의 끝으로 읽는다).
+- **describe**: 모듈의 `components[]`(등록한 이름)와 화면의 `components[]`(그 템플릿에 쓴 `x-data`)를 더했다. 넣은 fragment 안의 컴포넌트는 그 fragment의 템플릿에 있으므로 화면에는 나오지 않는다(reference-app의 `memoBodyCount`는 `memo/internal/fields`).
+- **화면 레시피와 아키타입은 바꾸지 않았다.** `crud`의 지우기는 `delete-confirm`(Tabler 모달), 폼의 떠날 때 확인은 `form-page` 패턴이 붙이는 `cozyDirtyForm`이라 생성 템플릿에 컴포넌트를 더할 자리가 없다. reference-app은 `cozy add behavior memo body-count`로 만든 `memoBodyCount`(본문 글자 수)를 예로 둔다.
+- **완료 기준의 픽스처**: 레시피 `behavior`(빈칸 → C9 실패 → 채움, 다른 모듈의 컴포넌트 → R16 실패 → 고침 → 통과, 다시 실행은 바뀐 것 없음)와 기존 `migrate`. 아키타입 3조합은 그대로 통과해야 한다.
+- **2.0.0**: 옮기는 절차는 release.md의 "앱을 2.0.0으로 올리기"다. 개발 버전은 1.3.0-SNAPSHOT 그대로 두고, 릴리스할 때 `set-version.sh 2.0.0`으로 정한다.
+

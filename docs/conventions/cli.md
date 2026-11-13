@@ -64,7 +64,7 @@ cozy <동작> [옵션]
 | 키 | 값 |
 | --- | --- |
 | `app` | `basePackage`, `mainClass`, `cozyVersion`(cozy-parent 버전), `starters`(pom에 직접 적은 cozy 의존. 간접 의존은 빠진다) |
-| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `events[]`(`type`, `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]` 발행하는 파일), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `screens[]`(`template`, `spec`, `states[]`), `fragments[]`(공개 fragment `id`, `signature`) |
+| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `events[]`(`type`, `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]` 발행하는 파일), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면 템플릿에 직접 쓴 `x-data` 이름. 넣은 fragment 안의 것은 그 fragment의 템플릿에 있다), `fragments[]`(공개 fragment `id`, `signature`) |
 | `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
@@ -229,6 +229,7 @@ cozy add module activity --label 활동
 cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
+cozy add behavior memo body-count
 cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
 cozy link dashboard --uses memo,activity
 cozy add event report ReportSent --field reportId:long --field sentOn:date
@@ -268,6 +269,10 @@ cozy enable workbench
   - 다시 실행: 필드가 모두 같은 타입으로 있고 지금의 `of()`와 가장 높은 샘플이 그 필드를 가지면 바뀐 것 없음이다. 일부만 있거나 같은 이름이 다른 타입이면 실패한다.
   - 출력의 "다음"은 이 이벤트의 리스너(`@ApplicationModuleListener`)를 나열한다. 리스너는 옛 이벤트의 새 필드가 `null`일 때도 처리해야 한다.
   - 이벤트 파일이 바뀌므로 그 뒤에 같은 `cozy add event`(또는 `--publish`가 있는 `crud`)를 다시 실행하면 "내용이 다릅니다"로 실패한다. 빈칸을 채운 뒤의 1단계 명령과 같다.
+- **behavior** (ADR-0040 §5): 화면 안의 상태를 맡는 Alpine 컴포넌트 하나를 `static/{모듈}/{모듈}.js`에 더한다. 이름은 소문자와 하이픈(`body-count`)이고 컴포넌트는 모듈 이름 + 카멜 표기(`memoBodyCount`)다.
+  - 파일이 없으면 `document.addEventListener('alpine:init', …)` 하나와 등록 하나로 만든다. 있으면 그 끝 `});` 앞에 더한다. 끝이 그 모양이 아니면 실패한다(손으로 고친 파일을 깨지 않는다).
+  - 등록은 `init`에서 `root = this.$root`를 잡아 두고, 빈칸 `behavior-{컴포넌트}`를 남긴다. 상태(속성)와 로직(메서드)은 에이전트가 채운다(C9).
+  - 같은 컴포넌트가 이미 있으면 바뀐 것 없음이다. 레이아웃은 모듈마다 이 파일 하나를 싣고(`/cozy/modules/{모듈}/{모듈}.js`), R16은 다른 파일의 등록을 오류로 본다.
 - **field** (ADR-0037): `cozy add crud`가 만든 한 벌에 필드 하나를 더한다. 형식은 crud의 필드와 같고 `instant`는 받지 않는다. 남기는 빈칸이 없다.
 
   | 곳 | 더하는 것 (예: `--field dueOn:date:마감일`) |

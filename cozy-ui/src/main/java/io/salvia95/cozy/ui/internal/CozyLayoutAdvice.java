@@ -21,6 +21,7 @@ import io.salvia95.cozy.ui.CozyNavItem;
  * <li>{@code cozyNav}: 정렬된 내비 항목과 활성 여부 (app-shell)</li>
  * <li>{@code cozyUpdate}: 설치할 수 있는 새 버전 (업데이트 배너, 없으면 null)</li>
  * <li>{@code cozyUpdateOutcome}: 직전 업데이트 결과 (업데이트 뒤 첫 실행에서만)</li>
+ * <li>{@code cozyModuleScripts}: 앱 모듈의 Alpine 컴포넌트 파일 경로 ({@link CozyModuleScripts}). 레이아웃이 Alpine보다 먼저 싣는다</li>
  * </ul>
  */
 @ControllerAdvice
@@ -32,9 +33,13 @@ public class CozyLayoutAdvice {
 
 	private final @Nullable CozyUpdates updates;
 
-	public CozyLayoutAdvice(CozyAppInfo appInfo, List<CozyNavItem> navItems, @Nullable CozyUpdates updates) {
+	private final CozyModuleScripts moduleScripts;
+
+	public CozyLayoutAdvice(CozyAppInfo appInfo, List<CozyNavItem> navItems, @Nullable CozyUpdates updates,
+			CozyModuleScripts moduleScripts) {
 		this.appInfo = appInfo;
 		this.updates = updates;
+		this.moduleScripts = moduleScripts;
 		this.navItems = navItems.stream()
 			.sorted(Comparator.comparingInt(CozyNavItem::order).thenComparing(CozyNavItem::label))
 			.toList();
@@ -53,6 +58,11 @@ public class CozyLayoutAdvice {
 	@ModelAttribute("cozyUpdateOutcome")
 	CozyUpdates.@Nullable Outcome cozyUpdateOutcome() {
 		return (this.updates != null) ? this.updates.lastOutcome().orElse(null) : null;
+	}
+
+	@ModelAttribute("cozyModuleScripts")
+	List<String> cozyModuleScripts() {
+		return this.moduleScripts.paths();
 	}
 
 	@ModelAttribute("cozyNav")

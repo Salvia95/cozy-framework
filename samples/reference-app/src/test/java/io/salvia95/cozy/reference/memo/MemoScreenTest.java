@@ -179,8 +179,10 @@ class MemoScreenTest {
 			for (String asset : distinct) {
 				this.mvc.perform(get(asset)).andExpect(status().isOk());
 			}
-			assertThat(distinct).as(path).hasSize(9).contains("/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg")
-				.contains("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js");
+			// 모듈의 Alpine 컴포넌트(static/memo/memo.js)도 레이아웃이 /cozy/modules/에서 싣는다
+			assertThat(distinct).as(path).hasSize(10).contains("/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg")
+				.contains("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js")
+				.contains("/cozy/modules/memo/memo.js");
 		}
 	}
 

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This app is built on the Cozy framework: an internal business tool that runs on offline Windows PCs. The stack is Spring Boot (MVC), Thymeleaf with htmx, Tabler, MyBatis, SQLite, and Spring Modulith.
+This app is built on the Cozy framework: an internal business tool that runs on offline Windows PCs. The stack is Spring Boot (MVC), Thymeleaf with htmx and Alpine.js (CSP build), Tabler, MyBatis, SQLite, and Spring Modulith.
 
 ## Architecture
 
@@ -12,6 +12,13 @@ This app is built on the Cozy framework: an internal business tool that runs on 
 - Modules read each other through `*Finder` and write to each other only through events; a module never calls another module's `*Facade`.
 - The SQLite schema lives in `db/migration` (Flyway), and SQL statements live in `mapper/{module}/*Mapper.xml`.
 - Every screen is wrapped in a cozy-ui pattern and has a spec file `specs/{module}-{screen}.yml`.
+
+## Screens: htmx and Alpine.js
+
+- Use htmx for everything that goes through the server, such as search, paging, saving, validation errors, and delete.
+- Use Alpine.js only for state that may be lost on reload, such as an open panel, a selection count, or copying text.
+- Attach a component by name only (`x-data="cozyCopy"`), pass server values as `data-*` attributes, and write long attribute names (`x-on:click`).
+- Use `cozy` components first, and add a module component with `cozy add behavior` in `static/{module}/{module}.js`.
 
 ## Rules
 

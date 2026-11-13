@@ -1,0 +1,14 @@
+# 모듈의 Alpine 컴포넌트: add behavior가 빈칸을 남기면 cozy check(C9)가 실패하고, 채우면 통과한다.
+# 다른 모듈의 컴포넌트를 쓰면 R16이 실패한다. 레이아웃이 모듈 파일을 싣고 mvn verify가 화면을 그린다
+cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목
+cozy add module note --label 노트
+cozy add behavior task title-count
+cozy add behavior note picker
+cozy? check
+# 빈칸을 채우고, task 상세가 note의 컴포넌트를 쓴다
+hand behavior-filled
+cozy? check
+# task 상세가 자기 모듈의 컴포넌트를 쓴다
+hand behavior
+cozy check
+rerun behavior

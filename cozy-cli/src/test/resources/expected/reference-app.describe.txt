@@ -30,7 +30,8 @@
   DTO MemoSummary(long total, long pinned, String latestTitle)
   이벤트 MemoCreated(long memoId, String title) 발행: src/main/java/io/salvia95/cozy/reference/memo/internal/app/command/MemoFacadeImpl.java
   컨트롤러 MemoController
-  화면 memo/api/detail — src/main/resources/specs/memo-detail.yml: default, empty
+  컴포넌트 memoBodyCount
+  화면 memo/api/detail — src/main/resources/specs/memo-detail.yml: default, empty · 컴포넌트 cozyCopy
   화면 memo/api/edit — src/main/resources/specs/memo-edit.yml: default, empty, invalid
   화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid
   화면 memo/api/list — src/main/resources/specs/memo-list.yml: default, empty, noResults, paged

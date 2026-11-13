@@ -16,11 +16,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.support.ResourcePatternUtils;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import io.salvia95.cozy.runtime.CozyApplication;
@@ -32,6 +35,7 @@ import io.salvia95.cozy.ui.CozyViews;
 import io.salvia95.cozy.ui.internal.CatalogController;
 import io.salvia95.cozy.ui.internal.CatalogTemplateResolver;
 import io.salvia95.cozy.ui.internal.CozyLayoutAdvice;
+import io.salvia95.cozy.ui.internal.CozyModuleScripts;
 import io.salvia95.cozy.ui.internal.CozyLayoutAdvice.CozyAppInfo;
 import io.salvia95.cozy.ui.internal.EmptyView;
 import io.salvia95.cozy.ui.catalog.FragmentManifest;
@@ -57,9 +61,14 @@ public class CozyUiAutoConfiguration {
 	}
 
 	@Bean
+	CozyModuleScripts cozyModuleScripts(ResourceLoader resourceLoader) {
+		return new CozyModuleScripts(ResourcePatternUtils.getResourcePatternResolver(resourceLoader));
+	}
+
+	@Bean
 	CozyLayoutAdvice cozyLayoutAdvice(CozyAppInfo appInfo, ObjectProvider<CozyNavItem> navItems,
-			ObjectProvider<CozyUpdates> updates) {
-		return new CozyLayoutAdvice(appInfo, navItems.orderedStream().toList(), updates.getIfAvailable());
+			ObjectProvider<CozyUpdates> updates, CozyModuleScripts moduleScripts) {
+		return new CozyLayoutAdvice(appInfo, navItems.orderedStream().toList(), updates.getIfAvailable(), moduleScripts);
 	}
 
 	@Bean
@@ -83,6 +92,12 @@ public class CozyUiAutoConfiguration {
 			public void addInterceptors(InterceptorRegistry registry) {
 				registry.addInterceptor(viewModuleInterceptor);
 				registry.addInterceptor(new HtmxRedirectInterceptor());
+			}
+
+			@Override
+			public void addResourceHandlers(ResourceHandlerRegistry registry) {
+				// 모듈의 Alpine 컴포넌트(static/{모듈}/{모듈}.js). 맨 위 경로는 모듈의 화면 경로와 겹친다
+				registry.addResourceHandler(CozyModuleScripts.PATH + "*/*.js").addResourceLocations("classpath:/static/");
 			}
 		};
 	}

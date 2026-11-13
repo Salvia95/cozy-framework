@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--/*
+  할 일 상세 화면(api): details 패턴(읽기 전용, cozy add crud). 경로 할 일 › 이름, 머리 오른쪽에 [삭제(확인 창)] [수정(주 버튼)].
+  긴 글은 넓은 칸, 나머지 값과 시각은 옆 칸(datagrid). 수정은 /task/{id}/edit 화면에서 한다.
+*/-->
+<html th:replace="~{cozy/layout/base :: appShell(${item.title}, ~{::main})}">
+<body>
+<main>
+  <section th:replace="~{cozy/pattern/details :: details(${item.title}, '할 일', '/task', ~{::#task-actions}, ~{::#task-body})}">
+    <div id="task-actions" class="btn-list">
+      <th:block th:replace="~{cozy/component/delete-confirm :: deleteConfirm('task-delete', '할 일', ${item.title}, '/task/' + ${item.id} + '/delete')}"></th:block>
+      <a class="btn btn-primary" th:href="@{/task/{id}/edit(id=${item.id})}"><svg th:replace="~{cozy/icon/tabler :: icon('pencil')}"></svg>수정</a>
+    </div>
+
+    <div id="task-body" class="row row-cards">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">정보</h3></div>
+          <div class="card-body">
+            <p class="text-secondary mb-0">더 볼 정보가 없습니다.</p>
+            <p class="text-secondary small mt-2 mb-0" x-data="taskTitleCount" th:data-title="${item.title}" x-cloak x-text="label">제목 0자</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">기록</h3></div>
+          <div class="card-body">
+            <div class="datagrid">
+              <div class="datagrid-item">
+                <div class="datagrid-title">만든 시각</div>
+                <div class="datagrid-content" th:text="${item.createdAt}">2026-11-06 10:00</div>
+              </div>
+              <div class="datagrid-item">
+                <div class="datagrid-title">수정한 시각</div>
+                <div class="datagrid-content" th:text="${item.updatedAt}">2026-11-06 10:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

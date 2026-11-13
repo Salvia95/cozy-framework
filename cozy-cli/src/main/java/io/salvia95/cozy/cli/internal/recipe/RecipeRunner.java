@@ -56,6 +56,7 @@ public final class RecipeRunner {
 			case "listener" -> BasicRecipes.listener(ctx, parsed);
 			case "migration" -> BasicRecipes.migration(ctx, parsed);
 			case "fragment" -> BasicRecipes.fragment(ctx, parsed);
+			case "behavior" -> BasicRecipes.behavior(ctx, parsed);
 			case "screen" -> ScreenRecipe.run(ctx, parsed);
 			case "crud" -> CrudRecipe.run(ctx, parsed);
 			case "dto" -> StageTwoRecipes.dto(ctx, parsed);

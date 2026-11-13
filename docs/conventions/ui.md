@@ -212,9 +212,21 @@ fragments:
 
 - **없앤 속성 (2.0.0)**: 동작을 붙이던 `data-cozy-confirm`, `data-cozy-copy`, `data-cozy-autosize`, `data-cozy-icon-filter`는 없앴다. R16이 오류로 보이고, `cozy migrate alpine`이 confirm과 copy를 새 모양으로 바꾼다([cli.md](cli.md)).
 
-- **프레임워크 화면의 스크립트**: `alpine:init`에서 컴포넌트를 등록하는 스크립트는 Alpine보다 먼저 실려야 한다. 모델의 `cozyScripts`(경로 목록)가 있으면 `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 싣는다. 워크벤치가 쓴다(`/cozy/workbench.js`). 앱 모듈의 JS를 싣는 방법은 따로 정한다.
+- **프레임워크 화면의 스크립트**: `alpine:init`에서 컴포넌트를 등록하는 스크립트는 Alpine보다 먼저 실려야 한다. 모델의 `cozyScripts`(경로 목록)가 있으면 `base` 레이아웃이 앱 모듈의 파일 다음, Alpine 앞에 싣는다. 워크벤치처럼 화면 하나에만 필요한 프레임워크 스크립트가 쓴다(`/cozy/workbench.js`). 앱 모듈은 아래 "앱 컴포넌트"처럼 레이아웃이 알아서 싣는다.
 
-- 앱 컴포넌트의 자리는 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js`이고, 이름은 모듈 이름으로 시작한다(`memoEditor`). 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. R16은 이 규칙을 이미 검사하지만, layout이 앱의 모듈 JS를 싣는 기능은 아직 없다. 지금은 `cozy` 컴포넌트만 쓴다.
+### 앱 컴포넌트
+
+- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). `cozy add behavior {모듈} {동작}`이 등록과 빈칸을 만든다([cli.md](cli.md)).
+- **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 싣는다(`cozyModuleScripts`, 모듈 이름 순서). 경로는 `/cozy/modules/{모듈}/{모듈}.js`다. 맨 위 경로(`/memo/memo.js`)는 모듈의 화면 경로(`/memo/{id}`)와 겹치기 때문이다. 폴더 이름과 파일 이름이 다른 JS는 싣지 않는다.
+- **쓰는 곳**: 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. `fragments/`와 `error/`는 `cozy` 컴포넌트만 쓴다(R16).
+- **예**: reference-app의 `memoBodyCount`(메모 본문 아래 글자 수)가 `memo/internal/fields`에서 쓴다.
+
+```html
+<div x-data="memoBodyCount" data-limit="5000" x-on:input="count">
+  <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
+  <div class="form-hint mt-n2 mb-3" x-cloak x-text="label"></div>
+</div>
+```
 
 ## 설정과 자산
 
@@ -227,7 +239,7 @@ fragments:
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
 - **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
-- **스크립트 순서**: layout은 Tabler → htmx → `cozy.js` → Alpine 순서로 `defer`로 싣는다. `cozy.js`가 `alpine:init`에서 컴포넌트를 등록하고 Alpine이 마지막에 시작한다.
+- **스크립트 순서**: layout은 Tabler → htmx → `cozy.js` → 앱 모듈의 컴포넌트 → 화면의 `cozyScripts` → Alpine 순서로 `defer`로 싣는다. `cozy.js`가 `alpine:init`에서 컴포넌트를 등록하고 Alpine이 마지막에 시작한다.
 - **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
 - **아이콘 목록**: `/cozy/dev/catalog/icons`(카탈로그가 켜진 앱)에서 이름으로 찾고, 칸을 누르면 `icon('이름')`이 복사된다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.

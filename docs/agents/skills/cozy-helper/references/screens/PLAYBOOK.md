@@ -45,6 +45,8 @@ Rules for editing generated templates, filling `fragment-body`, and fixing R-rul
 | `th:each` and `th:replace` on one element | Move `th:each` to a surrounding `<th:block>`. |
 | Fragment named like an HTML element (`form`) | Prefix the name with the module (`memoForm`). |
 | Inline `<script>`, `onclick=`, or `style=` | Remove it; the security policy blocks inline code. |
+| `R16` on an `x-*` attribute | Follow the message: long names only, a registered component name in `x-data`, and short expressions; add logic with [add-behavior](../add-behavior/PLAYBOOK.md). |
+| `R16` on `data-cozy-confirm` or `data-cozy-copy` | Run `cozy migrate alpine`. |
 
 ## Next
 

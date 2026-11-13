@@ -42,6 +42,7 @@
         }
       ],
       "controllers": [],
+      "components": [],
       "screens": [],
       "fragments": [
         {
@@ -65,6 +66,7 @@
       "controllers": [
         "DashboardController"
       ],
+      "components": [],
       "screens": [
         {
           "template": "dashboard/api/index",
@@ -73,6 +75,7 @@
             "default",
             "empty"
           ],
+          "components": [],
           "outline": [
             {
               "line": 3,
@@ -277,6 +280,9 @@
       "controllers": [
         "MemoController"
       ],
+      "components": [
+        "memoBodyCount"
+      ],
       "screens": [
         {
           "template": "memo/api/detail",
@@ -284,6 +290,9 @@
           "states": [
             "default",
             "empty"
+          ],
+          "components": [
+            "cozyCopy"
           ],
           "outline": [
             {
@@ -397,6 +406,7 @@
             "empty",
             "invalid"
           ],
+          "components": [],
           "outline": [
             {
               "line": 4,
@@ -480,6 +490,7 @@
             "empty",
             "invalid"
           ],
+          "components": [],
           "outline": [
             {
               "line": 4,
@@ -564,6 +575,7 @@
             "noResults",
             "paged"
           ],
+          "components": [],
           "outline": [
             {
               "line": 4,

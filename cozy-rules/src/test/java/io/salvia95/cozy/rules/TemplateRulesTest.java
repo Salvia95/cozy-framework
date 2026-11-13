@@ -703,6 +703,18 @@ class TemplateRulesTest {
 		}
 
 		@Test
+		void appComponentsLiveInTheOneFileTheLayoutLoads() {
+			// 레이아웃은 모듈마다 static/{모듈}/{모듈}.js 하나만 싣는다: 다른 파일의 등록은 실행할 때 없다
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", "Alpine.data('memoEditor', function () { return {}; });");
+			f.appScript("memo/editor.js", "Alpine.data('memoPicker', function () { return {}; });");
+			f.appScript("memo/lib/more.js", "Alpine.data('memoMore', function () { return {}; });");
+			assertThat(f.check()).extracting(Violation::location)
+				.containsExactly("static/memo/editor.js", "static/memo/lib/more.js");
+			assertThat(f.check().get(0).format()).contains("static/memo/memo.js");
+		}
+
+		@Test
 		void frameworkComponentsOutsideCozyAreOnlyForFrameworkTemplates() {
 			// 워크벤치처럼 dev에만 있는 프레임워크 화면의 컴포넌트: 앱 화면에서는 실행할 때 없다
 			Fixture f = withComponents();

@@ -55,7 +55,7 @@ class UiScreensTest {
 		assertThat(assets).containsExactlyInAnyOrder("/cozy/vendor/pretendard/1.3.9/pretendardvariable.css",
 				"/cozy/vendor/tabler/1.7.5/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.5/js/tabler.min.js",
 				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js",
-				"/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg", "/cozy/favicon.svg");
+				"/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg", "/cozy/favicon.svg", "/cozy/modules/uitest/uitest.js");
 		// Alpine은 컴포넌트를 등록하는 cozy.js 뒤에 시작한다 (모두 defer라 문서 순서대로 실행된다)
 		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js"));
 		assertThat(html).doesNotContainPattern("(?:href|src)=\"(?:https?:)?//");
@@ -106,6 +106,24 @@ class UiScreensTest {
 			.andExpect(redirectedUrl("/uitest"))
 			.andExpect(header().doesNotExist("HX-Redirect"));
 		assertThat(body(this.mvc.perform(get("/uitest").session(session)).andReturn())).contains("저장했습니다");
+	}
+
+	@Test
+	void moduleScriptsLoadBeforeAlpineFromTheirOwnPath() throws Exception {
+		// 모듈마다 static/{모듈}/{모듈}.js 하나. 모듈 경로(/uitest/{id})와 겹치지 않게 /cozy/modules/ 아래에서 준다
+		String html = body(this.mvc.perform(get("/uitest")).andExpect(status().isOk()).andReturn());
+		assertThat(html).contains("<script src=\"/cozy/modules/uitest/uitest.js\" defer></script>")
+			.doesNotContain("extra.js")
+			.doesNotContain("sprite.js");
+		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/modules/uitest/uitest.js"));
+		assertThat(html.indexOf("/cozy/modules/uitest/uitest.js")).isLessThan(html.indexOf("alpinejs-csp"));
+		String script = this.mvc.perform(get("/cozy/modules/uitest/uitest.js"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("javascript")))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		assertThat(script).contains("uitestSample");
 	}
 
 	@Test

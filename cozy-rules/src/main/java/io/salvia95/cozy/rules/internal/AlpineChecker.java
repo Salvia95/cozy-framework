@@ -142,6 +142,12 @@ final class AlpineChecker {
 					+ String.join(", ", this.modules.modules().keySet().stream().sorted().toList()) + ")의 폴더로 옮기세요.");
 			return false;
 		}
+		if (!script.path().equals(module + "/" + module + ".js")) {
+			// 레이아웃은 모듈마다 이 파일 하나만 싣는다
+			scriptError(script, line, name, "레이아웃은 모듈마다 static/" + module + "/" + module + ".js 하나만 싣습니다. 이 등록을 그 파일로 "
+					+ "옮기세요(cozy add behavior " + module + " <이름>이 그 파일에 더합니다).");
+			return false;
+		}
 		if (name.startsWith("cozy")) {
 			scriptError(script, line, name, "cozy로 시작하는 이름은 프레임워크 컴포넌트입니다. 이름을 모듈 이름으로 시작하세요 (예: "
 					+ module + "Editor).");

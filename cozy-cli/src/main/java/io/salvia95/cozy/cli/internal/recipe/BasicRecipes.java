@@ -258,6 +258,42 @@ final class BasicRecipes {
 
 	private static final Pattern PARAM = Pattern.compile("([a-z][A-Za-z0-9]*):(list:)?([A-Za-z][A-Za-z0-9]*)");
 
+	// ── behavior ──────────────────────────────────────────────
+
+	/** 앱 모듈의 Alpine 컴포넌트 파일. 레이아웃이 이 파일 하나를 싣는다 */
+	static String behaviorFile(String module) {
+		return "src/main/resources/static/" + module + "/" + module + ".js";
+	}
+
+	static String behavior(Context ctx, Args args) {
+		args.only("behavior", 2);
+		String module = Names.module(args.positional(0, "모듈 이름"));
+		String name = Names.kebab(args.positional(1, "동작"), "동작");
+		ctx.module(module);
+		String component = module + Names.capitalize(Names.camelOfKebab(name));
+		String file = behaviorFile(module);
+		String entry = new Template().put("component", component).render("behavior-entry.js");
+		String existing = ctx.plan().current(file);
+		if (existing == null) {
+			ctx.plan().create(file, new Template().put("module", module).put("entry", entry).render("behavior.js"));
+		}
+		else if (existing.contains("Alpine.data('" + component + "'")) {
+			ctx.plan().edit(file, existing, "컴포넌트 " + component);
+		}
+		else {
+			String trimmed = existing.stripTrailing();
+			if (!existing.contains("document.addEventListener('alpine:init'") || !trimmed.endsWith("});")) {
+				throw new CliException(file + "가 cozy add behavior가 만든 모양이 아닙니다(document.addEventListener('alpine:init', …)의 "
+						+ "끝 });에 더합니다). 그 안에 window.Alpine.data('" + component + "', …)를 직접 더하세요.");
+			}
+			int close = trimmed.lastIndexOf("});");
+			// 앞의 등록과 한 줄 띄운다
+			ctx.plan().edit(file, trimmed.substring(0, close) + "\n" + entry + "});\n", "컴포넌트 " + component);
+		}
+		return "다음: 빈칸(behavior-" + component + ")에 상태와 메서드를 쓰고, " + module + " 화면 템플릿에 x-data=\"" + component
+				+ "\"를 붙입니다. 서버를 거치는 일은 htmx로 합니다";
+	}
+
 	static String fragment(Context ctx, Args args) {
 		args.only("fragment", 2, "param", "purpose");
 		String module = Names.module(args.positional(0, "모듈 이름"));

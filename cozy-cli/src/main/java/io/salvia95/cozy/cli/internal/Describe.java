@@ -123,6 +123,7 @@ public final class Describe {
 		m.put("events", events);
 		m.put("listeners", listeners);
 		m.put("controllers", controllers);
+		m.put("components", registeredComponents(project, module));
 		m.put("screens", screens(project, module, specs));
 		m.put("fragments", manifest.stream()
 			.filter((e) -> e.template().startsWith(module.name() + "/spi/"))
@@ -221,6 +222,8 @@ public final class Describe {
 				AppResources.Spec spec = specs.stream().filter((s) -> template.equals(s.template())).findFirst().orElse(null);
 				screen.put("spec", (spec != null) ? spec.file() : null);
 				screen.put("states", (spec != null) ? spec.states() : List.of());
+				String content = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
+				screen.put("components", usedComponents(content));
 				screen.put("outline", outline(file, template));
 				screens.add(screen);
 			}
@@ -229,6 +232,41 @@ public final class Describe {
 			throw new java.io.UncheckedIOException(ex);
 		}
 		return screens;
+	}
+
+	private static final java.util.regex.Pattern X_DATA = java.util.regex.Pattern
+		.compile("\\sx-data\\s*=\\s*([\"'])\\s*([A-Za-z_$][\\w$]*)\\s*\\1");
+
+	private static final java.util.regex.Pattern REGISTRATION = java.util.regex.Pattern
+		.compile("Alpine\\s*\\.\\s*data\\s*\\(\\s*([\"'])([A-Za-z_$][\\w$]*)\\1");
+
+	/** 화면이 붙인 Alpine 컴포넌트({@code x-data}의 이름). 문서 순서, 겹치지 않게. 주석은 보지 않는다 */
+	static List<Object> usedComponents(String template) {
+		java.util.regex.Matcher m = X_DATA.matcher(template.replaceAll("(?s)<!--.*?-->", ""));
+		java.util.Set<String> names = new java.util.LinkedHashSet<>();
+		while (m.find()) {
+			names.add(m.group(2));
+		}
+		return new ArrayList<>(names);
+	}
+
+	/** 모듈이 static/{모듈}/{모듈}.js에 등록한 Alpine 컴포넌트 (레이아웃이 싣는 파일) */
+	private static List<Object> registeredComponents(AppProject project, AppProject.Module module) {
+		Path file = project.dir().resolve("src/main/resources/static/" + module.name() + "/" + module.name() + ".js");
+		List<Object> names = new ArrayList<>();
+		if (!Files.isRegularFile(file)) {
+			return names;
+		}
+		try {
+			java.util.regex.Matcher m = REGISTRATION.matcher(Files.readString(file, java.nio.charset.StandardCharsets.UTF_8));
+			while (m.find()) {
+				names.add(m.group(2));
+			}
+		}
+		catch (IOException ex) {
+			throw new java.io.UncheckedIOException(ex);
+		}
+		return names;
 	}
 
 	/** 화면 템플릿의 구조: fragment 선언과 삽입을 겹친 깊이와 줄 번호로. 글 출력에는 싣지 않는다 */
@@ -279,11 +317,17 @@ public final class Describe {
 			if (!controllers.isEmpty()) {
 				out.append("  컨트롤러 ").append(join(controllers, "")).append('\n');
 			}
+			List<Object> components = (List<Object>) m.get("components");
+			if (!components.isEmpty()) {
+				out.append("  컴포넌트 ").append(join(components, "")).append('\n');
+			}
 			for (Object s : (List<Object>) m.get("screens")) {
 				Map<String, Object> screen = (Map<String, Object>) s;
 				out.append("  화면 ").append(screen.get("template")).append(" — ")
 					.append((screen.get("spec") != null) ? screen.get("spec") + ": " + join((List<Object>) screen.get("states"), "")
 							: "스펙 없음")
+					.append(((List<Object>) screen.get("components")).isEmpty() ? ""
+							: " · 컴포넌트 " + join((List<Object>) screen.get("components"), ""))
 					.append('\n');
 			}
 			for (Object f : (List<Object>) m.get("fragments")) {
