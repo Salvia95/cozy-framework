@@ -110,8 +110,10 @@ class WorkbenchCheckTest {
 				.contains(">기본 패키지<")
 				.contains("미구현 항목이 없습니다")
 				.doesNotContain("cozy-workbench-graph-selected");
-			assertThat(html.split("cozy-workbench-graph-node\"", -1).length - 1).as("모듈마다 마디 하나").isEqualTo(3);
-			assertThat(html.split("class=\"cozy-workbench-graph-edge", -1).length - 1).as("의존 3 + 이벤트 1 + 범례 2").isEqualTo(6);
+			assertThat(html.split("cozy-workbench-graph-node\"", -1).length - 1).as("모듈마다 마디 하나 (events 포함)").isEqualTo(4);
+			assertThat(html.split("class=\"cozy-workbench-graph-edge", -1).length - 1)
+				.as("의존 4(memo·activity → events, dashboard → memo·activity) + 이벤트 1 + 범례 2")
+				.isEqualTo(7);
 		}
 
 		@Test
@@ -120,7 +122,8 @@ class WorkbenchCheckTest {
 			assertThat(memo).contains("cozy-workbench-graph-selected")
 				.contains("cozy-workbench-graph-on")
 				.contains(">참조하는 모듈<")
-				.contains("href=\"/cozy/dev/workbench/map?module=activity\" >activity<".replace("\" >", "\">"))
+				.as("memo를 읽는 dashboard. activity는 이벤트만 받으므로 memo를 참조하지 않는다")
+				.contains("href=\"/cozy/dev/workbench/map?module=dashboard\">dashboard<")
 				.contains("MemoFacade")
 				.contains("long create(String title, String body, boolean pinned)")
 				.contains("MemoFinder")

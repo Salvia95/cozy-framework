@@ -7,10 +7,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.salvia95.cozy.reference.events.spi.memo.MemoCreated;
 import io.salvia95.cozy.reference.memo.internal.infra.MemoMapper;
 import io.salvia95.cozy.reference.memo.internal.infra.MemoRow;
 import io.salvia95.cozy.reference.memo.spi.MemoFacade;
-import io.salvia95.cozy.reference.memo.spi.event.MemoCreated;
 
 /**
  * 메모 쓰기. 트랜잭션 경계가 여기다(쓰기 트랜잭션은 BEGIN IMMEDIATE, docs/conventions/sqlite.md). 메모를 만들면 같은

@@ -144,3 +144,10 @@
   - `crud-kinds`: 이벤트를 내는 `report`의 의존이 `{ "task :: spi", "events :: spi" }`가 된다. `field`, `reference-filled`, `stage-two`의 손 파일은 새 자리를 import한다.
 - **문서**: cli.md(이벤트의 자리, describe `events[]`), 플레이북(add-event, add-listener, add-event-version, enable-events, link, describe), AGENTS.md의 Architecture.
 - **남은 것**: reference-app과 아키타입 `home`은 아직 옛 자리다(M38). 그래서 reference-app의 describe 기대 파일은 새 형식(앱의 `events[]`)이지만 이벤트의 자리는 옛 자리다.
+
+## M38 (2026-11-17, 사용자 지시 "다음 진행해줘")
+
+- **reference-app**: `MemoCreated`를 `events/spi/memo/`로 옮기고 `events/package-info.java`를 더했다. `memo`와 `activity`의 의존은 둘 다 `"events :: spi"`뿐이다. `activity`는 memo의 이벤트만 받고 다른 spi는 쓰지 않으므로 `"memo :: spi"`를 지웠다. `dashboard`는 memo와 activity를 읽으므로 그대로다. describe 기대 파일을 다시 만들었다(`events` 모듈이 보이고, 이벤트의 자리가 새 자리).
+- **아키타입 `home`**: `events=true`면 `NoteAdded`가 `events/spi/home/`에, `home`의 의존이 `"events :: spi"`다. `events=false`면 생성 뒤 스크립트가 `events` 패키지를 통째로 지우고 `home`의 의존은 `{}`다. 세 조합의 verify가 이것을 확인한다.
+- **저장된 FQN**: 이벤트 클래스의 FQN이 바뀌므로, 옛 FQN으로 남은 미완료 발행 기록은 새 클래스로 읽히지 않는다. 그 SQL은 M40의 `cozy migrate events`가 만든다. reference-app은 사용자 PC에 배포한 앱이 아니고, `-Pe2e`의 업데이트 검증은 모든 버전을 같은 소스로 만들기 때문에 이 차이를 보지 않는다. M40에서 옛 FQN의 미완료 기록을 남긴 업데이트를 종단 검증에 더한다.
+- **생성 앱의 에이전트 문서**: M37에서 고친 `docs/agents`가 그대로 들어간다.

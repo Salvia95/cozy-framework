@@ -3,7 +3,7 @@ package io.salvia95.cozy.reference.activity.internal.app.command;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-import io.salvia95.cozy.reference.memo.spi.event.MemoCreated;
+import io.salvia95.cozy.reference.events.spi.memo.MemoCreated;
 
 /**
  * memo의 MemoCreated를 받아 활동을 남긴다. {@code @ApplicationModuleListener}는 발행한 트랜잭션이 커밋된 뒤 별도

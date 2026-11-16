@@ -48,7 +48,8 @@ class WorkbenchOverviewTest {
 			.contains("href=\"/cozy/dev/workbench/screens\">화면</a>")
 			.as("숫자 카드: 화면, 모듈, 규칙 위반, 미구현 항목")
 			.contains(">5개<")
-			.contains(">3개<")
+			.as("모듈: activity, dashboard, events(이벤트 계약 모듈), memo")
+			.contains(">4개<")
 			.contains(">규칙 위반<")
 			.contains(">미구현 항목<")
 			.contains("io.salvia95.cozy.reference");
@@ -61,7 +62,9 @@ class WorkbenchOverviewTest {
 			.doesNotContain("모듈만 펼쳤습니다");
 		assertThat(html).as("모듈의 의존 방향")
 			.contains("href=\"/cozy/dev/workbench/map?module=memo\">memo</a>")
-			.contains("activity, dashboard")
+			.as("이벤트를 내고 받는 memo와 activity는 events만 참조한다. memo를 참조하는 것은 읽는 dashboard뿐이다")
+			.contains("<td>events</td> <td>dashboard</td>")
+			.contains("<td>—</td> <td>activity, memo</td>")
 			.as("검사와 미구현 항목")
 			.contains("위반이 없습니다.")
 			.contains("미구현 항목이 없습니다.");

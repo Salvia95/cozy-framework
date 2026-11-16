@@ -28,7 +28,10 @@ assert thirdParty.getText("UTF-8").contains("org.xerial:sqlite-jdbc:") == true
 assert file("$pkg/internal/infra/MemoryNoteStore.java").exists() == !true
 assert file("$pkg/internal/infra/SqliteNoteStore.java").exists() == true
 assert file("src/main/resources/db/migration").exists() == true
-assert file("$pkg/spi/event/NoteAdded.java").exists() == true
+assert file("src/main/java/com/example/demo/events/events/spi/home/NoteAdded.java").exists() == true
+assert file("src/main/java/com/example/demo/events/events/package-info.java").text.contains("@ApplicationModule(allowedDependencies = {})")
+assert file("$pkg/package-info.java").text.contains('@ApplicationModule(allowedDependencies = "events :: spi")')
+assert file("$pkg/spi/event").exists() == false
 assert file("src/test/resources/events/NoteAdded/v1.json").exists() == true
 def pom = file("pom.xml").text
 assert pom.contains("<artifactId>cozy-workbench</artifactId>") : "워크벤치 의존이 없습니다"

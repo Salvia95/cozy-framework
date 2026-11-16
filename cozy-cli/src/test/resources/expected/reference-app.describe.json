@@ -13,7 +13,7 @@
       "name": "activity",
       "package": "io.salvia95.cozy.reference.activity",
       "dependsOn": [
-        "memo :: spi"
+        "events :: spi"
       ],
       "facades": [],
       "finders": [
@@ -210,9 +210,24 @@
       "fragments": []
     },
     {
+      "name": "events",
+      "package": "io.salvia95.cozy.reference.events",
+      "dependsOn": [],
+      "facades": [],
+      "finders": [],
+      "dtos": [],
+      "listeners": [],
+      "controllers": [],
+      "components": [],
+      "screens": [],
+      "fragments": []
+    },
+    {
       "name": "memo",
       "package": "io.salvia95.cozy.reference.memo",
-      "dependsOn": [],
+      "dependsOn": [
+        "events :: spi"
+      ],
       "facades": [
         {
           "type": "MemoFacade",

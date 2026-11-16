@@ -11,11 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 #end
 
+#if( $events == "true" )
+import ${package}.events.spi.home.NoteAdded;
+#end
 import ${package}.home.internal.infra.NoteStore;
 import ${package}.home.spi.HomeFacade;
-#if( $events == "true" )
-import ${package}.home.spi.event.NoteAdded;
-#end
 
 /**
  * 홈 쓰기 구현. 저장은 infra의 NoteStore가 한다.

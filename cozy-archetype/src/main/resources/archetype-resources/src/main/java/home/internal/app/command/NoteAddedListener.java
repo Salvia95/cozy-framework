@@ -6,8 +6,8 @@ import java.time.Instant;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
+import ${package}.events.spi.home.NoteAdded;
 import ${package}.home.internal.infra.NoteStore;
-import ${package}.home.spi.event.NoteAdded;
 
 /**
  * NoteAdded를 받아 최근 활동에 남긴다. 발행한 트랜잭션이 커밋된 뒤 별도 트랜잭션에서 비동기로 돈다.

@@ -5,7 +5,7 @@
 | 이름 | 뜻 | Java | 템플릿 |
 | --- | --- | --- | --- |
 | api | HTTP 진입점 | 컨트롤러, `api/dto`(폼·필터·화면 DTO) | 컨트롤러가 렌더링하는 화면 |
-| spi | 모듈 사이 계약 | `*Facade`·`*Finder` 인터페이스, `spi/dto`, `spi/event` | 다른 모듈이 부르는 fragment |
+| spi | 모듈 사이 계약 | `*Facade`·`*Finder` 인터페이스, `spi/dto`. 이벤트는 이벤트 계약 모듈 `events`에 둔다 | 다른 모듈이 부르는 fragment |
 | internal | 밀폐된 구현 | `app/command`, `app/query`, `domain`, `infra`, `config` | api·spi가 조합하는 조각 |
 
 ## Java 패키지

@@ -1,6 +1,6 @@
 package io.salvia95.cozy.reference.memo.spi;
 
-/** 메모 쓰기. 메모를 만들면 {@link io.salvia95.cozy.reference.memo.spi.event.MemoCreated}를 발행한다. */
+/** 메모 쓰기. 메모를 만들면 {@link io.salvia95.cozy.reference.events.spi.memo.MemoCreated}를 발행한다. */
 public interface MemoFacade {
 
 	/** @return 새 메모의 id */

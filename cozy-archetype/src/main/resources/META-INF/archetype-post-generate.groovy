@@ -56,7 +56,7 @@ else {
     remove(resources.resolve("db"))
 }
 if (!events) {
-    remove(home.resolve("spi/event"))
+    remove(java.resolve("events"))
     remove(home.resolve("internal/app/command/NoteAddedListener.java"))
     remove(root.resolve("src/test/resources/events"))
 }
