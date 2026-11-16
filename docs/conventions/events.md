@@ -14,7 +14,9 @@
 ## 이벤트 만들기
 
 ```java
-// memo/spi/event/MemoCreated.java — 받는 모듈이 쓰므로 모듈 사이 계약(Named Interface spi)에 둔다
+// events/spi/memo/MemoCreated.java — 이벤트 계약 모듈 events의 주인 폴더(memo)에 둔다
+package it.cozy.app.events.spi.memo;
+
 public record MemoCreated(UUID eventId, int schemaVersion, long memoId, String title) implements CozyEvent {
     public static MemoCreated of(long memoId, String title) {
         return new MemoCreated(UUID.randomUUID(), 1, memoId, title);
@@ -34,7 +36,8 @@ public long create(String title, String body, boolean pinned) {
 ```
 
 ```java
-// 받는 쪽(activity/internal/app/command/): package-info.java에 @ApplicationModule(allowedDependencies = "memo :: spi")
+// 받는 쪽(activity/internal/app/command/): package-info.java에 @ApplicationModule(allowedDependencies = "events :: spi")
+// memo에 의존하지 않는다. 그래서 memo도 activity의 이벤트를 받을 수 있다(순환이 생기지 않는다)
 @Component
 class MemoCreatedListener {
     @ApplicationModuleListener
@@ -42,7 +45,10 @@ class MemoCreatedListener {
 }
 ```
 
-- **CozyEvent 구현**: 모듈 사이의 이벤트는 반드시 `CozyEvent`를 구현하고 `{모듈}/spi/event/`에 둔다(C8). `spi/event/package-info.java`에 `@NamedInterface("spi")`를 둔다. 필드는 `eventId`(멱등성 키, 발행할 때 만든다)와 `schemaVersion`(1부터)이다.
+- **CozyEvent 구현**: 모듈 사이의 이벤트는 반드시 `CozyEvent`를 구현한 record로, 이벤트 계약 모듈의 `events/spi/{주인 모듈}/`에 둔다(C8, [structure.md](structure.md)의 이벤트 계약 모듈). 폴더마다 `package-info.java`에 `@NamedInterface("spi")`를 둔다. 주인 모듈의 `spi/event/`(옛 자리)도 통과하지만, 서로의 이벤트를 받는 두 모듈이 순환(C1)으로 실패한다. 필드는 `eventId`(멱등성 키, 발행할 때 만든다)와 `schemaVersion`(1부터)이다.
+- **의존 선언**: 이벤트를 내는 모듈과 받는 모듈 모두 `allowedDependencies`에 `"events :: spi"`를 적는다. 받는 모듈이 주인 모듈을 읽지도 않으면 주인 모듈은 적지 않는다.
+- **주인만 발행 (C11)**: 이벤트를 만드는 코드(`MemoCreated.of(…)`, `new MemoCreated(…)`)는 주인 모듈의 `internal/app/command/`(Facade 구현, 리스너)에만 둔다. 다른 모듈이 알릴 일이면 그 모듈의 이벤트를 새로 만든다. 메시지: `[C11] it.cozy.app.rental.internal.app.command.RentalFacadeImpl → it.cozy.app.events.spi.book.BookAdded — 이벤트는 주인 모듈(book)의 internal.app.command에서만 만듭니다(…)`.
+- **이름**: 이벤트의 단순 이름은 앱 안에서 하나다. 직렬화 샘플 폴더가 단순 이름이기 때문이다(C6).
 - **리스너 파라미터**: `@ApplicationModuleListener`의 파라미터는 CozyEvent 하나다. 어기면 검사 C6이 빌드를 실패시킨다.
 - **리스너 실행 방식**: 리스너는 발행한 트랜잭션이 커밋된 뒤, 별도 트랜잭션에서 비동기로 실행된다.
   - 업무 트랜잭션이 롤백되면 이벤트도 발행 기록도 남지 않는다.

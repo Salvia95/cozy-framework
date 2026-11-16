@@ -192,9 +192,9 @@ class LayerRulesTest {
 		}
 
 		@Test
-		void eventsLiveInSpiEvent() {
+		void eventsLiveInTheEventsModule() {
 			JavaType event = Types.record(APP + ".memo.spi.dto.MemoCreated").with(JavaType.Trait.COZY_EVENT).build();
-			assertThat(check(event)).singleElement().asString().contains("CozyEvent는 it.cozy.app.memo.spi.event에 둡니다");
+			assertThat(check(event)).singleElement().asString().contains("CozyEvent는 이벤트 계약 모듈의 it.cozy.app.events.spi.memo에 둡니다");
 		}
 
 		@Test
@@ -210,6 +210,103 @@ class LayerRulesTest {
 				.dependsOn(Types.cls(APP + ".memo.internal.infra.MemoStore"))
 				.build();
 			assertThat(check(controller, Types.cls(APP + ".memo.internal.infra.MemoStore").build())).hasSize(1);
+		}
+	}
+
+	/**
+	 * 이벤트 계약 모듈 {@code events}: 이벤트 record만 주인 모듈 이름의 하위 패키지({@code events.spi.memo})에 둔다. 다른 앱 모듈에
+	 * 의존하지 않으므로, 이벤트를 내는 모듈과 받는 모듈이 서로 의존하지 않는다.
+	 */
+	@Nested
+	class EventsModule {
+
+		static final ModulePackage EVENTS = new ModulePackage("events", APP + ".events");
+
+		static List<String> check(JavaType... types) {
+			return LayerRules.check(List.of(MEMO, WIKI, EVENTS), List.of(types),
+					Set.of(APP + ".memo.spi", APP + ".memo.spi.dto", APP + ".memo.spi.event", APP + ".wiki.spi",
+							APP + ".events.spi.memo", APP + ".events.spi.wiki"))
+				.stream()
+				.map(Violation::format)
+				.toList();
+		}
+
+		static Types event(String name) {
+			return Types.record(name).with(JavaType.Trait.COZY_EVENT);
+		}
+
+		@Test
+		void eventsInTheirOwnersFolderAreUsedByAnyModule() {
+			JavaType memoCreated = event(APP + ".events.spi.memo.MemoCreated").build();
+			JavaType wikiListener = Types.cls(APP + ".wiki.internal.app.command.MemoCreatedListener")
+				.with(JavaType.Trait.LISTENER, JavaType.Trait.COMPONENT)
+				.dependsOn(event(APP + ".events.spi.memo.MemoCreated"))
+				.build();
+			JavaType memoListener = Types.cls(APP + ".memo.internal.app.command.MemoCreatedListener")
+				.with(JavaType.Trait.LISTENER, JavaType.Trait.COMPONENT)
+				.dependsOn(event(APP + ".events.spi.memo.MemoCreated"))
+				.build();
+			assertThat(check(memoCreated, wikiListener, memoListener)).isEmpty();
+		}
+
+		@Test
+		void eventsKeptInTheOwnersSpiEventStillPass() {
+			assertThat(check(event(APP + ".memo.spi.event.MemoCreated").build())).isEmpty();
+		}
+
+		@Test
+		void onlyEventRecordsLiveThere() {
+			assertThat(check(Types.cls(APP + ".events.spi.memo.MemoFormat").build(),
+					Types.cls(APP + ".events.internal.EventsConfig").with(JavaType.Trait.COMPONENT).build()))
+				.containsExactly(
+						"[C8] it.cozy.app.events.internal.EventsConfig — events 모듈에는 이벤트 계약만 둡니다. "
+								+ "it.cozy.app.events.spi.{주인 모듈} 아래의 CozyEvent record와 package-info.java만 놓을 수 있습니다.",
+						"[C8] it.cozy.app.events.spi.memo.MemoFormat — events 모듈에는 이벤트 계약만 둡니다. "
+								+ "it.cozy.app.events.spi.{주인 모듈} 아래의 CozyEvent record와 package-info.java만 놓을 수 있습니다.");
+		}
+
+		@Test
+		void eachEventSitsInExactlyItsOwnersFolder() {
+			assertThat(check(event(APP + ".events.spi.Orphan").build())).singleElement()
+				.asString()
+				.isEqualTo("[C8] it.cozy.app.events.spi.Orphan — 이벤트는 주인 모듈 이름의 폴더에 둡니다"
+						+ "(it.cozy.app.events.spi.{주인 모듈}). 주인 모듈만 그 이벤트를 발행합니다(C11).");
+			assertThat(check(event(APP + ".events.spi.memo.created.MemoCreated").build())).singleElement()
+				.asString()
+				.startsWith("[C8] it.cozy.app.events.spi.memo.created.MemoCreated — 이벤트는 주인 모듈 이름의 폴더에 둡니다");
+			assertThat(check(event(APP + ".events.spi.nope.NopeHappened").build())).singleElement()
+				.asString()
+				.isEqualTo("[C8] it.cozy.app.events.spi.nope.NopeHappened — 주인 모듈 nope가 없습니다. 폴더 이름은 이벤트를 "
+						+ "발행하는 모듈의 이름입니다.");
+		}
+
+		@Test
+		void eventFieldsUseNoTypeFromAnotherModule() {
+			JavaType withDto = event(APP + ".events.spi.memo.MemoCreated").dependsOn(Types.record(APP + ".memo.spi.dto.MemoItem"))
+				.build();
+			assertThat(check(withDto, Types.record(APP + ".memo.spi.dto.MemoItem").build())).singleElement()
+				.asString()
+				.isEqualTo("[C8] it.cozy.app.events.spi.memo.MemoCreated → it.cozy.app.memo.spi.dto.MemoItem — 이벤트 필드에는 "
+						+ "기본 타입(String, long, boolean, LocalDate, Instant, UUID 등)만 씁니다. 다른 모듈의 타입을 쓰면 events 모듈이 "
+						+ "그 모듈에 의존해 순환이 다시 생깁니다.");
+		}
+
+		@Test
+		void ownerFoldersAreNamedInterfaces() {
+			List<Violation> violations = LayerRules.check(List.of(MEMO, EVENTS),
+					List.of(event(APP + ".events.spi.memo.MemoCreated").build()), Set.of());
+			assertThat(violations).singleElement()
+				.extracting(Violation::format)
+				.asString()
+				.startsWith("[C8] it.cozy.app.events.spi.memo — spi 패키지마다 package-info.java에 @NamedInterface(\"spi\")를 둡니다");
+		}
+
+		@Test
+		void aMisplacedEventPointsToTheEventsModule() {
+			assertThat(check(event(APP + ".memo.internal.domain.MemoCreated").build())).singleElement()
+				.asString()
+				.isEqualTo("[C8] it.cozy.app.memo.internal.domain.MemoCreated — CozyEvent는 이벤트 계약 모듈의 "
+						+ "it.cozy.app.events.spi.memo에 둡니다. 이벤트를 받는 모듈이 memo에 의존하지 않게 됩니다.");
 		}
 	}
 

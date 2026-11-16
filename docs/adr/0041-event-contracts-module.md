@@ -115,3 +115,17 @@
 - **저장된 FQN 옮기기를 빠뜨린 PC.** 2.0.0으로 업데이트한 앱이 마이그레이션 없이 배포되면 미완료 발행 기록을 역직렬화하지 못한다. `cozy migrate events`가 마이그레이션 파일을 늘 함께 만들고, `migrate-events` 픽스처와 통합 테스트로 확인한다. 직접 옮긴 앱은 events.md에 적은 SQL을 따른다.
 - **읽기 의존만으로도 순환은 생길 수 있다.** A가 B를 읽고 B가 A를 읽으면 여전히 순환이다. 이것은 업무 경계가 잘못 나뉜 신호이므로 이 결정의 범위 밖이다. `cozy link`의 실패 메시지가 "읽기 순환은 모듈을 나누는 방법을 다시 본다"를 안내하도록 M37에서 문구만 고친다.
 - **Modulith가 같은 이름(`spi`)의 Named Interface를 여러 하위 패키지에 두는 것을 계속 허용해야 한다.** 지금도 `spi`, `spi/dto`, `spi/event`가 같은 이름을 쓴다. Modulith를 올릴 때 계약 테스트가 확인한다.
+
+## M36 (2026-11-17, 사용자 지시 "권장안대로 승인, M36 진행해줘")
+
+- **C8은 `events` 모듈을 따로 본다** (cozy-rules `LayerChecker`, `cozy check`와 `mvn verify`가 같은 판단을 쓴다). 모듈 패키지의 마지막 이름이 `events`면 이벤트 계약 모듈이다. `events.spi.{주인}` 아래의 CozyEvent record만 두고, 주인 폴더는 있는 모듈의 이름이어야 하며, 이벤트 필드는 다른 앱 모듈의 타입을 쓰지 않는다.
+  - 자리가 틀린 이벤트(`events.spi` 바로 아래, 더 깊은 폴더, 없는 주인)에는 `@NamedInterface` 빠짐을 따로 알리지 않는다. 고칠 것은 자리이고, 두 줄이 나오면 무엇을 먼저 할지 흐려진다.
+  - 기능 모듈에서 자리가 틀린 이벤트는 이제 `events.spi.{그 모듈}`로 안내한다. 옛 자리(`spi.event`)는 M40까지 통과한다.
+- **C11은 cozy-test에서만 한다** (`CozyArchitectureTest.eventsArePublishedByTheirOwner`). "이벤트를 만든다"를 생성자와 static 메서드 호출로 가려야 해서 바이트코드(ArchUnit)가 필요하다. 소스만 읽는 `cozy check`는 하지 않는다. 이벤트 자신이 부르는 생성자(`of` 안)는 뺀다.
+- **C6에 이름 중복**: 샘플 폴더가 단순 이름이라 두 이벤트의 단순 이름이 같으면 실패한다.
+- **아키텍처 테스트가 7개가 되어** 테스트 수를 확인하던 위반·레시피 픽스처의 숫자를 고쳤다.
+- **완료 기준의 픽스처**:
+  - 레시피 픽스처 `events-module`(통과): 손으로 만든 `book`·`rental`이 `events`를 거쳐 서로의 이벤트를 받고 `rental`이 `book`을 읽는다. `cozy check`와 `mvn verify`가 통과하고, 흐름 테스트가 두 방향의 리스너가 실제로 도는 것을 확인한다. 명령이 새 자리를 쓰는 것은 M37이라 지금은 손으로 만든다.
+  - 위반 픽스처 `C1-event-cycle`: 같은 흐름을 옛 자리로 만들면 Modulith가 `Cycle detected: Slice book -> …`로 실패한다.
+  - 위반 픽스처 `C8-events-module`(이벤트가 아닌 클래스, 주인 폴더가 없는 이벤트), `C11-foreign-publish`(rental이 book의 이벤트를 만든다). 이벤트 필드에 다른 모듈의 타입을 쓰는 경우는 Modulith의 순환(C1)도 함께 나므로 픽스처 대신 `LayerRulesTest`로 확인한다.
+

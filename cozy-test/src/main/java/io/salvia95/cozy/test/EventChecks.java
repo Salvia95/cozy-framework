@@ -86,13 +86,16 @@ final class EventChecks {
 	static List<String> sampleProblems(String basePackage, Path samples) {
 		List<String> problems = new ArrayList<>();
 		Set<String> eventNames = new LinkedHashSet<>();
+		List<Class<?>> events = new ArrayList<>();
 		for (Class<?> type : mainClasses(basePackage, CozyEvent.class)) {
 			if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
 				continue;
 			}
+			events.add(type);
 			eventNames.add(type.getSimpleName());
 			checkEvent(type, samples.resolve(type.getSimpleName()), problems);
 		}
+		problems.addAll(nameProblems(events));
 		if (Files.isDirectory(samples)) {
 			try (Stream<Path> dirs = Files.list(samples)) {
 				dirs.filter(Files::isDirectory)
@@ -105,6 +108,20 @@ final class EventChecks {
 				throw new UncheckedIOException(ex);
 			}
 		}
+		return problems;
+	}
+
+	/** 이벤트의 단순 이름은 앱 안에서 하나다. 직렬화 샘플 폴더가 단순 이름이기 때문이다 */
+	static List<String> nameProblems(List<Class<?>> events) {
+		List<String> problems = new ArrayList<>();
+		Map<String, String> seen = new java.util.HashMap<>();
+		events.stream().sorted(java.util.Comparator.comparing(Class::getName)).forEach((type) -> {
+			String first = seen.putIfAbsent(type.getSimpleName(), type.getName());
+			if (first != null) {
+				problems.add("[C6] " + type.getName() + " — 이벤트 이름 " + type.getSimpleName() + "가 " + first + "와 겹칩니다. "
+						+ "직렬화 샘플 폴더(src/test/resources/events/" + type.getSimpleName() + ")가 단순 이름이므로 앱 안에서 하나여야 합니다.");
+			}
+		});
 		return problems;
 	}
 

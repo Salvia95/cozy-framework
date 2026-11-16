@@ -31,11 +31,12 @@ class RenderingTest extends CozyRenderingTest {
 | C3 | 렌더링 | `CozyRenderingTest.everyScreenStateRendersAsValidHtml`, `everyManifestFragmentRendersAsValidHtml` | 스펙 형식 오류, fixture가 DTO 타입과 맞지 않음, 렌더링 예외, 200이 아닌 응답 |
 | C4 | HTML | 위의 두 테스트 | 렌더링 결과의 vnu 오류. 경고는 출력만 한다 |
 | C5 | 스펙 누락 | `CozyRenderingTest.everyScreenTemplateHasSpec` | 스펙이 없는 화면 템플릿(`{모듈}/api/`), 매니페스트에 없는 `{모듈}/spi/` fragment, 파라미터 타입이 앱의 api·internal 타입인 spi fragment |
-| C6 | 이벤트 | `CozyArchitectureTest.eventListenersReceiveCozyEvents`, `eventSamplesAreCompatible` | CozyEvent가 아닌 리스너 파라미터, 빠지거나 호환되지 않는 직렬화 샘플([events.md](events.md)). cozy-starter-events를 쓰는 앱만 |
+| C6 | 이벤트 | `CozyArchitectureTest.eventListenersReceiveCozyEvents`, `eventSamplesAreCompatible` | CozyEvent가 아닌 리스너 파라미터, 빠지거나 호환되지 않는 직렬화 샘플([events.md](events.md)). cozy-starter-events를 쓰는 앱만. 이벤트 단순 이름이 겹침(샘플 폴더가 단순 이름) |
 | C7 | 컨트롤러·뷰 모듈 | 앱의 모든 MockMvc 테스트 | 컨트롤러의 모듈과 반환한 뷰 이름의 첫 경로가 다름. 뷰가 `{모듈}/api/`나 `{모듈}/spi/` 아래가 아님 |
 | C8 | 모듈 안 구조 | `CozyArchitectureTest.modulesFollowLayerRules` | api·spi·internal 배치, 이름(`*Facade`·`*Finder`·`*Impl`…), 레이어 방향 위반([structure.md](structure.md)) |
 | C9 | 빈칸 | `CozyArchitectureTest.slotsAreFilled` | `src/main` 아래에 `cozy:slot` 표시가 남아 있음 (ADR-0032) |
 | C10 | 모듈 스크립트 | `CozyRenderingTest.everyModuleScriptParses` | `static/{모듈}/{모듈}.js`의 JavaScript 문법 오류. 레이아웃이 모든 모듈의 파일을 한 묶음으로 싣으므로 한 파일의 오류가 모든 모듈의 컴포넌트를 멈춘다([ui.md](ui.md)의 앱 컴포넌트) |
+| C11 | 이벤트 주인 | `CozyArchitectureTest.eventsArePublishedByTheirOwner` | 이벤트를 주인 모듈의 `internal/app/command/` 밖에서 만듦(생성자, `of` 같은 static 메서드). 주인은 `events/spi/{주인 모듈}`의 폴더 이름, 옛 자리면 그 모듈이다([events.md](events.md)) |
 
 ### 검사별 세부
 
@@ -125,7 +126,7 @@ states:                               # default와 empty는 필수
 
 ## 위반 픽스처
 
-`samples/violations/`에 규칙(R1~R16)과 검사(C1~C10)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
+`samples/violations/`에 규칙(R1~R16)과 검사(C1~C11)마다 정확히 그 이유로 실패하는 픽스처가 있다. 자세한 내용은 그 폴더의 README에 있다. 베이스 클래스를 고치면 이 픽스처가 회귀를 잡는다.
 
 ## 배포 종단 검증
 

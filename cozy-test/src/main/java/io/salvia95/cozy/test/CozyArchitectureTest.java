@@ -18,7 +18,7 @@ import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * 아키텍처 검사 (C1, C2, C6, C8, C9). 앱은 한 줄만 쓴다.
+ * 아키텍처 검사 (C1, C2, C6, C8, C9, C11). 앱은 한 줄만 쓴다.
  *
  * <pre>
  * class ArchitectureTest extends CozyArchitectureTest {
@@ -32,6 +32,8 @@ import io.salvia95.cozy.rules.Violation;
  * <li>C6: 이벤트 리스너 파라미터는 CozyEvent, 이벤트마다 버전별 직렬화 샘플과 호환 (cozy-starter-events를 쓰는 앱)</li>
  * <li>C8: 모듈 안의 패키지(api, spi, internal/app·domain·infra·config)와 레이어 방향, 인터페이스 + Impl</li>
  * <li>C9: {@code src/main} 아래에 채우지 않은 빈칸({@code cozy:slot} 표시)이 없다</li>
+ * <li>C11: 이벤트는 주인 모듈의 internal.app.command에서만 만든다(이벤트 계약 모듈 {@code events.spi.{주인 모듈}}이면 폴더 이름이
+ * 주인이다)</li>
  * </ul>
  * 문서: docs/conventions/structure.md, docs/conventions/testing.md, docs/conventions/rules.md
  */
@@ -89,6 +91,16 @@ public abstract class CozyArchitectureTest {
 		List<String> problems = LayerChecks.problems(CozyModules.of(app), app.getPackageName());
 		if (!problems.isEmpty()) {
 			throw new AssertionFailedError("[C8] 모듈 구조 규칙 위반 " + problems.size() + "건 (docs/conventions/structure.md)\n"
+					+ String.join("\n", problems));
+		}
+	}
+
+	@Test
+	public final void eventsArePublishedByTheirOwner() {
+		Class<?> app = applicationClass();
+		List<String> problems = EventOwnerChecks.problems(CozyModules.of(app), app.getPackageName());
+		if (!problems.isEmpty()) {
+			throw new AssertionFailedError("[C11] 주인이 아닌 곳에서 만든 이벤트 " + problems.size() + "건 (docs/conventions/events.md)\n"
 					+ String.join("\n", problems));
 		}
 	}

@@ -15,10 +15,16 @@ import io.salvia95.cozy.rules.Violation;
 /**
  * 검사 C8. 모듈 안의 배치와 이름, 레이어 방향. 어긴 곳마다 위치와 고치는 방법을 한 줄로 보고한다. 예외 목록은 두지 않는다
  * (실패로 닫는다). 같은 메시지는 한 번만 보고하고, 메시지 순서로 정렬한다.
+ *
+ * <p>이벤트 계약 모듈({@value #EVENTS})은 따로 본다. 이벤트 record만 주인 모듈 이름의 하위 패키지({@code events.spi.memo})에 두고,
+ * 다른 앱 모듈에 의존하지 않는다. 그래서 이벤트를 내는 모듈과 받는 모듈이 서로 의존하지 않는다.
  */
 public final class LayerChecker {
 
 	private static final Set<String> MODULE_FOLDERS = Set.of("api", "spi", "internal");
+
+	/** 이벤트 계약 모듈의 이름 */
+	public static final String EVENTS = "events";
 
 	private static final Set<String> JDBC_TYPES = Set.of("org.springframework.jdbc.core.JdbcTemplate",
 			"org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate",
@@ -63,7 +69,11 @@ public final class LayerChecker {
 		for (JavaType type : types) {
 			ModulePackage module = moduleOf(type.packageName());
 			if (module != null && in(type.packageName(), module.of(Layer.SPI))) {
-				packages.add(type.packageName());
+				// events 모듈은 주인 폴더(spi.{주인 모듈})만 본다. 다른 자리는 배치 위반으로 따로 알린다
+				String rest = type.packageName().substring(module.of(Layer.SPI).length());
+				if (!isEvents(module) || (rest.matches("\\.[^.]+") && ownerExists(rest.substring(1)))) {
+					packages.add(type.packageName());
+				}
 			}
 		}
 		for (String pkg : packages) {
@@ -80,6 +90,10 @@ public final class LayerChecker {
 		String pkg = type.packageName();
 		String name = type.simpleName();
 		String where = type.name();
+		if (isEvents(m)) {
+			eventsPlacement(m, type);
+			return;
+		}
 		if (pkg.equals(m.basePackage())) {
 			report(where, null, "모듈 루트(" + m.basePackage() + ")에는 package-info.java만 둡니다. 컨트롤러는 " + m.of(Layer.API)
 					+ ", 모듈 사이 계약은 " + m.of(Layer.SPI) + ", 구현은 " + m.sub("internal") + ".app·domain·infra·config로 옮기세요.");
@@ -93,7 +107,8 @@ public final class LayerChecker {
 			return;
 		}
 		if (type.has(JavaType.Trait.COZY_EVENT) && !in(pkg, m.of(Layer.SPI_EVENT))) {
-			report(where, null, "CozyEvent는 " + m.of(Layer.SPI_EVENT) + "에 둡니다. 이벤트는 모듈 사이 계약입니다.");
+			report(where, null, "CozyEvent는 이벤트 계약 모듈의 " + eventsFolder(m) + "에 둡니다. 이벤트를 받는 모듈이 "
+					+ folderName(m) + "에 의존하지 않게 됩니다.");
 		}
 		switch (top) {
 			case "api" -> {
@@ -123,6 +138,27 @@ public final class LayerChecker {
 				}
 			}
 			default -> internalPlacement(m, type, pkg, name, where);
+		}
+	}
+
+	/** 이벤트 계약 모듈: {@code events.spi.{주인 모듈}} 아래의 CozyEvent record만 */
+	private void eventsPlacement(ModulePackage m, JavaType type) {
+		String spi = m.of(Layer.SPI);
+		String pkg = type.packageName();
+		String where = type.name();
+		if (!type.has(JavaType.Trait.COZY_EVENT) || type.isInterface() || type.has(JavaType.Trait.COMPONENT)
+				|| !in(pkg, spi)) {
+			report(where, null, "events 모듈에는 이벤트 계약만 둡니다. " + spi + ".{주인 모듈} 아래의 CozyEvent record와 "
+					+ "package-info.java만 놓을 수 있습니다.");
+			return;
+		}
+		String owner = pkg.equals(spi) ? "" : pkg.substring(spi.length() + 1);
+		if (owner.isEmpty() || owner.contains(".")) {
+			report(where, null, "이벤트는 주인 모듈 이름의 폴더에 둡니다(" + spi + ".{주인 모듈}). 주인 모듈만 그 이벤트를 발행합니다(C11).");
+			return;
+		}
+		if (!ownerExists(owner)) {
+			report(where, null, "주인 모듈 " + owner + "가 없습니다. 폴더 이름은 이벤트를 발행하는 모듈의 이름입니다.");
 		}
 	}
 
@@ -216,6 +252,13 @@ public final class LayerChecker {
 			return;
 		}
 		boolean same = other.equals(m);
+		if (isEvents(m)) {
+			if (!same) {
+				report(edgeFrom, edgeTo, "이벤트 필드에는 기본 타입(String, long, boolean, LocalDate, Instant, UUID 등)만 씁니다. "
+						+ "다른 모듈의 타입을 쓰면 events 모듈이 그 모듈에 의존해 순환이 다시 생깁니다.");
+			}
+			return;
+		}
 		if (in(from, m.of(Layer.API)) && in(to, other.sub("internal"))) {
 			report(edgeFrom, edgeTo, "api는 internal을 쓰지 않습니다. 컨트롤러는 " + other.of(Layer.SPI) + "의 Facade·Finder와 DTO만 씁니다.");
 		}
@@ -253,7 +296,7 @@ public final class LayerChecker {
 			boolean caller = in(from, m.of(Layer.API)) || (same && in(from, m.of(Layer.APP_COMMAND)));
 			if (!caller) {
 				report(edgeFrom, edgeTo, "쓰기 Facade는 컨트롤러(api)와 소유 모듈의 app.command만 부릅니다. 다른 모듈의 쓰기는 이벤트("
-						+ other.of(Layer.SPI_EVENT) + ")로 알리고 그 모듈이 직접 하게 하세요.");
+						+ eventsFolder(m) + ")로 알리고 그 모듈이 직접 하게 하세요.");
 			}
 		}
 	}
@@ -263,6 +306,30 @@ public final class LayerChecker {
 	private void report(String location, String reference, String message) {
 		Violation violation = new Violation(location, 0, "C8", Severity.ERROR, reference, message);
 		this.found.putIfAbsent(violation.format(), violation);
+	}
+
+	private boolean ownerExists(String owner) {
+		return this.modules.stream().anyMatch((other) -> !isEvents(other) && folderName(other).equals(owner));
+	}
+
+	private static boolean isEvents(ModulePackage module) {
+		return folderName(module).equals(EVENTS);
+	}
+
+	/** 모듈 패키지의 마지막 이름 ({@code it.cozy.app.memo} → {@code memo}). 이벤트의 주인 폴더 이름이다 */
+	private static String folderName(ModulePackage module) {
+		String base = module.basePackage();
+		return base.substring(base.lastIndexOf('.') + 1);
+	}
+
+	/** 이 모듈이 주인인 이벤트의 자리 ({@code it.cozy.app.events.spi.memo}) */
+	private String eventsFolder(ModulePackage module) {
+		String root = this.modules.stream()
+			.filter(LayerChecker::isEvents)
+			.map(ModulePackage::basePackage)
+			.findFirst()
+			.orElseGet(() -> module.basePackage().substring(0, module.basePackage().lastIndexOf('.') + 1) + EVENTS);
+		return root + ".spi." + folderName(module);
 	}
 
 	private ModulePackage moduleOf(String pkg) {

@@ -1,0 +1,4 @@
+# 이벤트 계약 모듈 events: book과 rental이 서로의 이벤트를 받고 rental이 book을 읽어도 모듈 의존은 순환하지 않는다(C1).
+# 이벤트는 주인 모듈만 만든다(C11). 흐름 테스트가 두 방향의 리스너가 실제로 도는 것을 확인한다
+hand events-module
+cozy check

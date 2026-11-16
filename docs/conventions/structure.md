@@ -19,8 +19,7 @@ memo/
 ├── spi/                              package-info: @NamedInterface("spi")
 │   ├── MemoFacade.java               create, update, delete
 │   ├── MemoFinder.java               find, list, search, summary
-│   ├── dto/                          MemoItem, MemoPage, MemoSummary  (package-info: @NamedInterface("spi"))
-│   └── event/                        MemoCreated (CozyEvent)          (package-info: @NamedInterface("spi"))
+│   └── dto/                          MemoItem, MemoPage, MemoSummary  (package-info: @NamedInterface("spi"))
 └── internal/
     ├── app/command/MemoFacadeImpl    @Service @Transactional, 이벤트 발행
     ├── app/query/MemoFinderImpl      @Transactional(readOnly = true), 도메인 → spi DTO
@@ -28,7 +27,24 @@ memo/
     ├── domain/Memo                   도메인 모델
     ├── infra/MemoMapper, MemoRow     MyBatis (SQL은 resources/mapper/memo/MemoMapper.xml)
     └── config/MemoConfiguration      모듈 전용 빈 (내비게이션 항목 등)
+
+events/                               이벤트 계약 모듈. 다른 앱 모듈에 의존하지 않는다
+├── package-info.java                 @ApplicationModule(allowedDependencies = {})
+└── spi/
+    └── memo/                         주인이 memo인 이벤트 (package-info: @NamedInterface("spi"))
+        └── MemoCreated.java          CozyEvent record
 ```
+
+### 이벤트 계약 모듈 `events`
+
+이벤트를 내는 모듈도 받는 모듈도 `events :: spi`에만 의존한다. 그래서 두 모듈이 서로의 이벤트를 받아도 순환하지 않는다. 모듈 사이의 의존은 읽기(`*Finder`, `spi/dto`, `spi` fragment)만 남는다.
+
+- **자리**: 이벤트 record는 `events/spi/{주인 모듈}/`에 둔다. 폴더마다 `package-info.java`에 `@NamedInterface("spi")`를 둔다.
+- **두지 않는 것**: 이벤트가 아닌 클래스, 스프링 빈, 템플릿, 마이그레이션. `events/spi/` 바로 아래나 더 깊은 폴더에도 두지 않는다(C8).
+- **필드**: 기본 타입(`String`, `long`, `boolean`, `LocalDate`, `Instant`, `UUID` 등)만 쓴다. 다른 모듈의 타입(`spi/dto` record 등)을 쓰면 `events`가 그 모듈에 의존해 순환이 다시 생긴다(C8).
+- **주인**: 폴더 이름이 주인 모듈이다. 그 이벤트는 주인 모듈의 `internal/app/command/`에서만 만든다(C11, [events.md](events.md)). 받는 쪽은 제한하지 않는다.
+- **이름**: `events`는 예약한 이름이라 기능 모듈에 쓰지 않는다.
+- **옛 자리**: 주인 모듈의 `spi/event/`에 둔 이벤트도 아직 통과한다. 하지만 그 이벤트를 받는 모듈이 주인 모듈에 의존하므로, 두 모듈이 서로의 이벤트를 받으면 순환(C1)으로 실패한다.
 
 ### 놓는 자리
 
@@ -39,7 +55,7 @@ memo/
 | 쓰기 계약 | `spi/` | `*Facade` 인터페이스 |
 | 읽기 계약 | `spi/` | `*Finder` 인터페이스 |
 | 모듈 사이 DTO | `spi/dto/` | record. 스프링 빈이 아니다 |
-| 이벤트 | `spi/event/` | `CozyEvent` 구현 record. 다른 곳에 두면 C8 |
+| 이벤트 | 이벤트 계약 모듈 `events/spi/{주인 모듈}/` | `CozyEvent` 구현 record. 주인 모듈의 `spi/event/`(옛 자리)도 통과한다. 다른 곳에 두면 C8 |
 | 쓰기 구현 | `internal/app/command/` | `*FacadeImpl`, `*Service` + `*ServiceImpl` |
 | 이벤트 리스너 | `internal/app/command/` | `*Listener` (`@ApplicationModuleListener` 등). 인터페이스 없이 둔다 |
 | 읽기 구현 | `internal/app/query/` | `*FinderImpl`, `*Query` + `*QueryImpl`, `*Projection` + `*ProjectionImpl` |
@@ -48,8 +64,8 @@ memo/
 | 모듈 전용 설정 | `internal/config/` | `@Configuration` |
 
 - **인터페이스 + Impl**: app의 구현 클래스는 이름이 `*Impl`이고, `Impl`을 뺀 이름의 인터페이스를 구현한다. Facade·Finder의 인터페이스는 같은 모듈의 `spi`에 있어야 한다. 구현 클래스는 package-private으로 둔다.
-- **spi 하위 패키지**: `spi/dto`, `spi/event`에도 `package-info.java`에 `@NamedInterface("spi")`를 둔다. 빠지면 C8이 알려 준다.
-- **다른 모듈 쓰기**: `package-info.java`에 `allowedDependencies = {"memo :: spi"}`로 적는다. 그 모듈의 `*Finder`로 읽고, 쓰기는 이벤트(`spi/event`)를 받아서 한다. 다른 모듈의 `*Facade`는 부르지 않는다.
+- **spi 하위 패키지**: `spi/dto`(옛 자리의 `spi/event`도)와 `events/spi/{주인 모듈}`에도 `package-info.java`에 `@NamedInterface("spi")`를 둔다. 빠지면 C8이 알려 준다.
+- **다른 모듈 쓰기**: `package-info.java`에 `allowedDependencies = {"memo :: spi"}`로 적는다. 그 모듈의 `*Finder`로 읽고, 쓰기는 이벤트(`events/spi/{주인 모듈}`)를 받아서 한다. 이벤트만 받으면 `"events :: spi"`만 적는다. 다른 모듈의 `*Facade`는 부르지 않는다.
 
 ### 방향 (C8)
 
@@ -72,6 +88,8 @@ api ──▶ spi ◀── internal.app ──▶ internal.infra
 [C8] it.cozy.app.memo.MemoService — 모듈 루트(it.cozy.app.memo)에는 package-info.java만 둡니다. 컨트롤러는 …api, 모듈 사이 계약은 …spi, 구현은 …internal.app·domain·infra·config로 옮기세요.
 [C8] it.cozy.app.memo.api.MemoController → it.cozy.app.memo.internal.infra.MemoStore — api는 internal을 쓰지 않습니다. 컨트롤러는 …spi의 Facade·Finder를 부릅니다.
 [C8] it.cozy.app.memo.internal.app.query.MemoFinderImpl → it.cozy.app.memo.internal.app.command.MemoWriter — app.query는 app.command에 의존하지 않습니다(읽기가 쓰기를 부르지 않습니다).
+[C8] it.cozy.app.events.spi.book.BookFormat — events 모듈에는 이벤트 계약만 둡니다. it.cozy.app.events.spi.{주인 모듈} 아래의 CozyEvent record와 package-info.java만 놓을 수 있습니다.
+[C8] it.cozy.app.events.spi.memo.MemoCreated → it.cozy.app.memo.spi.dto.MemoItem — 이벤트 필드에는 기본 타입(…)만 씁니다. 다른 모듈의 타입을 쓰면 events 모듈이 그 모듈에 의존해 순환이 다시 생깁니다.
 ```
 
 ## 템플릿

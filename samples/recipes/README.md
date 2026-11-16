@@ -14,6 +14,7 @@
 | `crud-kinds` | `crud`(필드 종류 전부, 이벤트 셋), `module`, `link`, `event`, 다시 실행 | 통과 |
 | `screen-details` | `screen`(details, overview), `event`, `listener`, `migration`, 다시 실행 | C9 4곳만 실패 |
 | `stage-two` | sqlite만 있는 앱에 `enable events`, `crud`, 리스너가 만든 빈 Facade를 `crud`가 채움, `dto`(record·list 구성 요소), crud가 발행하는 이벤트에 `event-version` 두 번(v3까지), 다시 실행, 실패해야 하는 명령 5개, 리스너 빈칸을 `hand/stage-two`로 채움 | 통과 (C6 포함) |
+| `events-module` | `hand/events-module`(손으로 만든 book·rental과 이벤트 계약 모듈 `events`), `cozy check`. 두 모듈이 서로의 이벤트를 받고 rental이 book을 읽어도 순환하지 않고, 흐름 테스트가 두 방향의 리스너를 확인한다 | 통과 |
 | `behavior` | `crud`, `module`, 두 모듈에 `add behavior`, `cozy check`가 C9로 실패, `hand/behavior-filled`(빈칸을 채우고 task 상세가 note의 컴포넌트를 씀) 뒤 R16으로 실패, `hand/behavior`(자기 모듈의 컴포넌트) 뒤 통과, 다시 실행 | 통과 |
 | `migrate` | `crud`를 만든 뒤 `hand/migrate`로 상세 화면에 옛 동작 속성(`data-cozy-confirm`, `data-cozy-copy`)을 넣음, `cozy check`가 R16으로 실패, `cozy migrate alpine`, 다시 실행(바뀐 것 없음), `cozy check` 통과 | 통과 |
 | `field` | `crud`를 만든 뒤 `add field`를 종류마다 한 번씩(필수는 `--default`), 중간에 `hand/field`로 `create` 본문을 고침, `--default` 없는 필수 필드는 실패, 다시 실행 | 통과 |
