@@ -141,7 +141,7 @@
                     <a th:href="@{/cozy/dev/workbench/map(module=${module.name})}" th:text="${module.name}">memo</a>
                     <span class="d-block text-secondary small" th:if="${!module.summary.isEmpty()}" th:text="${module.summary}">화면 4</span>
                   </td>
-                  <td th:text="${module.uses.isEmpty()} ? '—' : ${#strings.listJoin(module.uses, ', ')}">—</td>
+                  <td th:text="${module.usesText()}">—</td>
                   <td th:text="${module.usedBy.isEmpty()} ? '—' : ${#strings.listJoin(module.usedBy, ', ')}">activity, dashboard</td>
                 </tr>
               </tbody>

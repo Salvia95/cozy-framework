@@ -418,6 +418,10 @@ final class CommandForm {
 				}
 				Map<String, Object> m = (Map<String, Object>) raw;
 				String module = String.valueOf(m.get("name"));
+				if (module.equals(ModuleGraph.EVENTS)) {
+					// 이벤트 계약 모듈에는 명령으로 무엇을 더하지 않는다. 이벤트는 주인 모듈을 고르면 그 자리에 만들어진다
+					continue;
+				}
 				modules.add(new Option(module, module));
 				List<String> facades = types(m.get("facades"));
 				List<String> finders = types(m.get("finders"));

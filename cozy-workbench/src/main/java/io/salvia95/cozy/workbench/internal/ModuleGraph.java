@@ -15,6 +15,8 @@ import java.util.TreeMap;
  * <li>열: 참조하는 모듈이 왼쪽, 참조되는 모듈이 오른쪽이다. 의존하는 모듈이 없는 모듈이 맨 오른쪽 열이다.</li>
  * <li>의존 선: 왼쪽 마디의 오른쪽 가운데에서 오른쪽 마디의 왼쪽 가운데로 간다. 열을 건너뛰는 선은 사이의 마디를 피해 아래로 휜다.</li>
  * <li>이벤트 선: 발행하는 모듈의 위에서 수신하는 모듈의 위로, 마디들 위쪽으로 휜다.</li>
+ * <li>이벤트 계약 모듈({@code events})은 그리지 않는다. 이벤트를 내거나 받는 모든 모듈이 의존하므로 그리면 한 점으로 모이는 선만 늘어난다.
+ * 그 대신 이벤트 선이 주인 모듈에서 받는 모듈로 흐름을 보인다.</li>
  * </ul>
  *
  * @param nodes 마디 (왼쪽 열부터, 위에서 아래로)
@@ -22,8 +24,12 @@ import java.util.TreeMap;
  * @param width 그림의 폭
  * @param height 그림의 높이
  * @param cyclic 의존이 순환해서 열을 정하지 못한 모듈이 있는가
+ * @param contracts 앱에 이벤트 계약 모듈이 있어 그리지 않았는가
  */
-record ModuleGraph(List<Node> nodes, List<Edge> edges, int width, int height, boolean cyclic) {
+record ModuleGraph(List<Node> nodes, List<Edge> edges, int width, int height, boolean cyclic, boolean contracts) {
+
+	/** 이벤트 계약 모듈의 이름 */
+	static final String EVENTS = "events";
 
 	static final int NODE_WIDTH = 184;
 
@@ -48,8 +54,19 @@ record ModuleGraph(List<Node> nodes, List<Edge> edges, int width, int height, bo
 	 * @param uses 의존하는 모듈
 	 * @param usedBy 이 모듈에 의존하는 모듈
 	 * @param selected 선택한 모듈인가
+	 * @param contracts 이벤트 계약 모듈에 의존하는가 ({@code uses}에는 넣지 않는다)
 	 */
-	record Node(String name, String summary, int x, int y, List<String> uses, List<String> usedBy, boolean selected) {
+	record Node(String name, String summary, int x, int y, List<String> uses, List<String> usedBy, boolean selected,
+			boolean contracts) {
+
+		/** 의존 모듈을 한 줄로: {@code memo, 이벤트 계약 모듈}. 없으면 {@code —} */
+		public String usesText() {
+			List<String> parts = new ArrayList<>(this.uses);
+			if (this.contracts) {
+				parts.add("이벤트 계약 모듈");
+			}
+			return parts.isEmpty() ? "—" : String.join(", ", parts);
+		}
 
 		public int textX() {
 			return this.x + 14;
@@ -83,16 +100,22 @@ record ModuleGraph(List<Node> nodes, List<Edge> edges, int width, int height, bo
 	}
 
 	/**
-	 * @param modules {@code cozy describe --json}의 {@code modules}
+	 * @param described {@code cozy describe --json}의 {@code modules}. 이벤트 계약 모듈은 빼고 그린다
 	 * @param selected 선택한 모듈 이름. 없으면 {@code null}
 	 */
-	static ModuleGraph of(List<Map<String, Object>> modules, String selected) {
+	static ModuleGraph of(List<Map<String, Object>> described, String selected) {
+		boolean contracts = described.stream().anyMatch((m) -> EVENTS.equals(m.get("name")));
+		List<Map<String, Object>> modules = described.stream().filter((m) -> !EVENTS.equals(m.get("name"))).toList();
+		Map<String, Boolean> usesContracts = new LinkedHashMap<>();
 		Map<String, List<String>> uses = new TreeMap<>();
 		for (Map<String, Object> module : modules) {
 			List<String> targets = new ArrayList<>();
 			for (Object dependency : list(module.get("dependsOn"))) {
 				String target = moduleOf(String.valueOf(dependency));
-				if (!targets.contains(target)) {
+				if (contracts && target.equals(EVENTS)) {
+					usesContracts.put(String.valueOf(module.get("name")), true);
+				}
+				else if (!targets.contains(target)) {
 					targets.add(target);
 				}
 			}
@@ -197,13 +220,14 @@ record ModuleGraph(List<Node> nodes, List<Edge> edges, int width, int height, bo
 			String name = String.valueOf(module.get("name"));
 			int[] at = position.get(name);
 			nodes.add(new Node(name, summary(module), at[0], at[1], List.copyOf(uses.get(name)),
-					List.copyOf(usedBy.getOrDefault(name, List.of())), name.equals(selected)));
+					List.copyOf(usedBy.getOrDefault(name, List.of())), name.equals(selected), usesContracts.getOrDefault(name, false)));
 		}
 		// 화면에 놓인 순서(왼쪽 열부터, 위에서 아래로)가 키보드로 옮겨 가는 순서다
 		nodes.sort(Comparator.comparingInt(Node::x).thenComparingInt(Node::y));
 		int width = PADDING * 2 + columns.size() * NODE_WIDTH + Math.max(columns.size() - 1, 0) * COLUMN_GAP;
 		int height = Math.max(top + bodyHeight, lowest) + PADDING;
-		return new ModuleGraph(List.copyOf(nodes), List.copyOf(edges), Math.max(width, PADDING * 2 + NODE_WIDTH), height, cyclic);
+		return new ModuleGraph(List.copyOf(nodes), List.copyOf(edges), Math.max(width, PADDING * 2 + NODE_WIDTH), height, cyclic,
+				contracts);
 	}
 
 	/** 선택한 모듈의 마디. 선택하지 않았거나 없는 이름이면 {@code null} */

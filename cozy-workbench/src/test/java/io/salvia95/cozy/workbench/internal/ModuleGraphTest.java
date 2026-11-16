@@ -26,6 +26,41 @@ class ModuleGraphTest {
 		return graph.nodes().stream().filter((n) -> n.name().equals(name)).findFirst().orElseThrow();
 	}
 
+	/** 서로의 이벤트를 받고 rental이 book을 읽는 두 모듈. 이벤트는 이벤트 계약 모듈에 있다 */
+	static final List<Map<String, Object>> EVENTS_CYCLE = List.of(
+			module("book", List.of("events :: spi"), List.of("rental.RentalCreated"), 2),
+			module("events", List.of(), List.of(), 0),
+			module("rental", List.of("events :: spi", "book :: spi"), List.of("book.BookCreated"), 2));
+
+	@Test
+	void theEventContractsModuleIsNotDrawnAndEventsFlowBothWays() {
+		ModuleGraph graph = ModuleGraph.of(EVENTS_CYCLE, null);
+		assertThat(graph.contracts()).isTrue();
+		assertThat(graph.cyclic()).as("events를 거친 이벤트는 순환이 아니다").isFalse();
+		assertThat(graph.nodes()).extracting(Node::name).containsExactly("rental", "book");
+		assertThat(graph.edges()).filteredOn((e) -> !e.hasEvent())
+			.extracting(Edge::from, Edge::to)
+			.containsExactly(org.assertj.core.groups.Tuple.tuple("rental", "book"));
+		assertThat(graph.edges()).filteredOn(Edge::hasEvent)
+			.extracting(Edge::from, Edge::to, Edge::event)
+			.containsExactlyInAnyOrder(org.assertj.core.groups.Tuple.tuple("book", "rental", "BookCreated"),
+					org.assertj.core.groups.Tuple.tuple("rental", "book", "RentalCreated"));
+		assertThat(node(graph, "book").uses()).isEmpty();
+		assertThat(node(graph, "book").contracts()).isTrue();
+		assertThat(node(graph, "book").usesText()).isEqualTo("이벤트 계약 모듈");
+		assertThat(node(graph, "rental").usesText()).isEqualTo("book, 이벤트 계약 모듈");
+		assertThat(ModuleGraph.of(REFERENCE, null).contracts()).isFalse();
+	}
+
+	@Test
+	void aDependencyOnAMissingEventsModuleIsIgnored() {
+		// events가 없는 앱의 "events :: spi"는 없는 모듈이라 지금처럼 버린다
+		ModuleGraph graph = ModuleGraph.of(List.of(module("memo", List.of("events :: spi"), List.of(), 1)), null);
+		assertThat(graph.contracts()).isFalse();
+		assertThat(node(graph, "memo").contracts()).isFalse();
+		assertThat(node(graph, "memo").usesText()).isEqualTo("—");
+	}
+
 	@Test
 	void modulesThatUseOthersSitToTheLeftOfTheModulesTheyUse() {
 		ModuleGraph graph = ModuleGraph.of(REFERENCE, null);

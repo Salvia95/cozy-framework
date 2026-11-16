@@ -64,6 +64,7 @@
           <div class="card-footer cozy-workbench-legend">
             <span><svg width="36" height="10" viewBox="0 0 36 10" aria-hidden="true" class="cozy-workbench-graph-edge"><path d="M0 5L34 5" marker-end="url(#cozy-graph-arrow)"></path></svg> 의존: 화살표가 가리키는 모듈을 참조</span>
             <span><svg width="36" height="10" viewBox="0 0 36 10" aria-hidden="true" class="cozy-workbench-graph-edge cozy-workbench-graph-event"><path d="M0 5L34 5" marker-end="url(#cozy-graph-arrow)"></path></svg> 이벤트: 발행하는 모듈에서 수신하는 모듈로</span>
+            <span th:if="${graph.contracts}">이벤트 계약 모듈(events)은 그리지 않습니다. 이벤트를 내거나 받는 모듈이 모두 참조합니다</span>
           </div>
         </th:block>
 
@@ -139,8 +140,9 @@
               <tr><th scope="row">패키지</th><td><code th:text="${m.package}">io.salvia95.cozy.reference.memo</code></td></tr>
               <tr><th scope="row">의존 모듈</th>
                 <td>
-                  <span class="text-secondary" th:if="${selectedNode.uses.isEmpty()}">없음</span>
+                  <span class="text-secondary" th:if="${selectedNode.uses.isEmpty() and !selectedNode.contracts}">없음</span>
                   <a class="me-2" th:each="name : ${selectedNode.uses}" th:href="@{/cozy/dev/workbench/map(module=${name})} + ${viewSuffix}" th:text="${name}">memo</a>
+                  <span class="text-secondary" th:if="${selectedNode.contracts}">이벤트 계약 모듈 <code>events</code></span>
                 </td></tr>
               <tr><th scope="row">참조하는 모듈</th>
                 <td>

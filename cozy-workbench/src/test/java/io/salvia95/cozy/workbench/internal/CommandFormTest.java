@@ -21,7 +21,10 @@ class CommandFormTest {
 					"dtos", List.of(Map.of("type", "MemoItem"), Map.of("type", "MemoPage")), "events",
 					List.of(Map.of("type", "MemoCreated")), "controllers", List.of("MemoController")),
 			Map.of("name", "activity", "facades", List.of(), "finders", List.of(Map.of("type", "ActivityFinder")), "dtos",
-					List.of(Map.of("type", "ActivityItem")), "events", List.of(), "controllers", List.of())));
+					List.of(Map.of("type", "ActivityItem")), "events", List.of(), "controllers", List.of()),
+			// 이벤트 계약 모듈: 코드 생성의 모듈 선택에 나오지 않는다
+			Map.of("name", "events", "facades", List.of(), "finders", List.of(), "dtos", List.of(), "events", List.of(),
+					"controllers", List.of())));
 
 	static final Map<String, List<CommandForm.Group>> SOURCES = CommandForm.sources(DESCRIBE, List.of("notes", "checklist", "home"));
 
@@ -50,6 +53,7 @@ class CommandFormTest {
 			.as("모듈은 앱의 모듈을 제안(없으면 만든다), 아이콘은 아이콘 칸, 발행할 이벤트는 여럿 고르기")
 			.containsExactly("suggest", "text", "text", "icon", "checks");
 		assertThat(crud.fields().getFirst().input().groups().getFirst().options()).extracting(CommandForm.Option::value)
+			.as("이벤트 계약 모듈 events는 고를 수 없다")
 			.containsExactly("memo", "activity");
 		assertThat(crud.fields().get(4).input().groups().getFirst().options()).extracting(CommandForm.Option::text)
 			.containsExactly("생성 (created)", "수정 (updated)", "삭제 (deleted)");

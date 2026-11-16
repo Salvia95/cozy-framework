@@ -838,6 +838,10 @@ public class WorkbenchController {
 					.filter((m) -> module.equals(m.get("name")))
 					.findFirst()
 					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 모듈이 없습니다: " + module));
+		if (ModuleGraph.EVENTS.equals(module)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"[cozy] events는 이벤트 계약 모듈이라 모듈 의존성에 그리지 않습니다. 이벤트는 주인 모듈을 선택하면 보입니다.");
+		}
 		ModuleGraph graph = ModuleGraph.of(modules, module);
 		model.addAttribute("graph", graph);
 		model.addAttribute("nodeWidth", ModuleGraph.NODE_WIDTH);
