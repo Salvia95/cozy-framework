@@ -126,6 +126,55 @@ public final class Context {
 		return layer.packageIn(modulePackage(module));
 	}
 
+	/** 이벤트 계약 모듈에서 주인 모듈의 이벤트 패키지 ({@code it.cozy.app.events.spi.memo}) */
+	public String eventPackage(String owner) {
+		return modulePackage(AppProject.EVENTS) + ".spi." + owner;
+	}
+
+	/**
+	 * 이벤트의 FQN. 이벤트 계약 모듈({@code events/spi/{주인}/})에 있으면 그것, 옛 자리({@code {주인}/spi/event/})에 있으면 그것이다.
+	 * 이 계획에서 만든 파일도 찾는다.
+	 */
+	public Optional<String> findEvent(String owner, String event) {
+		for (String pkg : List.of(eventPackage(owner), rolePackage(owner, Layer.SPI_EVENT))) {
+			String name = pkg + "." + event;
+			if (this.project.sources().types().containsKey(name) || this.plan.exists(javaFile(pkg, event))) {
+				return Optional.of(name);
+			}
+		}
+		return Optional.empty();
+	}
+
+	/** 이벤트 계약 모듈의 package-info와 주인 폴더의 Named Interface가 없으면 만든다 */
+	public void ensureEventsModule(String owner) {
+		String module = packageInfo(modulePackage(AppProject.EVENTS));
+		if (!this.plan.exists(module)) {
+			this.plan.create(module, new Template().put("pkg", modulePackage(AppProject.EVENTS)).render("events-package-info.java"));
+		}
+		String folder = packageInfo(eventPackage(owner));
+		if (!this.plan.exists(folder)) {
+			String what = owner + "가 발행하는 이벤트 (이벤트 계약 모듈, Named Interface spi). 이 이벤트는 " + owner
+					+ "의 internal.app.command에서만 만든다(C11).";
+			this.plan.create(folder, new Template().put("what", what).put("pkg", eventPackage(owner)).render("named-interface.java"));
+		}
+	}
+
+	/**
+	 * 모듈의 allowedDependencies에 {@code "events :: spi"}를 더한다. 이벤트 계약 모듈은 다른 앱 모듈에 의존하지 않으므로 순환이 생기지
+	 * 않는다. 의존을 선언하지 않은 모듈(open)은 그대로 둔다.
+	 */
+	public void declareEvents(String module) {
+		String file = packageInfo(modulePackage(module));
+		String current = this.plan.current(file);
+		if (current == null || !current.contains("@ApplicationModule")) {
+			return;
+		}
+		String next = PackageInfos.addDependencies(file, current, List.of(AppProject.EVENTS + " :: spi"));
+		if (!next.equals(current)) {
+			this.plan.edit(file, next, "allowedDependencies += \"" + AppProject.EVENTS + " :: spi\"");
+		}
+	}
+
 	/** spi, spi.dto, spi.event 패키지의 package-info가 없으면 만든다 */
 	public void ensureNamedInterface(String module, Layer layer) {
 		String pkg = rolePackage(module, layer);

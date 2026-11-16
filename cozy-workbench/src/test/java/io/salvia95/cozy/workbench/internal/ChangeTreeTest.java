@@ -17,6 +17,18 @@ class ChangeTreeTest {
 	static final String JAVA = "src/main/java/io/x/";
 
 	@Test
+	void anEventInTheEventsModuleKeepsItsSampleNextToIt() {
+		List<WorkbenchEngine.Change> plan = List.of(create(JAVA + "events/package-info.java"),
+				create(JAVA + "events/spi/task/package-info.java"), create(JAVA + "events/spi/task/TaskCreated.java"),
+				create("src/test/resources/events/TaskCreated/v1.json"),
+				new WorkbenchEngine.Change("edit", JAVA + "task/package-info.java", "allowedDependencies += \"events :: spi\""));
+		List<ChangeTree.Module> tree = ChangeTree.of(plan, "io.x", Map.of());
+		assertThat(tree).extracting(ChangeTree.Module::label).containsExactly("events 모듈", "task 모듈");
+		assertThat(tree.getFirst().layers().stream().flatMap((l) -> l.files().stream()).map(ChangeTree.File::name))
+			.as("이벤트와 샘플이 같은 모듈에 모인다").containsExactlyInAnyOrder("package-info.java", "package-info.java", "TaskCreated.java", "v1.json");
+	}
+
+	@Test
 	void filesAreGroupedByModuleAndLayer() {
 		List<WorkbenchEngine.Change> plan = List.of(create(JAVA + "task/spi/TaskFacade.java"),
 				create(JAVA + "task/spi/dto/TaskItem.java"), create(JAVA + "task/internal/domain/Task.java"),

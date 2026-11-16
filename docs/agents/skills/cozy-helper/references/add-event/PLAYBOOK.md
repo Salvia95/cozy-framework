@@ -23,12 +23,14 @@ cozy add event <모듈> <이벤트> --field 이름:종류 …
 
 ## Creates
 
-- `spi/event/{Event}.java`, a record with a static `of(…)` factory.
+- `events/spi/{module}/{Event}.java` in the event contracts module, a record with a static `of(…)` factory, plus the `package-info.java` files of `events` and of its owner folder when they are missing.
+- `"events :: spi"` in `allowedDependencies` of the owner module.
 - `src/test/resources/events/{Event}/v1.json`, the version 1 sample.
 
 ## Slots
 
 - The command leaves no slot, but you add the publish line in the sending module's `*FacadeImpl` write method, inside its transaction: `this.events.publishEvent(ReportSent.of(reportId, sentOn));`.
+- Create the event only in its owner module's `internal/app/command`; when another module has news of its own, give that module its own event.
 
 ## Example
 
@@ -41,6 +43,7 @@ cozy add event report ReportSent --field reportId:long --field sentOn:date
 | Message contains | Action |
 | --- | --- |
 | `cozy-starter-events가 필요합니다` | Run [enable-events](../enable-events/PLAYBOOK.md) first. |
+| `이벤트의 주인은 그 이벤트를 발행하는 기능 모듈입니다` | Pass the publishing module, not `events`. |
 | `이미 있고 내용이 다릅니다` | Use a new name, or add fields with [add-event-version](../add-event-version/PLAYBOOK.md). |
 
 ## Next

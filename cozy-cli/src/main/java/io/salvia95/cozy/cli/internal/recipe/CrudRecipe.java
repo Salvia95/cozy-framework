@@ -137,7 +137,7 @@ final class CrudRecipe {
 				.put("base", base).put("appBase", ctx.basePackage())
 				.put("apiPkg", Layer.API.packageIn(base)).put("dtoPkg", Layer.API_DTO.packageIn(base))
 				.put("spiPkg", Layer.SPI.packageIn(base)).put("spiDtoPkg", Layer.SPI_DTO.packageIn(base))
-				.put("eventPkg", Layer.SPI_EVENT.packageIn(base)).put("commandPkg", Layer.APP_COMMAND.packageIn(base))
+				.put("eventPkg", ctx.eventPackage(module)).put("commandPkg", Layer.APP_COMMAND.packageIn(base))
 				.put("queryPkg", Layer.APP_QUERY.packageIn(base)).put("domainPkg", Layer.DOMAIN.packageIn(base))
 				.put("infraPkg", Layer.INFRA.packageIn(base))
 				.put("name", name.name()).put("Name", name.pascal()).put("nameLabel", name.label())
@@ -198,7 +198,7 @@ final class CrudRecipe {
 
 			// 이벤트
 			Set<String> eventImports = new TreeSet<>();
-			publish.forEach((p) -> eventImports.add(Layer.SPI_EVENT.packageIn(base) + "." + E + Names.capitalize(p)));
+			publish.forEach((p) -> eventImports.add(ctx.eventPackage(module) + "." + E + Names.capitalize(p)));
 			t.put("eventImports", String.join("", eventImports.stream().map((i) -> "import " + i + ";\n").toList()));
 			t.put("publisherImport", events ? "import org.springframework.context.ApplicationEventPublisher;\n" : "");
 			t.put("eventsField", events ? "\n\tprivate final ApplicationEventPublisher events;\n" : "");

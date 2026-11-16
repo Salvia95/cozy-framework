@@ -1,0 +1,13 @@
+# 서로의 이벤트를 받는 두 모듈을 cozy 명령만으로 만든다. 이벤트는 events/spi/{주인}/에, 리스너 쪽은 "events :: spi"만 선언하므로
+# 모듈 의존이 순환하지 않는다(C1). rental이 book을 읽는 link를 더해도 순환이 아니다
+cozy add crud book --entity Book --label 도서 --icon book --field title:text!:제목 --publish created
+cozy add crud rental --entity Rental --label 대여 --icon calendar --field "borrower:text!:빌린 사람" --publish created
+cozy add listener book --on rental.RentalCreated
+cozy add listener rental --on book.BookCreated
+cozy link rental --uses book
+rerun
+# 읽기끼리는 여전히 순환이다: rental이 book을 읽으므로 book은 rental을 읽을 수 없다
+cozy! link book --uses rental
+# 리스너 빈칸만 채운다
+hand events-cycle
+cozy check

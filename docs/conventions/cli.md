@@ -54,9 +54,10 @@ cozy <동작> [옵션]
   읽기 MemoFinder
     Optional<MemoItem> find(long id)
   DTO MemoItem(long id, String title, String body, boolean pinned, Instant createdAt, Instant updatedAt)
-  이벤트 MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java
   화면 memo/api/list — src/main/resources/specs/memo-list.yml: default, empty, noResults, paged
   공개 fragment memo/summary: memoSummary(summary)
+
+이벤트 memo.MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java → activity(MemoCreatedListener)
 ```
 
 `--json`의 키는 다음과 같다.
@@ -64,10 +65,12 @@ cozy <동작> [옵션]
 | 키 | 값 |
 | --- | --- |
 | `app` | `basePackage`, `mainClass`, `cozyVersion`(cozy-parent 버전), `starters`(pom에 직접 적은 cozy 의존. 간접 의존은 빠진다) |
-| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `events[]`(`type`, `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]` 발행하는 파일), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트"), `fragments[]`(공개 fragment `id`, `signature`) |
+| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트"), `fragments[]`(공개 fragment `id`, `signature`) |
+| `events[]` | 앱의 이벤트(모듈 순서): `type`, `owner`(주인 모듈), `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]`(발행하는 파일), `listeners[]`(`module`, `type` 받는 리스너 클래스). 이벤트 계약 모듈과 옛 자리(`{주인}/spi/event/`)의 이벤트를 모두 싣는다 |
 | `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
+- **이벤트**: 모듈 항목이 아니라 앱의 `events[]`에 한 번씩 싣는다. 주인은 이벤트 계약 모듈이면 폴더 이름, 옛 자리면 그 모듈이고, 주인 폴더에 맞는 모듈이 없는 이벤트는 싣지 않는다(C8이 알린다). 리스너의 `on`도 `주인.이벤트`다. 글 출력은 모듈 다음에 `이벤트 memo.MemoCreated(long memoId, String title) 발행: … → activity(MemoCreatedListener)`이다.
 - **발행하는 파일**: 소스에서 `이벤트.of(`나 `new 이벤트(`를 찾는다. 이 목록이 비면 아직 발행하지 않는 이벤트다.
 - **모듈 판정**: Spring Modulith와 같다. 메인 클래스 패키지 바로 아래 패키지가 모듈이고, `@ApplicationModule(id)`가 있으면 그 이름을 쓴다. 의존 선언(`allowedDependencies`)이 없으면 open이다.
 
@@ -221,8 +224,8 @@ cozy <동작> [옵션]
   | --- | --- | --- |
   | `modules` | 앱의 모듈 | `modules[].name` |
   | `entities` | 선택한 모듈의 CRUD 엔티티 | `E`: `{E}Facade`, `{E}Finder`, DTO `{E}Item`, `{E}Controller`가 모두 있다 |
-  | `events` | 선택한 모듈의 이벤트 | `modules[].events[].type` |
-  | `app-events` | 앱의 모든 이벤트 `모듈.이벤트` | 모든 모듈의 `events[].type` |
+  | `events` | 선택한 모듈의 이벤트 | `events[]` 가운데 `owner`가 그 모듈인 것의 `type` |
+  | `app-events` | 앱의 모든 이벤트 `모듈.이벤트` | `events[]`의 `owner.type` |
   | `finders`, `facades` | 선택한 모듈의 조회·명령 인터페이스 | `modules[].finders[].type`, `facades[].type` |
   | `dtos` | 선택한 모듈의 DTO와 그 목록 `Record`, `list:Record` | `modules[].dtos[].type` |
   | `icons` | Tabler Icons의 외곽선 아이콘 이름 | (cozy-ui의 스프라이트) |
@@ -255,6 +258,10 @@ cozy enable workbench
 - **필드**: `이름:종류[!][:라벨]`. 종류는 `text`, `longtext`, `int`, `long`, `bool`, `date`, `instant`이고 `!`는 필수다. 라벨에 공백이 있으면 따옴표로 묶는다(`--field "dueOn:date:마감 날짜"`).
 - **라벨은 DTO의 Javadoc에도 남는다**: `add crud`는 화면 DTO record(`Row`, `ListResult`, `Detail`)의 `@param`과 폼·필터 필드 위의 `/** 라벨 */`을 쓴다. `add field`는 폼 필드에 `/** 라벨 */`을 붙이고, `@param` 줄이 있는 record에는 새 구성 요소의 `@param` 줄을 더한다. 워크벤치의 샘플 데이터가 이것을 속성 이름으로 보인다([workbench.md](workbench.md)).
 - **dto 필드**: `이름:종류[:설명]`. 종류는 위와 같고, 같은 모듈 `spi/dto`의 record(`이름:Record`)와 그 목록(`이름:list:Record`)도 쓴다. `!`는 받지 않는다. 설명은 record의 `@param`이 된다. 타입은 `text`→`String`, `int`→`int`, `long`→`long`, `bool`→`boolean`, `date`→`LocalDate`, `instant`→`Instant`, `list:R`→`List<R>`이다.
+- **이벤트의 자리**: `add event`와 `crud --publish`는 이벤트를 이벤트 계약 모듈의 `events/spi/{주인 모듈}/`에 만든다. `events`의 `package-info.java`(`allowedDependencies = {}`)와 주인 폴더의 `@NamedInterface("spi")`가 없으면 함께 만들고, 주인 모듈에 `"events :: spi"`를 더한다([structure.md](structure.md)의 이벤트 계약 모듈).
+  - `add listener`는 받는 모듈에 `"events :: spi"`만 더하고 보내는 모듈에는 의존하지 않는다. 그래서 두 모듈이 서로의 이벤트를 받아도 순환하지 않는다. 옛 자리(보내는 모듈의 `spi/event/`)의 이벤트면 예전처럼 보내는 모듈을 더한다.
+  - `event-version`과 `add listener --on`은 새 자리를 먼저, 그다음 옛 자리를 찾는다.
+  - `events`는 예약한 이름이다. `add module events`, `add crud events …`, `add event events …`는 실패한다.
 - **listener와 Facade**: 리스너는 늘 자기 모듈의 `{M}Facade`를 생성자로 받는다(`activity` → `ActivityFacade`). 없으면 빈 `{M}Facade`와 `internal/app/command/{M}FacadeImpl`을 함께 만든다. 그래서 리스너 파일은 앱 상태와 상관없이 같다(ADR-0033 §5.6). 그 빈 Facade·구현은 나중에 같은 모듈의 `cozy add crud`(엔티티 이름이 모듈 이름과 같을 때)가 채운다(`바꿈 … listener가 만든 빈 Facade를 crud로 채움`). 메서드를 더한 Facade는 덮어쓰지 않고 실패한다.
 - **query** (ADR-0033 §5.2): `--returns`는 `long`, `int`, `bool`, `text`, `<Record>`(Finder는 `Optional<Record>`), `list:<Record>`(`List<Record>`)다. 네 곳에 더한다.
 
@@ -325,7 +332,7 @@ cozy enable workbench
 
 ```text
 [cozy] 계획
-  바꿈  src/main/java/it/cozy/app/activity/package-info.java    allowedDependencies += "memo :: spi"
+  바꿈  src/main/java/it/cozy/app/activity/package-info.java    allowedDependencies += "events :: spi"
   만듦  src/main/java/it/cozy/app/activity/spi/package-info.java
   만듦  src/main/java/it/cozy/app/activity/spi/ActivityFacade.java
   만듦  src/main/java/it/cozy/app/activity/internal/app/command/ActivityFacadeImpl.java
@@ -355,7 +362,7 @@ cozy enable workbench
   "recipe": "listener",
   "applied": true,
   "plan": [
-    { "action": "edit", "file": "src/main/java/it/cozy/app/activity/package-info.java", "detail": "allowedDependencies += \"memo :: spi\"" },
+    { "action": "edit", "file": "src/main/java/it/cozy/app/activity/package-info.java", "detail": "allowedDependencies += \"events :: spi\"" },
     { "action": "create", "file": "src/main/java/it/cozy/app/activity/spi/ActivityFacade.java", "detail": null },
     …
     { "action": "create", "file": "src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java", "detail": null }

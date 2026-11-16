@@ -12,7 +12,8 @@ Creates a listener that handles an event in the receiving module.
 cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]
 ```
 
-- The command also declares the dependency on the sending module when it differs.
+- The command declares `"events :: spi"` in this module, and never a dependency on the sending module, so two modules can receive each other's events.
+- An event still in the old place, the sender's `spi/event/`, makes the command declare the sending module instead, which can form a cycle.
 - `--name` sets the class name to `{name}Listener`; use it when a second listener handles the same event.
 
 ## Creates

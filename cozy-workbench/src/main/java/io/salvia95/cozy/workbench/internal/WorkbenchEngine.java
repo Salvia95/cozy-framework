@@ -408,14 +408,35 @@ public class WorkbenchEngine {
 				root.path("next").asString(""), null);
 	}
 
-	/** {@code cozy describe --json} 전체: app, modules, slots, problems */
+	/**
+	 * {@code cozy describe --json} 전체: app, modules, events, slots, problems. 화면이 모듈마다 이벤트를 보이도록 앱의 {@code events[]}를
+	 * 주인 모듈의 {@code events}에도 싣는다.
+	 */
 	@SuppressWarnings("unchecked")
 	public java.util.Map<String, Object> describe() {
 		Result result = run("describe", "--json");
 		if (result.code() != CozyCli.OK) {
 			throw new IllegalStateException("[cozy] cozy describe가 실패했습니다: " + result.err().strip());
 		}
-		return JSON.readValue(result.out(), java.util.Map.class);
+		return withModuleEvents(JSON.readValue(result.out(), java.util.Map.class));
+	}
+
+	/** 앱의 {@code events[]}를 {@code owner}가 같은 모듈의 {@code events}에 싣는다. 주인이 없는 이벤트는 싣지 않는다 */
+	@SuppressWarnings("unchecked")
+	static java.util.Map<String, Object> withModuleEvents(java.util.Map<String, Object> described) {
+		if (!(described.get("modules") instanceof List<?> modules)) {
+			return described;
+		}
+		List<?> events = (described.get("events") instanceof List<?> list) ? list : List.of();
+		for (Object item : modules) {
+			if (item instanceof java.util.Map<?, ?> raw) {
+				java.util.Map<String, Object> module = (java.util.Map<String, Object>) raw;
+				module.put("events", events.stream()
+					.filter((e) -> e instanceof java.util.Map<?, ?> m && String.valueOf(module.get("name")).equals(String.valueOf(m.get("owner"))))
+					.toList());
+			}
+		}
+		return described;
 	}
 
 	private static String text(JsonNode node, String field) {

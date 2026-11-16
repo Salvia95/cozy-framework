@@ -129,3 +129,18 @@
   - 위반 픽스처 `C1-event-cycle`: 같은 흐름을 옛 자리로 만들면 Modulith가 `Cycle detected: Slice book -> …`로 실패한다.
   - 위반 픽스처 `C8-events-module`(이벤트가 아닌 클래스, 주인 폴더가 없는 이벤트), `C11-foreign-publish`(rental이 book의 이벤트를 만든다). 이벤트 필드에 다른 모듈의 타입을 쓰는 경우는 Modulith의 순환(C1)도 함께 나므로 픽스처 대신 `LayerRulesTest`로 확인한다.
 
+
+## M37 (2026-11-17, 사용자 지시 "다음 작업 진행해")
+
+- **명령이 새 자리에 만든다**: `add event`와 `add crud --publish`는 `events/spi/{주인}/`에 이벤트를, 없으면 `events`의 `package-info.java`(`allowedDependencies = {}`)와 주인 폴더의 `@NamedInterface("spi")`를 만들고, 주인 모듈에 `"events :: spi"`를 더한다. `add listener`는 받는 모듈에 `"events :: spi"`만 더한다. `add listener --on`과 `event-version`은 새 자리, 옛 자리 순서로 찾는다. 옛 자리의 이벤트를 받는 리스너는 예전처럼 주인 모듈에 의존한다(M40 전까지 기존 앱이 그대로 돈다).
+  - 의존을 선언하지 않은 open 모듈(`@ApplicationModule` 없음)에는 더하지 않는다. open은 모든 모듈을 쓸 수 있다는 뜻이라, 하나를 적으면 오히려 좁아진다.
+- **예약 이름**: `add module events`, `add crud events …`, `add event events …`가 실패한다. `link events --uses …`도 실패한다(events 모듈은 다른 앱 모듈에 의존하지 않는다). `link a --uses events`는 된다.
+- **`link`의 메시지**: 순환이면 이벤트를 이벤트 계약 모듈로 옮기라고, 읽기끼리의 순환이면 경계를 다시 나누라고 알린다. 공개된 것이 없는 모듈에는 `add event`를 권하지 않는다(이벤트는 그 모듈의 spi가 아니다). 이벤트만 받으면 link가 필요 없다고 알린다.
+- **describe**: 이벤트를 모듈 항목에서 앱의 `events[]`(`type`, `owner`, `fields[]`, `publishedIn[]`, `listeners[]`의 `module`·`type`)로 옮겼다. 글 출력은 모듈 다음에 `이벤트 memo.MemoCreated(…) 발행: … → activity(MemoCreatedListener)`다. 주인 폴더에 맞는 모듈이 없는 이벤트는 싣지 않는다(C8이 알린다).
+  - 워크벤치는 화면을 M39에서 바꾸므로, 지금은 describe를 읽을 때 앱의 `events[]`를 주인 모듈의 `events`에 다시 싣는다. 화면은 그대로다.
+- **레시피 픽스처**:
+  - `events-cycle`(새로 만듦): `book`·`rental`을 `crud --publish created`로, 서로의 이벤트를 `add listener`로, `rental`이 `book`을 `link`로 읽는다. `book`의 의존은 `events :: spi`뿐이고 `mvn verify`(C1)가 통과한다. 읽기끼리의 순환(`link book --uses rental`)은 여전히 거절한다. 리스너 본문은 기록만 남긴다. 생성된 CRUD 테스트가 도는 동안 리스너가 다른 모듈의 행을 바꾸면 테스트가 흔들리기 때문이다.
+  - `reference`: `cozy! link memo --uses activity`가 순환으로 실패하던 것이 이제 성공한다(activity가 memo에 의존하지 않는다). 이 ADR이 노린 결과라서, 실패해야 하는 명령을 `link events --uses memo`로 바꿨다. 순환 거절은 `events-cycle`과 `RecipeCommandTest`가 확인한다.
+  - `crud-kinds`: 이벤트를 내는 `report`의 의존이 `{ "task :: spi", "events :: spi" }`가 된다. `field`, `reference-filled`, `stage-two`의 손 파일은 새 자리를 import한다.
+- **문서**: cli.md(이벤트의 자리, describe `events[]`), 플레이북(add-event, add-listener, add-event-version, enable-events, link, describe), AGENTS.md의 Architecture.
+- **남은 것**: reference-app과 아키타입 `home`은 아직 옛 자리다(M38). 그래서 reference-app의 describe 기대 파일은 새 형식(앱의 `events[]`)이지만 이벤트의 자리는 옛 자리다.

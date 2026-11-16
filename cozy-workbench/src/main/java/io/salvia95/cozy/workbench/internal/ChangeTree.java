@@ -82,11 +82,13 @@ final class ChangeTree {
 	static List<Module> of(List<WorkbenchEngine.Change> changes, String basePackage, Map<String, String> eventModules) {
 		String base = basePackage.replace('.', '/') + "/";
 		Map<String, String> events = new LinkedHashMap<>(eventModules);
-		Pattern eventFile = Pattern.compile(Pattern.quote("src/main/java/" + base) + "([a-z][a-z0-9]*)/spi/event/([A-Za-z0-9]+)\\.java");
+		// 이벤트 파일: 옛 자리({모듈}/spi/event/)와 이벤트 계약 모듈(events/spi/{주인}/). 샘플은 이벤트 파일이 있는 모듈에 둔다
+		Pattern eventFile = Pattern.compile(Pattern.quote("src/main/java/" + base)
+				+ "(?:([a-z][a-z0-9]*)/spi/event|(events)/spi/[a-z][a-z0-9]*)/([A-Za-z0-9]+)\\.java");
 		for (WorkbenchEngine.Change change : changes) {
 			Matcher m = eventFile.matcher(change.file());
 			if (m.matches()) {
-				events.putIfAbsent(m.group(2), m.group(1));
+				events.putIfAbsent(m.group(3), (m.group(1) != null) ? m.group(1) : m.group(2));
 			}
 		}
 		Map<String, Map<String, List<File>>> grouped = new LinkedHashMap<>();

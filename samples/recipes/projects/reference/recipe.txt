@@ -13,9 +13,10 @@ cozy add screen dashboard index --pattern overview --title 대시보드 --nav �
 cozy link dashboard --uses memo,activity
 # 같은 명령을 다시 실행하면 아무것도 바뀌지 않는다
 rerun
-# 실패하는 명령은 아무 파일도 바꾸지 않는다: 내용이 다른 파일, 의존 순환, 없는 이벤트, 없는 아이콘, 다른 시그니처, 아직 없는 레시피
+# 실패하는 명령은 아무 파일도 바꾸지 않는다: 내용이 다른 파일, events 모듈의 의존, 없는 이벤트, 없는 아이콘, 다른 시그니처, 아직 없는 레시피
+# (activity는 memo의 이벤트를 events로 받으므로 memo가 activity를 읽어도 순환이 아니다)
 cozy! add crud memo --entity Memo --label 메모 --icon notes --field title:text!:제목
-cozy! link memo --uses activity
+cozy! link events --uses memo
 cozy! add listener activity --on memo.MemoDeleted
 cozy! add screen dashboard stats --pattern details --title 통계 --nav 통계:no-such-icon
 cozy! add query activity recent --param limit:long --returns list:ActivityItem

@@ -12,7 +12,7 @@ def board = "src/main/java/it/cozy/app/board/"
 assert read(board + "spi/BoardFacade.java").contains("long create(String title);")
 assert read(board + "internal/app/command/MemoCreatedListener.java").contains("MemoCreatedListener(BoardFacade facade)")
 assert read(board + "spi/dto/BoardSummary.java").contains("public record BoardSummary(long total, BoardLine latest, List<BoardLine> lines, LocalDate since)")
-def event = read("src/main/java/it/cozy/app/memo/spi/event/MemoCreated.java")
+def event = read("src/main/java/it/cozy/app/events/spi/memo/MemoCreated.java")
 assert event.contains("String title, Boolean pinned, LocalDate dueOn, String note) implements CozyEvent")
 assert event.contains("return new MemoCreated(UUID.randomUUID(), 3, memoId, title, pinned, dueOn, note);")
 assert read("src/main/java/it/cozy/app/memo/internal/app/command/MemoFacadeImpl.java").contains("MemoCreated.of(") : "crud가 옛 of()를 부른다"

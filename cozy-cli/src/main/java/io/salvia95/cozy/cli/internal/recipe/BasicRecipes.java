@@ -29,6 +29,7 @@ final class BasicRecipes {
 	static String module(Context ctx, Args args) {
 		args.only("module", 1, "label");
 		String module = Names.module(args.positional(0, "모듈 이름"));
+		requireFeatureModule(module);
 		String label = Names.label(Optional.ofNullable(args.option("label")).orElse(module), "라벨");
 		String file = ctx.packageInfo(ctx.modulePackage(module));
 		if (ctx.plan().exists(file)) {
@@ -43,12 +44,21 @@ final class BasicRecipes {
 	}
 
 	static void createModule(Context ctx, String module, String label) {
+		requireFeatureModule(module);
 		String pkg = ctx.modulePackage(module);
 		ctx.plan()
 			.create(ctx.packageInfo(pkg), new Template().put("label", sentence(label))
 				.put("module", module)
 				.put("pkg", pkg)
 				.render("module-package-info.java"));
+	}
+
+	/** 이벤트 계약 모듈의 이름은 기능 모듈에 쓰지 않는다 */
+	static void requireFeatureModule(String module) {
+		if (module.equals(AppProject.EVENTS)) {
+			throw new CliException("events는 이벤트 계약 모듈의 이름이라 기능 모듈에 쓸 수 없습니다. 다른 이름을 고르세요. 이벤트는 cozy add event "
+					+ "<모듈> <이벤트>가 events/spi/<모듈>/에 만듭니다.");
+		}
 	}
 
 	// ── link ──────────────────────────────────────────────────
@@ -58,12 +68,16 @@ final class BasicRecipes {
 		String module = Names.module(args.positional(0, "모듈 이름"));
 		List<String> targets = List.of(args.required("uses").split("\\s*,\\s*"));
 		link(ctx, module, targets);
-		return "다음: " + module + "에서 " + String.join(", ", targets) + "의 spi(Finder, DTO, 이벤트, 공개 fragment)를 씁니다. 쓰기는 이벤트로 합니다";
+		return "다음: " + module + "에서 " + String.join(", ", targets) + "의 spi(Finder, DTO, 공개 fragment)를 씁니다. 쓰기는 이벤트로 합니다(cozy add listener)";
 	}
 
 	/** 모듈의 allowedDependencies에 "대상 :: spi"를 더한다 */
 	static void link(Context ctx, String module, List<String> targets) {
 		ctx.module(module);
+		if (module.equals(AppProject.EVENTS)) {
+			throw new CliException("events 모듈은 다른 앱 모듈에 의존하지 않습니다. 이벤트 필드에는 기본 타입(String, long, boolean, LocalDate, "
+					+ "Instant, UUID 등)만 씁니다.");
+		}
 		Map<String, Set<String>> graph = new LinkedHashMap<>();
 		ctx.project().modules().values().forEach((m) -> {
 			Set<String> deps = new LinkedHashSet<>();
@@ -84,14 +98,16 @@ final class BasicRecipes {
 					|| ctx.plan().exists(ctx.packageInfo(ctx.rolePackage(target, Layer.SPI_EVENT)))
 					|| ctx.plan().exists(ctx.packageInfo(ctx.rolePackage(target, Layer.SPI)));
 			if (!spi) {
-				throw new CliException(target + "에 공개된 것(spi)이 없습니다. 먼저 cozy add crud, cozy add event, cozy add fragment로 "
-						+ target + "의 spi를 만드세요.");
+				throw new CliException(target + "에 공개된 것(spi)이 없습니다. 먼저 cozy add crud, cozy add dto, cozy add fragment로 "
+						+ target + "의 spi를 만드세요. " + target + "의 이벤트만 받는다면 link가 필요 없습니다(cozy add listener가 "
+						+ "\"events :: spi\"를 선언합니다).");
 			}
 			graph.computeIfAbsent(module, (k) -> new LinkedHashSet<>()).add(target);
 			List<String> cycle = path(graph, target, module, new LinkedHashSet<>());
 			if (cycle != null) {
 				throw new CliException("의존이 순환합니다: " + module + " → " + String.join(" → ", cycle)
-						+ ". 순환을 끊으려면 한쪽은 이벤트(spi/event)를 받게 하세요.");
+						+ ". 이벤트 때문이면 이벤트를 이벤트 계약 모듈로 옮기세요(cozy add event가 events/spi/<모듈>/에 만들고, 받는 쪽은 "
+						+ "events에만 의존합니다). 읽기(Finder)끼리 순환하면 두 모듈의 경계를 다시 나눕니다.");
 			}
 			dependencies.add(target + " :: spi");
 		}
@@ -129,6 +145,10 @@ final class BasicRecipes {
 		String module = Names.module(args.positional(0, "모듈 이름"));
 		String event = Names.pascal(args.positional(1, "이벤트 이름"), "이벤트");
 		ctx.requireStarter("cozy-starter-events", "이벤트");
+		if (module.equals(AppProject.EVENTS)) {
+			throw new CliException("이벤트의 주인은 그 이벤트를 발행하는 기능 모듈입니다 (예: cozy add event memo MemoCreated). "
+					+ "이벤트는 events/spi/<주인 모듈>/에 만들어집니다.");
+		}
 		ctx.module(module);
 		List<Field> fields = Field.parseAll(args.all("field"));
 		createEvent(ctx, module, event, fields, event + " 이벤트");
@@ -136,19 +156,21 @@ final class BasicRecipes {
 				+ "발행합니다. 받는 쪽은 cozy add listener <모듈> --on " + module + "." + event;
 	}
 
+	/** 이벤트 계약 모듈의 {@code events/spi/{모듈}/}에 이벤트와 샘플 v1을 만들고, 주인 모듈에 {@code events :: spi}를 선언한다 */
 	static void createEvent(Context ctx, String module, String event, List<Field> fields, String what) {
-		ctx.ensureNamedInterface(module, Layer.SPI);
-		ctx.ensureNamedInterface(module, Layer.SPI_EVENT);
-		String pkg = ctx.rolePackage(module, Layer.SPI_EVENT);
+		ctx.ensureEventsModule(module);
+		ctx.declareEvents(module);
+		String pkg = ctx.eventPackage(module);
 		Set<String> imports = new TreeSet<>(Set.of("java.util.UUID"));
 		fields.stream().map(Field::importName).filter((i) -> i != null).forEach(imports::add);
 		String components = String.join("", fields.stream().map((f) -> ", " + f.eventType() + " " + f.name()).toList());
 		String params = String.join(", ", fields.stream().map((f) -> f.eventType() + " " + f.name()).toList());
 		String argsText = String.join("", fields.stream().map((f) -> ", " + f.name()).toList());
 		ctx.plan()
-			.create(ctx.roleFile(module, Role.EVENT, event), new Template().put("pkg", pkg)
+			.create(ctx.javaFile(pkg, event), new Template().put("pkg", pkg)
 				.put("imports", String.join("", imports.stream().map((i) -> "import " + i + ";\n").toList()))
 				.put("what", what)
+				.put("module", module)
 				.put("Event", event)
 				.put("components", components)
 				.put("params", params)
@@ -177,13 +199,16 @@ final class BasicRecipes {
 		String source = m.group(1);
 		String event = m.group(2);
 		ctx.module(source);
-		String eventName = ctx.rolePackage(source, Layer.SPI_EVENT) + "." + event;
-		if (!ctx.project().sources().types().containsKey(eventName)) {
-			throw new CliException(source + "에 이벤트 " + event + "가 없습니다(" + eventName + "). 먼저 cozy add event " + source + " "
-					+ event + "로 만드세요.");
-		}
+		String eventName = ctx.findEvent(source, event)
+			.orElseThrow(() -> new CliException(source + "에 이벤트 " + event + "가 없습니다(" + ctx.eventPackage(source) + "." + event
+					+ "). 먼저 cozy add event " + source + " " + event + "로 만드세요."));
 		String name = Names.pascal(Optional.ofNullable(args.option("name")).orElse(event), "리스너") ;
-		if (!source.equals(module)) {
+		if (eventName.startsWith(ctx.eventPackage(source) + ".")) {
+			// 이벤트 계약 모듈의 이벤트: 받는 쪽은 events에만 의존한다. 주인 모듈에는 의존하지 않으므로 순환이 생기지 않는다
+			ctx.declareEvents(module);
+		}
+		else if (!source.equals(module)) {
+			// 옛 자리(주인 모듈의 spi.event)의 이벤트: 주인 모듈에 의존한다
 			link(ctx, module, List.of(source));
 		}
 		String pkg = ctx.rolePackage(module, Layer.APP_COMMAND);

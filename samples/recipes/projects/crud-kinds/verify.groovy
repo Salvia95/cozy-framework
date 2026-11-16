@@ -8,5 +8,6 @@ assert !log.contains("[C9]") : "빈칸이 남았습니다"
 def events = ["TaskCreated", "TaskUpdated", "TaskDeleted", "ReportSent"]
 events.each { assert new File(basedir, "src/test/resources/events/" + it + "/v1.json").isFile() : it + " 샘플이 없습니다" }
 def report = new File(basedir, "src/main/java/it/cozy/app/report/package-info.java").getText("UTF-8")
-assert report.contains('@ApplicationModule(allowedDependencies = { "task :: spi" })')
+// task를 읽으려고 link로 선언하고, 이벤트를 내므로 add event가 이벤트 계약 모듈을 더한다
+assert report.contains('@ApplicationModule(allowedDependencies = { "task :: spi", "events :: spi" })')
 return true

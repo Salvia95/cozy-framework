@@ -65,6 +65,7 @@ public final class Describe {
 		Map<String, Object> model = new LinkedHashMap<>();
 		model.put("app", app);
 		model.put("modules", modules);
+		model.put("events", events(project, modules));
 		model.put("slots", slots);
 		model.put("problems", problems);
 		return model;
@@ -80,7 +81,6 @@ public final class Describe {
 		List<Object> facades = new ArrayList<>();
 		List<Object> finders = new ArrayList<>();
 		List<Object> dtos = new ArrayList<>();
-		List<Object> events = new ArrayList<>();
 		List<Object> listeners = new ArrayList<>();
 		List<Object> controllers = new ArrayList<>();
 		Map<String, JavaType> javaTypes = new LinkedHashMap<>();
@@ -100,16 +100,6 @@ public final class Describe {
 			else if (layer.isPresent() && layer.get() == Layer.SPI_DTO) {
 				dtos.add(ordered("type", type.simpleName(), "fields", fields(type.tree())));
 			}
-			else if (layer.isPresent() && layer.get() == Layer.SPI_EVENT && javaType.has(JavaType.Trait.COZY_EVENT)) {
-				Map<String, Object> event = new LinkedHashMap<>();
-				event.put("type", type.simpleName());
-				event.put("fields", fields(type.tree())
-					.stream()
-					.filter((f) -> !f.endsWith(" eventId") && !f.endsWith(" schemaVersion"))
-					.toList());
-				event.put("publishedIn", publishers(project, type));
-				events.add(event);
-			}
 			if (javaType.has(JavaType.Trait.LISTENER)) {
 				listeners.addAll(listenerMethods(project, type));
 			}
@@ -120,7 +110,6 @@ public final class Describe {
 		m.put("facades", facades);
 		m.put("finders", finders);
 		m.put("dtos", dtos);
-		m.put("events", events);
 		m.put("listeners", listeners);
 		m.put("controllers", controllers);
 		m.put("components", registeredComponents(project, module));
@@ -154,6 +143,50 @@ public final class Describe {
 			}
 		}
 		return fields;
+	}
+
+	/**
+	 * 앱의 이벤트: 이벤트 계약 모듈({@code events/spi/{주인}/})과 옛 자리({@code {주인}/spi/event/})의 CozyEvent. 모듈 순서, 그다음 소스
+	 * 순서다. 받는 곳은 모듈의 리스너 가운데 {@code on}이 {@code 주인.이벤트}인 것이다.
+	 */
+	@SuppressWarnings("unchecked")
+	private static List<Object> events(AppProject project, List<Object> modules) {
+		Map<String, List<Object>> receivers = new LinkedHashMap<>();
+		for (Object item : modules) {
+			Map<String, Object> m = (Map<String, Object>) item;
+			for (Object l : (List<Object>) m.get("listeners")) {
+				Map<String, Object> listener = (Map<String, Object>) l;
+				receivers.computeIfAbsent(String.valueOf(listener.get("on")), (k) -> new ArrayList<>())
+					.add(ordered("module", m.get("name"), "type", listener.get("type")));
+			}
+		}
+		Map<String, JavaType> javaTypes = new LinkedHashMap<>();
+		project.sources().javaTypes().forEach((t) -> javaTypes.put(t.name(), t));
+		List<Object> events = new ArrayList<>();
+		for (AppProject.Module owner : project.modules().values()) {
+			String contracts = project.modules().containsKey(AppProject.EVENTS)
+					? project.modules().get(AppProject.EVENTS).basePackage() + ".spi." + owner.name() : null;
+			for (JavaSources.SourceType type : project.sources().types().values()) {
+				JavaType javaType = javaTypes.get(type.name());
+				boolean placed = type.pkg().equals(contracts)
+						|| Layer.of(owner.basePackage(), type.pkg()).filter((l) -> l == Layer.SPI_EVENT).isPresent();
+				if (!type.name().equals(type.topLevel()) || !placed || javaType == null || !javaType.has(JavaType.Trait.COZY_EVENT)
+						|| !project.eventOwner(type.pkg()).map(owner::equals).orElse(false)) {
+					continue;
+				}
+				Map<String, Object> event = new LinkedHashMap<>();
+				event.put("type", type.simpleName());
+				event.put("owner", owner.name());
+				event.put("fields", fields(type.tree())
+					.stream()
+					.filter((f) -> !f.endsWith(" eventId") && !f.endsWith(" schemaVersion"))
+					.toList());
+				event.put("publishedIn", publishers(project, type));
+				event.put("listeners", receivers.getOrDefault(owner.name() + "." + type.simpleName(), List.of()));
+				events.add(event);
+			}
+		}
+		return events;
 	}
 
 	private static List<String> publishers(AppProject project, JavaSources.SourceType event) {
@@ -197,7 +230,7 @@ public final class Describe {
 				String written = JavaSources.typeName(method.getParameters().getFirst().getType());
 				on = project.sources()
 					.resolve(type.unit(), written)
-					.map((event) -> project.moduleOf(event.pkg()).map((em) -> em.name() + ".").orElse("")
+					.map((event) -> project.eventOwner(event.pkg()).map((em) -> em.name() + ".").orElse("")
 							+ event.simpleName())
 					.orElse(written);
 			}
@@ -375,12 +408,6 @@ public final class Describe {
 				out.append("  DTO ").append(dto.get("type")).append('(').append(join((List<Object>) dto.get("fields"), ""))
 					.append(")\n");
 			}
-			for (Object e : (List<Object>) m.get("events")) {
-				Map<String, Object> event = (Map<String, Object>) e;
-				out.append("  이벤트 ").append(event.get("type")).append('(')
-					.append(join((List<Object>) event.get("fields"), "")).append(") 발행: ")
-					.append(join((List<Object>) event.get("publishedIn"), "없음(아직 발행하지 않음)")).append('\n');
-			}
 			for (Object l : (List<Object>) m.get("listeners")) {
 				Map<String, Object> listener = (Map<String, Object>) l;
 				out.append("  리스너 ").append(listener.get("type")).append('.').append(listener.get("method"))
@@ -411,6 +438,23 @@ public final class Describe {
 				out.append("  공개 fragment ").append(fragment.get("id")).append(": ").append(fragment.get("signature"))
 					.append('\n');
 			}
+		}
+		List<Object> events = (List<Object>) model.get("events");
+		if (!events.isEmpty()) {
+			out.append('\n');
+		}
+		for (Object e : events) {
+			Map<String, Object> event = (Map<String, Object>) e;
+			List<Object> listeners = (List<Object>) event.get("listeners");
+			out.append("이벤트 ").append(event.get("owner")).append('.').append(event.get("type")).append('(')
+				.append(join((List<Object>) event.get("fields"), "")).append(") 발행: ")
+				.append(join((List<Object>) event.get("publishedIn"), "없음(아직 발행하지 않음)"))
+				.append(" → ")
+				.append(listeners.isEmpty() ? "받는 곳 없음" : String.join(", ", listeners.stream()
+					.map((l) -> (Map<String, Object>) l)
+					.map((l) -> l.get("module") + "(" + l.get("type") + ")")
+					.toList()))
+				.append('\n');
 		}
 		List<Object> slots = (List<Object>) model.get("slots");
 		out.append('\n').append("빈칸: ").append(slots.isEmpty() ? "없음" : slots.size() + "곳").append('\n');

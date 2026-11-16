@@ -157,6 +157,30 @@ public final class AppProject {
 		return new ModuleModel(map);
 	}
 
+	/** 이벤트 계약 모듈의 이름. 이벤트는 {@code events/spi/{주인 모듈}/}에 둔다 */
+	public static final String EVENTS = "events";
+
+	/**
+	 * 이벤트가 있는 패키지의 주인 모듈. 이벤트 계약 모듈({@code events.spi.memo})이면 폴더 이름의 모듈, 옛 자리({@code memo.spi.event})면
+	 * 그 모듈이다. 정해지지 않으면 비어 있다.
+	 */
+	public Optional<Module> eventOwner(String pkg) {
+		Optional<Module> home = moduleOf(pkg);
+		if (home.isEmpty() || !folder(home.get()).equals(EVENTS)) {
+			return home;
+		}
+		String spi = home.get().basePackage() + ".spi.";
+		if (!pkg.startsWith(spi) || pkg.substring(spi.length()).contains(".")) {
+			return Optional.empty();
+		}
+		String owner = pkg.substring(spi.length());
+		return this.modules.values().stream().filter((m) -> !folder(m).equals(EVENTS) && folder(m).equals(owner)).findFirst();
+	}
+
+	private static String folder(Module module) {
+		return module.basePackage().substring(module.basePackage().lastIndexOf('.') + 1);
+	}
+
 	/** 패키지가 속한 모듈 */
 	public Optional<Module> moduleOf(String pkg) {
 		Module found = null;

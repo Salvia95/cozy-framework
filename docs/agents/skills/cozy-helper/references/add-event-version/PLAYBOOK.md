@@ -16,6 +16,8 @@ Adds fields to an existing event, bumps its schema version, and writes the next 
 cozy add event-version <모듈> <이벤트> --field 이름:종류 …
 ```
 
+- `<모듈>` is the owner module; the command edits `events/spi/{module}/{Event}.java`, or the owner's `spi/event/` when the event is still in the old place.
+
 ## Creates
 
 - New record components with boxed types (`String`, `Integer`, `Long`, `Boolean`, `LocalDate`, `Instant`), which read as `null` from older events.

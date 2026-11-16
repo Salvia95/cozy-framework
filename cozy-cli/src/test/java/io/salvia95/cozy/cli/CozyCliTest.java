@@ -102,7 +102,7 @@ class CozyCliTest {
 				.file("src/main/resources/db/migration/V1__memo_init.sql", "-- cozy:slot migration-sql — memo 테이블을 만드세요\n")
 				.build();
 			Result result = run("describe", "--project", app.toString());
-			assertThat(result.out()).contains("이벤트 MemoCreated(long memoId) 발행: 없음(아직 발행하지 않음)")
+			assertThat(result.out()).contains("\n이벤트 memo.MemoCreated(long memoId) 발행: 없음(아직 발행하지 않음) → 받는 곳 없음\n")
 				.contains("빈칸: 1곳")
 				.contains("src/main/resources/db/migration/V1__memo_init.sql:1 migration-sql — memo 테이블을 만드세요.");
 		}

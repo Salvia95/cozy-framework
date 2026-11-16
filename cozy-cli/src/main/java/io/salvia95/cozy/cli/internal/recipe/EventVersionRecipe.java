@@ -80,13 +80,12 @@ final class EventVersionRecipe {
 		if (fields.isEmpty()) {
 			throw new CliException("--field가 하나 이상 필요합니다 (예: --field pinned:bool).");
 		}
-		String pkg = ctx.rolePackage(module, Layer.SPI_EVENT);
-		String file = ctx.roleFile(module, Role.EVENT, event);
+		String name = ctx.findEvent(module, event)
+			.orElseThrow(() -> new CliException(module + "에 이벤트 " + event + "가 없습니다(" + ctx.eventPackage(module) + "." + event
+					+ "). 먼저 cozy add event " + module + " " + event + "로 만드세요."));
+		String pkg = name.substring(0, name.lastIndexOf('.'));
+		String file = ctx.javaFile(pkg, event);
 		String source = ctx.plan().current(file);
-		if (source == null) {
-			throw new CliException(module + "에 이벤트 " + event + "가 없습니다(" + pkg + "." + event + "). 먼저 cozy add event " + module + " "
-					+ event + "로 만드세요.");
-		}
 		JavaEdits.Parsed parsed = JavaEdits.parse(file, source);
 		ClassTree type = parsed.type(event);
 		if (type.getKind() != Tree.Kind.RECORD) {

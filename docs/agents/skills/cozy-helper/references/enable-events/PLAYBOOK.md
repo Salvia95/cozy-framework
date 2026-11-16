@@ -37,4 +37,4 @@ mvn -o verify
 
 ## Next
 
-- Create events with [add-event](../add-event/PLAYBOOK.md) or `add crud --publish`, and handle them with [add-listener](../add-listener/PLAYBOOK.md).
+- Create events with [add-event](../add-event/PLAYBOOK.md) or `add crud --publish`, and handle them with [add-listener](../add-listener/PLAYBOOK.md); the first event also creates the event contracts module `events`.

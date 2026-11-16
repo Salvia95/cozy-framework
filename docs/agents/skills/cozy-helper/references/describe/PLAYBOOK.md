@@ -32,13 +32,15 @@ cozy describe [--json]
     long create(String title, String body, boolean pinned)
   읽기 MemoFinder
     Optional<MemoItem> find(long id)
-  이벤트 MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java
   컴포넌트 memoBodyCount
   화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid · 컴포넌트 memoBodyCount(memo/internal/fields:6)
+
+이벤트 memo.MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java → activity(MemoCreatedListener)
 ```
 
 - `의존: 없음` means the module uses no other module.
-- An event without a `발행:` file is not published anywhere yet.
+- Events are listed once for the whole app as `{owner}.{Event}`, after the modules, with the files that publish them and the modules that receive them after `→`.
+- An event without a `발행:` file is not published anywhere yet, and `받는 곳 없음` means no listener receives it.
 - `컴포넌트` under a module lists the Alpine components that `static/{module}/{module}.js` registers.
 - `컴포넌트` on a screen lists the components the screen uses, including those inside the app fragments it includes, with the template and line to edit.
 

@@ -16,7 +16,7 @@ expected.each { assert log.contains(it) : "build.log에 기대한 메시지가 �
 def recipes = new File(basedir, "recipes.log").getText("UTF-8")
 [
   "이미 있고 내용이 다릅니다. 덮어쓰지 않습니다",
-  "의존이 순환합니다: memo → activity → memo",
+  "events 모듈은 다른 앱 모듈에 의존하지 않습니다",
   "memo에 이벤트 MemoDeleted가 없습니다",
   "아이콘 'no-such-icon'가 Tabler Icons에 없습니다",
   "같은 이름이 다른 시그니처로 있습니다: ActivityFinder에 List<ActivityItem> recent(int)",

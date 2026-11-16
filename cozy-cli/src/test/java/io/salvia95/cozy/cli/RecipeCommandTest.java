@@ -155,26 +155,38 @@ class RecipeCommandTest {
 		fails("설명", "add", "migration", "memo", "Add-Index");
 	}
 
+	static final String EVENTS = "src/main/java/it/cozy/app/events/";
+
 	@Test
-	void eventThenListenerInAnotherModuleDeclaresTheDependency() throws IOException {
+	void eventGoesToTheEventsModuleAndTheListenerDependsOnlyOnIt() throws IOException {
 		app();
 		ok("add", "module", "memo");
 		ok("add", "module", "activity");
 		fails("이벤트 MemoCreated가 없습니다", "add", "listener", "activity", "--on", "memo.MemoCreated");
-		ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long", "--field", "title:text");
-		assertThat(read(MEMO + "spi/event/MemoCreated.java"))
+		Result event = ok("add", "event", "memo", "MemoCreated", "--field", "memoId:long", "--field", "title:text");
+		assertThat(event.out()).contains("만듦  " + EVENTS + "package-info.java")
+			.contains("만듦  " + EVENTS + "spi/memo/package-info.java")
+			.contains("만듦  " + EVENTS + "spi/memo/MemoCreated.java")
+			.contains("바꿈  src/main/java/it/cozy/app/memo/package-info.java    allowedDependencies += \"events :: spi\"");
+		assertThat(read(EVENTS + "spi/memo/MemoCreated.java")).startsWith("package it.cozy.app.events.spi.memo;")
 			.contains("public record MemoCreated(UUID eventId, int schemaVersion, long memoId, String title) implements CozyEvent {")
-			.contains("return new MemoCreated(UUID.randomUUID(), 1, memoId, title);");
+			.contains("return new MemoCreated(UUID.randomUUID(), 1, memoId, title);")
+			.contains("memo의 internal.app.command에서만 만든다(C11)");
 		assertThat(read("src/test/resources/events/MemoCreated/v1.json"))
 			.isEqualTo("{\"eventId\":\"7d4b3c2a-1e0f-4a5b-9c8d-6e7f8a9b0c1d\",\"memoId\":1,\"schemaVersion\":1,\"title\":\"예시 title\"}\n");
-		assertThat(read(MEMO + "spi/event/package-info.java")).contains("@NamedInterface(\"spi\")");
+		assertThat(read(EVENTS + "package-info.java")).contains("@ApplicationModule(allowedDependencies = {})");
+		assertThat(read(EVENTS + "spi/memo/package-info.java")).contains("@NamedInterface(\"spi\")");
+		assertThat(new java.io.File(this.dir.toFile(), MEMO + "spi/event")).doesNotExist();
 
 		Result listener = ok("add", "listener", "activity", "--on", "memo.MemoCreated");
-		assertThat(listener.out()).contains("바꿈  src/main/java/it/cozy/app/activity/package-info.java    allowedDependencies += \"memo :: spi\"")
+		assertThat(listener.out()).contains("바꿈  src/main/java/it/cozy/app/activity/package-info.java    allowedDependencies += \"events :: spi\"")
+			.doesNotContain("memo :: spi")
 			.contains("빈칸 1곳")
 			.contains("listener-body");
 		assertThat(read("src/main/java/it/cozy/app/activity/package-info.java"))
-			.contains("@ApplicationModule(allowedDependencies = { \"memo :: spi\" })");
+			.contains("@ApplicationModule(allowedDependencies = { \"events :: spi\" })");
+		assertThat(read("src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java"))
+			.contains("import it.cozy.app.events.spi.memo.MemoCreated;");
 		assertThat(read("src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java"))
 			.contains("@ApplicationModuleListener\n\tvoid on(MemoCreated event) {")
 			.contains("throw new UnsupportedOperationException(\"cozy:slot listener-body\");");
@@ -185,15 +197,77 @@ class RecipeCommandTest {
 	}
 
 	@Test
+	void modulesReceivingEachOthersEventsDoNotDependOnEachOther() throws IOException {
+		app();
+		ok("add", "module", "book");
+		ok("add", "module", "rental");
+		ok("add", "event", "book", "BookAdded", "--field", "bookId:long");
+		ok("add", "event", "rental", "RentalCreated", "--field", "bookId:long");
+		ok("add", "listener", "book", "--on", "rental.RentalCreated");
+		ok("add", "listener", "rental", "--on", "book.BookAdded");
+		for (String module : List.of("book", "rental")) {
+			assertThat(read("src/main/java/it/cozy/app/" + module + "/package-info.java"))
+				.contains("@ApplicationModule(allowedDependencies = { \"events :: spi\" })");
+		}
+		// 읽기 의존을 더해도 순환이 아니다
+		ok("add", "dto", "book", "BookItem", "--field", "title:text");
+		ok("link", "rental", "--uses", "book");
+		Result check = cozy("check");
+		assertThat(check.out()).doesNotContain("[C8]").contains("listener-body");
+	}
+
+	@Test
+	void eventsIsReservedForTheEventContractsModule() throws IOException {
+		app();
+		fails("events는 이벤트 계약 모듈의 이름이라", "add", "module", "events");
+		fails("events는 이벤트 계약 모듈의 이름이라", "add", "crud", "events", "--entity", "Event", "--label", "이벤트", "--icon", "notes",
+				"--field", "title:text!:제목");
+		ok("add", "module", "memo");
+		ok("add", "event", "memo", "MemoCreated");
+		fails("이벤트의 주인은 그 이벤트를 발행하는 기능 모듈입니다", "add", "event", "events", "SomethingHappened");
+		fails("events 모듈은 다른 앱 모듈에 의존하지 않습니다", "link", "events", "--uses", "memo");
+		ok("add", "module", "board");
+		assertThat(ok("link", "board", "--uses", "events").out()).contains("allowedDependencies += \"events :: spi\"");
+		assertThat(ok("add", "listener", "board", "--on", "memo.MemoCreated").out()).doesNotContain("allowedDependencies");
+	}
+
+	@Test
+	void aListenerOnAnEventInTheOldPlaceStillDeclaresTheOwner() throws IOException {
+		app();
+		ok("add", "module", "memo");
+		ok("add", "module", "activity");
+		write(MEMO + "spi/event/package-info.java", "@NamedInterface(\"spi\")\npackage it.cozy.app.memo.spi.event;\n\n"
+				+ "import org.springframework.modulith.NamedInterface;\n");
+		write(MEMO + "spi/event/MemoCreated.java", """
+				package it.cozy.app.memo.spi.event;
+
+				import java.util.UUID;
+
+				import io.salvia95.cozy.events.CozyEvent;
+
+				public record MemoCreated(UUID eventId, int schemaVersion, long memoId) implements CozyEvent {
+				}
+				""");
+		Result listener = ok("add", "listener", "activity", "--on", "memo.MemoCreated");
+		assertThat(listener.out()).contains("allowedDependencies += \"memo :: spi\"").doesNotContain("events :: spi");
+		assertThat(read("src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java"))
+			.contains("import it.cozy.app.memo.spi.event.MemoCreated;");
+	}
+
+	@Test
 	void linkRefusesCyclesModulesWithoutSpiAndOpenModules() throws IOException {
 		app();
 		ok("add", "module", "memo");
 		ok("add", "module", "board");
 		fails("memo에 공개된 것(spi)이 없습니다", "link", "board", "--uses", "memo");
-		ok("add", "event", "memo", "MemoCreated");
-		ok("add", "event", "board", "PostCreated");
+		ok("add", "dto", "memo", "MemoItem", "--field", "title:text");
+		ok("add", "dto", "board", "PostItem", "--field", "title:text");
 		ok("link", "board", "--uses", "memo");
-		fails("의존이 순환합니다: memo → board → memo", "link", "memo", "--uses", "board");
+		Result cycle = cozy("link", "memo", "--uses", "board");
+		assertThat(cycle.code()).isEqualTo(CozyCli.UNUSABLE);
+		assertThat(cycle.err()).contains("의존이 순환합니다: memo → board → memo")
+			.contains("이벤트 계약 모듈로 옮기세요")
+			.contains("읽기(Finder)끼리 순환하면 두 모듈의 경계를 다시 나눕니다");
 		fails("자기 자신", "link", "memo", "--uses", "memo");
 		fails("모듈 'nothing'가 없습니다", "link", "memo", "--uses", "nothing");
 		write("src/main/java/it/cozy/app/open/package-info.java", "package it.cozy.app.open;\n");
@@ -229,7 +303,10 @@ class RecipeCommandTest {
 		Result result = ok("add", "crud", "memo", "--entity", "Memo", "--label", "메모", "--icon", "notes", "--field", "title:text!:제목",
 				"--field", "body:longtext:본문", "--field", "pinned:bool:고정", "--publish", "created");
 		assertThat(result.out()).doesNotContain("빈칸").contains("[cozy] 적용했습니다\n");
-		assertThat(result.out().lines().filter((l) -> l.startsWith("  만듦")).count()).isEqualTo(33);
+		// 이벤트는 이벤트 계약 모듈에: events/package-info, events/spi/memo/package-info, MemoCreated, 샘플
+		assertThat(result.out().lines().filter((l) -> l.startsWith("  만듦")).count()).isEqualTo(34);
+		assertThat(result.out()).contains("만듦  " + EVENTS + "spi/memo/MemoCreated.java").doesNotContain("memo/spi/event");
+		assertThat(read(MEMO + "package-info.java")).contains("\"events :: spi\"");
 		assertThat(read(MEMO + "internal/config/MemoConfiguration.java"))
 			.contains("return new CozyNavItem(\"메모\", \"/memo\", 10, \"notes\");")
 			.contains("// cozy:append nav");
@@ -701,7 +778,7 @@ class RecipeCommandTest {
 				"ActivityStatsFinder");
 	}
 
-	static final String EVENT = MEMO + "spi/event/MemoCreated.java";
+	static final String EVENT = "src/main/java/it/cozy/app/events/spi/memo/MemoCreated.java";
 
 	/** 필드를 박싱 타입으로 더하고, 옛 of()는 위임으로 남기고, 새 샘플을 더한다 */
 	@Test

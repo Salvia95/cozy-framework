@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import it.cozy.app.task.internal.infra.TaskMapper;
 import it.cozy.app.task.internal.infra.TaskRow;
 import it.cozy.app.task.spi.TaskFacade;
-import it.cozy.app.task.spi.event.TaskCreated;
+import it.cozy.app.events.spi.task.TaskCreated;
 
 /**
  * 할 일 쓰기 (cozy add crud, 본문은 손으로 고쳤다). 트랜잭션 경계가 여기다(쓰기 트랜잭션은 BEGIN IMMEDIATE, docs/conventions/sqlite.md). 만들기가 성공하면 같은 트랜잭션 안에서 이벤트를 발행한다(TaskCreated).

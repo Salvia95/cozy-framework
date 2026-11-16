@@ -7,7 +7,9 @@ This app is built on the Cozy framework: an internal business tool that runs on 
 - Each package directly under the main class package is a module, and a module is one feature.
 - A module uses another module only through that module's `spi`, and only after declaring it in `allowedDependencies` of its own `package-info.java`.
 - `api/` holds controllers and screen DTOs (`api/dto`); screen templates live in `templates/{module}/api/`.
-- `spi/` is the contract for other modules: `*Facade` for writes, `*Finder` for reads, `spi/dto` for values, `spi/event` for events, and `templates/{module}/spi/` for public fragments.
+- `spi/` is the contract for other modules: `*Facade` for writes, `*Finder` for reads, `spi/dto` for values, and `templates/{module}/spi/` for public fragments.
+- Events live in the event contracts module `events`, at `events/spi/{owner module}/`, and both the publisher and the listener declare only `"events :: spi"` for them, so modules that receive each other's events never form a dependency cycle.
+- Only the owner module creates its events, in `internal/app/command`; event fields use basic types only, and `events` is never a feature module name.
 - `internal/` holds the implementation: `app/command` (writes and listeners), `app/query` (reads), `domain`, `infra` (MyBatis mappers and rows), and `config`.
 - Modules read each other through `*Finder` and write to each other only through events; a module never calls another module's `*Facade`.
 - The SQLite schema lives in `db/migration` (Flyway), and SQL statements live in `mapper/{module}/*Mapper.xml`.

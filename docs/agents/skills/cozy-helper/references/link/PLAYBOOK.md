@@ -36,8 +36,8 @@ cozy link dashboard --uses memo,activity
 
 | Message contains | Action |
 | --- | --- |
-| `공개된 것(spi)이 없습니다` | Give the other module an `spi` first with add-crud, add-dto, add-event, or add-fragment. |
-| `의존이 순환합니다` | Break the cycle by having one side receive an event ([add-listener](../add-listener/PLAYBOOK.md)). |
+| `공개된 것(spi)이 없습니다` | Give the other module an `spi` first with add-crud, add-dto, or add-fragment; skip `link` when you only receive its events. |
+| `의존이 순환합니다` | Replace the write in one direction with an event ([add-event](../add-event/PLAYBOOK.md), [add-listener](../add-listener/PLAYBOOK.md)); when two modules only read each other, redraw their boundary. |
 | `@ApplicationModule이 없습니다` | Add `@ApplicationModule(allowedDependencies = {})` to that module's `package-info.java` first. |
 | `allowedDependencies를 읽을 수 없습니다` | Rewrite the value as a literal string array and rerun. |
 

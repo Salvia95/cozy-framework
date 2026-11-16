@@ -3,7 +3,7 @@ package it.cozy.app.board.internal.app.command;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-import it.cozy.app.memo.spi.event.MemoCreated;
+import it.cozy.app.events.spi.memo.MemoCreated;
 import it.cozy.app.board.spi.BoardFacade;
 
 /**
