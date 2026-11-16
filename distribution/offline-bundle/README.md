@@ -55,7 +55,7 @@ distribution/offline-bundle/build-bundle.sh
 ### JDK를 담은 번들 (bash: Linux, WSL, CI)
 
 ```bash
-distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-2.0.0.zip windows-x64
+distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-2.1.0-SNAPSHOT.zip windows-x64
 ```
 
 - `distribution/offline-bundle/jdk.env`에 고정한 Temurin 배포판을 받아 SHA-256을 확인하고, 번들의 `jdk/`에 푼다. 이미 받아 둔 파일이 있으면 세 번째 인자로 경로를 준다.
@@ -66,8 +66,8 @@ distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-
 ## 설치와 사용 (오프라인 PC)
 
 ```powershell
-Expand-Archive cozy-offline-bundle-2.0.0-windows-x64.zip C:\cozy-bundle
-cd C:\cozy-bundle\cozy-offline-bundle-2.0.0-windows-x64
+Expand-Archive cozy-offline-bundle-2.1.0-SNAPSHOT-windows-x64.zip C:\cozy-bundle
+cd C:\cozy-bundle\cozy-offline-bundle-2.1.0-SNAPSHOT-windows-x64
 .\cozy.cmd install                      # %USERPROFILE%\cozy에 설치 (다른 곳: .\cozy.cmd install D:\cozy)
 $env:Path = "$env:USERPROFILE\cozy\bin;" + $env:Path
 
