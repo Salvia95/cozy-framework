@@ -19,7 +19,7 @@ Windows PC는 보통 번들 대신 같은 릴리스의 설치 파일 `cozy-{버�
 | --- | --- |
 | `jdk/` | (Windows x64 번들만) Eclipse Temurin JDK 25. `lib/src.zip`만 뺐다. 라이선스는 `jdk/legal/`과 `jdk/NOTICE`, 소스 묶음은 같은 릴리스의 `OpenJDK25U-jdk-sources_*.tar.gz`(ADR-0025 보완) |
 | `repository/` | Maven 로컬 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인 |
-| `apache-maven-3.10.0-bin.zip` | Maven 배포판 |
+| `apache-maven-3.10.1-bin.zip` | Maven 배포판 |
 | `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`, `cozy version`, `cozy help` |
 | `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`, `enable`, `sync`, `set`을 맡는다(ADR-0032) |
 | `docs/` | 앱의 에이전트 문서 원본(`agents/`: AGENTS.md, cozy-helper 스킬), 규약 문서(`conventions/`), 결정 기록(`adr/`) |
@@ -55,7 +55,7 @@ distribution/offline-bundle/build-bundle.sh
 ### JDK를 담은 번들 (bash: Linux, WSL, CI)
 
 ```bash
-distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-1.3.0-SNAPSHOT.zip windows-x64
+distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-2.0.0.zip windows-x64
 ```
 
 - `distribution/offline-bundle/jdk.env`에 고정한 Temurin 배포판을 받아 SHA-256을 확인하고, 번들의 `jdk/`에 푼다. 이미 받아 둔 파일이 있으면 세 번째 인자로 경로를 준다.
@@ -66,8 +66,8 @@ distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-
 ## 설치와 사용 (오프라인 PC)
 
 ```powershell
-Expand-Archive cozy-offline-bundle-1.3.0-SNAPSHOT-windows-x64.zip C:\cozy-bundle
-cd C:\cozy-bundle\cozy-offline-bundle-1.3.0-SNAPSHOT-windows-x64
+Expand-Archive cozy-offline-bundle-2.0.0-windows-x64.zip C:\cozy-bundle
+cd C:\cozy-bundle\cozy-offline-bundle-2.0.0-windows-x64
 .\cozy.cmd install                      # %USERPROFILE%\cozy에 설치 (다른 곳: .\cozy.cmd install D:\cozy)
 $env:Path = "$env:USERPROFILE\cozy\bin;" + $env:Path
 
@@ -91,7 +91,7 @@ mvn -o -Pdist package
   - 시스템의 `JAVA_HOME`과 PATH 설정은 바꾸지 않는다. 다른 Java 프로그램에는 영향이 없다.
   - 번들 JDK의 파일을 고치지 않는다(사내 인증서를 `cacerts`에 더하는 것 등). 고치면 `mvn -Pdist package`의 jlink가 거부한다. 인증서가 필요하면 별도 truststore를 JVM 옵션으로 준다.
   - JDK 없는 번들이면 PATH의 JDK 25를 쓴다. `bin\mvn.cmd`는 시스템의 `JAVA_HOME`을 따른다.
-- **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.0`으로 지정한다.
+- **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.1`으로 지정한다.
 - **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, cozy-ui jar는 설치 폴더의 `repository/`에서 읽는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:

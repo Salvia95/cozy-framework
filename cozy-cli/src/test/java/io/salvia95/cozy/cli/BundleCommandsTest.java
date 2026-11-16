@@ -145,11 +145,11 @@ class BundleCommandsTest {
 			write(this.bundle.resolve("repository/marker"), "repo");
 			write(this.bundle.resolve("lib/cli/cozy-cli.jar"), "jar");
 			// Maven 배포판: mvn은 자기가 받은 JAVA_HOME과 인수를 출력한다
-			Path maven = this.temp.resolve("maven/apache-maven-3.10.0");
+			Path maven = this.temp.resolve("maven/apache-maven-3.10.1");
 			write(maven.resolve("conf/settings.xml"), "<settings/>");
 			executable(write(maven.resolve("bin/mvn"), "#!/bin/sh\necho \"maven JAVA_HOME=$JAVA_HOME args=$*\"\n"));
-			Process zip = new ProcessBuilder("zip", "-qr", this.bundle.resolve("apache-maven-3.10.0-bin.zip").toString(),
-					"apache-maven-3.10.0").directory(maven.getParent().toFile()).redirectErrorStream(true).start();
+			Process zip = new ProcessBuilder("zip", "-qr", this.bundle.resolve("apache-maven-3.10.1-bin.zip").toString(),
+					"apache-maven-3.10.1").directory(maven.getParent().toFile()).redirectErrorStream(true).start();
 			assertThat(zip.waitFor(30, TimeUnit.SECONDS)).isTrue();
 			assertThat(zip.exitValue()).as("zip").isZero();
 			jdk(this.bundle.resolve("jdk"), "bundled-java");
@@ -178,13 +178,13 @@ class BundleCommandsTest {
 			assertThat(dest.resolve("jdk/bin/java")).isExecutable();
 			assertThat(dest.resolve("bin/mvn")).isExecutable();
 			// 저장소는 Maven 폴더 옆을 가리킨다. 설치 폴더의 절대 경로가 들어가지 않는다
-			assertThat(Files.readString(dest.resolve("apache-maven-3.10.0/conf/settings.xml")))
+			assertThat(Files.readString(dest.resolve("apache-maven-3.10.1/conf/settings.xml")))
 				.contains("<localRepository>${maven.home}/../repository</localRepository>")
 				.contains("<offline>true</offline>")
 				.doesNotContain(dest.toString());
 			// PATH에는 bin 하나만 더한다. bin의 mvn이 설치 폴더의 Maven을 부른다
 			assertThat(install.output()).contains("export PATH=\"" + dest.resolve("bin") + ":$PATH\"")
-				.doesNotContain("apache-maven-3.10.0/bin");
+				.doesNotContain("apache-maven-3.10.1/bin");
 			assertThat(run(dest.resolve("bin/mvn"), "-v").output()).contains("maven JAVA_HOME=" + dest.resolve("jdk") + " args=-v");
 			Result created = run(dest.resolve("bin/cozy"), "new", "-DartifactId=demo");
 			assertThat(created.code()).as(created.output()).isZero();

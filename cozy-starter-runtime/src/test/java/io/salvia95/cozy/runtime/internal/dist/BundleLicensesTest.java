@@ -135,12 +135,12 @@ class BundleLicensesTest {
 		var stdout = new ByteArrayOutputStream();
 
 		int status = BundleLicenses.run(List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out,
-				"--title=Cozy offline bundle 1.0.0", "--maven-distribution=apache-maven-3.10.0-bin.zip"),
+				"--title=Cozy offline bundle 1.0.0", "--maven-distribution=apache-maven-3.10.1-bin.zip"),
 				new PrintStream(stdout, true, StandardCharsets.UTF_8));
 
 		assertThat(status).isZero();
 		String list = Files.readString(out);
-		assertThat(list).startsWith("Cozy offline bundle 1.0.0").contains("apache-maven-3.10.0-bin.zip")
+		assertThat(list).startsWith("Cozy offline bundle 1.0.0").contains("apache-maven-3.10.1-bin.zip")
 			.contains("Lists of 2 artifacts in repository/.")
 			.contains("     (Apache-2.0) org.example:lib:1.0\n")
 			.contains("     (EPL-2.0) org.example:epl:1.0 [source: repository/org/example/epl/1.0/epl-1.0-sources.jar]\n");

@@ -6,9 +6,9 @@
 # → 원격 저장소 표시 정리 → 제3자 라이선스 목록(소스 jar 포함) → Maven 배포판(SHA-512 확인)·스크립트·문서와 함께 zip.
 param(
   [string]$Output,
-  [string]$MavenZip = 'https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.0/apache-maven-3.10.0-bin.zip',
-  # apache-maven-3.10.0-bin.zip의 SHA-512 (Maven Central과 archive.apache.org의 .sha512가 같다, 2026-11-06 확인)
-  [string]$MavenSha512 = '22d31676d5b92ed53308c19ecded3245d0efd0cddfec51ec7bab62f4f13ad70ddddceff8e62940e0e8e2421f3cde8106737f4becec0aa034ffeff2a754e88337',
+  [string]$MavenZip = 'https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.1/apache-maven-3.10.1-bin.zip',
+  # apache-maven-3.10.1-bin.zip의 SHA-512 (Maven Central과 archive.apache.org의 .sha512가 같다, 2026-11-17 확인)
+  [string]$MavenSha512 = '7a9950b642448423c71b86f5ca006018af93cece84b81be2463571be530e9200fa4ed8b1f60ff9781007b28dc64a7edba435544c877b3bb9a4a7af7657c39c03',
   # 소스 jar를 받는 Maven 저장소 (사내 미러가 있으면 바꾼다)
   [string]$SourcesRepo = 'https://repo.maven.apache.org/maven2/',
   [string]$Mvn = 'mvn.cmd'

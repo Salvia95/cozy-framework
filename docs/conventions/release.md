@@ -84,7 +84,7 @@ mvn -o clean verify             # 옮기기 전의 클래스가 target/에 남�
 | --- | --- |
 | `distribution/release/set-version.sh <버전>` | 레포의 POM(아키타입 템플릿과 invoker 픽스처 제외. 픽스처 POM이 바뀌면 실패한다), 문서의 `-DarchetypeVersion=` 예시, 번들 README의 zip 이름을 바꾼다. POM에 이전 버전이 남으면 실패한다. 생성 앱의 기본 버전(`cozy new`의 `-Dversion`)은 앱 버전이라 바꾸지 않는다 |
 | `distribution/release/check-version.sh <tag\|branch> <ref>` | cozy 모듈 POM이 모두 `cozy.version`을 쓰는지 본다. 태그 빌드면 태그가 `v{버전}`이고 SNAPSHOT이 아닌지도 본다 |
-| `distribution/release/install-maven.sh <폴더>` | Maven 3.10.0을 받아 SHA-512를 확인하고 푼다 |
+| `distribution/release/install-maven.sh <폴더>` | Maven 3.10.1을 받아 SHA-512를 확인하고 푼다 |
 | `distribution/release/release-notes.sh <버전> <릴리스 폴더>` | 릴리스 노트 초안(세 파일의 크기와 SHA-256, 설치 요약). 폴더에 두 번들과 JDK 소스 묶음이 있어야 한다 |
 | `distribution/release/jdk-sources.sh <폴더>` | `jdk.env`의 JDK 소스 묶음을 받아 SHA-256을 확인한다 |
 | `distribution/msi/build-msi.ps1 -Bundle <windows-x64 zip>` | (Windows, WiX 필요) 번들의 `cozy.cmd install`로 설치 폴더 모양을 만들고 `cozy.wxs`로 묶는다. 결과는 `cozy-{버전}-windows-x64.msi`. MSI 판은 `-SNAPSHOT`을 뗀 숫자 세 자리 |
@@ -147,7 +147,7 @@ org.jdom:jdom2:2.0.6.1      LicenseRef-JDOM  # jar의 META-INF/LICENSE.txt. Apac
 ```bash
 java -cp cozy-starter-runtime/target/classes io.salvia95.cozy.runtime.internal.dist.BundleLicenses \
   --repository=<Maven 저장소> --overrides=distribution/offline-bundle/license-overrides.txt \
-  --output=<THIRD-PARTY.txt> [--title=...] [--maven-distribution=apache-maven-3.10.0-bin.zip] \
+  --output=<THIRD-PARTY.txt> [--title=...] [--maven-distribution=apache-maven-3.10.1-bin.zip] \
   [--fetch-sources=https://repo.maven.apache.org/maven2/] \
   [--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip --jdk-sources=OpenJDK25U-jdk-sources_25.0.5_8.tar.gz]
 ```

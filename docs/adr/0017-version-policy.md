@@ -21,7 +21,7 @@
 | JDK | 25.0.5 (Temurin) | 빌드 PC |
 | WiX Toolset (`wix` .NET 도구) | 7.0.1 | CI의 Windows 러너에서만. MSI 만들기. 바이너리는 OSMF EULA v1.1(레포 주인 동의 2026-11-13) (ADR-0039, 승인 2026-11-13) |
 | Eclipse Temurin JDK (번들) | 25.0.5+8 | Windows x64 오프라인 번들의 `jdk/`. 검증용 Linux x64. 배포판 이름과 SHA-256은 `distribution/offline-bundle/jdk.env` (ADR-0025 보완, 승인 2026-11-12) |
-| Maven | 3.10.0 (4.0.0은 RC) | 빌드 PC |
+| Maven | 3.10.1 (4.0.0은 RC) | 빌드 PC |
 | Spring Boot | 4.1.2 (4.2.0은 RC2) | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
 | Thymeleaf | 3.1.5.RELEASE (thymeleaf-spring6) | Boot BOM |
@@ -37,7 +37,7 @@
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
-| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261109 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
+| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261112 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
 | maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
 | maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
@@ -45,7 +45,7 @@
 | maven-archetype-plugin | 3.4.1 | cozy-parent |
 | exec-maven-plugin | 3.7.0 | cozy-parent |
 | license-maven-plugin | 2.9.0 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
-| GitHub Actions: checkout 7.0.1, setup-java 6.2.0, upload-artifact 7.0.2, download-artifact 8.0.2 | 커밋 SHA로 고정 | 릴리스 워크플로 (ADR-0028, 제안) |
+| GitHub Actions: checkout 7.0.1, setup-java 6.3.0, upload-artifact 7.0.2, download-artifact 8.0.2 | 커밋 SHA로 고정 | 릴리스 워크플로 (ADR-0028, 제안) |
 | Tabler | 1.7.5 | cozy-ui 벤더 자산 |
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Alpine.js CSP 빌드 (`@alpinejs/csp`) | 3.17.5 | cozy-ui 벤더 자산. 표준 빌드(`alpinejs`)는 쓰지 않는다 (ADR-0040, 승인 2026-11-13) |
@@ -73,3 +73,4 @@
 - 2026-11-13(M31): 시작할 때 다시 확인했다. Tabler가 1.7.5 GA(11-12)로 나와 올렸다. Alpine.js CSP 빌드 3.17.5를 더했다(ADR-0040). 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, htmx 2.0.11, Tabler Icons 3.51.0, Pretendard 1.3.9). Boot 4.2와 Modulith 2.2는 RC라 올리지 않는다.
 - 2026-11-13(MSI): WiX Toolset 7.0.1(2026-10-26, NuGet `wix`)로 MSI를 만든다(ADR-0039). 7.0.0의 다음 GA다. GitHub Actions 러너는 `windows-2025`로 고정한다.
 - 2026-11-12(번들 JDK): Windows x64 번들에 Temurin JDK 25.0.5+8을 담는다(ADR-0025 보완). 빌드 PC의 JDK와 같은 판이다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 Adoptium API와 릴리스 자산의 `.sha256.txt`가 같다.
+- 2026-11-17(릴리스 2.0.0): 다시 확인했다. Maven 3.10.1(빌드 PC, 번들의 Maven 배포판, 릴리스 워크플로. SHA-512는 Maven Central과 archive.apache.org의 `.sha512`가 같다), Closure Compiler v20261112, actions/setup-java 6.3.0으로 올렸다. Tabler Icons 3.52.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, 다른 플러그인, Temurin 25.0.5+8, WiX 7.0.1, Tabler 1.7.5, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9, 다른 GitHub Actions). 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4와 `next` 태그의 htmx 4뿐이라 올리지 않는다.

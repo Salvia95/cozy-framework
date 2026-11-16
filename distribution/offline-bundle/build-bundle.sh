@@ -13,9 +13,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # 루트 target/은 빌드의 clean이 지우므로 build/에 만든다
 OUT="${1:-$ROOT/build/offline-bundle}"
-MAVEN_ZIP="${2:-https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.0/apache-maven-3.10.0-bin.zip}"
-# apache-maven-3.10.0-bin.zip의 SHA-512 (Maven Central과 archive.apache.org의 .sha512가 같다, 2026-11-06 확인)
-MAVEN_SHA512="${MAVEN_SHA512:-22d31676d5b92ed53308c19ecded3245d0efd0cddfec51ec7bab62f4f13ad70ddddceff8e62940e0e8e2421f3cde8106737f4becec0aa034ffeff2a754e88337}"
+MAVEN_ZIP="${2:-https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.1/apache-maven-3.10.1-bin.zip}"
+# apache-maven-3.10.1-bin.zip의 SHA-512 (Maven Central과 archive.apache.org의 .sha512가 같다, 2026-11-17 확인)
+MAVEN_SHA512="${MAVEN_SHA512:-7a9950b642448423c71b86f5ca006018af93cece84b81be2463571be530e9200fa4ed8b1f60ff9781007b28dc64a7edba435544c877b3bb9a4a7af7657c39c03}"
 # 소스 jar를 받는 Maven 저장소 (사내 미러가 있으면 바꾼다)
 SOURCES_REPO="${SOURCES_REPO:-https://repo.maven.apache.org/maven2/}"
 MVN="${MVN:-mvn}"

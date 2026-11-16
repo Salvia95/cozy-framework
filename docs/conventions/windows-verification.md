@@ -86,7 +86,7 @@ mvn -o verify
 
 ## M6 배포 장치
 
-레포를 Windows 쪽에 둔다(예: `C:\cozy-framework`). PowerShell에서 JDK 25와 Maven 3.10.0으로 실행한다.
+레포를 Windows 쪽에 둔다(예: `C:\cozy-framework`). PowerShell에서 JDK 25와 Maven 3.10.1으로 실행한다.
 
 ### 종단 검증 (M6 완료 기준)
 
@@ -179,7 +179,7 @@ mvn -o -Pdist package
 - [ ] `target\dist\image\voc-assistant\app\native\sqlitejdbc.dll`이 있다. 실행 중에 `%TEMP%`에 `sqlite-*-sqlitejdbc.dll`이 생기지 않는다.
 - [ ] `"-Devents=true" "-Dpersistence=false"`로 만들면 `[cozy] events=true는 persistence=true가 필요합니다`로 실패하고 폴더가 남지 않는다.
 - [ ] IntelliJ로 `voc-assistant`를 열면 실행 설정 "dev 실행", "아키텍처 테스트", "mvn -o verify"가 보인다. "dev 실행"이 `/cozy/dev/catalog`를 연다.
-- [ ] 실패하면 `mvn -o verify`의 오류 앞부분과 `%USERPROFILE%\cozy\apache-maven-3.10.0\conf\settings.xml`을 기록에 남긴다.
+- [ ] 실패하면 `mvn -o verify`의 오류 앞부분과 `%USERPROFILE%\cozy\apache-maven-3.10.1\conf\settings.xml`을 기록에 남긴다.
 
 ## M11 번들의 cozy 명령 (ADR-0032)
 
@@ -230,7 +230,7 @@ mvn -v
 - [ ] `cmd.exe`에서 `mvn.cmd -v`도 같은 `runtime:`을 보여 준다. 실패하는 빌드(예: 앱의 테스트 하나를 깨뜨린 뒤 `mvn -o verify`)의 `%ERRORLEVEL%`이 0이 아니다.
 - [ ] `licenses\THIRD-PARTY.txt`의 머리말에 `Eclipse Temurin JDK in jdk/`와 `OpenJDK25U-jdk-sources_25.0.5_8.tar.gz` 줄이 있다.
 - [ ] 다시 설치하기: JDK 25가 PATH에 있는 창에서 JDK 없는 번들로 `.\cozy.cmd install`을 하면 `%USERPROFILE%\cozy\jdk`가 사라지고, `mvn -v`의 `runtime:`이 시스템 JDK가 된다.
-- [ ] IntelliJ: Project SDK를 `%USERPROFILE%\cozy\jdk`로, Maven home을 `%USERPROFILE%\cozy\apache-maven-3.10.0`으로, Maven JRE를 Project SDK로 두면 실행 설정 "mvn -o verify"가 통과한다.
+- [ ] IntelliJ: Project SDK를 `%USERPROFILE%\cozy\jdk`로, Maven home을 `%USERPROFILE%\cozy\apache-maven-3.10.1`으로, Maven JRE를 Project SDK로 두면 실행 설정 "mvn -o verify"가 통과한다.
 
 ## MSI 설치 파일 (ADR-0039)
 
@@ -251,14 +251,14 @@ mvn -o verify
 mvn -o -Pdist package
 ```
 
-- [ ] 더블클릭 설치에 관리자 권한(UAC) 창이 뜨지 않는다. 끝나면 `%LOCALAPPDATA%\Programs\Cozy`에 `bin`, `jdk`, `apache-maven-3.10.0`, `repository`가 있다.
+- [ ] 더블클릭 설치에 관리자 권한(UAC) 창이 뜨지 않는다. 끝나면 `%LOCALAPPDATA%\Programs\Cozy`에 `bin`, `jdk`, `apache-maven-3.10.1`, `repository`가 있다.
 - [ ] 인터넷에서 받은 MSI면 SmartScreen 경고가 뜰 수 있다(서명하지 않았다). "추가 정보 → 실행"으로 설치되는지, 회사 정책에서 막히는지 기록한다.
 - [ ] 새 창에서 `cozy version`이 버전을, `mvn -v`의 `runtime:`이 `%LOCALAPPDATA%\Programs\Cozy\jdk`를 보여 준다. PATH를 손으로 넣지 않았다.
 - [ ] "설정 → 앱 → 설치된 앱"에 Cozy가 있다.
 - [ ] `cozy new`의 `-DappName=VOC 도우미`(공백과 한글)가 깨지거나 나뉘지 않는다. 브라우저 제목이 "VOC 도우미"다.
 - [ ] `mvn -o verify`, `mvn -o -Pdist package`가 통과하고 앱이 뜬다.
 - [ ] `cmd.exe`에서도 `cozy version`, `mvn -v`가 된다.
-- [ ] IntelliJ: Maven home을 `%LOCALAPPDATA%\Programs\Cozy\apache-maven-3.10.0`으로, JDK를 `%LOCALAPPDATA%\Programs\Cozy\jdk`로 두면 "mvn -o verify" 실행 설정이 통과한다. 로컬 저장소가 `...\Cozy\repository`로 잡힌다(설정의 `${maven.home}/../repository`).
+- [ ] IntelliJ: Maven home을 `%LOCALAPPDATA%\Programs\Cozy\apache-maven-3.10.1`으로, JDK를 `%LOCALAPPDATA%\Programs\Cozy\jdk`로 두면 "mvn -o verify" 실행 설정이 통과한다. 로컬 저장소가 `...\Cozy\repository`로 잡힌다(설정의 `${maven.home}/../repository`).
 - [ ] 같은 MSI를 다시 더블클릭하면 덮어쓴다. 더 낮은 판의 MSI는 "더 새로운 Cozy가 이미 설치되어 있습니다"로 막힌다.
 - [ ] "설치된 앱"에서 제거하면 새 창에서 `cozy`를 찾지 못하고, 사용자 PATH에서 `...\Cozy\bin`이 빠진다. `%LOCALAPPDATA%\Programs\Cozy`에 남는 것이 있으면(Maven이 만든 파일) 기록한다.
 - [ ] 관리자 PowerShell에서 `msiexec /i cozy-{버전}-windows-x64.msi ALLUSERS=1`을 하면 "Cozy는 사용자별로만 설치합니다" 메시지로 거부된다. 한글 메시지가 깨지지 않는다.
