@@ -18,4 +18,5 @@
 | `events-cycle` | 두 모듈에 `crud --publish created`, 서로의 이벤트에 `add listener`, `link`(읽기), 다시 실행, 리스너 빈칸을 `hand/events-cycle`로 채움. 이벤트는 `events/spi/{주인}/`에, 리스너 쪽 의존은 `events :: spi`만 | 통과 (C1 순환 없음) |
 | `behavior` | `crud`, `module`, 두 모듈에 `add behavior`, `cozy check`가 C9로 실패, `hand/behavior-filled`(빈칸을 채우고 task 상세가 note의 컴포넌트를 씀) 뒤 R16으로 실패, `hand/behavior`(자기 모듈의 컴포넌트) 뒤 통과, 다시 실행 | 통과 |
 | `migrate` | `crud`를 만든 뒤 `hand/migrate`로 상세 화면에 옛 동작 속성(`data-cozy-confirm`, `data-cozy-copy`)을 넣음, `cozy check`가 R16으로 실패, `cozy migrate alpine`, 다시 실행(바뀐 것 없음), `cozy check` 통과 | 통과 |
+| `migrate-events` | `hand/migrate-events`로 옛 이벤트 자리(`{모듈}/spi/event/`)의 book·rental을 만듦(서로의 이벤트를 받아 순환), `cozy check`가 C8(`고치는 명령: cozy migrate events`)으로 실패, `cozy migrate events`, 다시 실행(바뀐 것 없음), `cozy check` 통과. 이벤트가 `events/spi/{주인}/`로, book의 rental 의존이 `events :: spi`로 바뀌고, 저장된 클래스 이름을 바꾸는 마이그레이션이 생긴다 | 통과 (C1 순환 없음) |
 | `field` | `crud`를 만든 뒤 `add field`를 종류마다 한 번씩(필수는 `--default`), 중간에 `hand/field`로 `create` 본문을 고침, `--default` 없는 필수 필드는 실패, 다시 실행 | 통과 |

@@ -119,9 +119,9 @@ class MigrateAlpineTest {
 	}
 
 	@Test
-	void onlyAlpineCanBeMigrated() throws IOException {
+	void onlyAlpineAndEventsCanBeMigrated() throws IOException {
 		Result result = CozyCliTest.run("migrate", "--project", this.dir.toString());
 		assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
-		assertThat(result.err()).contains("cozy migrate alpine");
+		assertThat(result.err()).contains("cozy migrate alpine").contains("cozy migrate events");
 	}
 }

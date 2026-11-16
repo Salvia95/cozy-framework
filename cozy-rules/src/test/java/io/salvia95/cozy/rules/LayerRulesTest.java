@@ -43,8 +43,7 @@ class LayerRulesTest {
 			if (role.contract() != null) {
 				types.add(Types.of(role.contract(), MEMO, "Memo"));
 			}
-			Set<String> spi = Set.of(Layer.SPI.packageIn(MEMO.basePackage()), Layer.SPI_DTO.packageIn(MEMO.basePackage()),
-					Layer.SPI_EVENT.packageIn(MEMO.basePackage()));
+			Set<String> spi = Set.of(Layer.SPI.packageIn(MEMO.basePackage()), Layer.SPI_DTO.packageIn(MEMO.basePackage()));
 			assertThat(LayerRules.check(List.of(MEMO), types, spi)).isEmpty();
 		}
 
@@ -63,17 +62,15 @@ class LayerRulesTest {
 			assertThat(Role.FACADE_IMPL.typeName("Memo")).isEqualTo("MemoFacadeImpl");
 			assertThat(Role.FACADE_IMPL.qualifiedName(MEMO.basePackage(), "Memo"))
 				.isEqualTo("it.cozy.app.memo.internal.app.command.MemoFacadeImpl");
-			assertThat(Role.EVENT.typeName("MemoCreated")).isEqualTo("MemoCreated");
-			assertThat(Role.EVENT.layer()).isEqualTo(Layer.SPI_EVENT);
 		}
 
 		@Test
-		void everyLayerHasARole() {
+		void everyLayerButTheOldEventPlaceHasARole() {
 			EnumSet<Layer> used = EnumSet.noneOf(Layer.class);
 			for (Role role : Role.values()) {
 				used.add(role.layer());
 			}
-			assertThat(used).containsExactlyInAnyOrder(Layer.values());
+			assertThat(used).isEqualTo(EnumSet.complementOf(EnumSet.of(Layer.SPI_EVENT)));
 		}
 	}
 
@@ -250,8 +247,23 @@ class LayerRulesTest {
 		}
 
 		@Test
-		void eventsKeptInTheOwnersSpiEventStillPass() {
-			assertThat(check(event(APP + ".memo.spi.event.MemoCreated").build())).isEmpty();
+		void theOldEventPlaceFailsWithTheMigrateCommand() {
+			assertThat(check(event(APP + ".memo.spi.event.MemoCreated").build(),
+					Types.record(APP + ".memo.spi.event.MemoNote").build()))
+				.containsExactly(
+						"[C8] it.cozy.app.memo.spi.event.MemoCreated — it.cozy.app.memo.spi.event는 옛 이벤트 자리입니다. 이벤트는 "
+								+ "이벤트 계약 모듈의 it.cozy.app.events.spi.memo에 둡니다. 옮기면 이벤트를 받는 모듈이 memo에 의존하지 "
+								+ "않습니다. 고치는 명령: cozy migrate events",
+						"[C8] it.cozy.app.memo.spi.event.MemoNote — it.cozy.app.memo.spi.event는 옛 이벤트 자리입니다. 이벤트는 "
+								+ "이벤트 계약 모듈의 it.cozy.app.events.spi.memo에 둡니다. 옮기면 이벤트를 받는 모듈이 memo에 의존하지 "
+								+ "않습니다. 고치는 명령: cozy migrate events");
+		}
+
+		@Test
+		void theOldEventPlaceNeedsNoNamedInterfaceReport() {
+			List<Violation> violations = LayerRules.check(List.of(MEMO, EVENTS),
+					List.of(event(APP + ".memo.spi.event.MemoCreated").build()), Set.of());
+			assertThat(violations).singleElement().extracting(Violation::command).isEqualTo("cozy migrate events");
 		}
 
 		@Test
@@ -364,7 +376,6 @@ class LayerRulesTest {
 			switch (role) {
 				case CONTROLLER -> types.with(JavaType.Trait.CONTROLLER, JavaType.Trait.COMPONENT);
 				case LISTENER -> types.with(JavaType.Trait.LISTENER, JavaType.Trait.COMPONENT);
-				case EVENT -> types.with(JavaType.Trait.COZY_EVENT);
 				case CONFIGURATION, FACADE_IMPL, SERVICE_IMPL, FINDER_IMPL, QUERY_IMPL, PROJECTION_IMPL ->
 					types.with(JavaType.Trait.COMPONENT);
 				default -> {

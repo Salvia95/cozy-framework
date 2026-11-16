@@ -53,7 +53,7 @@
    git commit -am "다음 개발 버전 1.1.0-SNAPSHOT"
    ```
 
-- **2.0.0** (ADR-0040): 동작을 붙이던 `data-cozy-*` 속성을 없애고 Alpine.js 컴포넌트로 바꿨으므로 호환이 깨진다. 이 변경이 들어간 첫 릴리스는 `2.0.0`이다(3단계의 `set-version.sh 2.0.0`). 릴리스 노트의 "변경 내용"에 아래 "앱을 2.0.0으로 올리기"를 그대로 적는다.
+- **2.0.0** (ADR-0040, ADR-0041): 동작을 붙이던 `data-cozy-*` 속성을 없애고 Alpine.js 컴포넌트로 바꿨고, 이벤트의 자리를 이벤트 계약 모듈 `events`로 옮겼으므로 호환이 깨진다. 이 변경이 들어간 첫 릴리스는 `2.0.0`이다(3단계의 `set-version.sh 2.0.0`). 릴리스 노트의 "변경 내용"에 아래 "앱을 2.0.0으로 올리기"를 그대로 적는다.
 - **패치 릴리스**(`1.0.1`): 의존성은 패치 버전과 보안 수정만 올린다. Boot 마이너처럼 동작이 바뀔 수 있는 판올림은 다음 마이너 릴리스에서 한다.
 - **태그를 잘못 붙였을 때**: 초안 릴리스와 태그를 지우고 다시 붙인다. 게시한 릴리스의 파일은 바꾸지 않는다. 고칠 것이 있으면 새 패치 버전으로 낸다.
 
@@ -65,12 +65,15 @@
 # pom.xml의 cozy-parent 버전을 2.0.0으로 바꾼 뒤
 cozy migrate alpine --dry-run   # 바꿀 템플릿을 본다
 cozy migrate alpine             # data-cozy-confirm, data-cozy-copy → cozyConfirm, cozyCopy
-cozy check                      # 남은 옛 속성(R16)과 그 밖의 위반
-cozy sync agents                # AGENTS.md와 cozy-helper 스킬에 htmx·Alpine 규칙과 add behavior 플레이북
-mvn -o verify
+cozy migrate events --dry-run   # 옮길 이벤트를 본다 (이벤트가 있는 앱)
+cozy migrate events             # {모듈}/spi/event/ → events/spi/{모듈}/, 저장된 이름을 바꾸는 마이그레이션
+cozy check                      # 남은 옛 속성(R16), 옛 이벤트 자리(C8)와 그 밖의 위반
+cozy sync agents                # AGENTS.md와 cozy-helper 스킬에 htmx·Alpine 규칙, 이벤트 계약 모듈, add behavior 플레이북
+mvn -o clean verify             # 옮기기 전의 클래스가 target/에 남지 않게 clean
 ```
 
 - **바뀐 것**: `data-cozy-confirm`, `data-cozy-copy`, `data-cozy-autosize`, `data-cozy-icon-filter`가 없어졌다. 화면 안의 동작은 `x-data="cozy…"` 컴포넌트로 붙인다([ui.md](ui.md)의 화면 안의 상태).
+- **이벤트**: 이벤트 record가 `{모듈}/spi/event/`에서 이벤트 계약 모듈의 `events/spi/{모듈}/`로 옮겨 가고, 이벤트를 내거나 받는 모듈은 `"events :: spi"`에 의존한다. 이벤트만 받던 모듈은 보내는 모듈에 의존하지 않게 된다. `cozy migrate events`가 만든 `V{시각}__cozy_move_event_contracts.sql`은 지우지 말고 함께 배포한다. 업데이트한 PC에 남아 있던 미완료 이벤트를 새 클래스 이름으로 읽게 한다.
 - **명령이 바꾸지 못한 것**: 출력의 "남은 일"에 `파일:줄`과 고치는 법이 있다. 요소에 `x-data`가 이미 있으면 감싸는 요소를 하나 더 둔다. 고친 뒤 `cozy check`가 통과해야 한다.
 - **`cozy sync agents`**: 앱이 `AGENTS.md`를 고쳤으면 그 파일은 그대로 두고 스킬만 맞춘다. 새 `AGENTS.md`의 "Screens: htmx and Alpine.js" 절을 손으로 옮기거나 `--force`로 바꾼다.
 - **새로 쓸 수 있는 것**: 모듈의 화면 안 상태는 `cozy add behavior {모듈} {동작}`이 `static/{모듈}/{모듈}.js`에 만들고, 레이아웃이 그 파일을 싣는다.

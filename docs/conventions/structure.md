@@ -44,7 +44,7 @@ events/                               이벤트 계약 모듈. 다른 앱 모듈
 - **필드**: 기본 타입(`String`, `long`, `boolean`, `LocalDate`, `Instant`, `UUID` 등)만 쓴다. 다른 모듈의 타입(`spi/dto` record 등)을 쓰면 `events`가 그 모듈에 의존해 순환이 다시 생긴다(C8).
 - **주인**: 폴더 이름이 주인 모듈이다. 그 이벤트는 주인 모듈의 `internal/app/command/`에서만 만든다(C11, [events.md](events.md)). 받는 쪽은 제한하지 않는다.
 - **이름**: `events`는 예약한 이름이라 기능 모듈에 쓰지 않는다.
-- **옛 자리**: 주인 모듈의 `spi/event/`에 둔 이벤트도 아직 통과한다. 하지만 그 이벤트를 받는 모듈이 주인 모듈에 의존하므로, 두 모듈이 서로의 이벤트를 받으면 순환(C1)으로 실패한다.
+- **옛 자리**: 2.0.0 전에는 이벤트를 주인 모듈의 `spi/event/`에 두었다. 그 이벤트를 받는 모듈이 주인 모듈에 의존해야 해서, 두 모듈이 서로의 이벤트를 받으면 순환(C1)했다. 이제 그 자리의 타입은 모두 C8 오류이고 `고치는 명령: cozy migrate events`가 붙는다([cli.md](cli.md)의 migrate events).
 
 ### 놓는 자리
 
@@ -55,7 +55,7 @@ events/                               이벤트 계약 모듈. 다른 앱 모듈
 | 쓰기 계약 | `spi/` | `*Facade` 인터페이스 |
 | 읽기 계약 | `spi/` | `*Finder` 인터페이스 |
 | 모듈 사이 DTO | `spi/dto/` | record. 스프링 빈이 아니다 |
-| 이벤트 | 이벤트 계약 모듈 `events/spi/{주인 모듈}/` | `CozyEvent` 구현 record. 주인 모듈의 `spi/event/`(옛 자리)도 통과한다. 다른 곳에 두면 C8 |
+| 이벤트 | 이벤트 계약 모듈 `events/spi/{주인 모듈}/` | `CozyEvent` 구현 record. 다른 곳(옛 자리 `spi/event/` 포함)에 두면 C8 |
 | 쓰기 구현 | `internal/app/command/` | `*FacadeImpl`, `*Service` + `*ServiceImpl` |
 | 이벤트 리스너 | `internal/app/command/` | `*Listener` (`@ApplicationModuleListener` 등). 인터페이스 없이 둔다 |
 | 읽기 구현 | `internal/app/query/` | `*FinderImpl`, `*Query` + `*QueryImpl`, `*Projection` + `*ProjectionImpl` |
@@ -64,7 +64,7 @@ events/                               이벤트 계약 모듈. 다른 앱 모듈
 | 모듈 전용 설정 | `internal/config/` | `@Configuration` |
 
 - **인터페이스 + Impl**: app의 구현 클래스는 이름이 `*Impl`이고, `Impl`을 뺀 이름의 인터페이스를 구현한다. Facade·Finder의 인터페이스는 같은 모듈의 `spi`에 있어야 한다. 구현 클래스는 package-private으로 둔다.
-- **spi 하위 패키지**: `spi/dto`(옛 자리의 `spi/event`도)와 `events/spi/{주인 모듈}`에도 `package-info.java`에 `@NamedInterface("spi")`를 둔다. 빠지면 C8이 알려 준다.
+- **spi 하위 패키지**: `spi/dto`와 `events/spi/{주인 모듈}`에도 `package-info.java`에 `@NamedInterface("spi")`를 둔다. 빠지면 C8이 알려 준다.
 - **다른 모듈 쓰기**: `package-info.java`에 `allowedDependencies = {"memo :: spi"}`로 적는다. 그 모듈의 `*Finder`로 읽고, 쓰기는 이벤트(`events/spi/{주인 모듈}`)를 받아서 한다. 이벤트만 받으면 `"events :: spi"`만 적는다. 다른 모듈의 `*Facade`는 부르지 않는다.
 
 ### 방향 (C8)

@@ -132,15 +132,18 @@ public final class Context {
 	}
 
 	/**
-	 * 이벤트의 FQN. 이벤트 계약 모듈({@code events/spi/{주인}/})에 있으면 그것, 옛 자리({@code {주인}/spi/event/})에 있으면 그것이다.
-	 * 이 계획에서 만든 파일도 찾는다.
+	 * 이벤트 계약 모듈({@code events/spi/{주인}/})에 있는 이벤트의 FQN. 이 계획에서 만든 파일도 찾는다. 옛 자리
+	 * ({@code {주인}/spi/event/})에 있으면 먼저 옮기라고 실패한다.
 	 */
 	public Optional<String> findEvent(String owner, String event) {
-		for (String pkg : List.of(eventPackage(owner), rolePackage(owner, Layer.SPI_EVENT))) {
-			String name = pkg + "." + event;
-			if (this.project.sources().types().containsKey(name) || this.plan.exists(javaFile(pkg, event))) {
-				return Optional.of(name);
-			}
+		String name = eventPackage(owner) + "." + event;
+		if (this.project.sources().types().containsKey(name) || this.plan.exists(javaFile(eventPackage(owner), event))) {
+			return Optional.of(name);
+		}
+		String old = rolePackage(owner, Layer.SPI_EVENT);
+		if (this.project.sources().types().containsKey(old + "." + event)) {
+			throw new CliException(owner + "의 이벤트 " + event + "가 옛 자리(" + old + ")에 있습니다. 먼저 cozy migrate events로 "
+					+ "이벤트 계약 모듈(" + eventPackage(owner) + ")에 옮기세요.");
 		}
 		return Optional.empty();
 	}
@@ -175,7 +178,7 @@ public final class Context {
 		}
 	}
 
-	/** spi, spi.dto, spi.event 패키지의 package-info가 없으면 만든다 */
+	/** spi, spi.dto 패키지의 package-info가 없으면 만든다 */
 	public void ensureNamedInterface(String module, Layer layer) {
 		String pkg = rolePackage(module, layer);
 		String file = packageInfo(pkg);
@@ -185,7 +188,6 @@ public final class Context {
 		String what = switch (layer) {
 			case SPI -> module + "의 모듈 사이 계약 (Named Interface spi): 쓰기 *Facade, 읽기 *Finder. 시그니처에는 원시 값과 spi.dto 타입만 쓴다.";
 			case SPI_DTO -> module + "의 모듈 사이 DTO (Named Interface spi). spi의 하위 패키지는 각각 같은 Named Interface를 선언해야 공개된다.";
-			case SPI_EVENT -> module + "의 모듈 사이 이벤트 (Named Interface spi). spi의 하위 패키지는 각각 같은 Named Interface를 선언해야 공개된다.";
 			default -> throw new IllegalArgumentException(layer.name());
 		};
 		this.plan.create(file, new Template().put("what", what).put("pkg", pkg).render("named-interface.java"));

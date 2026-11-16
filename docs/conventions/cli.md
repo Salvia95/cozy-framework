@@ -27,6 +27,7 @@ cozy <동작> [옵션]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
   set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
   migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
+  migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -70,7 +71,7 @@ cozy <동작> [옵션]
 | `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
-- **이벤트**: 모듈 항목이 아니라 앱의 `events[]`에 한 번씩 싣는다. 주인은 이벤트 계약 모듈이면 폴더 이름, 옛 자리면 그 모듈이고, 주인 폴더에 맞는 모듈이 없는 이벤트는 싣지 않는다(C8이 알린다). 리스너의 `on`도 `주인.이벤트`다. 글 출력은 모듈 다음에 `이벤트 memo.MemoCreated(long memoId, String title) 발행: … → activity(MemoCreatedListener)`이다.
+- **이벤트**: 모듈 항목이 아니라 앱의 `events[]`에 한 번씩 싣는다. 주인은 이벤트 계약 모듈의 폴더 이름이고(옛 자리 `{모듈}/spi/event/`에 남은 이벤트면 그 모듈), 주인 폴더에 맞는 모듈이 없는 이벤트는 싣지 않는다(C8이 알린다). 리스너의 `on`도 `주인.이벤트`다. 글 출력은 모듈 다음에 `이벤트 memo.MemoCreated(long memoId, String title) 발행: … → activity(MemoCreatedListener)`이다.
 - **발행하는 파일**: 소스에서 `이벤트.of(`나 `new 이벤트(`를 찾는다. 이 목록이 비면 아직 발행하지 않는 이벤트다.
 - **모듈 판정**: Spring Modulith와 같다. 메인 클래스 패키지 바로 아래 패키지가 모듈이고, `@ApplicationModule(id)`가 있으면 그 이름을 쓴다. 의존 선언(`allowedDependencies`)이 없으면 open이다.
 
@@ -259,8 +260,8 @@ cozy enable workbench
 - **라벨은 DTO의 Javadoc에도 남는다**: `add crud`는 화면 DTO record(`Row`, `ListResult`, `Detail`)의 `@param`과 폼·필터 필드 위의 `/** 라벨 */`을 쓴다. `add field`는 폼 필드에 `/** 라벨 */`을 붙이고, `@param` 줄이 있는 record에는 새 구성 요소의 `@param` 줄을 더한다. 워크벤치의 샘플 데이터가 이것을 속성 이름으로 보인다([workbench.md](workbench.md)).
 - **dto 필드**: `이름:종류[:설명]`. 종류는 위와 같고, 같은 모듈 `spi/dto`의 record(`이름:Record`)와 그 목록(`이름:list:Record`)도 쓴다. `!`는 받지 않는다. 설명은 record의 `@param`이 된다. 타입은 `text`→`String`, `int`→`int`, `long`→`long`, `bool`→`boolean`, `date`→`LocalDate`, `instant`→`Instant`, `list:R`→`List<R>`이다.
 - **이벤트의 자리**: `add event`와 `crud --publish`는 이벤트를 이벤트 계약 모듈의 `events/spi/{주인 모듈}/`에 만든다. `events`의 `package-info.java`(`allowedDependencies = {}`)와 주인 폴더의 `@NamedInterface("spi")`가 없으면 함께 만들고, 주인 모듈에 `"events :: spi"`를 더한다([structure.md](structure.md)의 이벤트 계약 모듈).
-  - `add listener`는 받는 모듈에 `"events :: spi"`만 더하고 보내는 모듈에는 의존하지 않는다. 그래서 두 모듈이 서로의 이벤트를 받아도 순환하지 않는다. 옛 자리(보내는 모듈의 `spi/event/`)의 이벤트면 예전처럼 보내는 모듈을 더한다.
-  - `event-version`과 `add listener --on`은 새 자리를 먼저, 그다음 옛 자리를 찾는다.
+  - `add listener`는 받는 모듈에 `"events :: spi"`만 더하고 보내는 모듈에는 의존하지 않는다. 그래서 두 모듈이 서로의 이벤트를 받아도 순환하지 않는다.
+  - `event-version`과 `add listener --on`은 이벤트 계약 모듈에서 찾는다. 이벤트가 옛 자리(보내는 모듈의 `spi/event/`)에 있으면 `먼저 cozy migrate events로 … 옮기세요`로 실패한다.
   - `events`는 예약한 이름이다. `add module events`, `add crud events …`, `add event events …`는 실패한다.
 - **listener와 Facade**: 리스너는 늘 자기 모듈의 `{M}Facade`를 생성자로 받는다(`activity` → `ActivityFacade`). 없으면 빈 `{M}Facade`와 `internal/app/command/{M}FacadeImpl`을 함께 만든다. 그래서 리스너 파일은 앱 상태와 상관없이 같다(ADR-0033 §5.6). 그 빈 Facade·구현은 나중에 같은 모듈의 `cozy add crud`(엔티티 이름이 모듈 이름과 같을 때)가 채운다(`바꿈 … listener가 만든 빈 Facade를 crud로 채움`). 메서드를 더한 Facade는 덮어쓰지 않고 실패한다.
 - **query** (ADR-0033 §5.2): `--returns`는 `long`, `int`, `bool`, `text`, `<Record>`(Finder는 `Optional<Record>`), `list:<Record>`(`List<Record>`)다. 네 곳에 더한다.
@@ -447,6 +448,38 @@ cozy check
 - **손으로 할 일**: 요소에 `x-data`가 이미 있음(한 요소에 컴포넌트는 하나다. 감싸는 요소를 하나 더 둔다), 값이 없는 속성, 바꾸는 모양이 정해지지 않은 프레임워크 속성(`data-cozy-autosize`, `data-cozy-icon-filter`. 문서에 없던 속성이다). 출력의 "남은 일"에 `파일:줄`과 고치는 법이 나온다. 그 요소는 바꾸지 않는다.
 - **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 두 번째 실행은 "바뀐 것 없음"이다.
 - **출력**: `바꿈  {템플릿 파일}    data-cozy-confirm → cozyConfirm 1곳`. `--json`의 `recipe`는 `migrate alpine`이고, 손으로 할 일은 `manual`에 있다.
+
+## migrate events
+
+2.0.0에서 이벤트의 자리를 주인 모듈의 `spi/event/`에서 이벤트 계약 모듈의 `events/spi/{주인 모듈}/`로 옮겼다([structure.md](structure.md)의 이벤트 계약 모듈). 옛 자리의 타입은 C8이 오류로 보이고 이 명령을 알려 준다. 이 명령이 이벤트를 옮기고 그 이름을 가리키는 곳을 모두 고친다.
+
+```bash
+cozy migrate events --dry-run   # 바꿀 파일만 본다
+cozy migrate events
+cozy check
+mvn clean verify                # 옮기기 전의 클래스가 target/에 남으면 이름이 겹친다
+```
+
+| 하는 일 | 내용 |
+| --- | --- |
+| 이벤트 파일 | `src/main/java`와 `src/test/java`의 `{모듈}/spi/event/*.java`를 `events/spi/{모듈}/`로 옮기고 `package`를 고친다. 옛 `package-info.java`는 지우고 `events`와 주인 폴더의 `package-info.java`를 만든다 |
+| 이름 | 앱 전체 Java 파일에서 옛 패키지 뒤에 타입 이름이나 `*`가 오는 곳(import, static import, 전체 이름)을 새 패키지로 바꾼다 |
+| 의존 | 이벤트를 내거나 받는 모듈에 `"events :: spi"`를 더한다. 받는 모듈의 `"{주인} :: spi"`는 그 모듈의 Java, 템플릿(`templates/{모듈}/`), Mapper XML(`mapper/{모듈}/`)이 주인의 `spi`를 더 쓰지 않을 때만 지운다 |
+| 저장된 이름 | `db/migration/V{시각}__cozy_move_event_contracts.sql`을 만든다. 아래 SQL이다 |
+
+- **저장된 이름을 옮기는 SQL**: 발행 기록은 이벤트 클래스 이름(`event_type`)과 리스너 id(`…(이벤트 FQN)`로 끝난다)를, 인박스는 리스너 id를 저장한다([events.md](events.md)). 옮긴 이벤트마다 세 줄이다. 업데이트한 PC에 남아 있던 미완료 발행 기록이 다음 기동 때 새 클래스로 다시 발행되고, 이미 처리한 이벤트는 인박스가 계속 건너뛴다.
+
+```sql
+-- it.cozy.app.memo.spi.event.MemoCreated → it.cozy.app.events.spi.memo.MemoCreated
+UPDATE cozy_event_publication SET event_type = '{새 이름}' WHERE event_type = '{옛 이름}';
+UPDATE cozy_event_publication SET listener_id = replace(listener_id, '({옛 이름})', '({새 이름})') WHERE instr(listener_id, '({옛 이름})') > 0;
+UPDATE cozy_inbox SET listener_id = replace(listener_id, '({옛 이름})', '({새 이름})') WHERE instr(listener_id, '({옛 이름})') > 0;
+```
+
+- **실패로 닫는 경우**: 옛 자리에 이벤트(`CozyEvent` record)가 아닌 타입이 있거나 하위 폴더가 있으면 아무것도 바꾸지 않는다. 메시지가 옮길 곳(`spi/dto`)을 알려 준다. 앱에 cozy-starter-events가 없어도 실패한다.
+- **손으로 할 일**: 받는 모듈이 주인을 `"memo"`나 `"memo :: *"`처럼 다른 형식으로 적었으면 지우지 않고 알린다. 자원 파일(`src/main/resources`, `src/test/resources`의 글 파일)에 옛 이름이 남아 있어도 알린다. 이미 적용된 마이그레이션(`db/migration`)은 보지 않는다.
+- **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 옛 자리에 이벤트가 없으면 "바뀐 것 없음"이라서 두 번째 실행도 그렇다.
+- **출력**: `만듦  …/events/spi/memo/MemoCreated.java`, `지움  …/memo/spi/event/MemoCreated.java    → …`, `바꿈  {파일}    이벤트 이름을 이벤트 계약 모듈(events.spi)로`. `--json`의 `recipe`는 `migrate events`다.
 
 ## 의존
 

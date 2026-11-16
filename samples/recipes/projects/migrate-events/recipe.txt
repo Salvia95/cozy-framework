@@ -1,0 +1,8 @@
+# 옛 이벤트 자리({모듈}/spi/event/)로 만든 앱: book과 rental이 서로의 이벤트를 받아 모듈 의존이 순환한다.
+# cozy check가 C8로 옛 자리를 알리고, cozy migrate events가 이벤트를 이벤트 계약 모듈로 옮긴 뒤에는 mvn verify(C1 포함)가 통과한다
+hand migrate-events
+cozy? check
+cozy migrate events
+# 두 번째 실행은 바꾸는 파일이 없다
+rerun migrate
+cozy check

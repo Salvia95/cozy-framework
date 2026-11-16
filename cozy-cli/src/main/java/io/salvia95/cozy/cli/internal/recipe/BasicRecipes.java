@@ -95,7 +95,6 @@ final class BasicRecipes {
 			AppProject.Module other = ctx.module(target);
 			boolean spi = other.namedInterfaces().contains("spi")
 					|| ctx.plan().exists(ctx.packageInfo(ctx.rolePackage(target, Layer.SPI_DTO)))
-					|| ctx.plan().exists(ctx.packageInfo(ctx.rolePackage(target, Layer.SPI_EVENT)))
 					|| ctx.plan().exists(ctx.packageInfo(ctx.rolePackage(target, Layer.SPI)));
 			if (!spi) {
 				throw new CliException(target + "에 공개된 것(spi)이 없습니다. 먼저 cozy add crud, cozy add dto, cozy add fragment로 "
@@ -203,14 +202,8 @@ final class BasicRecipes {
 			.orElseThrow(() -> new CliException(source + "에 이벤트 " + event + "가 없습니다(" + ctx.eventPackage(source) + "." + event
 					+ "). 먼저 cozy add event " + source + " " + event + "로 만드세요."));
 		String name = Names.pascal(Optional.ofNullable(args.option("name")).orElse(event), "리스너") ;
-		if (eventName.startsWith(ctx.eventPackage(source) + ".")) {
-			// 이벤트 계약 모듈의 이벤트: 받는 쪽은 events에만 의존한다. 주인 모듈에는 의존하지 않으므로 순환이 생기지 않는다
-			ctx.declareEvents(module);
-		}
-		else if (!source.equals(module)) {
-			// 옛 자리(주인 모듈의 spi.event)의 이벤트: 주인 모듈에 의존한다
-			link(ctx, module, List.of(source));
-		}
+		// 받는 쪽은 events에만 의존한다. 주인 모듈에는 의존하지 않으므로 순환이 생기지 않는다
+		ctx.declareEvents(module);
 		String pkg = ctx.rolePackage(module, Layer.APP_COMMAND);
 		// 리스너는 늘 자기 모듈의 {M}Facade를 받는다. 앱 상태에 따라 내용이 달라지면 다시 실행할 때 충돌한다
 		String facade = ensureFacade(ctx, module);

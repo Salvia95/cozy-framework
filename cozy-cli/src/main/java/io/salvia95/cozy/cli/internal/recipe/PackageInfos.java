@@ -12,7 +12,8 @@ import com.sun.source.tree.NewArrayTree;
 import io.salvia95.cozy.cli.internal.CliException;
 
 /**
- * 모듈 {@code package-info.java}의 {@code @ApplicationModule(allowedDependencies = ...)}에 의존을 더한다 (cozy link). 알아보는 형식은
+ * 모듈 {@code package-info.java}의 {@code @ApplicationModule(allowedDependencies = ...)}에 의존을 더하거나 지운다 (cozy link, cozy
+ * migrate events). 알아보는 형식은
  * {@code {}}, {@code "x"}, {@code { "a", "b" }}이고 결과는 항상 배열 형식이다. 다른 형식이면 추측하지 않고 실패한다.
  */
 final class PackageInfos {
@@ -26,6 +27,73 @@ final class PackageInfos {
 	 * @return 바뀐 내용. 이미 모두 있으면 그대로
 	 */
 	static String addDependencies(String file, String source, List<String> dependencies) {
+		Declared declared = read(file, source);
+		JavaEdits.Parsed parsed = declared.parsed();
+		AnnotationTree annotation = declared.annotation();
+		ExpressionTree value = declared.value();
+		List<String> current = declared.current();
+		List<String> next = new ArrayList<>(current);
+		for (String dependency : dependencies) {
+			String module = dependency.replaceAll("\\s*::.*", "").strip();
+			boolean covered = current.stream()
+				.map((c) -> c.replaceAll("\\s+", ""))
+				.anyMatch((c) -> c.equals(module) || c.equals(dependency.replaceAll("\\s+", "")));
+			if (!covered && !next.contains(dependency)) {
+				next.add(dependency);
+			}
+		}
+		if (next.equals(current) && value != null) {
+			return source;
+		}
+		String array = array(next);
+		if (value != null) {
+			return source.substring(0, parsed.start(value)) + array + source.substring(parsed.end(value));
+		}
+		int end = parsed.end(annotation);
+		String text = source.substring(parsed.start(annotation), end);
+		String replaced;
+		if (!text.contains("(")) {
+			replaced = text + "(allowedDependencies = " + array + ")";
+		}
+		else if (annotation.getArguments().isEmpty()) {
+			replaced = text.substring(0, text.lastIndexOf(')')) + "allowedDependencies = " + array + ")";
+		}
+		else {
+			replaced = text.substring(0, text.lastIndexOf(')')) + ", allowedDependencies = " + array + ")";
+		}
+		int start = parsed.start(annotation);
+		return source.substring(0, start) + replaced + source.substring(end);
+	}
+
+	/**
+	 * @param dependency 지울 의존. 공백을 빼고 같은 글자인 항목만 지운다 ({@code memo :: spi})
+	 * @return 바뀐 내용. 그 항목이 없으면 그대로
+	 */
+	static String removeDependency(String file, String source, String dependency) {
+		Declared declared = read(file, source);
+		String wanted = dependency.replaceAll("\\s+", "");
+		List<String> next = declared.current().stream().filter((c) -> !c.replaceAll("\\s+", "").equals(wanted)).toList();
+		if (next.size() == declared.current().size()) {
+			return source;
+		}
+		JavaEdits.Parsed parsed = declared.parsed();
+		return source.substring(0, parsed.start(declared.value())) + array(next) + source.substring(parsed.end(declared.value()));
+	}
+
+	/** 선언된 의존 그대로 ({@code @ApplicationModule}이 없으면 실패한다) */
+	static List<String> dependencies(String file, String source) {
+		return read(file, source).current();
+	}
+
+	private record Declared(JavaEdits.Parsed parsed, AnnotationTree annotation, ExpressionTree value, List<String> current) {
+	}
+
+	private static String array(List<String> dependencies) {
+		return dependencies.isEmpty() ? "{}"
+				: "{ " + String.join(", ", dependencies.stream().map((d) -> "\"" + d + "\"").toList()) + " }";
+	}
+
+	private static Declared read(String file, String source) {
 		JavaEdits.Parsed parsed = JavaEdits.parse(file, source);
 		AnnotationTree annotation = parsed.unit().getPackage() == null ? null
 				: parsed.unit().getPackage()
@@ -60,40 +128,7 @@ final class PackageInfos {
 		else if (value != null) {
 			throw unreadable(file);
 		}
-		List<String> next = new ArrayList<>(current);
-		for (String dependency : dependencies) {
-			String module = dependency.replaceAll("\\s*::.*", "").strip();
-			boolean covered = current.stream()
-				.map((c) -> c.replaceAll("\\s+", ""))
-				.anyMatch((c) -> c.equals(module) || c.equals(dependency.replaceAll("\\s+", "")));
-			if (!covered && !next.contains(dependency)) {
-				next.add(dependency);
-			}
-		}
-		if (next.equals(current) && value != null) {
-			return source;
-		}
-		String array = next.isEmpty() ? "{}"
-				: "{ " + String.join(", ", next.stream().map((d) -> "\"" + d + "\"").toList()) + " }";
-		if (value != null) {
-			int start = parsed.start(value);
-			int end = parsed.end(value);
-			return source.substring(0, start) + array + source.substring(end);
-		}
-		int end = parsed.end(annotation);
-		String text = source.substring(parsed.start(annotation), end);
-		String replaced;
-		if (!text.contains("(")) {
-			replaced = text + "(allowedDependencies = " + array + ")";
-		}
-		else if (annotation.getArguments().isEmpty()) {
-			replaced = text.substring(0, text.lastIndexOf(')')) + "allowedDependencies = " + array + ")";
-		}
-		else {
-			replaced = text.substring(0, text.lastIndexOf(')')) + ", allowedDependencies = " + array + ")";
-		}
-		int start = parsed.start(annotation);
-		return source.substring(0, start) + replaced + source.substring(end);
+		return new Declared(parsed, annotation, value, List.copyOf(current));
 	}
 
 	private static CliException unreadable(String file) {

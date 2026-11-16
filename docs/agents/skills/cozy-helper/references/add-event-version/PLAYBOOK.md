@@ -16,7 +16,7 @@ Adds fields to an existing event, bumps its schema version, and writes the next 
 cozy add event-version <모듈> <이벤트> --field 이름:종류 …
 ```
 
-- `<모듈>` is the owner module; the command edits `events/spi/{module}/{Event}.java`, or the owner's `spi/event/` when the event is still in the old place.
+- `<모듈>` is the owner module; the command edits `events/spi/{module}/{Event}.java`.
 
 ## Creates
 
@@ -38,6 +38,7 @@ cozy add event-version memo MemoCreated --field pinned:bool
 
 | Message contains | Action |
 | --- | --- |
+| `먼저 cozy migrate events로` | Run `cozy migrate events`, then run this command again. |
 | `가 이미`, `로 있습니다` | Use another field name; field types never change. |
 | `일부 필드만 있습니다` | Drop the fields that already exist and rerun. |
 | `한 줄인 of()를 하나로 찾지 못했습니다` | Add the field by hand and verify with `mvn -o verify` (C6). |

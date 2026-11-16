@@ -32,6 +32,8 @@ import io.salvia95.cozy.rules.Violation;
  * <li>{@code sync agents [--force]}: 앱의 AGENTS.md와 cozy-helper 스킬을 이 cozy 명령에 든 것과 같게 맞춘다</li>
  * <li>{@code set arg}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 ({@code --dry-run})</li>
  * <li>{@code migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다 ({@code --dry-run})</li>
+ * <li>{@code migrate events}: 옛 이벤트 자리({@code {모듈}/spi/event/})의 이벤트를 이벤트 계약 모듈로 옮기고, 저장된 클래스 이름을 바꾸는
+ * 마이그레이션을 만든다 ({@code --dry-run})</li>
  * </ul>
  * 종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음.
  */
@@ -57,6 +59,7 @@ public final class CozyCli {
 			  cozy set arg <템플릿> --line <줄> --fragment <이름> --index <번째> --from <지금 값> --value <새 값>
 			                           fragment 호출의 문자열 인자 하나 바꾸기 (워크벤치의 속성 패널이 쓴다)
 			  cozy migrate alpine      앱 템플릿의 없앤 동작 속성(data-cozy-confirm 등)을 cozy 컴포넌트로 바꾸기 (2.0.0으로 올릴 때)
+			  cozy migrate events      옛 자리(<모듈>/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 (2.0.0으로 올릴 때)
 
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
@@ -146,7 +149,7 @@ public final class CozyCli {
 					yield OK;
 				}
 				case "migrate" -> {
-					RecipeRunner.migrate(rest.subList(1, rest.size()), project(project, workDir), dryRun, json, out);
+					RecipeRunner.migrate(rest.subList(1, rest.size()), project(project, workDir), now(), dryRun, json, out);
 					yield OK;
 				}
 				case "help", "--help", "-h" -> {

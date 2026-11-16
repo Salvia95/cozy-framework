@@ -36,6 +36,7 @@ cozy check [--json]
 
 - Each violation reads `[ID] location → target — how to fix`.
 - When a violation ends with `고치는 명령: cozy …`, run that command exactly as printed; `mvn -o verify` prints the same command for C1.
+- After `cozy migrate events`, run `mvn -o clean verify`, because the classes compiled from the old event place stay in `target/` until a clean build.
 - When a violation has no command, follow the text after `—`.
 - A violation for using another module's `internal` or `api` is fixed by switching to that module's `spi`, not by declaring a dependency.
 - Template and design rules (R-ids) are explained in the [screens](../screens/PLAYBOOK.md) playbook.

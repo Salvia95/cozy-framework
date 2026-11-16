@@ -159,3 +159,19 @@
 - **코드 생성**: 모듈 선택에서 `events`를 뺐다(명령도 거절한다). 이벤트 선택은 M37의 describe 덕분에 `주인.이벤트`다. 워크벤치가 describe의 앱 `events[]`를 주인 모듈에 다시 싣는 방식(M37)은 화면이 모듈마다 이벤트를 보이므로 그대로 쓴다.
 - **용어**: 워크벤치 용어표에 "이벤트 계약 모듈"을 더했다(`docs/conventions/workbench.md`).
 - **확인**: runtime-verifier로 reference-app과 `events-cycle` 레시피 앱(워크벤치 의존을 더한 사본)의 지도, 표, 개요, 모듈 속성(memo, book)을 1280·390에서 확인했다. 두 앱 모두 `events` 마디와 순환 알림이 없고, events-cycle은 점선 두 개(BookCreated, RentalCreated)가 겹치지 않으며, 390에서 페이지 가로 스크롤이 없고, `?module=events`는 404였다. rental의 속성은 1280에서 DOM으로만 확인했다.
+
+## M40 (2026-11-17, 사용자 지시 "다음 진행해줘")
+
+- **옛 자리는 C8 오류다** (cozy-rules `LayerChecker`): 기능 모듈의 `spi.event` 안의 타입은 이벤트든 아니든 `…는 옛 이벤트 자리입니다. 이벤트는 이벤트 계약 모듈의 …에 둡니다` 한 줄로 실패하고 `고치는 명령: cozy migrate events`가 붙는다. 그 패키지의 `@NamedInterface` 빠짐은 따로 알리지 않는다. 자리 표 `Role`에서 `EVENT`를 뺐다(기능 모듈에 이벤트의 자리가 없다). `Layer.SPI_EVENT`는 옛 자리를 가리키려고 남겼다.
+- **명령도 옛 자리를 받지 않는다**: `add listener --on`과 `add event-version`이 옛 자리의 이벤트를 만나면 `먼저 cozy migrate events로 … 옮기세요`로 실패한다. 옛 자리의 이벤트를 받는 리스너가 주인 모듈에 `link`하던 길(M37)은 지웠다. describe와 워크벤치의 변경 목록은 읽기만 하므로 옛 자리도 그대로 알아본다.
+- **`cozy migrate events`** (`MigrateEvents`): §6대로 옮긴다. 정한 것:
+  - 이름 고치기는 옛 패키지 뒤에 타입 이름(대문자)이나 `*`가 오는 곳만 바꾼다. 옛 자리에는 이벤트만 있어야 하므로(아니면 실패로 닫는다) 패키지 단위로 바꿔도 다른 타입이 딸려 가지 않는다.
+  - 주인 의존을 지우는 판단(§6의 3)은 글자로 한다. 받는 모듈의 Java, `templates/{모듈}/`, `mapper/{모듈}/`에 `{주인}.spi`(템플릿은 `{주인}/spi/`)가 남아 있으면 둔다. `"{주인} :: spi"`가 아닌 형식(`"book"` 등)은 지우지 않고 남은 일로 알린다.
+  - SQL은 이벤트마다 세 줄이다. 리스너 id는 Modulith(`클래스.메서드(이벤트 FQN)`)와 인박스(`클래스#메서드(이벤트 FQN)`) 모두 `(이벤트 FQN)`으로 끝나므로 괄호까지 넣어 바꾼다. 마이그레이션 이름의 모듈 자리는 `cozy`다(앱 마이그레이션 이름 규칙 `V{시각}__{모듈}_{설명}.sql`은 형식만 본다).
+  - 다음 할 일은 `mvn clean verify`다. M38에서 본 것처럼 옮기기 전의 `.class`가 `target/`에 남으면 C6의 이름 중복으로 실패한다.
+- **완료 기준**:
+  - 레시피 픽스처 `migrate-events`: `hand/migrate-events`가 옛 자리로 book·rental을 만든다(서로의 이벤트를 받아 순환하는, 1.x에서는 빌드할 수 없던 모양). `cozy check`가 C8로 실패하고, `cozy migrate events` 뒤 두 번째 실행은 바뀐 것이 없고, `cozy check`와 `mvn verify`(C1, 흐름 테스트, 옮긴 import를 쓰는 테스트)가 통과한다. book의 `"rental :: spi"`는 지워지고 rental의 `"book :: spi"`는 Finder 때문에 남는다.
+  - cozy-starter-events `EventContractTest`: 옛 클래스 이름으로 남은 미완료 발행 기록 둘(리스너가 실패한 것, 리스너가 처리해 인박스에 남았지만 완료 표시 전에 멈춘 것)에 이름을 옮기는 마이그레이션을 적용하고 기동하면, 리스너 본문은 실패했던 것에만 한 번 돈다. 마이그레이션 없이 기동하면 두 기록 모두 처리하지 않는다. 테스트가 적용하는 SQL이 명령이 만드는 SQL과 같은 모양인지는 `MigrateEventsTest`가 확인한다.
+  - 위반 픽스처: `C1-event-cycle`은 C1과 함께 C8(옛 자리, 고치는 명령)로도 실패한다(실패 2건). `C6-*` 셋은 이벤트를 새 자리로 옮겼고, CozyEvent가 아닌 리스너 파라미터 `OrderPlainEvent`는 `order/spi/dto`로 옮겼다.
+- **종단 검증은 늘리지 않았다**: M38에서 `-Pe2e`에 옛 이름의 미완료 기록을 남긴 업데이트를 더한다고 적었다. 하지만 패키징한 앱에서 미완료 기록을 남기려면 실행 중인 DB에 행을 직접 넣어야 해서, 위 통합 테스트와 같은 것을 더 느리게 확인하게 된다. 그래서 통합 테스트(실제 Flyway, 재발행, 인박스)로 갈음했다. 필요하면 따로 더한다.
+- **문서**: cli.md(migrate events 절과 SQL), structure.md·events.md(옛 자리는 오류, FQN 규칙의 예외), release.md(앱을 2.0.0으로 올리기), 플레이북(add-listener, add-event-version, check), AGENTS.md(이벤트 클래스를 옮기지 않는다).

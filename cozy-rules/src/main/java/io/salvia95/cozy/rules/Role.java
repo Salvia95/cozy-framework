@@ -33,9 +33,6 @@ public enum Role {
 	/** 모듈 사이 DTO. 스프링 빈이 아니다 */
 	SPI_DTO(Layer.SPI_DTO, Kind.RECORD, "", null),
 
-	/** 모듈 사이 이벤트. CozyEvent를 구현한다 */
-	EVENT(Layer.SPI_EVENT, Kind.RECORD, "", null),
-
 	/** 쓰기 구현. {@code @Service @Transactional} */
 	FACADE_IMPL(Layer.APP_COMMAND, Kind.CLASS, "FacadeImpl", FACADE),
 

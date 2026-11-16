@@ -17,7 +17,8 @@ import io.salvia95.cozy.rules.Violation;
  * (실패로 닫는다). 같은 메시지는 한 번만 보고하고, 메시지 순서로 정렬한다.
  *
  * <p>이벤트 계약 모듈({@value #EVENTS})은 따로 본다. 이벤트 record만 주인 모듈 이름의 하위 패키지({@code events.spi.memo})에 두고,
- * 다른 앱 모듈에 의존하지 않는다. 그래서 이벤트를 내는 모듈과 받는 모듈이 서로 의존하지 않는다.
+ * 다른 앱 모듈에 의존하지 않는다. 그래서 이벤트를 내는 모듈과 받는 모듈이 서로 의존하지 않는다. 기능 모듈의 {@code spi.event}는 옛
+ * 이벤트 자리라서 그 안의 타입은 모두 실패하고, {@code cozy migrate events}가 옮긴다.
  */
 public final class LayerChecker {
 
@@ -61,7 +62,7 @@ public final class LayerChecker {
 	}
 
 	/**
-	 * spi와 그 하위 패키지(dto, event)는 각각 {@code @NamedInterface("spi")}를 선언해야 다른 모듈에 공개된다. Modulith는 하위
+	 * spi와 그 하위 패키지(dto, events 모듈의 주인 폴더)는 각각 {@code @NamedInterface("spi")}를 선언해야 다른 모듈에 공개된다. Modulith는 하위
 	 * 패키지로 넓혀 주지 않으므로, 빠지면 C1이 "non-exposed type"으로 실패한다. 그 전에 고칠 곳을 알려 준다.
 	 */
 	private void namedInterfaces(List<JavaType> types, Set<String> declared) {
@@ -71,7 +72,9 @@ public final class LayerChecker {
 			if (module != null && in(type.packageName(), module.of(Layer.SPI))) {
 				// events 모듈은 주인 폴더(spi.{주인 모듈})만 본다. 다른 자리는 배치 위반으로 따로 알린다
 				String rest = type.packageName().substring(module.of(Layer.SPI).length());
-				if (!isEvents(module) || (rest.matches("\\.[^.]+") && ownerExists(rest.substring(1)))) {
+				boolean events = isEvents(module);
+				if ((!events && !in(type.packageName(), module.of(Layer.SPI_EVENT)))
+						|| (events && rest.matches("\\.[^.]+") && ownerExists(rest.substring(1)))) {
 					packages.add(type.packageName());
 				}
 			}
@@ -79,7 +82,7 @@ public final class LayerChecker {
 		for (String pkg : packages) {
 			if (!declared.contains(pkg)) {
 				report(pkg, null, "spi 패키지마다 package-info.java에 @NamedInterface(\"spi\")를 둡니다. Spring Modulith는 "
-						+ "하위 패키지(dto, event)로 넓혀 주지 않습니다. 빠지면 다른 모듈이 이 타입을 쓸 수 없습니다(C1 non-exposed type).");
+						+ "하위 패키지(dto, events.spi.{주인 모듈})로 넓혀 주지 않습니다. 빠지면 다른 모듈이 이 타입을 쓸 수 없습니다(C1 non-exposed type).");
 			}
 		}
 	}
@@ -106,7 +109,12 @@ public final class LayerChecker {
 					+ ", 모듈 사이 DTO는 " + m.of(Layer.SPI_DTO) + ", 구현은 " + m.sub("internal") + " 아래로 옮기세요.");
 			return;
 		}
-		if (type.has(JavaType.Trait.COZY_EVENT) && !in(pkg, m.of(Layer.SPI_EVENT))) {
+		if (in(pkg, m.of(Layer.SPI_EVENT))) {
+			report(where, null, m.of(Layer.SPI_EVENT) + "는 옛 이벤트 자리입니다. 이벤트는 이벤트 계약 모듈의 " + eventsFolder(m)
+					+ "에 둡니다. 옮기면 이벤트를 받는 모듈이 " + folderName(m) + "에 의존하지 않습니다.", "cozy migrate events");
+			return;
+		}
+		if (type.has(JavaType.Trait.COZY_EVENT)) {
 			report(where, null, "CozyEvent는 이벤트 계약 모듈의 " + eventsFolder(m) + "에 둡니다. 이벤트를 받는 모듈이 "
 					+ folderName(m) + "에 의존하지 않게 됩니다.");
 		}
@@ -126,15 +134,15 @@ public final class LayerChecker {
 				if (pkg.equals(m.of(Layer.SPI))) {
 					if (!type.isInterface() || !(name.endsWith("Facade") || name.endsWith("Finder"))) {
 						report(where, null, m.of(Layer.SPI) + "에는 *Facade(쓰기)·*Finder(읽기) 인터페이스만 둡니다. DTO는 "
-								+ m.of(Layer.SPI_DTO) + ", 이벤트는 " + m.of(Layer.SPI_EVENT) + ", 구현은 " + m.sub("internal.app")
+								+ m.of(Layer.SPI_DTO) + ", 이벤트는 " + eventsFolder(m) + ", 구현은 " + m.sub("internal.app")
 								+ ".command·query로 옮기세요.");
 					}
 				}
-				else if (!in(pkg, m.of(Layer.SPI_DTO)) && !in(pkg, m.of(Layer.SPI_EVENT))) {
-					report(where, null, m.of(Layer.SPI) + " 아래 하위 패키지는 dto와 event만 둡니다.");
+				else if (!in(pkg, m.of(Layer.SPI_DTO))) {
+					report(where, null, m.of(Layer.SPI) + " 아래 하위 패키지는 dto만 둡니다. 이벤트는 " + eventsFolder(m) + "에 둡니다.");
 				}
 				else if (type.has(JavaType.Trait.COMPONENT)) {
-					report(where, null, "spi의 DTO·이벤트는 스프링 빈이 아닙니다. 구현은 " + m.sub("internal.app") + "에 둡니다.");
+					report(where, null, "spi의 DTO는 스프링 빈이 아닙니다. 구현은 " + m.sub("internal.app") + "에 둡니다.");
 				}
 			}
 			default -> internalPlacement(m, type, pkg, name, where);
@@ -304,7 +312,11 @@ public final class LayerChecker {
 	// ── 도움 ──────────────────────────────────────────────────
 
 	private void report(String location, String reference, String message) {
-		Violation violation = new Violation(location, 0, "C8", Severity.ERROR, reference, message);
+		report(location, reference, message, null);
+	}
+
+	private void report(String location, String reference, String message, String command) {
+		Violation violation = new Violation(location, 0, "C8", Severity.ERROR, reference, message, command);
 		this.found.putIfAbsent(violation.format(), violation);
 	}
 

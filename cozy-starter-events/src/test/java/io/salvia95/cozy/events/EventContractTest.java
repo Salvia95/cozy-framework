@@ -56,9 +56,15 @@ class EventContractTest {
 	}
 
 	ConfigurableApplicationContext start() {
+		return start(Map.of());
+	}
+
+	ConfigurableApplicationContext start(Map<String, Object> properties) {
+		Map<String, Object> all = new java.util.HashMap<>(properties);
+		all.put("cozy.data-dir", this.dataDir.toString());
 		ConfigurableApplicationContext context = new SpringApplicationBuilder(EventsTestApp.class)
 			.web(WebApplicationType.NONE)
-			.properties(Map.of("cozy.data-dir", this.dataDir.toString()))
+			.properties(all)
 			.run();
 		this.contexts.add(context);
 		return context;
@@ -110,6 +116,75 @@ class EventContractTest {
 		await(() -> again.countByStatus(Status.COMPLETED) == 1);
 		assertThat(count(second.getBean(JdbcClient.class), "sample_handled")).isEqualTo(1);
 		assertThat(again.findIncompletePublications()).isEmpty();
+	}
+
+	/**
+	 * 이벤트 클래스를 옮긴 앱을 업데이트한 PC: 옛 클래스 이름으로 남은 미완료 발행 기록 둘. 하나는 리스너가 실패했고, 하나는 리스너가
+	 * 처리해 인박스에 남았지만 완료 표시 전에 멈췄다. 이름을 옮기는 마이그레이션을 적용하고 기동하면 실패한 것만 한 번 처리한다.
+	 */
+	@Test
+	void movedEventTypesAreRewrittenAndOutstandingEventsAreHandledOnce() {
+		leaveOutstandingPublicationsWithTheOldType();
+
+		ConfigurableApplicationContext second = start(Map.of("spring.flyway.locations",
+				"classpath:db/migration,classpath:db/moved-events"));
+		EventPublicationRepository repository = second.getBean(EventPublicationRepository.class);
+		await(() -> repository.countByStatus(Status.COMPLETED) == 2);
+		JdbcClient jdbc = second.getBean(JdbcClient.class);
+		assertThat(SampleListener.BODY_RUNS).hasValue(1);
+		assertThat(jdbc.sql("SELECT name FROM sample_handled ORDER BY id").query(String.class).list())
+			.containsExactly("처리", "실패");
+		assertThat(jdbc.sql("SELECT DISTINCT event_type FROM cozy_event_publication").query(String.class).list())
+			.containsExactly(SampleEvent.class.getName());
+		assertThat(jdbc.sql("SELECT DISTINCT listener_id FROM cozy_inbox").query(String.class).list())
+			.containsExactly(listenerId());
+		assertThat(repository.findIncompletePublications()).isEmpty();
+	}
+
+	/** 마이그레이션 없이 기동하면 옛 이름의 기록을 읽지 못해 처리하지 않는다. 위 테스트가 확인하는 마이그레이션이 필요한 이유다 */
+	@Test
+	void outstandingPublicationsWithTheOldTypeAreNotHandledWithoutTheMove() {
+		leaveOutstandingPublicationsWithTheOldType();
+
+		ConfigurableApplicationContext second = start();
+		pause(Duration.ofSeconds(2));
+		JdbcClient jdbc = second.getBean(JdbcClient.class);
+		assertThat(SampleListener.BODY_RUNS).hasValue(0);
+		assertThat(jdbc.sql("SELECT count(*) FROM cozy_event_publication WHERE completion_date IS NULL AND event_type = ?")
+			.param(OLD_TYPE)
+			.query(Integer.class)
+			.single()).isEqualTo(2);
+	}
+
+	/** 옛 자리의 이벤트 클래스 이름 */
+	static final String OLD_TYPE = "io.salvia95.cozy.events.testapp.sample.spi.event.SampleEvent";
+
+	/** 미완료 발행 기록 둘을 남기고, 저장된 클래스 이름을 옛 이름으로 바꾼 뒤 앱을 닫는다 */
+	void leaveOutstandingPublicationsWithTheOldType() {
+		ConfigurableApplicationContext first = start();
+		EventPublicationRepository repository = first.getBean(EventPublicationRepository.class);
+		JdbcClient jdbc = first.getBean(JdbcClient.class);
+		SampleListener.FAIL.set(true);
+		first.getBean(SampleService.class).order("실패", false);
+		await(() -> repository.countByStatus(Status.FAILED) == 1);
+		SampleListener.FAIL.set(false);
+		first.getBean(SampleService.class).order("처리", false);
+		await(() -> repository.countByStatus(Status.COMPLETED) == 1);
+		jdbc.sql("UPDATE cozy_event_publication SET completion_date = NULL, status = NULL "
+				+ "WHERE json_extract(serialized_event, '$.name') = '처리'").update();
+		String newType = SampleEvent.class.getName();
+		jdbc.sql("UPDATE cozy_event_publication SET event_type = ?, listener_id = replace(listener_id, ?, ?)")
+			.params(OLD_TYPE, "(" + newType + ")", "(" + OLD_TYPE + ")")
+			.update();
+		jdbc.sql("UPDATE cozy_inbox SET listener_id = replace(listener_id, ?, ?)")
+			.params("(" + newType + ")", "(" + OLD_TYPE + ")")
+			.update();
+		assertThat(jdbc.sql("SELECT count(*) FROM cozy_inbox WHERE listener_id LIKE ?")
+			.param("%(" + OLD_TYPE + ")")
+			.query(Integer.class)
+			.single()).isEqualTo(1);
+		first.close();
+		SampleListener.BODY_RUNS.set(0);
 	}
 
 	@Test

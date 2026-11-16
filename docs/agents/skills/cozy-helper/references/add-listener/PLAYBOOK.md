@@ -13,7 +13,7 @@ cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]
 ```
 
 - The command declares `"events :: spi"` in this module, and never a dependency on the sending module, so two modules can receive each other's events.
-- An event still in the old place, the sender's `spi/event/`, makes the command declare the sending module instead, which can form a cycle.
+- An event still in the old place, the sender's `spi/event/`, makes the command fail; run `cozy migrate events` first.
 - `--name` sets the class name to `{name}Listener`; use it when a second listener handles the same event.
 
 ## Creates
@@ -43,6 +43,7 @@ this.facade.record(event.eventId().toString(), "메모를 만들었습니다: " 
 | Message contains | Action |
 | --- | --- |
 | `에 이벤트`, `가 없습니다` | Create the event first with [add-event](../add-event/PLAYBOOK.md). |
+| `먼저 cozy migrate events로` | Run `cozy migrate events`, then run this command again. |
 | `--on은 <보내는 모듈>.<이벤트> 형식입니다` | Write the source as `memo.MemoCreated`. |
 | `Listener.java가 이미 있고 내용이 다릅니다` | Pass `--name` with a different name. |
 

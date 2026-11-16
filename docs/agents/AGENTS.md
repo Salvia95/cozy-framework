@@ -28,6 +28,7 @@ This app is built on the Cozy framework: an internal business tool that runs on 
 - Write only the slots that commands leave (`cozy:slot`) and the business logic inside generated methods.
 - Never disable a check or skip a test to make the build pass.
 - Never edit an applied migration or change the name or type of an existing event field.
+- Never move or rename an existing event class, because stored publications keep its class name; only `cozy migrate events` moves events, and its migration file ships with the app.
 - Never reference an external URL (CDN, `http://`) or write an inline script or style.
 
 ## Verify

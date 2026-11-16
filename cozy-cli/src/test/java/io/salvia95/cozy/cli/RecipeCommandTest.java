@@ -232,7 +232,7 @@ class RecipeCommandTest {
 	}
 
 	@Test
-	void aListenerOnAnEventInTheOldPlaceStillDeclaresTheOwner() throws IOException {
+	void eventsInTheOldPlaceMustBeMigratedFirst() throws IOException {
 		app();
 		ok("add", "module", "memo");
 		ok("add", "module", "activity");
@@ -248,10 +248,8 @@ class RecipeCommandTest {
 				public record MemoCreated(UUID eventId, int schemaVersion, long memoId) implements CozyEvent {
 				}
 				""");
-		Result listener = ok("add", "listener", "activity", "--on", "memo.MemoCreated");
-		assertThat(listener.out()).contains("allowedDependencies += \"memo :: spi\"").doesNotContain("events :: spi");
-		assertThat(read("src/main/java/it/cozy/app/activity/internal/app/command/MemoCreatedListener.java"))
-			.contains("import it.cozy.app.memo.spi.event.MemoCreated;");
+		fails("먼저 cozy migrate events로", "add", "listener", "activity", "--on", "memo.MemoCreated");
+		fails("먼저 cozy migrate events로", "add", "event-version", "memo", "MemoCreated", "--field", "title:text");
 	}
 
 	@Test

@@ -1,4 +1,4 @@
 @NamedInterface("spi")
-package it.cozy.app.order.spi.event;
+package it.cozy.app.events.spi.order;
 
 import org.springframework.modulith.NamedInterface;

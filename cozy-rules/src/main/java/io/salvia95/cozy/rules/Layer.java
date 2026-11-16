@@ -10,8 +10,7 @@ import java.util.Optional;
  * {모듈}/
  * ├── api/                 HTTP 진입점: 컨트롤러. api/dto는 폼·필터·화면 DTO
  * ├── spi/                 모듈 사이 계약 (@NamedInterface("spi")): *Facade(쓰기), *Finder(읽기) 인터페이스
- * │   ├── dto/             모듈 사이 DTO
- * │   └── event/           CozyEvent
+ * │   └── dto/             모듈 사이 DTO
  * └── internal/            밀폐된 구현
  *     ├── app/command/     *FacadeImpl, *Service + *ServiceImpl, *Listener
  *     ├── app/query/       *FinderImpl, *Query + *QueryImpl, *Projection + *ProjectionImpl
@@ -19,6 +18,8 @@ import java.util.Optional;
  *     ├── infra/           MyBatis Mapper, 행, 저장소 구현, 외부 연동
  *     └── config/          모듈 전용 설정·빈
  * </pre>
+ *
+ * 이벤트(CozyEvent)는 기능 모듈에 두지 않고 이벤트 계약 모듈의 {@code events/spi/{주인 모듈}/}에 둔다.
  */
 public enum Layer {
 
@@ -30,6 +31,7 @@ public enum Layer {
 
 	SPI_DTO("spi.dto"),
 
+	/** 옛 이벤트 자리. 이 안의 타입은 C8 오류이고, {@code cozy migrate events}가 이벤트 계약 모듈로 옮긴다 */
 	SPI_EVENT("spi.event"),
 
 	APP_COMMAND("internal.app.command"),

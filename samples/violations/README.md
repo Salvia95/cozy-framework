@@ -54,6 +54,6 @@ PRD §6.2, §6.5의 수용 기준이다. 픽스처마다 정확히 그 규칙이
 | `C8-layers` | C8 모듈 안 구조 | 모듈 루트의 클래스, spi에 도메인 타입, dto의 Named Interface 누락, 컨트롤러가 internal 사용, Impl 없는 app 클래스, 읽기가 쓰기 호출, domain의 저장소 (7건) |
 | `C9-slots` | C9 빈칸 | Java(주석 + throw), HTML, SQL에 cozy:slot 표시가 남아 있다 (3곳) |
 | `C10-module-script` | C10 모듈 스크립트 | `static/memo/memo.js`의 메서드 사이에 쉼표가 빠졌다 |
-| `C1-event-cycle` | C1 순환 | 이벤트를 각 모듈의 `spi/event`에 두고 두 모듈이 서로의 이벤트를 받는다(옛 자리). 이벤트 계약 모듈 `events`가 고치는 문제다 |
+| `C1-event-cycle` | C1 순환 | 이벤트를 각 모듈의 `spi/event`에 두고 두 모듈이 서로의 이벤트를 받는다(옛 자리). 이벤트 계약 모듈 `events`가 고치는 문제다. 옛 자리라서 C8도 실패하고 `고치는 명령: cozy migrate events`를 알린다 |
 | `C8-events-module` | C8 이벤트 계약 모듈 | `events`에 이벤트가 아닌 클래스(`BookFormat`)와 주인 폴더가 없는 이벤트(`events/spi/Orphan`)가 있다 |
 | `C11-foreign-publish` | C11 주인만 발행 | `rental`이 `book`의 이벤트 `BookAdded`를 만든다 |

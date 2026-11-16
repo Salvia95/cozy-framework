@@ -93,12 +93,32 @@ public final class RecipeRunner {
 		report("set arg", plan, List.of(), next, false, dryRun, json, out);
 	}
 
-	/** {@code cozy migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다 */
-	public static void migrate(List<String> rest, AppProject project, boolean dryRun, boolean json, PrintStream out) {
-		Plan plan = new Plan(project.dir());
-		List<Context.Manual> manual = new ArrayList<>();
-		String next = MigrateAlpine.run(plan, manual, project, rest);
-		report("migrate alpine", plan, manual, next, false, dryRun, json, out);
+	/**
+	 * {@code cozy migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다. {@code cozy migrate events}: 옛 이벤트 자리의
+	 * 이벤트를 이벤트 계약 모듈로 옮긴다.
+	 *
+	 * @param now 마이그레이션 이름의 시각 (events)
+	 */
+	public static void migrate(List<String> rest, AppProject project, LocalDateTime now, boolean dryRun, boolean json,
+			PrintStream out) {
+		String what = rest.isEmpty() ? "" : rest.getFirst();
+		switch (what) {
+			case "alpine" -> {
+				Plan plan = new Plan(project.dir());
+				List<Context.Manual> manual = new ArrayList<>();
+				String next = MigrateAlpine.run(plan, manual, project, rest);
+				report("migrate alpine", plan, manual, next, false, dryRun, json, out);
+			}
+			case "events" -> {
+				Context ctx = new Context(project, () -> {
+					throw new IllegalStateException("cozy migrate events는 cozy-ui를 읽지 않습니다");
+				}, now);
+				String next = MigrateEvents.run(ctx, rest);
+				report("migrate events", ctx.plan(), ctx.manual(), next, false, dryRun, json, out);
+			}
+			default -> throw new CliException("cozy migrate 뒤에는 alpine이나 events를 적습니다 (" + MigrateAlpine.USAGE + ", "
+					+ MigrateEvents.USAGE + ").");
+		}
 	}
 
 	/**
