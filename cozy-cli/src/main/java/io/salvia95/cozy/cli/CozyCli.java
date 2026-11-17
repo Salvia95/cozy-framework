@@ -1,5 +1,6 @@
 package io.salvia95.cozy.cli;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -7,8 +8,10 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import io.salvia95.cozy.cli.internal.AppProject;
 import io.salvia95.cozy.cli.internal.AppResources;
@@ -64,6 +67,7 @@ public final class CozyCli {
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
 			  --repository <폴더>      cozy jar가 있는 Maven 저장소 (기본: COZY_REPOSITORY, 없으면 ~/.m2/repository)
+			                           COZY_REPOSITORY에는 경로 구분자(Windows ;, 그 밖 :)로 여러 저장소를 적고, 앞에서부터 찾는다
 			  --ui <jar나 폴더>        저장소에서 찾지 않고 이 cozy-ui 자원을 읽는다 (워크벤치가 쓴다)
 			  --json                   기계가 읽는 출력
 			  --dry-run                (add, link, enable, sync, set, migrate) 바꿀 파일만 보이고 쓰지 않는다
@@ -83,14 +87,13 @@ public final class CozyCli {
 
 	/**
 	 * @param workDir 현재 폴더
-	 * @param repositoryEnv {@code COZY_REPOSITORY} 값 (없으면 {@code null})
+	 * @param repositoryEnv {@code COZY_REPOSITORY} 값 (없으면 {@code null}). 경로 구분자로 나눈 저장소 목록이고 앞에서부터 찾는다
 	 * @return 종료 코드
 	 */
 	public static int run(String[] args, Path workDir, String repositoryEnv, PrintStream out, PrintStream err) {
 		List<String> rest = new ArrayList<>();
 		Path project = null;
-		Path repository = (repositoryEnv != null && !repositoryEnv.isBlank()) ? Path.of(repositoryEnv)
-				: Path.of(System.getProperty("user.home"), ".m2", "repository");
+		List<Path> repository = repositories(repositoryEnv);
 		boolean json = false;
 		boolean dryRun = false;
 		Path ui = null;
@@ -109,7 +112,7 @@ public final class CozyCli {
 					switch (args[i - 1]) {
 						case "--project" -> project = value;
 						case "--ui" -> ui = value;
-						default -> repository = value;
+						default -> repository = List.of(value);
 					}
 				}
 				default -> rest.add(args[i]);
@@ -130,7 +133,7 @@ public final class CozyCli {
 				}
 				case "add", "link", "enable" -> {
 					AppProject app = project(project, workDir);
-					Path repo = repository;
+					List<Path> repo = repository;
 					Path uiLocation = ui;
 					RecipeRunner.run(action, rest.subList(1, rest.size()), app, () -> framework(app, repo, uiLocation, "아이콘 이름"), now(),
 							dryRun, json, out);
@@ -138,7 +141,7 @@ public final class CozyCli {
 				}
 				case "set" -> {
 					AppProject app = project(project, workDir);
-					Path repo = repository;
+					List<Path> repo = repository;
 					Path uiLocation = ui;
 					RecipeRunner.set(rest.subList(1, rest.size()), app, () -> framework(app, repo, uiLocation, "프레임워크 fragment의 값"),
 							dryRun, json, out);
@@ -170,7 +173,7 @@ public final class CozyCli {
 	}
 
 	/** 앱이 쓰는 버전의 cozy-ui jar. 없으면 판단할 수 없으므로 실패한다 */
-	private static FrameworkJar framework(AppProject project, Path repository, Path ui, String what) {
+	private static FrameworkJar framework(AppProject project, List<Path> repositories, Path ui, String what) {
 		if (ui != null) {
 			if (!Files.exists(ui)) {
 				throw new CliException("--ui로 준 cozy-ui 자원이 없습니다: " + ui + ". 프레임워크 템플릿 없이는 " + what
@@ -182,13 +185,26 @@ public final class CozyCli {
 			throw new CliException("앱이 cozy-parent를 상속하지 않아 cozy 버전을 알 수 없습니다. pom.xml의 parent를 "
 					+ "io.salvia95.cozy:cozy-parent로 두세요.");
 		}
-		Path jar = FrameworkJar.locate(repository, project.cozyVersion());
-		if (!Files.isRegularFile(jar)) {
-			throw new CliException("cozy-ui " + project.cozyVersion() + " jar가 없습니다: " + jar + ". 앱 폴더에서 mvn -o "
+		List<Path> candidates = repositories.stream().map(repository -> FrameworkJar.locate(repository, project.cozyVersion())).toList();
+		Path jar = candidates.stream().filter(Files::isRegularFile).findFirst().orElse(null);
+		if (jar == null) {
+			String searched = String.join(", ", candidates.stream().map(Path::toString).toList());
+			throw new CliException("cozy-ui " + project.cozyVersion() + " jar가 없습니다: " + searched + ". 앱 폴더에서 mvn -o "
 					+ "dependency:resolve를 한 번 실행하거나 --repository로 cozy jar가 있는 저장소를 알려 주세요. 프레임워크 "
 					+ "템플릿 없이는 " + what + "을 판단할 수 없습니다.");
 		}
 		return FrameworkJar.read(jar);
+	}
+
+	/** {@code COZY_REPOSITORY}의 저장소 목록. 없으면 {@code ~/.m2/repository} 하나다 */
+	static List<Path> repositories(String repositoryEnv) {
+		if (repositoryEnv == null || repositoryEnv.isBlank()) {
+			return List.of(Path.of(System.getProperty("user.home"), ".m2", "repository"));
+		}
+		return Arrays.stream(repositoryEnv.split(Pattern.quote(File.pathSeparator)))
+			.filter(part -> !part.isBlank())
+			.map(Path::of)
+			.toList();
 	}
 
 	/** 레시피 시각: 테스트는 시스템 속성 cozy.cli.now(yyyyMMddHHmm)로 고정한다 */
@@ -218,7 +234,7 @@ public final class CozyCli {
 		return OK;
 	}
 
-	private static int check(AppProject project, Path repository, Path ui, boolean json, PrintStream out) {
+	private static int check(AppProject project, List<Path> repository, Path ui, boolean json, PrintStream out) {
 		FrameworkJar framework = project.uses("cozy-ui") ? framework(project, repository, ui, "템플릿 규칙")
 				: FrameworkJar.none();
 		List<Checks.Finding> findings = Checks.run(project, framework);

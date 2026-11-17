@@ -98,6 +98,18 @@ class BundleCommandsTest {
 	 * PowerShell 변수 이름에는 한글도 들어간다. {@code "$path가 없습니다"}는 {@code $path가}라는 빈 변수가 되어 메시지에서 값이
 	 * 사라진다. 한글이 바로 붙으면 {@code ${path}}로 쓴다.
 	 */
+	/** Windows 설치도 사용자 저장소에 쓰고 설치 폴더의 저장소를 꼬리로 읽는다. MSI가 이 설치 결과를 그대로 묶는다 */
+	@Test
+	void theWindowsInstallUsesTheUserRepositoryAndKeepsWhatOnlyTheOldRepositoryHad() throws IOException {
+		String script = Files.readString(BUNDLE.resolve("cozy.ps1"), StandardCharsets.UTF_8);
+
+		assertThat(script).contains("<localRepository>`${env.LOCALAPPDATA}/Cozy/repository</localRepository>")
+			.contains("<maven.repo.local.tail>`${maven.home}/../repository</maven.repo.local.tail>")
+			.contains("<activeProfile>cozy-bundle</activeProfile>")
+			.contains("이전 판에만 있던 파일")
+			.contains("$env:COZY_REPOSITORY = $UserRepository + ';' + (Join-Path $Root 'repository')");
+	}
+
 	@Test
 	void powershellVariablesAreNotGluedToHangul() throws IOException {
 		Pattern glued = Pattern.compile("\\$[A-Za-z_][A-Za-z0-9_]*[\\uAC00-\\uD7A3]");
@@ -177,9 +189,11 @@ class BundleCommandsTest {
 			assertThat(install.code()).as(install.output()).isZero();
 			assertThat(dest.resolve("jdk/bin/java")).isExecutable();
 			assertThat(dest.resolve("bin/mvn")).isExecutable();
-			// 저장소는 Maven 폴더 옆을 가리킨다. 설치 폴더의 절대 경로가 들어가지 않는다
+			// Maven은 사용자 저장소에 쓰고, 설치 폴더의 저장소는 읽기만 한다(꼬리). 설치 폴더의 절대 경로가 들어가지 않는다
 			assertThat(Files.readString(dest.resolve("apache-maven-3.10.1/conf/settings.xml")))
-				.contains("<localRepository>${maven.home}/../repository</localRepository>")
+				.contains("<localRepository>${env.HOME}/.local/share/cozy/repository</localRepository>")
+				.contains("<maven.repo.local.tail>${maven.home}/../repository</maven.repo.local.tail>")
+				.contains("<activeProfile>cozy-bundle</activeProfile>")
 				.contains("<offline>true</offline>")
 				.doesNotContain(dest.toString());
 			// PATH에는 bin 하나만 더한다. bin의 mvn이 설치 폴더의 Maven을 부른다
@@ -209,12 +223,65 @@ class BundleCommandsTest {
 			assertThat(run(dest.resolve("bin/cozy"), "check").output()).contains("system-ok -jar");
 		}
 
+		/**
+		 * 다시 설치하면 설치 폴더의 저장소가 새 번들의 것으로 바뀐다. 이전 판에만 있던 파일(이전 판의 cozy 모듈, 그 판만 쓰는
+		 * 의존성, 예전 설치가 이 저장소에 쓴 앱)은 사용자 저장소로 옮겨서 올리기 전의 앱도 빌드된다.
+		 */
+		@Test
+		void reinstallMovesWhatOnlyTheOldRepositoryHadToTheUserRepository() throws Exception {
+			Path dest = this.temp.resolve("installed");
+			write(this.bundle.resolve("repository/io/salvia95/cozy/cozy-ui/9.9.8/cozy-ui-9.9.8.jar"), "old ui");
+			assertThat(run(this.bundle.resolve("cozy"), "install", dest.toString()).code()).isZero();
+			write(dest.resolve("repository/com/example/app/1.0/app-1.0.jar"), "installed by an old build");
+			write(dest.resolve("repository/.locks/artifact~com.example~app~1.0.lock"), "");
+			Path user = this.temp.resolve("home/.local/share/cozy/repository");
+			write(user.resolve("com/example/kept/1.0/kept-1.0.jar"), "already there");
+			write(dest.resolve("repository/com/example/kept/1.0/kept-1.0.jar"), "older copy");
+			delete(this.bundle.resolve("repository/io/salvia95/cozy/cozy-ui/9.9.8"));
+			write(this.bundle.resolve("repository/io/salvia95/cozy/cozy-ui/9.9.9/cozy-ui-9.9.9.jar"), "new ui");
+
+			Result install = run(this.bundle.resolve("cozy"), "install", dest.toString());
+
+			assertThat(install.code()).as(install.output()).isZero();
+			assertThat(install.output()).contains("이전 판에만 있던 파일 2개를 사용자 저장소로 옮겼습니다: " + user);
+			assertThat(user.resolve("io/salvia95/cozy/cozy-ui/9.9.8/cozy-ui-9.9.8.jar")).hasContent("old ui");
+			assertThat(user.resolve("com/example/app/1.0/app-1.0.jar")).hasContent("installed by an old build");
+			// 사용자 저장소에 이미 있는 파일은 덮어쓰지 않고, 잠금 파일은 옮기지 않는다
+			assertThat(user.resolve("com/example/kept/1.0/kept-1.0.jar")).hasContent("already there");
+			assertThat(user.resolve(".locks")).doesNotExist();
+			// 설치 폴더의 저장소는 새 번들의 것 그대로다
+			assertThat(dest.resolve("repository/io/salvia95/cozy/cozy-ui/9.9.9/cozy-ui-9.9.9.jar")).hasContent("new ui");
+			assertThat(dest.resolve("repository/io/salvia95/cozy/cozy-ui/9.9.8")).doesNotExist();
+			assertThat(dest.resolve("repository/com/example")).doesNotExist();
+		}
+
+		@Test
+		void firstInstallMovesNothing() throws Exception {
+			Result install = run(this.bundle.resolve("cozy"), "install", this.temp.resolve("installed").toString());
+
+			assertThat(install.code()).as(install.output()).isZero();
+			assertThat(install.output()).doesNotContain("이전 판에만 있던 파일");
+			assertThat(install.output()).contains("  저장소:      " + this.temp.resolve("home/.local/share/cozy/repository"));
+		}
+
+		/** cozy 명령은 앱이 쓰는 판의 cozy-ui를 사용자 저장소에서 먼저 찾고, 없으면 설치 폴더의 저장소에서 찾는다 */
+		@Test
+		void cozyCommandsSearchTheUserRepositoryBeforeTheInstalledOne() throws Exception {
+			Path dest = this.temp.resolve("installed");
+			assertThat(run(this.bundle.resolve("cozy"), "install", dest.toString()).code()).isZero();
+
+			Result check = run(dest.resolve("bin/cozy"), "check");
+
+			assertThat(check.output()).contains("COZY_REPOSITORY=" + this.temp.resolve("home/.local/share/cozy/repository")
+					+ ":" + dest.resolve("repository"));
+		}
+
 		/** JDK 25인 척하는 java. {@code -XshowSettings}에는 버전을, 그 밖에는 이름과 인수를 출력한다 */
 		void jdk(Path home, String name) throws IOException {
 			executable(write(home.resolve("bin/java"), """
 					#!/bin/sh
 					case "$*" in *-XshowSettings*) echo "    java.specification.version = 25" >&2; exit 0 ;; esac
-					echo "%s $*"
+					echo "%s $* COZY_REPOSITORY=$COZY_REPOSITORY"
 					""".formatted(name)));
 		}
 

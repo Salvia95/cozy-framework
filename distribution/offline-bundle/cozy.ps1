@@ -20,6 +20,8 @@ $ErrorActionPreference = 'Stop'
 $Root = if (Test-Path (Join-Path $PSScriptRoot 'COZY_VERSION')) { $PSScriptRoot } else { Split-Path $PSScriptRoot -Parent }
 $VersionFile = Join-Path $Root 'COZY_VERSION'
 $Version = if (Test-Path $VersionFile) { (Get-Content -Raw $VersionFile).Trim() } else { 'unknown' }
+# Maven이 쓰는 사용자 저장소. 설치한 Maven의 settings.xml이 같은 곳(${env.LOCALAPPDATA}/Cozy/repository)을 가리킨다
+$UserRepository = Join-Path $env:LOCALAPPDATA 'Cozy\repository'
 $Action = if ($args.Count -gt 0) { [string]$args[0] } else { 'help' }
 # @(...)로 감싼다. if의 결과는 펼쳐지므로 인수가 하나면 배열이 아니라 문자열이 되고, $Rest[0]이 첫 글자가 된다
 # [string]으로 바꿔 둔다. Windows PowerShell 5.1은 -File로 받은 '-'로 시작하는 인수를 외부 명령에 넘길 때 따옴표를 빼서,
@@ -49,6 +51,25 @@ function Assert-Java {
   if ($major -lt 25) { throw "[cozy] JDK 25가 필요합니다 (지금: $major)" }
 }
 
+# 이전 설치의 저장소에만 있는 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성, 예전 설치가 쓴 앱)을 사용자 저장소로 옮긴다.
+# 새 번들에도 있는 파일, 사용자 저장소에 이미 있는 파일, Maven의 잠금 파일은 그대로 둔다
+function Move-OldOnlyFiles([string]$Old, [string]$New) {
+  $moved = 0
+  $prefix = $Old.TrimEnd('\') + '\'
+  foreach ($file in Get-ChildItem -LiteralPath $Old -Recurse -File -Force) {
+    $relative = $file.FullName.Substring($prefix.Length)
+    if ($relative -like '.locks\*') { continue }
+    $target = Join-Path $UserRepository $relative
+    if ((Test-Path -LiteralPath (Join-Path $New $relative)) -or (Test-Path -LiteralPath $target)) { continue }
+    New-Item -ItemType Directory -Force -Path (Split-Path $target -Parent) | Out-Null
+    Move-Item -LiteralPath $file.FullName -Destination $target
+    $moved++
+  }
+  if ($moved -gt 0) {
+    Write-Host "[cozy] 이전 판에만 있던 파일 ${moved}개를 사용자 저장소로 옮겼습니다: ${UserRepository}"
+  }
+}
+
 function Install-Cozy([string]$Destination) {
   if (-not $Destination) { $Destination = Join-Path $env:USERPROFILE 'cozy' }
   $zip = Get-ChildItem -Path $Root -Filter 'apache-maven-*-bin.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -62,10 +83,15 @@ function Install-Cozy([string]$Destination) {
   if (Test-Path $mavenDir) { Remove-Item -Recurse -Force $mavenDir }
   Expand-Archive -Path $zip.FullName -DestinationPath $Destination
 
+  New-Item -ItemType Directory -Force -Path $UserRepository | Out-Null
   $repo = Join-Path $Destination 'repository'
-  if ((Resolve-Path (Join-Path $Root 'repository')).Path -ne $repo) {
-    if (Test-Path $repo) { Remove-Item -Recurse -Force $repo }
-    Copy-Item -Recurse (Join-Path $Root 'repository') $repo
+  $bundleRepo = (Resolve-Path (Join-Path $Root 'repository')).Path
+  if ($bundleRepo -ne $repo) {
+    if (Test-Path $repo) {
+      Move-OldOnlyFiles $repo $bundleRepo
+      Remove-Item -Recurse -Force $repo
+    }
+    Copy-Item -Recurse $bundleRepo $repo
   }
   foreach ($dir in @('docs', 'licenses', 'bin', 'lib')) {
     $target = Join-Path $Destination $dir
@@ -97,18 +123,31 @@ function Install-Cozy([string]$Destination) {
   ) -join "`r`n"
   [System.IO.File]::WriteAllText((Join-Path $bin 'mvn.cmd'), $mvnCmd + "`r`n", (New-Object System.Text.ASCIIEncoding))
 
-  # 저장소는 Maven 폴더 옆이다. 절대 경로를 쓰지 않으므로 설치 폴더를 옮기거나 MSI가 다른 곳에 깔아도 맞다
+  # Maven은 사용자 저장소에 쓰고, Maven 폴더 옆의 번들 저장소는 읽기만 한다(꼬리). 절대 경로를 쓰지 않으므로
+  # 설치 폴더를 옮기거나 MSI가 다른 곳에 깔아도 맞다. 사용자 저장소는 다시 설치하거나 지워도 남는다
   $settings = @"
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Cozy 오프라인 번들 ${Version}: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
+<!-- Cozy 오프라인 번들 ${Version}: 사용자 저장소와 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
-  <localRepository>`${maven.home}/../repository</localRepository>
+  <localRepository>`${env.LOCALAPPDATA}/Cozy/repository</localRepository>
   <offline>true</offline>
+  <profiles>
+    <profile>
+      <id>cozy-bundle</id>
+      <properties>
+        <maven.repo.local.tail>`${maven.home}/../repository</maven.repo.local.tail>
+      </properties>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>cozy-bundle</activeProfile>
+  </activeProfiles>
 </settings>
 "@
   [System.IO.File]::WriteAllText((Join-Path $mavenDir 'conf\settings.xml'), $settings, (New-Object System.Text.UTF8Encoding($false)))
 
   Write-Host "[cozy] 설치했습니다: $Destination"
+  Write-Host "  저장소:      ${UserRepository} (Maven이 쓰는 곳. 다시 설치하거나 지워도 남는다)"
   if (Test-Path $jdkTarget) {
     Write-Host "  JDK:         $jdkTarget (cozy와 mvn이 쓴다. 시스템 설정은 바꾸지 않았다)"
   }
@@ -138,7 +177,7 @@ function Invoke-CozyCli([object[]]$CliArgs) {
     exit 2
   }
   Assert-Java
-  if (-not $env:COZY_REPOSITORY) { $env:COZY_REPOSITORY = Join-Path $Root 'repository' }
+  if (-not $env:COZY_REPOSITORY) { $env:COZY_REPOSITORY = $UserRepository + ';' + (Join-Path $Root 'repository') }
   & java -jar $jar @CliArgs
   exit $LASTEXITCODE
 }

@@ -258,9 +258,10 @@ mvn -o -Pdist package
 - [ ] `cozy new`의 `-DappName=VOC 도우미`(공백과 한글)가 깨지거나 나뉘지 않는다. 브라우저 제목이 "VOC 도우미"다.
 - [ ] `mvn -o verify`, `mvn -o -Pdist package`가 통과하고 앱이 뜬다.
 - [ ] `cmd.exe`에서도 `cozy version`, `mvn -v`가 된다.
-- [ ] IntelliJ: Maven home을 `%LOCALAPPDATA%\Programs\Cozy\apache-maven-3.10.1`으로, JDK를 `%LOCALAPPDATA%\Programs\Cozy\jdk`로 두면 "mvn -o verify" 실행 설정이 통과한다. 로컬 저장소가 `...\Cozy\repository`로 잡힌다(설정의 `${maven.home}/../repository`).
+- [ ] IntelliJ: Maven home을 `%LOCALAPPDATA%\Programs\Cozy\apache-maven-3.10.1`으로, JDK를 `%LOCALAPPDATA%\Programs\Cozy\jdk`로 두면 "mvn -o verify" 실행 설정이 통과한다. 로컬 저장소가 `%LOCALAPPDATA%\Cozy\repository`(사용자 저장소)로 잡히고, 설치 폴더의 `repository`는 꼬리로 읽힌다.
+- [ ] `mvn -o verify`와 `mvn install`을 한 뒤에도 `%LOCALAPPDATA%\Programs\Cozy\repository`에 새 파일이 생기지 않고, `%LOCALAPPDATA%\Cozy\repository`에 생긴다.
 - [ ] 같은 MSI를 다시 더블클릭하면 덮어쓴다. 더 낮은 판의 MSI는 "더 새로운 Cozy가 이미 설치되어 있습니다"로 막힌다.
-- [ ] "설치된 앱"에서 제거하면 새 창에서 `cozy`를 찾지 못하고, 사용자 PATH에서 `...\Cozy\bin`이 빠진다. `%LOCALAPPDATA%\Programs\Cozy`에 남는 것이 있으면(Maven이 만든 파일) 기록한다.
+- [ ] "설치된 앱"에서 제거하면 새 창에서 `cozy`를 찾지 못하고, 사용자 PATH에서 `...\Cozy\bin`이 빠지고, `%LOCALAPPDATA%\Programs\Cozy`가 남지 않는다. 사용자 저장소 `%LOCALAPPDATA%\Cozy\repository`는 남는다.
 - [ ] 관리자 PowerShell에서 `msiexec /i cozy-{버전}-windows-x64.msi ALLUSERS=1`을 하면 "Cozy는 사용자별로만 설치합니다" 메시지로 거부된다. 한글 메시지가 깨지지 않는다.
 
 ## 기록

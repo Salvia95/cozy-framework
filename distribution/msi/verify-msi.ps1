@@ -5,7 +5,7 @@
 # 1. 조용히 설치(사용자별)하고 설치 폴더, 사용자 PATH, Maven 설정을 본다
 # 2. 시스템 JDK 자리에 부르면 실패하는 java를 두고, 설치한 cozy와 mvn으로 앱 생성·cozy add·verify·-Pdist package를 한다
 # 3. 실패하는 빌드의 종료 코드가 mvn.cmd를 거쳐 그대로 나오는지 본다
-# 4. 지우고 PATH와 설치한 파일이 사라졌는지 본다
+# 4. 지우고 PATH와 설치 폴더가 사라졌는지 본다(Maven은 설치 폴더가 아니라 사용자 저장소에 쓴다)
 # 5. 컴퓨터별 설치(ALLUSERS=1)는 거부되고 아무것도 깔리지 않는지 본다
 param(
   [Parameter(Mandatory = $true)][string]$Msi,
@@ -45,7 +45,9 @@ Check (-not (Test-Path (Join-Path $dir 'jdk\lib\src.zip'))) 'jdk\lib\src.zip은 
 Check (Test-UserPath "$dir\bin") "사용자 PATH에 $dir\bin"
 $settings = Get-ChildItem -Path $dir -Directory -Filter 'apache-maven-*' | Select-Object -First 1
 $settingsText = Get-Content -Raw -Encoding UTF8 (Join-Path $settings.FullName 'conf\settings.xml')
-Check ($settingsText.Contains('<localRepository>${maven.home}/../repository</localRepository>')) 'Maven 설정의 저장소가 Maven 폴더 옆'
+Check ($settingsText.Contains('<localRepository>${env.LOCALAPPDATA}/Cozy/repository</localRepository>')) 'Maven 설정의 저장소가 사용자 저장소'
+Check ($settingsText.Contains('<maven.repo.local.tail>${maven.home}/../repository</maven.repo.local.tail>')) 'Maven 설정의 꼬리 저장소가 Maven 폴더 옆'
+$bundleFiles = @(Get-ChildItem -Path (Join-Path $dir 'repository') -Recurse -File -Force).Count
 $version = (Get-Content -Raw (Join-Path $dir 'COZY_VERSION')).Trim()
 
 # 2. 새 창처럼: PATH는 설치한 bin + 시스템 JDK를 막는 가짜 java + 시스템 PATH. JAVA_HOME도 가짜
@@ -85,6 +87,9 @@ try {
   # stderr를 2>&1로 받지 않는다. Windows PowerShell 5.1은 그것을 오류로 바꿔 스크립트를 멈춘다
   & mvn -B -ntp -o no-such-phase | Out-Null
   Check ($LASTEXITCODE -ne 0) "실패한 mvn의 종료 코드가 mvn.cmd를 거쳐 나온다 (지금 $LASTEXITCODE)"
+  $after = @(Get-ChildItem -Path (Join-Path $dir 'repository') -Recurse -File -Force).Count
+  Check ($after -eq $bundleFiles) "빌드가 설치 폴더의 저장소에 쓰지 않았다 (설치 때 ${bundleFiles}개, 지금 ${after}개)"
+  Check (Test-Path (Join-Path $env:LOCALAPPDATA 'Cozy\repository')) "사용자 저장소 $env:LOCALAPPDATA\Cozy\repository가 있다"
 }
 finally {
   Pop-Location
@@ -98,10 +103,10 @@ foreach ($path in @('bin', 'lib', 'jdk', 'docs', 'licenses')) {
   Check (-not (Test-Path (Join-Path $dir $path))) "지운 뒤 ${path}가 없다"
 }
 if (Test-Path $dir) {
-  $left = @(Get-ChildItem -Path $dir -Recurse -File)
-  Write-Host "[cozy] 참고: 지운 뒤 남은 파일 $($left.Count)개 (설치 뒤 Maven이 저장소에 만든 파일: repository\.locks의 잠금 파일 등)"
-  $left | Select-Object -First 10 | ForEach-Object { Write-Host "  $($_.FullName)" }
+  $left = @(Get-ChildItem -Path $dir -Recurse -File -Force)
+  $left | Select-Object -First 10 | ForEach-Object { Write-Host "  남은 파일: $($_.FullName)" }
   Remove-Item -Recurse -Force $dir
+  Check $false "지운 뒤 설치 폴더가 남지 않는다 (남은 파일 $($left.Count)개)"
 }
 
 # 5. 컴퓨터별 설치는 거부한다

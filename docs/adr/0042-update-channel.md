@@ -96,7 +96,10 @@ cozy channel show
 - `cozy install`이 쓰는 `settings.xml`은 `localRepository`를 사용자 저장소로 하고, 늘 켜진 프로필의 속성 `maven.repo.local.tail`을 설치 폴더의 저장소로 한다. 명령줄 인자가 아니라 `settings.xml`에 두므로 번들의 Maven을 지정한 IDE도 같은 설정을 읽는다.
 - Maven 3.10.1에서 확인했다(2026-11-17). 빈 사용자 저장소와 꼬리로 오프라인 빌드가 되고, 사용자 저장소에는 `mvn install`한 것만 생긴다. 같은 `settings.xml`에서 프로필만 빼면 오프라인 빌드가 의존성을 찾지 못해 실패한다.
 - **이전 판을 남긴다.** `cozy upgrade`는 설치하기 전에, 지금 번들 저장소에 있고 새 번들 저장소에 없는 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성)을 사용자 저장소로 옮긴다. 새 판의 파일 목록은 받은 패키지에서 읽는다. 그래서 올리기 전의 앱도 계속 오프라인으로 빌드된다. 늘어나는 크기는 판 사이의 차이만큼이다.
-- **2.0.0에서 처음 올릴 때**: 2.0.0에는 `cozy upgrade`가 없으므로 첫 판(2.1.0)은 MSI나 `cozy install`로 설치한다. 그 판의 설치가 설치 폴더 저장소의 사용자 파일(`mvn install` 결과)과 2.0.0 판의 cozy 모듈을 사용자 저장소로 옮긴다. 그다음부터는 `cozy upgrade`로 올린다.
+- **2.0.0에서 처음 올릴 때**: 2.0.0에는 `cozy upgrade`가 없으므로 첫 판(2.1.0)은 MSI나 `cozy install`로 설치한다.
+  - `cozy install`(zip)은 설치 폴더 저장소에만 있던 파일(2.0.0 판의 cozy 모듈, `mvn install` 결과)을 사용자 저장소로 옮긴다.
+  - MSI는 설치하기 전에 코드를 돌리지 않으므로(`cozy.wxs`에 사용자 작업이 없다) 2.0.0 판의 cozy 모듈을 지운다. Maven이 설치 폴더에 쓴 파일은 MSI의 것이 아니라 남고, 꼬리로 계속 읽힌다. 2.0.0을 쓰던 앱은 cozy-parent 판을 올린다.
+  - 그다음부터는 `cozy upgrade`가 MSI를 실행하기 전에 옮긴다(§4). MSI를 더블클릭해 올리면 이전 판이 남지 않는다고 문서에 적는다.
 - 사용자 저장소를 지우는 명령은 이번에 만들지 않는다. 쌓인 판은 폴더를 지워 정리한다(남은 일).
 
 ### 6. 테스트는 외부 주소를 쓰지 않는다
@@ -126,7 +129,7 @@ cozy channel show
 
 | 마일스톤 | 완료 기준 |
 | --- | --- |
-| M41 저장소 나누기 | `cozy install`과 MSI가 사용자 저장소 + 꼬리로 설치한다. 2.0.0 설치 위에 설치하면 사용자 파일과 2.0.0 cozy 모듈이 사용자 저장소로 옮겨지고 두 판의 앱이 오프라인으로 빌드된다. 지우면 설치 폴더가 남지 않는다 |
+| M41 저장소 나누기 | `cozy install`과 MSI가 사용자 저장소 + 꼬리로 설치한다. 이전 설치 위에 `cozy install`하면 이전 저장소에만 있던 파일이 사용자 저장소로 옮겨지고 이전 판의 앱이 오프라인으로 빌드된다. 빌드가 설치 폴더에 쓰지 않고, 지우면 설치 폴더가 남지 않는다 |
 | M42 채널 색인 | 색인 형식, `cozy channel set·show·add`, 릴리스 워크플로의 `cozy-channel.json`. 실패로 닫는 경우의 테스트 |
 | M43 `cozy update`와 알림 | `file:`·로컬 HTTP 채널, 인증 머리, 하루 한 번 알림, `--json` |
 | M44 `cozy upgrade` | zip 설치(Linux, e2e)와 MSI 설치(Windows 러너), 이전 판 보존, `breaking`과 낮은 판 거부 |
@@ -139,3 +142,16 @@ cozy channel show
 - **회사 PC의 정책**: `msiexec`의 조용한 설치나 임시 폴더의 스크립트 실행을 막을 수 있다. 막히면 받은 파일 위치를 알리고 손으로 설치하게 한다. Windows에서 직접 확인해야 한다(windows-verification.md에 항목을 더한다).
 - **사용자 저장소가 쌓인다.** 판마다 차이만큼 늘어난다. 지우는 명령은 남은 일이다.
 - **꼬리 저장소는 Maven 기능에 기댄다.** `maven.repo.local.tail`은 Maven 3.9부터 있다. IDE가 번들의 `settings.xml`을 쓰지 않으면 꼬리를 모른다(IntelliJ는 Maven home과 settings를 번들로 지정하라고 README에 이미 적혀 있다). Maven 4로 올릴 때 다시 확인한다.
+
+## M41 (2026-11-17, 사용자 결정 "승인할게")
+
+- 시작할 때 최신 GA: 같은 날 릴리스 2.0.0 준비 때 확인한 그대로다(ADR-0017 2026-11-17).
+- `cozy install`(bash, PowerShell)이 쓰는 `settings.xml`: `localRepository`는 사용자 저장소(Windows `${env.LOCALAPPDATA}/Cozy/repository`, Linux `${env.HOME}/.local/share/cozy/repository`), 늘 켜진 프로필 `cozy-bundle`의 `maven.repo.local.tail`은 `${maven.home}/../repository`다. Linux에서 `${user.home}`이 아니라 `${env.HOME}`을 쓴다. JDK의 `user.home`은 `HOME`을 따르지 않아 설치 스크립트(`$HOME`)와 어긋난다.
+- 다시 설치하면 이전 저장소에만 있는 파일을 사용자 저장소로 옮긴다. 새 번들에도 있는 파일, 사용자 저장소에 이미 있는 파일, `.locks`는 그대로 둔다.
+- cozy 명령의 `COZY_REPOSITORY` 기본값이 사용자 저장소와 설치 폴더 저장소 두 개다. cozy-cli는 `COZY_REPOSITORY`를 경로 구분자로 나눈 목록으로 읽고 앞에서부터 cozy-ui jar를 찾는다. 올리기 전의 앱이 쓰는 판은 사용자 저장소에만 있기 때문이다.
+- 확인:
+  - `BundleCommandsTest`: 설정 내용, 다시 설치할 때 옮기는 파일(이전 판 cozy-ui, 예전 설치가 쓴 앱)과 옮기지 않는 파일(사용자 저장소에 있는 것, 잠금 파일), 첫 설치, cozy 명령의 저장소 목록, PowerShell 스크립트의 같은 설정. `CozyCliTest.everyRepositoryInTheListIsSearchedInOrder`.
+  - 실제 Maven 3.10.1과 실제 저장소로 손으로 확인했다(Linux). 2.0.0 번들 설치 → `cozy new` → 2.0.0 cozy 모듈이 없는 번들로 다시 설치(35개 옮김) → 2.0.0 앱의 `mvn -o verify`(테스트 14개)와 `cozy check` 통과. 꼬리 저장소에는 새 파일이 생기지 않았다.
+  - `verify-msi.ps1`: 설정 내용, 빌드한 뒤 설치 폴더 저장소의 파일 수가 그대로인지, 사용자 저장소가 생겼는지, 지운 뒤 설치 폴더가 남지 않는지(전에는 남은 파일을 참고로만 알렸다)를 본다. Windows 러너에서는 다음 릴리스 워크플로 실행 때 돈다.
+- 계획과 달라진 것: MSI 위에 MSI를 설치할 때 이전 판을 남기는 것은 이번에 하지 않는다. MSI에 사용자 작업(CustomAction)을 더해야 하는데, 지금 MSI에는 사용자 작업이 없고 회사 PC 정책에 걸릴 곳이 늘어난다. §5에 고쳐 적었고, `cozy upgrade`(M44)가 MSI를 실행하기 전에 옮긴다.
+

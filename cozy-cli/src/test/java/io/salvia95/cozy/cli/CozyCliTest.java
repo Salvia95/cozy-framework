@@ -3,6 +3,7 @@ package io.salvia95.cozy.cli;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Reader;
@@ -225,6 +226,28 @@ class CozyCliTest {
 			assertThat(code).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(err.toString(StandardCharsets.UTF_8)).contains("cozy-ui " + VERSION + " jar가 없습니다")
 				.contains("--repository");
+		}
+
+		/**
+		 * 설치한 PC의 cozy는 사용자 저장소와 설치 폴더의 저장소를 함께 준다. 올리기 전의 앱이 쓰는 판은 사용자 저장소에만 있고,
+		 * 지금 판은 설치 폴더의 저장소에만 있다.
+		 */
+		@Test
+		void everyRepositoryInTheListIsSearchedInOrder() {
+			String list = "target/no-such-repository" + File.pathSeparator + REPOSITORY;
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			int code = CozyCli.run(new String[] { "check", "--project", REFERENCE_APP.toString() }, Path.of(""), list,
+					new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(new ByteArrayOutputStream()));
+			assertThat(code).as(out.toString(StandardCharsets.UTF_8)).isEqualTo(CozyCli.OK);
+
+			ByteArrayOutputStream err = new ByteArrayOutputStream();
+			String missing = "target/no-such-repository" + File.pathSeparator + "target/no-other-repository";
+			code = CozyCli.run(new String[] { "check", "--project", REFERENCE_APP.toString() }, Path.of(""), missing,
+					new PrintStream(new ByteArrayOutputStream()), new PrintStream(err, true, StandardCharsets.UTF_8));
+			assertThat(code).isEqualTo(CozyCli.UNUSABLE);
+			assertThat(err.toString(StandardCharsets.UTF_8)).contains("cozy-ui " + VERSION + " jar가 없습니다")
+				.contains("no-such-repository")
+				.contains("no-other-repository");
 		}
 
 		@Test

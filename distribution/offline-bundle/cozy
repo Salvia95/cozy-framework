@@ -20,6 +20,8 @@ SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 번들 폴더는 cozy 옆에 COZY_VERSION이 있고, 설치 폴더는 bin/cozy의 한 단계 위에 있다
 if [ -f "$SELF/COZY_VERSION" ]; then ROOT="$SELF"; else ROOT="$(dirname "$SELF")"; fi
 VERSION="$(cat "$ROOT/COZY_VERSION" 2>/dev/null || true)"
+# Maven이 쓰는 사용자 저장소. 설치한 Maven의 settings.xml이 같은 곳(${env.HOME}/.local/share/cozy/repository)을 가리킨다
+USER_REPOSITORY="$HOME/.local/share/cozy/repository"
 
 # 번들의 JDK는 이 명령 안에서만 쓴다. 시스템의 JAVA_HOME과 PATH 설정은 바꾸지 않는다
 if [ -x "$ROOT/jdk/bin/java" ]; then
@@ -40,6 +42,22 @@ need_java() {
   fi
 }
 
+# 이전 설치의 저장소에만 있는 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성, 예전 설치가 쓴 앱)을 사용자 저장소로 옮긴다.
+# 새 번들에도 있는 파일, 사용자 저장소에 이미 있는 파일, Maven의 잠금 파일은 그대로 둔다
+keep_old_files() {
+  local old="$1" new="$2" file moved=0
+  while IFS= read -r -d '' file; do
+    file="${file#./}"
+    if [ -e "$new/$file" ] || [ -e "$USER_REPOSITORY/$file" ]; then continue; fi
+    mkdir -p "$USER_REPOSITORY/$(dirname "$file")"
+    mv "$old/$file" "$USER_REPOSITORY/$file"
+    moved=$((moved + 1))
+  done < <(cd "$old" && find . -type f ! -path './.locks/*' -print0)
+  if [ "$moved" -gt 0 ]; then
+    echo "[cozy] 이전 판에만 있던 파일 ${moved}개를 사용자 저장소로 옮겼습니다: $USER_REPOSITORY"
+  fi
+}
+
 install() {
   local dest="${1:-$HOME/cozy}" zip maven_dir
   zip="$(ls "$ROOT"/apache-maven-*-bin.zip 2>/dev/null | head -1 || true)"
@@ -53,7 +71,9 @@ install() {
   maven_dir="$dest/$(basename "$zip" -bin.zip)"
   rm -rf "$maven_dir"
   (cd "$dest" && unzip -q "$zip")
+  mkdir -p "$USER_REPOSITORY"
   if [ "$ROOT/repository" != "$dest/repository" ]; then
+    if [ -d "$dest/repository" ]; then keep_old_files "$dest/repository" "$ROOT/repository"; fi
     rm -rf "$dest/repository"
     cp -r "$ROOT/repository" "$dest/repository"
   fi
@@ -80,17 +100,30 @@ exec "\$COZY_HOME/$(basename "$maven_dir")/bin/mvn" "\$@"
 SH
   chmod +x "$dest/bin/mvn"
 
-  # 저장소는 Maven 폴더 옆이다. 절대 경로를 쓰지 않으므로 설치 폴더를 옮겨도 맞다
+  # Maven은 사용자 저장소에 쓰고, Maven 폴더 옆의 번들 저장소는 읽기만 한다(꼬리).
+  # 절대 경로를 쓰지 않으므로 설치 폴더를 옮겨도 맞다. 사용자 저장소는 다시 설치하거나 지워도 남는다
   cat > "$maven_dir/conf/settings.xml" <<XML
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Cozy 오프라인 번들 $VERSION: 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
+<!-- Cozy 오프라인 번들 $VERSION: 사용자 저장소와 번들 저장소만 쓰고 네트워크에 나가지 않는다 -->
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
-  <localRepository>\${maven.home}/../repository</localRepository>
+  <localRepository>\${env.HOME}/.local/share/cozy/repository</localRepository>
   <offline>true</offline>
+  <profiles>
+    <profile>
+      <id>cozy-bundle</id>
+      <properties>
+        <maven.repo.local.tail>\${maven.home}/../repository</maven.repo.local.tail>
+      </properties>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>cozy-bundle</activeProfile>
+  </activeProfiles>
 </settings>
 XML
 
   echo "[cozy] 설치했습니다: $dest"
+  echo "  저장소:      $USER_REPOSITORY (Maven이 쓰는 곳. 다시 설치하거나 지워도 남는다)"
   if [ -d "$dest/jdk" ]; then
     echo "  JDK:         $dest/jdk (cozy와 mvn이 쓴다. 시스템 설정은 바꾸지 않았다)"
   fi
@@ -120,7 +153,7 @@ cli() {
     exit 2
   fi
   need_java
-  COZY_REPOSITORY="${COZY_REPOSITORY:-$ROOT/repository}" exec java -jar "$jar" "$@"
+  COZY_REPOSITORY="${COZY_REPOSITORY:-$USER_REPOSITORY:$ROOT/repository}" exec java -jar "$jar" "$@"
 }
 
 ACTION="${1:-help}"

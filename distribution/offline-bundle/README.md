@@ -18,7 +18,7 @@ Windows PC는 보통 번들 대신 같은 릴리스의 설치 파일 `cozy-{버�
 | 항목 | 내용 |
 | --- | --- |
 | `jdk/` | (Windows x64 번들만) Eclipse Temurin JDK 25. `lib/src.zip`만 뺐다. 라이선스는 `jdk/legal/`과 `jdk/NOTICE`, 소스 묶음은 같은 릴리스의 `OpenJDK25U-jdk-sources_*.tar.gz`(ADR-0025 보완) |
-| `repository/` | Maven 로컬 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인 |
+| `repository/` | 번들 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인. 설치하면 Maven이 읽기만 한다 |
 | `apache-maven-3.10.1-bin.zip` | Maven 배포판 |
 | `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`, `cozy version`, `cozy help` |
 | `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`, `enable`, `sync`, `set`을 맡는다(ADR-0032) |
@@ -82,17 +82,18 @@ mvn -o -Pdist package
 - **이미 있는 앱**: 새 번들을 설치한 뒤 앱 폴더에서 `cozy sync agents`를 실행하면 `AGENTS.md`(없을 때)와 `cozy-helper` 스킬이 설치한 cozy 명령의 것으로 맞춰진다. 앱에서 고친 `AGENTS.md`는 `--force`를 줘야 바뀐다.
 - **명령 형식**: `cozy <동작> [인자...]`. Windows는 `cozy.cmd`가 `cozy.ps1`을 실행 정책과 상관없이 부른다. Linux·WSL은 `cozy`(bash)를 쓴다(`./cozy install` → `~/cozy/bin/cozy new`). Linux에 설치해도 `bin/`에 `cozy`와 `mvn`이 생긴다.
 - **`cozy install`이 하는 일**: Maven을 풀고 `bin\cozy.cmd`와 `bin\mvn.cmd`를 설치 폴더에 둔다. 그 Maven의 `conf\settings.xml`을 다음처럼 설정한다.
-  - 로컬 저장소를 번들 저장소로 둔다.
-  - `offline=true`로 둔다.
-  - 이 Maven으로는 네트워크에 나가지 않는다.
-  - 저장소는 `${maven.home}/../repository`(Maven 폴더 옆)로 적는다. 절대 경로가 없어 설치 폴더를 옮겨도 맞는다.
+  - 로컬 저장소는 사용자 저장소다. Windows는 `%LOCALAPPDATA%\Cozy\repository`(`${env.LOCALAPPDATA}/Cozy/repository`), Linux는 `~/.local/share/cozy/repository`(`${env.HOME}/.local/share/cozy/repository`)다. Maven은 이곳에만 쓰고(`mvn install`한 앱, 잠금 파일), 다시 설치하거나 지워도 남는다.
+  - 설치 폴더의 `repository`는 읽기만 하는 꼬리 저장소다(늘 켜진 프로필 `cozy-bundle`의 `maven.repo.local.tail`, `${maven.home}/../repository`). 절대 경로가 없어 설치 폴더를 옮겨도 맞는다.
+  - `offline=true`로 둔다. 이 Maven으로는 네트워크에 나가지 않는다.
+- **다시 설치할 때**: 설치 폴더의 `repository`를 새 번들의 것으로 바꾸기 전에, 이전 저장소에만 있던 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성, 예전 설치가 저장소에 쓴 앱)을 사용자 저장소로 옮긴다. 그래서 아직 판을 올리지 않은 앱도 오프라인으로 빌드된다. 사용자 저장소에 이미 있는 파일은 덮어쓰지 않는다.
+- **MSI로 올릴 때**: MSI는 설치하기 전에 이전 판의 파일을 옮기지 못하고 지운다. MSI를 더블클릭해 올리면 이전 판의 cozy 모듈이 남지 않으므로, 그 판을 쓰던 앱은 `pom.xml`의 cozy-parent 판을 올린다.
 - **JDK**: 번들에 `jdk\`가 있으면 설치 폴더에 복사한다. 이전 설치의 `jdk\`는 지운다.
   - `cozy`와 `bin\mvn.cmd`는 그 JDK로 돈다. Maven이 그 JDK로 돌면 테스트, 패키징(`jpackage`)도 같은 JDK를 쓴다.
   - 시스템의 `JAVA_HOME`과 PATH 설정은 바꾸지 않는다. 다른 Java 프로그램에는 영향이 없다.
   - 번들 JDK의 파일을 고치지 않는다(사내 인증서를 `cacerts`에 더하는 것 등). 고치면 `mvn -Pdist package`의 jlink가 거부한다. 인증서가 필요하면 별도 truststore를 JVM 옵션으로 준다.
   - JDK 없는 번들이면 PATH의 JDK 25를 쓴다. `bin\mvn.cmd`는 시스템의 `JAVA_HOME`을 따른다.
-- **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.1`으로 지정한다.
-- **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, cozy-ui jar는 설치 폴더의 `repository/`에서 읽는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
+- **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.1`으로 지정한다. 그 Maven의 `conf\settings.xml`을 읽어야 꼬리 저장소를 안다(User settings file을 바꾸지 않는다).
+- **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, 앱이 쓰는 판의 cozy-ui jar를 사용자 저장소에서 먼저, 없으면 설치 폴더의 `repository/`에서 찾는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:
   - `appId`: 영문 소문자·하이픈. 기본값은 artifactId다.
