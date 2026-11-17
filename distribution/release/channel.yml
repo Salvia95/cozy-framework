@@ -1,0 +1,7 @@
+# 다음 릴리스의 채널 색인(cozy-channel.json) 내용. 릴리스 절차의 "버전 바꾸기"에서 함께 고친다.
+# 릴리스 워크플로가 cozy channel release로 읽는다. version이 태그의 판과 다르면 check-version.sh가 실패한다.
+# breaking(앱을 올릴 때 손이 가는 판)은 적지 않는다. 주 버전이 바뀐 판(x.0.0)이 breaking이다.
+version: 2.1.0
+summary: "개발 도구 업데이트 채널(cozy channel, cozy update, cozy upgrade)과 이전 판을 남기는 사용자 저장소"
+# 앱 폴더에서 돌릴 명령. 없으면 []
+appSteps: []

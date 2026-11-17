@@ -23,13 +23,13 @@
 
 | 서버 | 채널 주소 예 |
 | --- | --- |
-| 파일 서버 | `\\fileserver\share\cozy\cozy-channel.json`, `file:///mnt/share/cozy/cozy-channel.json` |
-| 사내 웹 서버 | `https://intra.example/cozy/cozy-channel.json` |
-| GitLab 패키지 레지스트리 | `https://gitlab.example/api/v4/projects/42/packages/generic/cozy/channel/cozy-channel.json` |
+| 파일 서버 | `\\fileserver\share\cozy\index\cozy-channel.json`, `Z:\cozy\index\cozy-channel.json`, `file:///mnt/share/cozy/index/cozy-channel.json` |
+| 사내 웹 서버 | `https://intra.example/cozy/index/cozy-channel.json` |
+| GitLab 패키지 레지스트리 | `https://gitlab.example/api/v4/projects/42/packages/generic/cozy/index/cozy-channel.json` |
 | GitHub Releases | `https://github.com/Salvia95/cozy-framework/releases/latest/download/cozy-channel.json` |
 
-- 색인 안의 파일 경로는 색인 주소를 기준으로 한 상대 경로다(`2.1.0/cozy-2.1.0-windows-x64.msi`, `../2.1.0/…`). 그래서 채널 폴더를 통째로 다른 서버로 복사해도 그대로 동작한다.
-- 주소의 형식은 `file:`, UNC 경로, `http:`, `https:`다. 그 밖의 형식은 거부한다.
+- 색인 안의 파일 경로는 색인 주소를 기준으로 한 상대 경로다(`../2.1.0/cozy-2.1.0-windows-x64.msi`). 채널 폴더는 `index/cozy-channel.json`과 판 폴더 `{판}/`를 나란히 둔다(M42). 그래서 채널 폴더를 통째로 다른 서버로 복사해도 그대로 동작한다.
+- 주소의 형식은 `file:`, UNC 경로, 절대 경로, `http:`, `https:`다. 그 밖의 형식은 거부한다.
 
 ### 2. 색인 형식 `cozy-channel.json`
 
@@ -44,9 +44,9 @@
       "summary": "한 줄 요약",
       "appSteps": ["cozy sync agents"],
       "files": [
-        { "kind": "msi", "path": "2.1.0/cozy-2.1.0-windows-x64.msi", "sha256": "…", "size": 320451561 },
-        { "kind": "windows-x64", "path": "2.1.0/cozy-offline-bundle-2.1.0-windows-x64.zip", "sha256": "…", "size": 346199784 },
-        { "kind": "portable", "path": "2.1.0/cozy-offline-bundle-2.1.0.zip", "sha256": "…", "size": 257272889 }
+        { "kind": "msi", "path": "../2.1.0/cozy-2.1.0-windows-x64.msi", "sha256": "…", "size": 320451561 },
+        { "kind": "windows-x64", "path": "../2.1.0/cozy-offline-bundle-2.1.0-windows-x64.zip", "sha256": "…", "size": 346199784 },
+        { "kind": "portable", "path": "../2.1.0/cozy-offline-bundle-2.1.0.zip", "sha256": "…", "size": 257272889 }
       ]
     }
   ]
@@ -60,8 +60,8 @@
 ### 3. 설정
 
 ```bash
-cozy channel set '\\fileserver\share\cozy\cozy-channel.json'
-cozy channel set https://gitlab.example/api/v4/projects/42/packages/generic/cozy/channel/cozy-channel.json --header PRIVATE-TOKEN
+cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
+cozy channel set https://gitlab.example/api/v4/projects/42/packages/generic/cozy/index/cozy-channel.json --header PRIVATE-TOKEN
 cozy channel show
 ```
 
@@ -78,7 +78,7 @@ cozy channel show
 | `cozy update` | 채널 색인을 읽어 지금 판, 최신 판, 그 사이 판의 요약, 호환 깨짐 표시, 앱에서 돌릴 명령을 보인다. 아무것도 바꾸지 않는다. `--json` |
 | `cozy upgrade [--to 버전]` | 판을 받아 SHA-256을 확인하고(§5의 보존을 먼저 한 뒤) 설치한다 |
 | `cozy channel set·show` | 채널 설정(§3) |
-| `cozy channel add <채널 폴더> <릴리스 폴더>` | 관리자가 채널을 만든다. 받은 릴리스 파일을 `SHA256SUMS`로 확인하고 `<채널 폴더>/{버전}/`에 복사한 뒤 색인에 더한다. 웹 서버나 GitLab이면 이 폴더를 올린다 |
+| `cozy channel add <채널 폴더> <릴리스 폴더>` | 관리자가 채널을 만든다. 받은 릴리스 파일을 릴리스 색인의 SHA-256으로 확인하고 `<채널 폴더>/{버전}/`에 복사한 뒤 `index/cozy-channel.json`에 더한다. 웹 서버나 GitLab이면 이 폴더를 같은 모양으로 올린다 |
 
 - **설치 방식은 설치한 모양을 따른다.** MSI로 설치했으면 받은 MSI를 사용자별로 조용히 설치하고(`msiexec /i … /qn`, 관리자 권한 없음), zip으로 설치했으면 받은 번들의 `cozy install`을 돌린다.
 - **설치는 cozy가 끝난 뒤에 한다.** 실행 중인 `cozy.cmd`와 `cozy-cli.jar`를 바꾸면 Windows에서 실패하거나 cmd가 바뀐 파일을 이어 읽는다. 앱의 교체 스크립트처럼 임시 폴더에 둔 설치 스크립트를 띄우고 cozy는 바로 끝난다. 설치 결과는 사용자 설정 폴더의 기록 파일에 남고, 다음 `cozy` 명령이 보인다.
@@ -154,4 +154,16 @@ cozy channel show
   - 실제 Maven 3.10.1과 실제 저장소로 손으로 확인했다(Linux). 2.0.0 번들 설치 → `cozy new` → 2.0.0 cozy 모듈이 없는 번들로 다시 설치(35개 옮김) → 2.0.0 앱의 `mvn -o verify`(테스트 14개)와 `cozy check` 통과. 꼬리 저장소에는 새 파일이 생기지 않았다.
   - `verify-msi.ps1`: 설정 내용, 빌드한 뒤 설치 폴더 저장소의 파일 수가 그대로인지, 사용자 저장소가 생겼는지, 지운 뒤 설치 폴더가 남지 않는지(전에는 남은 파일을 참고로만 알렸다)를 본다. Windows 러너에서는 다음 릴리스 워크플로 실행 때 돈다.
 - 계획과 달라진 것: MSI 위에 MSI를 설치할 때 이전 판을 남기는 것은 이번에 하지 않는다. MSI에 사용자 작업(CustomAction)을 더해야 하는데, 지금 MSI에는 사용자 작업이 없고 회사 PC 정책에 걸릴 곳이 늘어난다. §5에 고쳐 적었고, `cozy upgrade`(M44)가 MSI를 실행하기 전에 옮긴다.
+
+## M42 (2026-11-17, 사용자 지시 "러너 검증은 이번 마일스톤이 끝나고 돌리자 다음 진행해줘")
+
+- 러너 검증(`gh workflow run release.yml`)은 사용자 결정대로 M41~M45를 마친 뒤 한 번에 돌린다.
+- 색인 형식, `cozy channel set·show·add·release`, 사용자 설정 파일, 릴리스 워크플로의 `cozy-channel.json`을 만들었다. 형식과 사용법은 `docs/conventions/channel.md`에 있다.
+- 계획과 달라진 것:
+  - **채널 폴더의 모양**: 색인을 `<채널 폴더>/index/cozy-channel.json`에 두고 파일 경로를 `../{판}/{파일}`로 적는다(처음 쓴 §1·§2의 예는 색인이 판 폴더 옆이었다. 고쳐 적었다). GitLab Generic Package Registry는 파일 이름에 `/`를 넣을 수 없어 패키지 판이 폴더 하나다. 색인을 판 폴더와 나란한 `index`에 두면 패키지 판 `index`와 `2.1.0`으로 같은 모양을 올린다. 파일 서버와 웹 서버도 같은 모양을 쓴다.
+  - **주소 형식**: UNC, `file:`, `http:`, `https:`에 더해 절대 경로(연결한 드라이브 `Z:\…`, 마운트 `/mnt/…`)를 받는다. 회사 PC에서 공유 폴더를 드라이브로 연결해 쓰는 일이 많다. `file:`과 같은 뜻이다.
+  - **릴리스 색인의 내용**: `summary`와 `appSteps`는 레포의 `distribution/release/channel.yml`에 둔다. 릴리스 절차의 버전 바꾸기 단계에서 함께 고치고, 태그 빌드의 `check-version.sh`가 그 `version`이 릴리스 판과 같은지 먼저 본다. `breaking`은 적지 않고 판에서 정한다(`x.0.0`).
+  - `cozy channel release`를 더했다. 워크플로의 `release` 작업이 JDK 없는 번들의 `lib/cli`로 실행한다(Java 25를 설치하는 단계를 더했다).
+- 확인: `ChannelCommandTest` 18개. 설정 파일과 환경 변수의 순서, 토큰을 보이지 않음, 주소 형식 거부, 릴리스 색인(SHA256SUMS 대조, 다른 판의 노트, SNAPSHOT, 빠진 파일), 채널에 더하기(판 폴더와 색인, 새 판부터, 같은 판 다시 더하기, 같은 판의 다른 파일 거부, 깨진 파일은 복사 전에 거부, 읽을 수 없는 색인은 덮어쓰지 않음, `--dry-run`). `check-version.sh`의 `channel.yml` 판 대조는 손으로 확인했다.
+- 워크플로의 새 단계(`cozy channel release`)는 태그 빌드에서만 돈다. 다음 릴리스(2.1.0)에서 처음 돈다.
 

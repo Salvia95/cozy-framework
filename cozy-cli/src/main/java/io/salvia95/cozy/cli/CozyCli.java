@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,8 @@ import io.salvia95.cozy.cli.internal.Describe;
 import io.salvia95.cozy.cli.internal.FrameworkJar;
 import io.salvia95.cozy.cli.internal.Json;
 import io.salvia95.cozy.cli.internal.Recipes;
+import io.salvia95.cozy.cli.internal.channel.ChannelCommands;
+import io.salvia95.cozy.cli.internal.channel.UserConfig;
 import io.salvia95.cozy.cli.internal.recipe.RecipeRunner;
 import io.salvia95.cozy.rules.Violation;
 
@@ -63,6 +66,10 @@ public final class CozyCli {
 			                           fragment 호출의 문자열 인자 하나 바꾸기 (워크벤치의 속성 패널이 쓴다)
 			  cozy migrate alpine      앱 템플릿의 없앤 동작 속성(data-cozy-confirm 등)을 cozy 컴포넌트로 바꾸기 (2.0.0으로 올릴 때)
 			  cozy migrate events      옛 자리(<모듈>/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 (2.0.0으로 올릴 때)
+			  cozy channel set <주소> [--header <이름>]   업데이트 채널(cozy-channel.json의 주소) 정하기: 파일 서버, 웹 서버, GitLab, GitHub
+			  cozy channel show [--json]   정한 채널 보기 (환경 변수 COZY_CHANNEL이 설정 파일보다 앞선다)
+			  cozy channel add <채널 폴더> <릴리스 폴더>   (관리자) 받은 릴리스를 채널 폴더에 더하기
+			  cozy channel release <릴리스 폴더> <channel.yml>   (릴리스 워크플로) 릴리스 하나의 cozy-channel.json 만들기
 
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
@@ -70,7 +77,7 @@ public final class CozyCli {
 			                           COZY_REPOSITORY에는 경로 구분자(Windows ;, 그 밖 :)로 여러 저장소를 적고, 앞에서부터 찾는다
 			  --ui <jar나 폴더>        저장소에서 찾지 않고 이 cozy-ui 자원을 읽는다 (워크벤치가 쓴다)
 			  --json                   기계가 읽는 출력
-			  --dry-run                (add, link, enable, sync, set, migrate) 바꿀 파일만 보이고 쓰지 않는다
+			  --dry-run                (add, link, enable, sync, set, migrate, channel add) 바꿀 파일만 보이고 쓰지 않는다
 			  --force                  (sync agents) 앱에서 고친 AGENTS.md도 바꾼다
 
 			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
@@ -82,7 +89,7 @@ public final class CozyCli {
 	public static void main(String[] args) {
 		PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 		PrintStream err = new PrintStream(System.err, true, StandardCharsets.UTF_8);
-		System.exit(run(args, Path.of(""), System.getenv("COZY_REPOSITORY"), out, err));
+		System.exit(runWith(args, Path.of(""), System.getenv(), out, err));
 	}
 
 	/**
@@ -91,9 +98,25 @@ public final class CozyCli {
 	 * @return 종료 코드
 	 */
 	public static int run(String[] args, Path workDir, String repositoryEnv, PrintStream out, PrintStream err) {
+		Map<String, String> env = new HashMap<>(System.getenv());
+		if (repositoryEnv != null) {
+			env.put("COZY_REPOSITORY", repositoryEnv);
+		}
+		else {
+			env.remove("COZY_REPOSITORY");
+		}
+		return runWith(args, workDir, env, out, err);
+	}
+
+	/**
+	 * @param workDir 현재 폴더
+	 * @param env 환경 변수({@code COZY_REPOSITORY}, {@code COZY_CHANNEL}, {@code COZY_CHANNEL_TOKEN}, 설정 파일의 자리)
+	 * @return 종료 코드
+	 */
+	public static int runWith(String[] args, Path workDir, Map<String, String> env, PrintStream out, PrintStream err) {
 		List<String> rest = new ArrayList<>();
 		Path project = null;
-		List<Path> repository = repositories(repositoryEnv);
+		List<Path> repository = repositories(env.get("COZY_REPOSITORY"));
 		boolean json = false;
 		boolean dryRun = false;
 		Path ui = null;
@@ -155,6 +178,10 @@ public final class CozyCli {
 					RecipeRunner.migrate(rest.subList(1, rest.size()), project(project, workDir), now(), dryRun, json, out);
 					yield OK;
 				}
+				case "channel" -> {
+					ChannelCommands.run(rest.subList(1, rest.size()), env, windows(), now().toLocalDate(), dryRun, json, out);
+					yield OK;
+				}
 				case "help", "--help", "-h" -> {
 					out.print(USAGE);
 					yield OK;
@@ -194,6 +221,15 @@ public final class CozyCli {
 					+ "템플릿 없이는 " + what + "을 판단할 수 없습니다.");
 		}
 		return FrameworkJar.read(jar);
+	}
+
+	/** 사용자 설정 파일의 자리 */
+	static Path configFile(Map<String, String> env, boolean windows) {
+		return UserConfig.file(env, windows);
+	}
+
+	private static boolean windows() {
+		return System.getProperty("os.name", "").startsWith("Windows");
 	}
 
 	/** {@code COZY_REPOSITORY}의 저장소 목록. 없으면 {@code ~/.m2/repository} 하나다 */

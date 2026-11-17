@@ -4,7 +4,7 @@
 #   distribution/release/check-version.sh <ref 종류: tag|branch> <ref 이름>
 #
 # - 모든 cozy 모듈 POM이 cozy-parent의 cozy.version과 같은 버전을 쓴다
-# - 태그 빌드면 태그가 v{버전}이고, 버전이 SNAPSHOT이 아니다
+# - 태그 빌드면 태그가 v{버전}이고, 버전이 SNAPSHOT이 아니고, distribution/release/channel.yml의 version이 같다
 set -euo pipefail
 
 REF_TYPE="${1:-branch}"
@@ -33,6 +33,11 @@ if [ "$REF_TYPE" = "tag" ]; then
   case "$VERSION" in
     *-SNAPSHOT) echo "[cozy] SNAPSHOT 버전($VERSION)은 릴리스하지 않습니다" >&2; status=1 ;;
   esac
+  CHANNEL_VERSION="$(sed -n 's/^version: *\([^ #]*\).*/\1/p' distribution/release/channel.yml | head -1)"
+  if [ "$CHANNEL_VERSION" != "$VERSION" ]; then
+    echo "[cozy] distribution/release/channel.yml의 version($CHANNEL_VERSION)이 릴리스 판 $VERSION과 다릅니다. 이 릴리스의 summary, appSteps와 함께 고치세요" >&2
+    status=1
+  fi
 fi
 [ "$status" -eq 0 ] || exit 1
 echo "version=$VERSION"

@@ -94,6 +94,7 @@ mvn -o -Pdist package
   - JDK 없는 번들이면 PATH의 JDK 25를 쓴다. `bin\mvn.cmd`는 시스템의 `JAVA_HOME`을 따른다.
 - **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.1`으로 지정한다. 그 Maven의 `conf\settings.xml`을 읽어야 꼬리 저장소를 안다(User settings file을 바꾸지 않는다).
 - **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, 앱이 쓰는 판의 cozy-ui jar를 사용자 저장소에서 먼저, 없으면 설치 폴더의 `repository/`에서 찾는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
+- **`cozy channel`**: 개발 도구의 업데이트 채널(파일 서버, 웹 서버, GitLab, GitHub의 `cozy-channel.json`)을 정하고(`set`, `show`), 관리자가 받은 릴리스로 채널 폴더를 만든다(`add`). 어디서나 실행하고 네트워크를 쓰지 않는다. 형식은 `docs/conventions/channel.md`에 있다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:
   - `appId`: 영문 소문자·하이픈. 기본값은 artifactId다.

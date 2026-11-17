@@ -9,6 +9,7 @@
 | `cozy-offline-bundle-{버전}.zip` | JDK 없는 번들. 운영체제와 상관없다 |
 | `OpenJDK25U-jdk-sources_*.tar.gz` | Windows x64 번들에 담은 JDK의 소스 묶음(GPL-2.0 with Classpath Exception) |
 | `SHA256SUMS` | 위 네 파일의 SHA-256 |
+| `cozy-channel.json` | 이 릴리스 하나의 채널 색인([channel.md](channel.md)). `releases/latest/download/cozy-channel.json`이 GitHub 채널이 되고, 관리자는 받은 폴더를 `cozy channel add`로 사내 채널에 더한다 |
 
 ## 절차
 
@@ -22,7 +23,8 @@
 
    ```bash
    distribution/release/set-version.sh 1.0.0
-   git diff                      # POM, -DarchetypeVersion= 예시, 번들 README의 zip 이름
+   # distribution/release/channel.yml의 version, summary, appSteps를 이 릴리스에 맞게 고친다
+   git diff                      # POM, -DarchetypeVersion= 예시, 번들 README의 zip 이름, channel.yml
    mvn -o -Pe2e install          # 워크플로와 같은 검증. 결과를 보고 나서 커밋한다
    git commit -am "릴리스 1.0.0"
    ```
@@ -38,12 +40,12 @@
    ```
 
    워크플로가 다음을 한다.
-   - 버전 확인
+   - 버전 확인(`channel.yml`의 `version`도 본다)
    - `-Pe2e install`
    - 번들 만들기(JDK 없는 번들, Windows x64 번들, 검증용 Linux x64 번들)와 JDK 소스 묶음 받기
    - 오프라인 검증(JDK 없는 번들, Linux x64 번들은 시스템 JDK를 막고)
    - MSI 만들기와 검증(Windows 러너: 설치, 앱 생성·빌드·패키징, 제거, 컴퓨터별 설치 거부)
-   - 릴리스 초안 만들기
+   - 채널 색인 `cozy-channel.json` 만들기(`cozy channel release`)와 릴리스 초안 만들기
 
 5. **게시**: 초안의 "변경 내용"을 채우고 Windows 확인 결과를 적은 뒤 게시한다.
 6. **다음 개발 버전**:
@@ -95,7 +97,7 @@ mvn -o clean verify             # 옮기기 전의 클래스가 target/에 남�
 
 | 실행 | 하는 일 | 결과 |
 | --- | --- | --- |
-| 태그 `v*` push | `bundle`: 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬. `windows`: MSI 만들기·검증. `release`: 체크섬 확인 → 노트 → 초안 | 실행 결과 + **릴리스 초안** |
+| 태그 `v*` push | `bundle`: 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬. `windows`: MSI 만들기·검증. `release`: 체크섬 확인 → 채널 색인 → 노트 → 초안 | 실행 결과 + **릴리스 초안** |
 | 수동(`workflow_dispatch`) | 같은 빌드와 검증. SNAPSHOT 버전도 된다 | 실행 결과만 |
 
 - 액션은 커밋 SHA로 고정한다. 버전은 ADR-0017 표에 있다.
