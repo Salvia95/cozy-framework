@@ -187,6 +187,14 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-map dt code, .form-hint code { font-size: inherit; }
 .cozy-workbench-id { padding: 0; background: transparent; color: var(--tblr-secondary); font-size: var(--tblr-font-size-h5); overflow-wrap: anywhere; }
 .list-group-item.active .cozy-workbench-id { color: inherit; }
+/* 구조 트리의 "동작 N": 화면 안의 동작이나 htmx 속성이 붙은 요소의 수. 아이콘은 글자를 거들 뿐이다 */
+.cozy-workbench-behaviors { display: inline-flex; align-items: center; gap: .125rem; color: var(--tblr-secondary); font-size: var(--tblr-font-size-h5); white-space: nowrap; }
+.cozy-workbench-behaviors .icon { width: .875rem; height: .875rem; }
+/* 속성 표의 "화면 안의 동작": 요소마다 위에 선을 긋고, 붙은 것 한 줄의 오른쪽에 떼기 버튼 */
+.cozy-workbench-props .cozy-workbench-behavior-start th, .cozy-workbench-props .cozy-workbench-behavior-start td { border-top: 1px solid var(--tblr-border-color-dark, var(--tblr-border-color)); }
+.cozy-workbench-behavior-row { display: flex; align-items: flex-start; gap: .5rem; }
+.cozy-workbench-behavior-text { flex: 1 1 auto; min-width: 0; }
+.cozy-workbench-behavior-spec summary { cursor: pointer; }
 .cozy-workbench-canvas { position: relative; margin: 0 auto; }
 .cozy-workbench-box { position: absolute; pointer-events: none; border-radius: 2px; }
 .cozy-workbench-box-hover { outline: 1px dashed var(--tblr-primary); }

@@ -417,9 +417,9 @@
       }) : null;
     }
 
-    /** 고친 결과(변경 파일이나 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다 */
+    /** 고친 결과(매개변수나 화면 안의 동작의 변경 파일, 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다 */
     function revealResult() {
-      var result = refs().argResult;
+      var result = refs().argResult || refs().attachResult;
       if (result) {
         result.scrollIntoView({ block: 'start' });
         result.focus({ preventScroll: true });
@@ -569,6 +569,12 @@
 
       restoreScroll: function () {
         var scroll = inspectorScroll();
+        // 고친 결과(변경 파일, 적용 결과)가 있으면 지킨 위치가 아니라 그 결과를 보인다
+        if (refs().argResult || refs().attachResult) {
+          keptScroll = null;
+          revealResult();
+          return;
+        }
         if (keptScroll !== null && scroll) {
           scroll.scrollTop = keptScroll;
         }

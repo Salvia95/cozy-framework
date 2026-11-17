@@ -33,6 +33,7 @@
   DTO MemoSummary(long total, long pinned, String latestTitle)
   컨트롤러 MemoController
   컴포넌트 memoBodyCount
+  화면 안의 동작 memoBodyCount — 본문을 쓰는 동안 글자 수와 한도를 보인다 · 붙인 곳 memo/internal/fields:7, memo/internal/fields:9
   화면 memo/api/detail — src/main/resources/specs/memo-detail.yml: default, empty · 컴포넌트 cozyCopy(memo/api/detail:21)
   화면 memo/api/edit — src/main/resources/specs/memo-edit.yml: default, empty, invalid · 컴포넌트 memoBodyCount(memo/internal/fields:7)
   화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid · 컴포넌트 memoBodyCount(memo/internal/fields:7)

@@ -3,6 +3,7 @@
   워크벤치의 구조 트리. 마디마다 줄 하나(표시 이름, 식별자, 줄 번호)와 숨겨진 속성 표가 있고, 안의 마디는 접고 펼 수 있다.
   nodes(cozyNodes)는 자신을 다시 부른다. 줄의 data-cozy-*는 workbenchPicker가 읽는다.
   매개변수 가운데 문자열은 고칠 수 있다: POST /cozy/dev/workbench/arg가 cozy set arg로 변경 파일을 보이고 적용한다.
+  화면 안의 동작이나 htmx 속성이 붙은 요소가 있는 줄은 번개 아이콘과 "동작 N"을 붙이고, 속성 표에 그 요소들을 싣는다(workbench-behaviors).
   htmx는 그 결과로 오른쪽 칸, 구조, 알림, 검사 오류 수를 바꾼다. 이 폼은 선택할 때 오른쪽 칸으로 복제되고, workbenchPicker가 htmx에 알린다.
 */-->
 <html lang="ko">
@@ -18,6 +19,8 @@
           <span class="cozy-workbench-text">
             <button type="button" class="cozy-workbench-label" x-on:click.prevent="selectNode" th:text="${item.label}">목록 탐색</button>
             <code class="cozy-workbench-id" th:if="${!item.detail.isEmpty()}" th:text="${item.detail}">list-with-filter</code>
+            <span class="cozy-workbench-behaviors" th:if="${!item.behaviors.isEmpty()}" th:title="|동작 ${item.behaviors.size()}|"><svg
+                th:replace="~{cozy/icon/tabler :: icon('bolt')}"></svg><span class="cozy-workbench-behaviors-count" th:text="|동작 ${item.behaviors.size()}|">동작 2</span></span>
           </span>
           <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"
              th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line}">7</a>
@@ -64,6 +67,7 @@
                 </td>
               </tr>
             </th:block>
+            <th:block th:if="${!item.behaviors.isEmpty()}"><th:block th:replace="~{cozy/dev/workbench-behaviors :: behaviorRows(${item.behaviors}, ${item.line})}"></th:block></th:block>
           </tbody>
         </table>
       </div>

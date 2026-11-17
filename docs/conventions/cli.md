@@ -20,7 +20,7 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 ```text
 cozy <동작> [옵션]
 
-  describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
+  describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 화면 안의 동작, 공개 fragment, 남은 빈칸
   check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12
   recipes [--json]    구조를 만드는 명령 목록
   add <레시피> …       구조 만들기 [--dry-run] [--json]
@@ -58,10 +58,13 @@ cozy <동작> [옵션]
   읽기 MemoFinder
     Optional<MemoItem> find(long id)
   DTO MemoItem(long id, String title, String body, boolean pinned, Instant createdAt, Instant updatedAt)
+  화면 안의 동작 memoBodyCount — 본문을 쓰는 동안 글자 수와 한도를 보인다 · 붙인 곳 memo/internal/fields:7, memo/internal/fields:9
   화면 memo/api/list — src/main/resources/specs/memo-list.yml: default, empty, noResults, paged
   공개 fragment memo/summary: memoSummary(summary)
 
 이벤트 memo.MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java → activity(MemoCreatedListener)
+
+화면 이벤트 memo:archived 내는 곳: src/main/java/.../MemoController.java → 받는 곳: memoSelection.clear, memo/api/list:12(htmx)
 ```
 
 `--json`의 키는 다음과 같다.
@@ -69,8 +72,9 @@ cozy <동작> [옵션]
 | 키 | 값 |
 | --- | --- |
 | `app` | `basePackage`, `mainClass`, `cozyVersion`(cozy-parent 버전), `starters`(pom에 직접 적은 cozy 의존. 간접 의존은 빠진다) |
-| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트"), `fragments[]`(공개 fragment `id`, `signature`) |
+| `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `behaviors[]`(동작 명세의 컴포넌트. 아래 "화면 안의 동작"), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트". `bindings[]`: 화면의 요소마다 붙은 Alpine·htmx 속성, `outline[]`: 화면의 구조), `fragments[]`(공개 fragment `id`, `signature`) |
 | `events[]` | 앱의 이벤트(모듈 순서): `type`, `owner`(주인 모듈), `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]`(발행하는 파일), `listeners[]`(`module`, `type` 받는 리스너 클래스). 이벤트 계약 모듈과 옛 자리(`{주인}/spi/event/`)의 이벤트를 모두 싣는다 |
+| `uiEvents[]` | 화면 이벤트(`모듈:이름`, 이름 순서): `event`, `module`, `emittedBy[]`(내는 곳), `receivedBy[]`(받는 곳). 아래 "화면 이벤트" |
 | `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
@@ -86,6 +90,50 @@ cozy <동작> [옵션]
 - fragment 이름이 있으면 그 선언의 줄 범위만 보고, 없으면(`~{memo/internal/panel}`) 템플릿 전체를 본다. 그 안의 삽입도 다시 따라간다.
 - 같은 fragment를 두 번 넣어도 한 번만 싣고, 서로 넣는 fragment에서 멈춘다.
 - 프레임워크 fragment(`cozy/…`)는 따라가지 않는다. `form-page`의 `cozyDirtyForm`처럼 패턴이 붙이는 것은 [ui.md](ui.md)에 있다. 없는 템플릿도 따라가지 않는다(`cozy check`가 알린다). 주석 안은 보지 않는다.
+
+### 화면 안의 동작 (`modules[].behaviors[]`)
+
+모듈의 동작 명세(`behaviors/{모듈}.yml`, [ui.md](ui.md)의 동작 명세)를 컴포넌트마다 싣는다. 글 출력은 `화면 안의 동작 memoBodyCount — 목적 · 붙인 곳 memo/internal/fields:7, …`(붙인 곳이 없으면 `없음`)이다.
+
+| 키 | 값 |
+| --- | --- |
+| `name`, `purpose` | 등록 이름(`memoBodyCount`), 목적 한 문장 |
+| `state[]` | `name`, `type`(`bool`, `number`, `text`, `list`), `initial`(적은 처음 값. 없으면 `null`), `from`(읽는 `data-*`. 없으면 `null`) |
+| `computed[]` | `name`, `expression`(cozy가 정리한 식) |
+| `actions[]` | `name`, `steps[]`(단계마다 정리한 식) |
+| `emits[]` | `event`, `action`: 그 동작의 단계에 있는 `emit('모듈:이름', …)`(`when`, `within` 안도) |
+| `listens[]` | `event`, `action` |
+| `attached[]` | 붙인 곳: 모듈 템플릿(`templates/{모듈}/…`)에서 이 컴포넌트가 감싸는 요소 가운데 Alpine 속성이 있는 것. 모양은 아래 `bindings[]`의 항목과 같다(`screenLine` 없음) |
+
+- 명세를 읽을 수 없으면(형식 오류) 이 목록은 비고 이유가 `problems[]`에 들어간다. describe는 실패하지 않는다(`cozy check`의 C12가 알린다).
+
+### 화면의 요소에 붙은 것 (`screens[].bindings[]`)
+
+화면에 보이는 요소 가운데 Alpine 속성이나 htmx 속성이 붙은 것을, `components[]`와 같은 길(화면 템플릿과 넣은 앱 fragment)로 문서 순서대로 싣는다. 워크벤치의 구조 트리와 속성 표가 이것을 쓴다.
+
+| 키 | 값 |
+| --- | --- |
+| `template`, `line` | 요소를 쓴 템플릿과 여는 태그의 줄. `cozy attach --at`에 그대로 쓴다 |
+| `screenLine` | 화면 템플릿에서 이 요소가 보이는 줄. 화면 템플릿의 요소면 `line`과 같고, 넣은 템플릿의 요소면 화면 템플릿에서 넣은 줄이다 |
+| `element` | 알아볼 여는 태그: 이름, `id`, `class`(`<div class="form-hint">`) |
+| `component` | 감싸는 컴포넌트(같은 템플릿 안에서 가장 가까운 `x-data`의 이름). 없으면 `null` |
+| `root` | 이 요소에 `x-data`가 있는가 |
+| `alpine[]` | `attribute`, `value`(값이 없는 `x-cloak`이면 `null`): `x-*`, `@*`, `:*` 속성. `root`면 `data-*`, `th:data-*`도 |
+| `htmx[]` | `attribute`, `value`: `hx-*`, `th:hx-*`, `data-hx-*` 속성. 읽어서 보이기만 한다(붙이는 명령은 없다) |
+
+### 화면 이벤트 (`uiEvents[]`)
+
+이름의 앞이 앱 모듈인 화면 이벤트(`memo:archived`)마다 내는 곳과 받는 곳을 잇는다. 앱 이벤트(`events[]`, `CozyEvent`)와는 따로다.
+
+| `kind` | 어디서 읽는가 | 키 |
+| --- | --- | --- |
+| `behavior` | 내는 곳: 동작 명세의 `emit`. 받는 곳: `listens` | `module`, `component`, `action` |
+| `server` | 내는 곳: 글자 `"HX-Trigger"`가 있는 Java 파일의 글자들에 든 이벤트 이름(`"{\"memo:archived\": true}"`) | `file` |
+| `htmx` | 받는 곳: 템플릿의 `hx-trigger`(쉼표로 나눈 각 트리거의 첫 낱말) | `template`, `line` |
+| `alpine` | 받는 곳: 템플릿의 `x-on:모듈:이름`(수식어 앞까지) | `template`, `line` |
+
+- 글 출력은 `화면 이벤트 memo:archived 내는 곳: … → 받는 곳: memoSelection.clear, memo/api/list:12(htmx)`이고, 없으면 `없음`이다.
+- 서버 쪽은 글자를 찾을 뿐이다. 다른 뜻으로 쓴 같은 모양의 글자도 내는 곳으로 읽고, 글자를 이어 붙여 만든 이름은 찾지 못한다.
 
 ### 화면의 구조 (`--json`의 `screens[].outline`)
 

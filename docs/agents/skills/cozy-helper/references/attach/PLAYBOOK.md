@@ -20,6 +20,8 @@ cozy attach <컴포넌트> --at <템플릿>:<줄> [--data 이름=값 …] [--on 
 ```
 
 - `--at` takes the template path under `templates/` without `.html` and the line where the element starts, such as `memo/internal/fields:7`.
+- `cozy describe --json` lists what is already bound on each screen element in `screens[].bindings[]`, with the `template` and `line` to pass to `--at`.
+- `cozy describe --json` lists each module component in `modules[].behaviors[]`, with its state, computed values, actions, screen events, and the elements in `attached[]`.
 - The element without a surrounding element of the same component becomes the component's root and takes `x-data` and `--data`.
 - An element inside the root takes only `--on`, `--text`, `--show`, `--bind`, `--model`, and `--cloak`.
 - `--data` takes the names that the component reads; a value with `${…}` becomes `th:data-…`.

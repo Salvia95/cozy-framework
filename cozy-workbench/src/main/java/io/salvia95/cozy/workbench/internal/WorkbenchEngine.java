@@ -157,21 +157,68 @@ public class WorkbenchEngine {
 	}
 
 	/**
+	 * 요소의 속성 하나 ({@code bindings[].alpine[]}, {@code htmx[]}).
+	 *
+	 * @param value 값. 값이 없는 속성({@code x-cloak})이면 {@code null}
+	 */
+	public record Attribute(String name, String value) {
+	}
+
+	/**
+	 * Alpine이나 htmx 속성이 붙은 요소 하나 ({@code screens[].bindings[]}, {@code behaviors[].attached[]}).
+	 *
+	 * @param screenLine 화면 템플릿에서 이 요소가 보이는 줄 (넣은 템플릿의 요소면 넣은 줄). 화면 밖이면 0
+	 * @param element 사람이 알아볼 여는 태그 ({@code <p class="form-hint">})
+	 * @param component 감싸는 컴포넌트. 없으면 {@code null}
+	 * @param root 컴포넌트를 붙인 요소({@code x-data})인가
+	 */
+	public record Binding(String template, int line, int screenLine, String element, String component, boolean root,
+			List<Attribute> alpine, List<Attribute> htmx) {
+	}
+
+	/**
 	 * 화면 하나 ({@code cozy describe --json}의 {@code screens[]}).
 	 *
 	 * @param template 뷰 이름 ({@code memo/api/list})
 	 * @param spec 스펙 파일 (프로젝트 기준). 없으면 {@code null}
+	 * @param bindings 화면에 보이는 요소 가운데 Alpine이나 htmx 속성이 붙은 것 (문서 순서)
 	 */
-	public record Screen(String template, String spec, List<OutlineNode> outline) {
+	public record Screen(String template, String spec, List<OutlineNode> outline, List<Binding> bindings) {
+	}
+
+	/** 이름과 그 설명 한 줄 ({@code length}, {@code number@data-length}) */
+	public record Entry(String name, String text) {
+	}
+
+	/**
+	 * 모듈 동작 명세의 컴포넌트 하나 ({@code modules[].behaviors[]}).
+	 *
+	 * @param state 이름 → {@code 종류[=처음 값][@data-이름]}
+	 * @param actions 이름 → 단계를 {@code ; }로 이은 것
+	 * @param emits 화면 이벤트 → 내는 동작
+	 * @param listens 화면 이벤트 → 받아서 부르는 동작
+	 */
+	public record Behavior(String module, String name, String purpose, List<Entry> state, List<Entry> computed, List<Entry> actions,
+			List<Entry> emits, List<Entry> listens, List<Binding> attached) {
+	}
+
+	/** {@code cozy describe --json} 한 번에서 읽은 화면과 동작 */
+	public record Described(List<Screen> screens, List<Behavior> behaviors) {
 	}
 
 	/** {@code cozy describe --json}이 알려 주는 앱의 화면 */
 	public List<Screen> screens() {
+		return described().screens();
+	}
+
+	/** {@code cozy describe --json}의 화면과 모듈의 동작 명세 */
+	public Described described() {
 		Result result = run("describe", "--json");
 		if (result.code() != CozyCli.OK) {
 			throw new IllegalStateException("[cozy] cozy describe가 실패했습니다: " + result.err().strip());
 		}
 		List<Screen> screens = new ArrayList<>();
+		List<Behavior> behaviors = new ArrayList<>();
 		for (JsonNode module : JSON.readTree(result.out()).path("modules")) {
 			for (JsonNode screen : module.path("screens")) {
 				List<OutlineNode> outline = new ArrayList<>();
@@ -181,10 +228,45 @@ public class WorkbenchEngine {
 					outline.add(new OutlineNode(n.path("line").asInt(), n.path("endLine").asInt(), n.path("depth").asInt(), n.path("kind").asString(),
 							n.path("target").asString(""), text(n, "fragment"), text(n, "id"), List.copyOf(args)));
 				}
-				screens.add(new Screen(screen.path("template").asString(), text(screen, "spec"), List.copyOf(outline)));
+				screens.add(new Screen(screen.path("template").asString(), text(screen, "spec"), List.copyOf(outline),
+						bindings(screen.path("bindings"))));
+			}
+			for (JsonNode b : module.path("behaviors")) {
+				List<Entry> state = new ArrayList<>();
+				for (JsonNode s : b.path("state")) {
+					state.add(new Entry(s.path("name").asString(), s.path("type").asString()
+							+ ((text(s, "initial") != null) ? "=" + text(s, "initial") : "") + ((text(s, "from") != null) ? "@" + text(s, "from") : "")));
+				}
+				List<Entry> computed = new ArrayList<>();
+				b.path("computed").forEach((c) -> computed.add(new Entry(c.path("name").asString(), c.path("expression").asString())));
+				List<Entry> actions = new ArrayList<>();
+				b.path("actions").forEach((a) -> actions.add(new Entry(a.path("name").asString(), String.join("; ", strings(a.path("steps"))))));
+				List<Entry> emits = new ArrayList<>();
+				b.path("emits").forEach((e) -> emits.add(new Entry(e.path("event").asString(), e.path("action").asString())));
+				List<Entry> listens = new ArrayList<>();
+				b.path("listens").forEach((e) -> listens.add(new Entry(e.path("event").asString(), e.path("action").asString())));
+				behaviors.add(new Behavior(module.path("name").asString(), b.path("name").asString(), b.path("purpose").asString(),
+						List.copyOf(state), List.copyOf(computed), List.copyOf(actions), List.copyOf(emits), List.copyOf(listens),
+						bindings(b.path("attached"))));
 			}
 		}
-		return screens;
+		return new Described(List.copyOf(screens), List.copyOf(behaviors));
+	}
+
+	private static List<Binding> bindings(JsonNode array) {
+		List<Binding> bindings = new ArrayList<>();
+		for (JsonNode b : array) {
+			bindings.add(new Binding(b.path("template").asString(), b.path("line").asInt(), b.path("screenLine").asInt(0),
+					b.path("element").asString(""), text(b, "component"), b.path("root").asBoolean(), attributes(b.path("alpine")),
+					attributes(b.path("htmx"))));
+		}
+		return List.copyOf(bindings);
+	}
+
+	private static List<Attribute> attributes(JsonNode array) {
+		List<Attribute> attributes = new ArrayList<>();
+		array.forEach((a) -> attributes.add(new Attribute(a.path("attribute").asString(), text(a, "value"))));
+		return List.copyOf(attributes);
 	}
 
 	/**

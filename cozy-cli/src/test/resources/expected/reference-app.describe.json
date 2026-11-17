@@ -42,6 +42,7 @@
       ],
       "controllers": [],
       "components": [],
+      "behaviors": [],
       "screens": [],
       "fragments": [
         {
@@ -65,6 +66,7 @@
         "DashboardController"
       ],
       "components": [],
+      "behaviors": [],
       "screens": [
         {
           "template": "dashboard/api/index",
@@ -74,6 +76,7 @@
             "empty"
           ],
           "components": [],
+          "bindings": [],
           "outline": [
             {
               "line": 3,
@@ -219,6 +222,7 @@
       "listeners": [],
       "controllers": [],
       "components": [],
+      "behaviors": [],
       "screens": [],
       "fragments": []
     },
@@ -284,6 +288,96 @@
       "components": [
         "memoBodyCount"
       ],
+      "behaviors": [
+        {
+          "name": "memoBodyCount",
+          "purpose": "본문을 쓰는 동안 글자 수와 한도를 보인다",
+          "state": [
+            {
+              "name": "length",
+              "type": "number",
+              "initial": null,
+              "from": "data-length"
+            },
+            {
+              "name": "limit",
+              "type": "number",
+              "initial": null,
+              "from": "data-limit"
+            }
+          ],
+          "computed": [
+            {
+              "name": "over",
+              "expression": "and(gt(limit, 0), gt(length, limit))"
+            },
+            {
+              "name": "text",
+              "expression": "format('{length} / {limit}자', 'ko-KR')"
+            },
+            {
+              "name": "label",
+              "expression": "if(over, format('{text} · 한도를 넘었습니다'), text)"
+            }
+          ],
+          "actions": [
+            {
+              "name": "count",
+              "steps": [
+                "within('textarea', set(length, length(event.value)))"
+              ]
+            }
+          ],
+          "emits": [],
+          "listens": [],
+          "attached": [
+            {
+              "template": "memo/internal/fields",
+              "line": 7,
+              "element": "<div>",
+              "component": "memoBodyCount",
+              "root": true,
+              "alpine": [
+                {
+                  "attribute": "x-data",
+                  "value": "memoBodyCount"
+                },
+                {
+                  "attribute": "th:data-length",
+                  "value": "${bodyLength}"
+                },
+                {
+                  "attribute": "data-limit",
+                  "value": "5000"
+                },
+                {
+                  "attribute": "x-on:input",
+                  "value": "count"
+                }
+              ],
+              "htmx": []
+            },
+            {
+              "template": "memo/internal/fields",
+              "line": 9,
+              "element": "<div class=\"form-hint mt-n2 mb-3\">",
+              "component": "memoBodyCount",
+              "root": false,
+              "alpine": [
+                {
+                  "attribute": "x-text",
+                  "value": "label"
+                },
+                {
+                  "attribute": "x-cloak",
+                  "value": null
+                }
+              ],
+              "htmx": []
+            }
+          ]
+        }
+      ],
       "screens": [
         {
           "template": "memo/api/detail",
@@ -297,6 +391,35 @@
               "name": "cozyCopy",
               "template": "memo/api/detail",
               "line": 21
+            }
+          ],
+          "bindings": [
+            {
+              "template": "memo/api/detail",
+              "line": 21,
+              "element": "<button class=\"btn btn-sm\">",
+              "component": "cozyCopy",
+              "root": true,
+              "alpine": [
+                {
+                  "attribute": "x-data",
+                  "value": "cozyCopy"
+                },
+                {
+                  "attribute": "th:data-copy-text",
+                  "value": "${#strings.listJoin(memo.bodyLines, '&#10;')}"
+                },
+                {
+                  "attribute": "x-on:click",
+                  "value": "copy"
+                },
+                {
+                  "attribute": "x-cloak",
+                  "value": null
+                }
+              ],
+              "htmx": [],
+              "screenLine": 21
             }
           ],
           "outline": [
@@ -418,6 +541,77 @@
               "line": 7
             }
           ],
+          "bindings": [
+            {
+              "template": "memo/api/edit",
+              "line": 8,
+              "element": "<form id=\"memoForm\" class=\"card\">",
+              "component": null,
+              "root": false,
+              "alpine": [],
+              "htmx": [
+                {
+                  "attribute": "th:hx-post",
+                  "value": "@{/memo/{id}(id=${memo.id})}"
+                },
+                {
+                  "attribute": "hx-target",
+                  "value": "this"
+                },
+                {
+                  "attribute": "hx-swap",
+                  "value": "outerHTML"
+                }
+              ],
+              "screenLine": 8
+            },
+            {
+              "template": "memo/internal/fields",
+              "line": 7,
+              "element": "<div>",
+              "component": "memoBodyCount",
+              "root": true,
+              "alpine": [
+                {
+                  "attribute": "x-data",
+                  "value": "memoBodyCount"
+                },
+                {
+                  "attribute": "th:data-length",
+                  "value": "${bodyLength}"
+                },
+                {
+                  "attribute": "data-limit",
+                  "value": "5000"
+                },
+                {
+                  "attribute": "x-on:input",
+                  "value": "count"
+                }
+              ],
+              "htmx": [],
+              "screenLine": 10
+            },
+            {
+              "template": "memo/internal/fields",
+              "line": 9,
+              "element": "<div class=\"form-hint mt-n2 mb-3\">",
+              "component": "memoBodyCount",
+              "root": false,
+              "alpine": [
+                {
+                  "attribute": "x-text",
+                  "value": "label"
+                },
+                {
+                  "attribute": "x-cloak",
+                  "value": null
+                }
+              ],
+              "htmx": [],
+              "screenLine": 10
+            }
+          ],
           "outline": [
             {
               "line": 4,
@@ -510,6 +704,77 @@
               "line": 7
             }
           ],
+          "bindings": [
+            {
+              "template": "memo/api/form",
+              "line": 8,
+              "element": "<form id=\"memoForm\" class=\"card\">",
+              "component": null,
+              "root": false,
+              "alpine": [],
+              "htmx": [
+                {
+                  "attribute": "th:hx-post",
+                  "value": "@{/memo}"
+                },
+                {
+                  "attribute": "hx-target",
+                  "value": "this"
+                },
+                {
+                  "attribute": "hx-swap",
+                  "value": "outerHTML"
+                }
+              ],
+              "screenLine": 8
+            },
+            {
+              "template": "memo/internal/fields",
+              "line": 7,
+              "element": "<div>",
+              "component": "memoBodyCount",
+              "root": true,
+              "alpine": [
+                {
+                  "attribute": "x-data",
+                  "value": "memoBodyCount"
+                },
+                {
+                  "attribute": "th:data-length",
+                  "value": "${bodyLength}"
+                },
+                {
+                  "attribute": "data-limit",
+                  "value": "5000"
+                },
+                {
+                  "attribute": "x-on:input",
+                  "value": "count"
+                }
+              ],
+              "htmx": [],
+              "screenLine": 10
+            },
+            {
+              "template": "memo/internal/fields",
+              "line": 9,
+              "element": "<div class=\"form-hint mt-n2 mb-3\">",
+              "component": "memoBodyCount",
+              "root": false,
+              "alpine": [
+                {
+                  "attribute": "x-text",
+                  "value": "label"
+                },
+                {
+                  "attribute": "x-cloak",
+                  "value": null
+                }
+              ],
+              "htmx": [],
+              "screenLine": 10
+            }
+          ],
           "outline": [
             {
               "line": 4,
@@ -597,6 +862,39 @@
             "paged"
           ],
           "components": [],
+          "bindings": [
+            {
+              "template": "memo/api/list",
+              "line": 10,
+              "element": "<form id=\"filter\" class=\"row g-2 align-items-center\">",
+              "component": null,
+              "root": false,
+              "alpine": [],
+              "htmx": [
+                {
+                  "attribute": "th:hx-get",
+                  "value": "@{/memo}"
+                },
+                {
+                  "attribute": "hx-target",
+                  "value": "#result"
+                },
+                {
+                  "attribute": "hx-swap",
+                  "value": "outerHTML"
+                },
+                {
+                  "attribute": "hx-push-url",
+                  "value": "true"
+                },
+                {
+                  "attribute": "hx-trigger",
+                  "value": "submit, input delay:300ms, change"
+                }
+              ],
+              "screenLine": 10
+            }
+          ],
           "outline": [
             {
               "line": 4,
@@ -830,6 +1128,7 @@
       ]
     }
   ],
+  "uiEvents": [],
   "slots": [],
   "problems": []
 }

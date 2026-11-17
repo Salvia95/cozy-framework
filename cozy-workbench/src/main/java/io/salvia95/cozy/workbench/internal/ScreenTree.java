@@ -46,9 +46,16 @@ final class ScreenTree {
 	 * @param purpose 매니페스트의 용도 한 줄. 없으면 빈 문자열
 	 * @param args 삽입에 넘긴 인자 (선언한 파라미터 순서)
 	 * @param fragment 삽입한 fragment 이름 ({@code badge}). 선언, 영역, 템플릿 전체를 넣으면 빈 문자열
+	 * @param behaviors 이 줄에 보이는 요소 가운데 화면 안의 동작이나 htmx 속성이 붙은 것 ({@link BehaviorViews#attach})
 	 */
 	record Item(int depth, String kind, String label, String detail, String kindLabel, String code, String location, int line,
-			int endLine, String target, String id, String purpose, List<Arg> args, String fragment) {
+			int endLine, String target, String id, String purpose, List<Arg> args, String fragment,
+			List<BehaviorViews.Element> behaviors) {
+
+		Item withBehaviors(List<BehaviorViews.Element> elements) {
+			return new Item(this.depth, this.kind, this.label, this.detail, this.kindLabel, this.code, this.location, this.line,
+					this.endLine, this.target, this.id, this.purpose, this.args, this.fragment, elements);
+		}
 
 		/** 고칠 수 있는 인자가 있는가 */
 		public boolean editable() {
@@ -199,7 +206,7 @@ final class ScreenTree {
 		boolean insertion = !node.kind().equals("slot") && !node.kind().equals("fragment");
 		return new Item(depth, node.kind(), label, detail, kindLabel, code, location, node.line(), node.endLine(), target,
 				(entry != null) ? entry.id() : "", (entry != null) ? entry.purpose() : "", insertion ? args(node, entry) : List.of(),
-				(insertion && node.fragment() != null) ? node.fragment() : "");
+				(insertion && node.fragment() != null) ? node.fragment() : "", List.of());
 	}
 
 	private static String target(OutlineNode node) {

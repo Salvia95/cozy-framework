@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!--/*
+  속성 표의 "화면 안의 동작" 구획. 요소마다 위치, 컴포넌트(누르면 명세), 이벤트와 묶인 값, htmx 요청을 보인다.
+  앱 템플릿의 요소는 여기서 붙이고 뗀다: POST /cozy/dev/workbench/attach가 cozy attach로 변경 파일을 보이고 적용한다.
+  구조 트리의 표는 선택할 때 오른쪽 칸으로 복제되므로 id를 두지 않는다. 폼은 workbenchPicker가 htmx에 알린다.
+  cozyElements는 BehaviorViews.Element 목록, cozyNode는 돌아가서 다시 고를 구조의 줄(없으면 null)이다.
+*/-->
+<html lang="ko">
+<body>
+<table>
+<tbody>
+<th:block th:fragment="behaviorRows(cozyElements, cozyNode)">
+  <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup" th:text="|화면 안의 동작 ${cozyElements.size()}|">화면 안의 동작 2</th></tr>
+  <th:block th:each="el : ${cozyElements}" th:with="b=${el.binding}">
+    <tr class="cozy-workbench-behavior-start">
+      <th scope="row">요소</th>
+      <td><code th:text="${b.element}">&lt;div class="form-hint"&gt;</code>
+        <span class="d-block text-secondary"><code th:text="${el.location()}">templates/memo/internal/fields.html:9</code></span></td>
+    </tr>
+    <tr th:if="${b.component != null}">
+      <th scope="row">컴포넌트</th>
+      <td>
+        <details class="cozy-workbench-behavior-spec" th:if="${el.component != null}">
+          <summary><code th:text="${b.component}">memoBodyCount</code>
+            <span class="text-secondary small" th:text="${b.root} ? '· 붙인 자리' : '· 안쪽 요소'">· 붙인 자리</span></summary>
+          <p class="mt-1 mb-1" th:text="${el.component.purpose}">본문을 쓰는 동안 글자 수와 한도를 보인다</p>
+          <th:block th:each="section : ${el.component.sections}">
+            <th:block th:if="${!section.entries.isEmpty()}">
+              <span class="d-block text-secondary small mt-1" th:text="${section.title}">상태</span>
+              <span class="d-block" th:each="entry : ${section.entries}"><code th:text="${entry.name}">length</code>
+                <span class="text-secondary">·</span> <code th:text="${entry.text}">number@data-length</code></span>
+            </th:block>
+          </th:block>
+        </details>
+        <th:block th:if="${el.component == null}">
+          <code th:text="${b.component}">workbenchPicker</code> <span class="text-secondary small">명세 없음</span>
+        </th:block>
+      </td>
+    </tr>
+    <tr th:each="row : ${el.rows}">
+      <th scope="row" th:text="${row.label}">이벤트</th>
+      <td>
+        <div class="cozy-workbench-behavior-row">
+          <span class="cozy-workbench-behavior-text"><code th:text="${row.text}">input → count</code></span>
+          <form method="post" th:if="${el.editable and row.detachable()}" th:action="@{/cozy/dev/workbench/attach}"
+                th:hx-post="@{/cozy/dev/workbench/attach}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">
+            <input type="hidden" name="spec" th:value="${screen.screen}">
+            <input type="hidden" name="state" th:value="${state}">
+            <input type="hidden" name="w" th:value="${w}">
+            <input type="hidden" name="node" th:if="${cozyNode != null}" th:value="${cozyNode}">
+            <input type="hidden" name="component" th:value="${b.component}">
+            <input type="hidden" name="template" th:value="${b.template}">
+            <input type="hidden" name="line" th:value="${b.line}">
+            <input type="hidden" name="option" th:value="${row.option}">
+            <input type="hidden" name="key" th:value="${row.key}">
+            <input type="hidden" name="value" th:value="${row.value}">
+            <input type="hidden" name="detach" value="true">
+            <button type="submit" class="btn btn-sm" name="step" value="plan" th:aria-label="|${row.label} ${row.text} 떼기|">떼기</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    <tr th:each="row : ${el.htmx}">
+      <th scope="row" th:text="${row.label}">htmx</th>
+      <td><code th:text="${row.text}">hx-get = /memo</code></td>
+    </tr>
+    <tr th:if="${el.editable}">
+      <th scope="row">붙이기</th>
+      <td>
+        <form class="cozy-workbench-arg-form" method="post" th:action="@{/cozy/dev/workbench/attach}"
+              th:hx-post="@{/cozy/dev/workbench/attach}" hx-headers='{"X-Cozy-Redirect": "follow"}' hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">
+          <input type="hidden" name="spec" th:value="${screen.screen}">
+          <input type="hidden" name="state" th:value="${state}">
+          <input type="hidden" name="w" th:value="${w}">
+          <input type="hidden" name="node" th:if="${cozyNode != null}" th:value="${cozyNode}">
+          <input type="hidden" name="component" th:value="${b.component}">
+          <input type="hidden" name="template" th:value="${b.template}">
+          <input type="hidden" name="line" th:value="${b.line}">
+          <select class="form-select form-select-sm" name="option" th:aria-label="|${b.component} 붙일 것|">
+            <option value="on">이벤트</option>
+            <option value="text">글자</option>
+            <option value="show">보임</option>
+            <option value="bind">속성</option>
+            <option value="model">입력값</option>
+            <option value="cloak">준비 전 숨김</option>
+            <option value="data" th:if="${b.root}">넘기는 값</option>
+          </select>
+          <input class="form-control form-control-sm mt-1" type="text" autocomplete="off" name="key" placeholder="이벤트나 속성 이름 (예: input)"
+                 th:aria-label="|${b.component} 이벤트나 속성 이름|">
+          <input class="form-control form-control-sm mt-1" type="text" autocomplete="off" name="value" placeholder="이름 (예: count)"
+                 th:aria-label="|${b.component} 이름|">
+          <span class="d-block text-secondary small mt-1" th:text="${el.component.hint()}">이벤트가 부를 이름: count · 묶을 이름: length</span>
+          <button type="submit" class="btn btn-sm mt-1" name="step" value="plan">변경 파일 확인</button>
+        </form>
+      </td>
+    </tr>
+  </th:block>
+</th:block>
+</tbody>
+</table>
+</body>
+</html>

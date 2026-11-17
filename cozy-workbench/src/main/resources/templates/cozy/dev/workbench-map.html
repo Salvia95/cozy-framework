@@ -3,6 +3,7 @@
   워크벤치의 모듈 (/cozy/dev/workbench/map). cozy describe의 결과를 보인다.
   왼쪽은 모듈 의존성 다이어그램(view=diagram)이나 의존성 표(view=table), 오른쪽은 선택한 모듈(module)의 속성이다.
   다이어그램의 좌표는 ModuleGraph가 계산한다. 실선은 의존, 점선은 이벤트(발행 → 수신)다.
+  모듈의 속성에는 동작 명세의 컴포넌트(목적, 붙인 화면)와 그 모듈이 내거나 받는 화면 이벤트(내는 곳 → 받는 곳)가 있다.
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 모듈', ~{::main})}">
 <body>
@@ -206,6 +207,37 @@
                         <span th:text="${screen.template}">memo/api/list</span> <span class="text-secondary small">화면 명세 없음</span>
                       </span>
                     </th:block>
+                  </td>
+                </tr>
+              </th:block>
+
+              <th:block th:if="${!m.behaviors.isEmpty() or !uiEvents.isEmpty()}">
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면 안의 동작</th></tr>
+                <tr th:if="${m.behaviors.isEmpty()}"><td colspan="2" class="text-secondary">동작 명세가 없습니다.</td></tr>
+                <tr th:each="behavior : ${m.behaviors}" th:with="placed=${behaviorScreens.get(behavior.name)}">
+                  <th scope="row">컴포넌트</th>
+                  <td><code class="d-block fw-medium" th:text="${behavior.name}">memoBodyCount</code>
+                    <span class="d-block" th:text="${behavior.purpose}">본문을 쓰는 동안 글자 수와 한도를 보인다</span>
+                    <span class="d-block text-secondary small mt-1"
+                          th:text="|붙인 화면 ${placed == null ? 0 : placed.size()}개 · 붙인 요소 ${behavior.attached.size()}개|">붙인 화면 2개 · 붙인 요소 2개</span>
+                    <th:block th:if="${placed != null}" th:each="template : ${placed}">
+                      <a class="d-block" th:if="${screenNames.containsKey(template)}" th:text="${template}"
+                         th:href="@{/cozy/dev/workbench(spec=${screenNames.get(template)})}">memo/api/form</a>
+                      <span class="d-block" th:unless="${screenNames.containsKey(template)}" th:text="${template}">memo/api/form</span>
+                    </th:block>
+                  </td>
+                </tr>
+                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면 이벤트</th></tr>
+                <tr th:if="${uiEvents.isEmpty()}"><td colspan="2" class="text-secondary">화면 이벤트가 없습니다.</td></tr>
+                <tr th:each="event : ${uiEvents}">
+                  <th scope="row"><code th:text="${event.event}">memo:archived</code></th>
+                  <td>
+                    <span class="d-block text-secondary small">내는 곳</span>
+                    <span class="d-block text-secondary small" th:if="${event.emittedBy.isEmpty()}">없음</span>
+                    <code class="d-block" th:each="where : ${event.emittedBy}" th:text="${where}">memoSelection.pick</code>
+                    <span class="d-block text-secondary small mt-1">받는 곳</span>
+                    <span class="d-block text-secondary small" th:if="${event.receivedBy.isEmpty()}">없음</span>
+                    <code class="d-block" th:each="where : ${event.receivedBy}" th:text="${where}">memo/api/list:12 (htmx)</code>
                   </td>
                 </tr>
               </th:block>

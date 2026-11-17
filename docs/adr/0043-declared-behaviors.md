@@ -192,3 +192,25 @@ cozy attach cozyCopy --at memo/api/detail:12 --data "copy-text=${#strings.listJo
   - `FrameworkBehaviorsTest` 5개: 명세와 `cozy.js`의 등록, `cozy:component` 줄, 메서드 정의, `ui.md` 표가 같음, 형식.
   - `TemplateRulesTest`에 R16 이름 3개(감싸는 컴포넌트의 이름, `x-for`와 객체 키와 `$event`, 같은 템플릿에 없는 `x-data`, 줄이 없는 컴포넌트), `BehaviorRulesTest`에 이전 판의 JS 1개.
   - 레시피 픽스처 `behavior`: 손으로는 마크업(글자 수를 보일 칸)만 두고 `cozy attach`로 붙인다. 없는 이름과 다른 모듈의 컴포넌트는 거절하고, 다시 실행하면 바뀐 것 없음.
+
+## M48 (2026-11-18, 사용자 지시 "다음으로 넘어가줘")
+
+- 시작할 때 최신 GA: 전날 확인한 그대로다. 새 의존성은 없다(템플릿은 M47의 `TemplateTags`로, 프레임워크 명세는 cozy-cli의 SnakeYAML로 읽는다).
+- 만든 것:
+  - `cozy describe --json`의 `modules[].behaviors[]`(상태, 계산, 동작, 내고 받는 화면 이벤트, 붙인 곳), `screens[].bindings[]`(요소마다 Alpine·htmx 속성, 화면에서 보이는 줄), `uiEvents[]`(화면 이벤트마다 내는 곳과 받는 곳). 글 출력에 `화면 안의 동작 …`, `화면 이벤트 …` 줄. 형식은 `docs/conventions/cli.md`의 describe에 있다.
+  - 워크벤치: 구조 트리의 `동작 N`, 속성 표의 "화면 안의 동작" 구획(요소, 펼치면 명세가 보이는 컴포넌트, 붙은 것 한 줄씩, htmx 요청), 떼기와 붙이기 폼(`POST /cozy/dev/workbench/attach` → `cozy attach`, 변경 파일 확인 → 적용), 모듈 화면의 "화면 안의 동작"과 "화면 이벤트". 형식은 `docs/conventions/workbench.md`에 있다.
+- 계획과 달라진 것:
+  - **트리 표시의 자리**: §4는 "이름 앞"이었다. 이름 앞에 두면 같은 깊이의 이름이 줄마다 다른 자리에서 시작해 훑어 읽기 어렵다. 식별자 뒤에 둔다.
+  - **센 것**: 붙인 속성이 아니라 요소의 수다(`동작 2`는 요소 둘). htmx 속성만 있는 요소도 센다. "이 요소에 무엇이 걸려 있는지"를 한 곳에서 보이려는 것이라서다.
+  - **어느 줄에 붙는가**: 넣은 fragment의 요소는 화면 템플릿에서 넣은 줄(`screenLine`)의 가장 안쪽 마디에 붙는다. 어느 마디에도 담기지 않는 요소가 있어, 아무것도 고르지 않았을 때의 화면 속성에 모든 요소를 싣는다.
+  - **프레임워크 명세를 읽는 곳**: describe는 cozy-ui jar 없이 돈다. 그래서 `cozy…` 컴포넌트의 명세는 describe에 싣지 않고, 워크벤치가 실행 중인 cozy-ui의 `cozy/behaviors.yml`을 읽는다.
+  - **서버의 `HX-Trigger`**: 글자 `"HX-Trigger"`가 있는 Java 파일의 글자들에서 `모듈:이름`을 찾는다. 이어 붙여 만든 이름은 찾지 못한다. C13(M49)이 이 목록을 쓰므로, 찾지 못하는 모양은 그때 실패로 닫을지 정한다.
+  - **받는 곳**: `hx-trigger`와 함께 템플릿의 `x-on:모듈:이름`도 읽는다(`alpine`).
+  - **붙이기 폼의 범위**: 이미 컴포넌트가 감싸는 요소에서 이벤트와 값을 더하고 떼는 데까지다. 새 요소에 컴포넌트를 처음 붙이는 일(`x-data`와 `--data`)은 터미널의 `cozy attach`로 한다. 미리보기에서 고른 아무 요소나 받으려면 화면 줄에서 템플릿 줄을 거꾸로 찾아야 하는데, 넣은 fragment 안의 요소는 화면 줄만으로 정할 수 없다.
+  - **이름 칸**: 선택 칸이 아니라 글자 칸과 쓸 수 있는 이름의 안내다. 프레임워크 메서드는 `toggle('filter')`처럼 인자를 함께 적기 때문이다. 틀린 이름은 명령이 거절한다.
+  - **명세를 읽을 수 없을 때**: describe는 실패하지 않고 그 모듈의 `behaviors[]`를 비우고 이유를 `problems[]`에 싣는다. 실패로 닫는 일은 `cozy check`(C12)가 한다.
+  - `screens[].components[]`는 `bindings[]`와 같은 길에서 모은다(정규식 대신 여는 태그를 읽는다). 결과는 그대로다(`DescribeComponentsTest`).
+- 확인:
+  - `DescribeBehaviorsTest` 5개: 명세와 붙인 곳(`when` 안의 `emit`), 넣은 fragment의 요소와 화면 줄, htmx만 있는 요소, 붙인 자리의 `data-*`, 프레임워크 컴포넌트, 서버의 `HX-Trigger`·`listens`·`hx-trigger`로 이은 화면 이벤트, 글 출력, 읽을 수 없는 명세는 `problems[]`.
+  - reference-app의 describe 기대 파일(글과 JSON)을 다시 만들었다.
+  - `WorkbenchBehaviorTest` 6개(reference-app): 트리의 `동작 2`와 속성 표(요소, 명세, 이벤트, 묶인 값, 넘기는 값, htmx), 프레임워크 명세, 붙이기 변경 파일 → 적용 → 떼면 처음과 같음, 없는 이름은 거절하고 파일은 그대로, CSRF·Origin·`step`·`option`·없는 화면, 모듈 화면의 목록.

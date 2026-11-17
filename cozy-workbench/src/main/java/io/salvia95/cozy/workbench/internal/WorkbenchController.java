@@ -64,6 +64,9 @@ public class WorkbenchController {
 
 	private final WorkbenchEngine engine;
 
+	/** cozy-ui의 프레임워크 컴포넌트 명세 (실행 중에는 바뀌지 않는다) */
+	private final io.salvia95.cozy.cli.internal.behavior.FrameworkBehaviors framework = BehaviorViews.framework();
+
 	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
 		this.manifest = manifest;
 		this.screenSpecs = specs;
@@ -156,17 +159,21 @@ public class WorkbenchController {
 
 		String templateFile = "templates/" + screen.template() + ".html";
 		List<ScreenTree.Item> tree = List.of();
+		List<BehaviorViews.Element> elements = List.of();
 		String specFile = null;
 		if (this.engine.available()) {
-			Optional<WorkbenchEngine.Screen> described = this.engine.screens()
+			WorkbenchEngine.Described all = this.engine.described();
+			Optional<WorkbenchEngine.Screen> described = all.screens()
 				.stream()
 				.filter((s) -> s.template().equals(screen.template()))
 				.findFirst();
 			if (described.isPresent()) {
-				tree = ScreenTree.of(described.get().outline(), this.manifest, templateFile);
+				elements = BehaviorViews.elements(described.get().bindings(), BehaviorViews.components(all.behaviors(), this.framework));
+				tree = BehaviorViews.attach(ScreenTree.of(described.get().outline(), this.manifest, templateFile), elements);
 				specFile = described.get().spec();
 			}
 		}
+		model.addAttribute("screenBehaviors", elements);
 		model.addAttribute("tree", tree);
 		model.addAttribute("nodes", ScreenTree.nest(tree));
 		model.addAttribute("screenModule", module(screen));
@@ -667,6 +674,77 @@ public class WorkbenchController {
 			.toUriString();
 	}
 
+	// ── 화면 안의 동작: 속성 패널에서 이벤트와 묶인 값을 붙이고 뗀다 (cozy attach) ─────────
+
+	/**
+	 * 속성 패널에서 붙이거나 뗀 것 하나의 변경 파일이나 적용 결과. 화면 보기가 오른쪽 칸 위에 보인다. 적용 폼은 같은 값을 다시 보낸다.
+	 *
+	 * @param name 사람에게 보일 이름 ({@code memoBodyCount · 보임 over})
+	 * @param command 터미널에 붙여 넣을 수 있는 cozy 명령
+	 * @param node 돌아가서 다시 고를 구조의 줄. 없으면 {@code null}
+	 */
+	public record AttachChange(String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome, Integer node,
+			String component, String template, int line, String option, String key, String value, boolean detach) {
+	}
+
+	private static final Map<String, String> ATTACH_LABELS = Map.of("on", "이벤트", "text", "글자", "show", "보임", "bind", "속성", "model",
+			"입력값", "cloak", "준비 전 숨김", "data", "넘기는 값");
+
+	/** 속성 패널의 붙이기·떼기를 {@code cozy attach}의 인자로 */
+	static List<String> attachArgs(String component, String template, int line, String option, String key, String value, boolean detach) {
+		List<String> args = new ArrayList<>(List.of("attach", component, "--at", template + ":" + line));
+		switch (option) {
+			case "on" -> args.addAll(List.of("--on", key + ":" + value));
+			case "bind" -> args.addAll(List.of("--bind", key + ":" + value));
+			case "data" -> args.addAll(List.of("--data", key + "=" + value));
+			case "cloak" -> args.add("--cloak");
+			default -> args.addAll(List.of("--" + option, value));
+		}
+		if (detach) {
+			args.add("--detach");
+		}
+		return args;
+	}
+
+	/**
+	 * 템플릿 요소 하나에 화면 안의 동작을 붙이거나 뗀다. 파일은 cozy 명령이 쓴다({@code cozy attach}). 변경 파일을 확인하거나
+	 * ({@code step=plan}) 적용하고({@code step=apply}), 같은 화면(구조의 줄 {@code node})으로 돌아간다.
+	 */
+	@PostMapping("/attach")
+	String attach(@RequestParam String spec, @RequestParam String state, @RequestParam(defaultValue = "full") String w,
+			@RequestParam(required = false) Integer node, @RequestParam String component, @RequestParam String template,
+			@RequestParam int line, @RequestParam String option, @RequestParam(defaultValue = "") String key,
+			@RequestParam(defaultValue = "") String value, @RequestParam(defaultValue = "false") boolean detach,
+			@RequestParam String step, HttpServletRequest request, RedirectAttributes flash) {
+		if (!STEPS.contains(step)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		if (!BehaviorViews.OPTIONS.contains(option)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] option은 " + BehaviorViews.OPTIONS + " 가운데 하나입니다: " + option);
+		}
+		requireSameOrigin(request);
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 템플릿을 고칠 수 있습니다");
+		}
+		if (this.screenSpecs.all().stream().noneMatch((s) -> s.screen().equals(spec))) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec);
+		}
+		List<String> args = attachArgs(component, template, line, option, key.strip(), value.strip(), detach);
+		boolean dryRun = step.equals("plan");
+		WorkbenchEngine.Outcome outcome = this.engine.execute(args, dryRun);
+		String what = ATTACH_LABELS.get(option) + (key.isBlank() ? "" : " " + key.strip()) + (value.isBlank() ? "" : " " + value.strip());
+		flash.addFlashAttribute("attachChange", new AttachChange(component + " · " + what + (detach ? " 떼기" : ""), commandLine(args), dryRun,
+				outcome, node, component, template, line, option, key.strip(), value.strip(), detach));
+		org.springframework.web.util.UriComponentsBuilder back = org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
+			.queryParam("spec", spec)
+			.queryParam("state", state)
+			.queryParam("w", WIDTHS.contains(w) ? w : "full");
+		if (node != null) {
+			back.queryParam("node", node);
+		}
+		return "redirect:" + back.build().encode().toUriString();
+	}
+
 	// ── 만들기: 폼 → cozy 명령 → 계획 → 적용 ───────────────────────────────
 
 	/** 계획과 적용 */
@@ -870,6 +948,41 @@ public class WorkbenchController {
 		}
 		model.addAttribute("receivers", receivers);
 		model.addAttribute("listens", listens);
+		// 화면 안의 동작: 컴포넌트 → 붙인 화면, 그리고 이 모듈이 내거나 받는 화면 이벤트
+		Map<String, java.util.Set<String>> behaviorScreens = new LinkedHashMap<>();
+		for (Map<String, Object> m : modules) {
+			if (m.get("screens") instanceof List<?> list) {
+				for (Object s : list) {
+					Map<?, ?> screen = (Map<?, ?>) s;
+					if (screen.get("bindings") instanceof List<?> bindings) {
+						for (Object b : bindings) {
+							Object name = ((Map<?, ?>) b).get("component");
+							if (name != null) {
+								behaviorScreens.computeIfAbsent(String.valueOf(name), (k) -> new java.util.LinkedHashSet<>())
+									.add(String.valueOf(screen.get("template")));
+							}
+						}
+					}
+				}
+			}
+		}
+		model.addAttribute("behaviorScreens", behaviorScreens);
+		List<UiEventRow> uiEvents = new ArrayList<>();
+		if (selected != null && map.get("uiEvents") instanceof List<?> events) {
+			for (Object item : events) {
+				Map<?, ?> event = (Map<?, ?>) item;
+				List<?> emitted = (event.get("emittedBy") instanceof List<?> l) ? l : List.of();
+				List<?> received = (event.get("receivedBy") instanceof List<?> l) ? l : List.of();
+				boolean involved = module.equals(event.get("module")) || java.util.stream.Stream.concat(emitted.stream(), received.stream())
+					.anyMatch((w) -> module.equals(((Map<?, ?>) w).get("module")) || String.valueOf(((Map<?, ?>) w).get("template")).startsWith(module + "/")
+							|| String.valueOf(((Map<?, ?>) w).get("file")).contains("/" + module + "/"));
+				if (involved) {
+					uiEvents.add(new UiEventRow(String.valueOf(event.get("event")), emitted.stream().map((w) -> where((Map<?, ?>) w)).toList(),
+							received.stream().map((w) -> where((Map<?, ?>) w)).toList()));
+				}
+			}
+		}
+		model.addAttribute("uiEvents", uiEvents);
 		if (selected != null && map.get("slots") instanceof List<?> slots) {
 			// 미구현 항목 가운데 이 모듈의 폴더에 있는 것
 			String folder = "/" + module + "/";
@@ -877,6 +990,23 @@ public class WorkbenchController {
 					slots.stream().filter((slot) -> String.valueOf(((Map<?, ?>) slot).get("file")).contains(folder)).count());
 		}
 		return "cozy/dev/workbench-map";
+	}
+
+	/**
+	 * 모듈 화면의 화면 이벤트 한 줄.
+	 *
+	 * @param emittedBy 내는 곳 ({@code memoSelection.pick}, 서버 파일)
+	 * @param receivedBy 받는 곳 ({@code memoList.clear}, {@code memo/api/list:12 (htmx)})
+	 */
+	public record UiEventRow(String event, List<String> emittedBy, List<String> receivedBy) {
+	}
+
+	private static String where(Map<?, ?> w) {
+		return switch (String.valueOf(w.get("kind"))) {
+			case "behavior" -> w.get("component") + "." + w.get("action");
+			case "server" -> w.get("file") + " (서버)";
+			default -> w.get("template") + ":" + w.get("line") + " (" + w.get("kind") + ")";
+		};
 	}
 
 	private List<Line> lines(String file) {

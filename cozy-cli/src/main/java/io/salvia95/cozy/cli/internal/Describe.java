@@ -47,9 +47,10 @@ public final class Describe {
 			.toList());
 
 		List<AppResources.Spec> specs = AppResources.specs(project.dir());
+		List<String> behaviorProblems = new ArrayList<>();
 		List<Object> modules = new ArrayList<>();
 		for (AppProject.Module module : project.modules().values()) {
-			modules.add(module(project, module, specs, appManifest));
+			modules.add(module(project, module, specs, appManifest, behaviorProblems));
 		}
 		List<Object> slots = new ArrayList<>();
 		for (Violation slot : SlotRules.check(project.dir().resolve("src/main"), "src/main/")) {
@@ -60,19 +61,21 @@ public final class Describe {
 			s.put("what", slot.message());
 			slots.add(s);
 		}
-		List<Object> problems = project.problems().stream().map((v) -> (Object) v.format()).toList();
+		List<Object> problems = new ArrayList<>(project.problems().stream().map((v) -> (Object) v.format()).toList());
+		problems.addAll(behaviorProblems);
 
 		Map<String, Object> model = new LinkedHashMap<>();
 		model.put("app", app);
 		model.put("modules", modules);
 		model.put("events", events(project, modules));
+		model.put("uiEvents", ScreenBehaviors.uiEvents(project, modules, ScreenBehaviors.appTemplates(project.dir())));
 		model.put("slots", slots);
 		model.put("problems", problems);
 		return model;
 	}
 
 	private static Map<String, Object> module(AppProject project, AppProject.Module module, List<AppResources.Spec> specs,
-			List<AppResources.ManifestEntry> manifest) {
+			List<AppResources.ManifestEntry> manifest, List<String> problems) {
 		JavaSources sources = project.sources();
 		Map<String, Object> m = new LinkedHashMap<>();
 		m.put("name", module.name());
@@ -113,6 +116,8 @@ public final class Describe {
 		m.put("listeners", listeners);
 		m.put("controllers", controllers);
 		m.put("components", registeredComponents(project, module));
+		m.put("behaviors", ScreenBehaviors.behaviors(project.dir(), module.name(), ScreenBehaviors.moduleTemplates(project.dir(), module.name()),
+				problems));
 		m.put("screens", screens(project, module, specs));
 		m.put("fragments", manifest.stream()
 			.filter((e) -> e.template().startsWith(module.name() + "/spi/"))
@@ -255,7 +260,9 @@ public final class Describe {
 				AppResources.Spec spec = specs.stream().filter((s) -> template.equals(s.template())).findFirst().orElse(null);
 				screen.put("spec", (spec != null) ? spec.file() : null);
 				screen.put("states", (spec != null) ? spec.states() : List.of());
-				screen.put("components", usedComponents(project.dir().resolve("src/main/resources/templates"), template));
+				List<Object> bindings = new ArrayList<>();
+				screen.put("components", usedComponents(project.dir().resolve("src/main/resources/templates"), template, bindings));
+				screen.put("bindings", bindings);
 				screen.put("outline", outline(file, template));
 				screens.add(screen);
 			}
@@ -266,9 +273,6 @@ public final class Describe {
 		return screens;
 	}
 
-	private static final java.util.regex.Pattern X_DATA = java.util.regex.Pattern
-		.compile("\\sx-data\\s*=\\s*([\"'])\\s*([A-Za-z_$][\\w$]*)\\s*\\1");
-
 	private static final java.util.regex.Pattern REGISTRATION = java.util.regex.Pattern
 		.compile("Alpine\\s*\\.\\s*data\\s*\\(\\s*([\"'])([A-Za-z_$][\\w$]*)\\1");
 
@@ -278,12 +282,21 @@ public final class Describe {
 	 * 프레임워크 fragment({@code cozy/…})와 없는 템플릿은 따라가지 않는다. 주석은 보지 않는다.
 	 */
 	static List<Object> usedComponents(Path templates, String template) {
+		return usedComponents(templates, template, new ArrayList<>());
+	}
+
+	/**
+	 * @param bindings 같은 순서로 모은, Alpine이나 htmx 속성이 붙은 요소. {@code screenLine}은 화면 템플릿에서 그 요소가 보이는 줄이다(화면
+	 * 템플릿의 요소면 그 줄, 넣은 템플릿의 요소면 화면 템플릿에서 넣은 줄)
+	 */
+	static List<Object> usedComponents(Path templates, String template, List<Object> bindings) {
 		List<Object> found = new ArrayList<>();
-		collect(templates, template, null, new java.util.HashSet<>(), found);
+		collect(templates, template, template, null, null, new java.util.HashSet<>(), new LinkedHashMap<>(), found, bindings);
 		return found;
 	}
 
-	private static void collect(Path templates, String template, String fragment, java.util.Set<String> seen, List<Object> found) {
+	private static void collect(Path templates, String screen, String template, String fragment, Integer via,
+			java.util.Set<String> seen, Map<String, String> read, List<Object> found, List<Object> bindings) {
 		if (template.startsWith("cozy/") || !seen.add(template + "::" + fragment)) {
 			return;
 		}
@@ -291,13 +304,14 @@ public final class Describe {
 		if (!Files.isRegularFile(file)) {
 			return;
 		}
-		String content;
-		try {
-			content = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
-		}
-		catch (IOException ex) {
-			throw new java.io.UncheckedIOException(ex);
-		}
+		String content = read.computeIfAbsent(template, (t) -> {
+			try {
+				return Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
+			}
+			catch (IOException ex) {
+				throw new java.io.UncheckedIOException(ex);
+			}
+		});
 		List<TemplateOutline.Node> nodes = TemplateOutline
 			.of(new TemplateFile(template + ".html", Origin.APP, "templates/" + template + ".html", content));
 		int from = 1;
@@ -313,47 +327,37 @@ public final class Describe {
 			from = declaration.line();
 			to = declaration.endLine();
 		}
-		// x-data와 삽입을 줄 순서로 (같은 줄이면 x-data 먼저)
+		boolean own = template.equals(screen);
+		// 요소와 삽입을 줄 순서로 (같은 줄이면 요소 먼저)
 		java.util.TreeMap<Integer, List<Runnable>> steps = new java.util.TreeMap<>();
-		java.util.regex.Matcher m = X_DATA.matcher(withoutComments(content));
-		while (m.find()) {
-			int line = lineOf(content, m.start());
-			if (line >= from && line <= to) {
-				String name = m.group(2);
-				steps.computeIfAbsent(line, (l) -> new ArrayList<>())
-					.add(() -> found.add(ordered("name", name, "template", template, "line", line)));
+		ScreenBehaviors.Parsed parsed = ScreenBehaviors.parse(template, content);
+		for (io.salvia95.cozy.cli.internal.behavior.TemplateTags.Tag tag : parsed.tags()) {
+			if (tag.line() < from || tag.line() > to) {
+				continue;
 			}
+			Map<String, Object> element = ScreenBehaviors.element(parsed, tag);
+			if (element == null) {
+				continue;
+			}
+			int line = tag.line();
+			element.put("screenLine", own ? line : via);
+			steps.computeIfAbsent(line, (l) -> new ArrayList<>()).add(() -> {
+				bindings.add(element);
+				if (Boolean.TRUE.equals(element.get("root")) && element.get("component") != null) {
+					found.add(ordered("name", element.get("component"), "template", template, "line", line));
+				}
+			});
 		}
 		for (TemplateOutline.Node node : nodes) {
 			if ((node.kind().equals("replace") || node.kind().equals("insert")) && node.line() >= from && node.line() <= to
 					&& node.target().matches("[A-Za-z0-9_/\\-]*")) {
 				String target = node.target().isEmpty() ? template : node.target();
+				Integer next = own ? Integer.valueOf(node.line()) : via;
 				steps.computeIfAbsent(node.line(), (l) -> new ArrayList<>())
-					.add(() -> collect(templates, target, node.fragment(), seen, found));
+					.add(() -> collect(templates, screen, target, node.fragment(), next, seen, read, found, bindings));
 			}
 		}
 		steps.values().forEach((list) -> list.forEach(Runnable::run));
-	}
-
-	/** 주석을 같은 수의 줄바꿈으로 바꾼다 (줄 번호는 그대로) */
-	private static String withoutComments(String content) {
-		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?s)<!--.*?-->").matcher(content);
-		StringBuilder out = new StringBuilder();
-		while (m.find()) {
-			m.appendReplacement(out, m.group().replaceAll("[^\n]", " "));
-		}
-		m.appendTail(out);
-		return out.toString();
-	}
-
-	private static int lineOf(String content, int index) {
-		int line = 1;
-		for (int i = 0; i < index; i++) {
-			if (content.charAt(i) == '\n') {
-				line++;
-			}
-		}
-		return line;
 	}
 
 	/** 모듈이 static/{모듈}/{모듈}.js에 등록한 Alpine 컴포넌트 (레이아웃이 싣는 파일) */
@@ -421,6 +425,15 @@ public final class Describe {
 			if (!components.isEmpty()) {
 				out.append("  컴포넌트 ").append(join(components, "")).append('\n');
 			}
+			for (Object b : (List<Object>) m.get("behaviors")) {
+				Map<String, Object> behavior = (Map<String, Object>) b;
+				List<Object> attached = ((List<Object>) behavior.get("attached")).stream()
+					.map((a) -> (Map<String, Object>) a)
+					.map((a) -> (Object) (a.get("template") + ":" + a.get("line")))
+					.toList();
+				out.append("  화면 안의 동작 ").append(behavior.get("name")).append(" — ").append(behavior.get("purpose"))
+					.append(" · 붙인 곳 ").append(join(attached, "없음")).append('\n');
+			}
 			for (Object s : (List<Object>) m.get("screens")) {
 				Map<String, Object> screen = (Map<String, Object>) s;
 				out.append("  화면 ").append(screen.get("template")).append(" — ")
@@ -456,6 +469,18 @@ public final class Describe {
 					.toList()))
 				.append('\n');
 		}
+		List<Object> uiEvents = (List<Object>) model.get("uiEvents");
+		if (!uiEvents.isEmpty()) {
+			out.append('\n');
+		}
+		for (Object e : uiEvents) {
+			Map<String, Object> event = (Map<String, Object>) e;
+			out.append("화면 이벤트 ").append(event.get("event")).append(" 내는 곳: ")
+				.append(join(((List<Object>) event.get("emittedBy")).stream().map((w) -> (Object) where((Map<String, Object>) w)).toList(), "없음"))
+				.append(" → 받는 곳: ")
+				.append(join(((List<Object>) event.get("receivedBy")).stream().map((w) -> (Object) where((Map<String, Object>) w)).toList(), "없음"))
+				.append('\n');
+		}
 		List<Object> slots = (List<Object>) model.get("slots");
 		out.append('\n').append("빈칸: ").append(slots.isEmpty() ? "없음" : slots.size() + "곳").append('\n');
 		for (Object s : slots) {
@@ -469,6 +494,15 @@ public final class Describe {
 			problems.forEach((p) -> out.append("  ").append(p).append('\n'));
 		}
 		return out.toString();
+	}
+
+	/** 화면 이벤트를 내거나 받는 곳 한 군데: {@code memoSelection.clear}, {@code memo/api/list:2(htmx)}, 파일 */
+	private static String where(Map<String, Object> w) {
+		return switch (String.valueOf(w.get("kind"))) {
+			case "behavior" -> w.get("component") + "." + w.get("action");
+			case "server" -> String.valueOf(w.get("file"));
+			default -> w.get("template") + ":" + w.get("line") + "(" + w.get("kind") + ")";
+		};
 	}
 
 	@SuppressWarnings("unchecked")
