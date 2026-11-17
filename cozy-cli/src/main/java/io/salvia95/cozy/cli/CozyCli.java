@@ -77,6 +77,10 @@ public final class CozyCli {
 			  cozy enable workbench    pom에 dev 전용 워크벤치(/cozy/dev/workbench) 더하기
 			  cozy sync agents [--force]   AGENTS.md와 cozy-helper 스킬을 이 cozy 명령의 것으로 맞추기
 			  cozy sync behaviors      동작 명세(behaviors/<모듈>.yml)에서 모듈의 JS(static/<모듈>/<모듈>.js)를 다시 만들기
+			  cozy attach <컴포넌트> --at <템플릿>:<줄> [--data 이름=값] [--on 이벤트:동작] [--text 이름] [--show 이름] [--bind 속성:이름]
+			              [--model 상태] [--cloak] [--detach]   템플릿의 요소 하나에 컴포넌트를 붙이거나 떼기 (이름을 확인한다)
+			  cozy remove behavior <모듈> <동작> [--state 이름 …]   동작이나 그 항목 지우기 (붙인 곳도 뗀다)
+			  cozy rename behavior <모듈> <동작> <새 동작>   동작의 이름 바꾸기 (붙인 곳도 바꾼다)
 			  cozy set arg <템플릿> --line <줄> --fragment <이름> --index <번째> --from <지금 값> --value <새 값>
 			                           fragment 호출의 문자열 인자 하나 바꾸기 (워크벤치의 속성 패널이 쓴다)
 			  cozy migrate alpine      앱 템플릿의 없앤 동작 속성(data-cozy-confirm 등)을 cozy 컴포넌트로 바꾸기 (2.0.0으로 올릴 때)
@@ -95,7 +99,7 @@ public final class CozyCli {
 			                           COZY_REPOSITORY에는 경로 구분자(Windows ;, 그 밖 :)로 여러 저장소를 적고, 앞에서부터 찾는다
 			  --ui <jar나 폴더>        저장소에서 찾지 않고 이 cozy-ui 자원을 읽는다 (워크벤치가 쓴다)
 			  --json                   기계가 읽는 출력
-			  --dry-run                (add, link, enable, sync, set, migrate, channel add) 바꿀 파일만 보이고 쓰지 않는다
+			  --dry-run                (add, link, enable, sync, set, migrate, attach, remove, rename, channel add) 바꿀 파일만 보이고 쓰지 않는다
 			  --force                  (sync agents) 앱에서 고친 AGENTS.md도 바꾼다
 
 			채널을 정했으면 하루에 한 번 새 판을 확인하고, 있으면 명령 끝에 한 줄을 보인다 (--json 출력에는 보이지 않는다)
@@ -106,7 +110,7 @@ public final class CozyCli {
 
 	/** 이 명령 뒤에 새 판 알림을 보인다. 채널과 업데이트 명령, 도움말 뒤에는 보이지 않는다 */
 	private static final Set<String> NOTICE_ACTIONS = Set.of("describe", "check", "recipes", "add", "link", "enable", "sync",
-			"set", "migrate");
+			"set", "migrate", "attach", "remove", "rename");
 
 	private static final Duration UPDATE_CONNECT = Duration.ofSeconds(10);
 
@@ -223,6 +227,14 @@ public final class CozyCli {
 					Path uiLocation = ui;
 					RecipeRunner.run(action, rest.subList(1, rest.size()), app, () -> framework(app, repo, uiLocation, "아이콘 이름"), now(),
 							dryRun, json, out);
+					yield OK;
+				}
+				case "attach", "remove", "rename" -> {
+					AppProject app = project(project, workDir);
+					List<Path> repo = repository;
+					Path uiLocation = ui;
+					RecipeRunner.behaviors(action, rest.subList(1, rest.size()), app,
+							() -> framework(app, repo, uiLocation, "프레임워크 컴포넌트의 이름"), now(), dryRun, json, out);
 					yield OK;
 				}
 				case "set" -> {

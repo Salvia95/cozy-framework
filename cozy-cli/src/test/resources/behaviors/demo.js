@@ -1,6 +1,6 @@
 /* demo 모듈의 화면 안 동작. cozy가 동작 명세(behaviors/demo.yml)에서 만든 파일이라 손으로 고치지 않는다.
    동작은 cozy add behavior demo <동작> …로 바꾸고, 다시 만들 때는 cozy sync behaviors를 쓴다.
-   cozy:behaviors spec=0b753ad282cbb638a6020747915f375ab96cd1199d6b244b21ce771a73321f49 body=19381dfbddba50fea4c4057c70fb5c161d777b8c8fb2b759c657e078c57df92a */
+   cozy:behaviors spec=0b753ad282cbb638a6020747915f375ab96cd1199d6b244b21ce771a73321f49 body=882a8fe09afd8a00562972a0d4952ac67c4ee0c990a0cb6f3c5a8ea653714045 */
 document.addEventListener('alpine:init', function () {
   function readBool(root, name, fallback) {
     var value = root.dataset[name];
@@ -117,6 +117,7 @@ document.addEventListener('alpine:init', function () {
   }
 
   // demoBodyCount: 본문을 쓰는 동안 글자 수와 한도를 보인다
+  // cozy:component demoBodyCount members=length,limit,over,text,label,count data=length,limit
   window.Alpine.data('demoBodyCount', function () {
     var root = null;
     var initial = {};
@@ -148,6 +149,7 @@ document.addEventListener('alpine:init', function () {
   });
 
   // demoSelection: 고른 행 수에 따라 묶음 버튼을 켠다
+  // cozy:component demoSelection members=ids,picked,none,summary,pick,add,drop,clear data=
   window.Alpine.data('demoSelection', function () {
     var root = null;
     var initial = {};
@@ -192,6 +194,7 @@ document.addEventListener('alpine:init', function () {
   });
 
   // demoPanel: 탭, 펼침, 수량, 동의, 메모를 고른다
+  // cozy:component demoPanel members=open,tab,quantity,agreed,note,tags,onList,notList,many,few,under,tagged,closed,ready,noteEmpty,braces,toggleOpen,showTab,more,less,jump,agree,write,setQuantity,fromDetail,clearNote data=open,tags
   window.Alpine.data('demoPanel', function () {
     var root = null;
     var initial = {};

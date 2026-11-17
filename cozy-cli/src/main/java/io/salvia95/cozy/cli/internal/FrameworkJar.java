@@ -46,6 +46,8 @@ public final class FrameworkJar {
 
 	private String manifest;
 
+	private String behaviors;
+
 	private final Set<String> icons = new TreeSet<>();
 
 	private final Set<String> filledIcons = new TreeSet<>();
@@ -77,6 +79,9 @@ public final class FrameworkJar {
 			else if (name.equals("cozy/fragments.yml")) {
 				result.manifest = content;
 			}
+			else if (name.equals("cozy/behaviors.yml")) {
+				result.behaviors = content;
+			}
 			else if (SCRIPT.matcher(name).matches()) {
 				Matcher script = SCRIPT.matcher(name);
 				script.matches();
@@ -99,7 +104,7 @@ public final class FrameworkJar {
 	/** 읽을 자원인가: 프레임워크 템플릿, 매니페스트, 아이콘 스프라이트, 프레임워크 JS */
 	private static boolean wanted(String name) {
 		return ((name.startsWith("templates/cozy/") || name.startsWith("templates/error/")) && name.endsWith(".html"))
-				|| name.equals("cozy/fragments.yml") || SPRITE.matcher(name).matches() || SCRIPT.matcher(name).matches();
+				|| name.equals("cozy/fragments.yml") || name.equals("cozy/behaviors.yml") || SPRITE.matcher(name).matches() || SCRIPT.matcher(name).matches();
 	}
 
 	/** 이름 순서의 자원 이름 → 내용 */
@@ -148,6 +153,11 @@ public final class FrameworkJar {
 	/** 프레임워크 매니페스트(YAML). 없으면 {@code null} */
 	public String manifest() {
 		return this.manifest;
+	}
+
+	/** 프레임워크 컴포넌트의 명세(YAML). 없으면 {@code null} */
+	public String behaviors() {
+		return this.behaviors;
 	}
 
 	public Set<String> icons() {

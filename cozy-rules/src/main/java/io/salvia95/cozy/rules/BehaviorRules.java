@@ -49,6 +49,8 @@ public final class BehaviorRules {
 
 	private static final Pattern MODULE = Pattern.compile("[a-z][a-z0-9]*");
 
+	private static final Pattern REGISTRATION = Pattern.compile("Alpine\\.data\\(");
+
 	private BehaviorRules() {
 	}
 
@@ -172,6 +174,17 @@ public final class BehaviorRules {
 		if (!stamp.group(2).equals(sha256(script.substring(stamp.end())))) {
 			violations.add(violation(scriptLocation, module,
 					"동작 명세에서 만든 파일을 손으로 고쳤습니다. 동작은 cozy add behavior로 명세를 고쳐 바꿉니다. 고친 내용은 다시 만들면 사라집니다",
+					FIX));
+			return;
+		}
+		Matcher registration = REGISTRATION.matcher(script);
+		int registered = 0;
+		while (registration.find()) {
+			registered++;
+		}
+		if (ComponentContract.parse(script).size() != registered) {
+			violations.add(violation(scriptLocation, module,
+					"이전 판의 cozy가 만든 파일이라 컴포넌트가 내놓는 이름(" + ComponentContract.MARKER + " 줄)이 없습니다. 템플릿이 부르는 이름을 확인할 수 없습니다",
 					FIX));
 		}
 	}

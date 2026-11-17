@@ -1,0 +1,48 @@
+# 프레임워크 컴포넌트의 명세: cozy.js가 등록하는 cozy… 컴포넌트마다 목적, 받는 data-*, 템플릿이 부르는 메서드.
+# 앱 템플릿은 cozy attach로 붙이고, 이 파일로 이름을 확인한다. cozy.js의 cozy:component 줄과
+# docs/conventions/ui.md의 "프레임워크 컴포넌트" 표는 이 파일과 같아야 한다(cozy-cli의 FrameworkBehaviorsTest가 확인한다).
+# 메서드 이름 뒤의 (이름)은 글자 인자 하나를 받는다는 뜻이다: x-on:click="toggle('filter')"
+components:
+  cozyCopy:
+    purpose: "글자를 복사하고 \"복사했습니다\" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다"
+    data:
+      copy-text: "복사할 글자"
+    methods:
+      copy: "x-on:click. 글자를 복사한다"
+  cozyDisclosure:
+    purpose: "이름 붙인 부분을 펼치고 접는다. 한 요소 안에 여러 부분을 둘 수 있다. 기억하면 다시 열어도 그대로다(저장소를 쓸 수 없으면 기억하지 않는다)"
+    data:
+      disclosure-closed: "처음에 접힌 부분의 이름(공백으로 구분)"
+      disclosure-remember: "접은 부분을 브라우저에 기억할 이름(선택)"
+    methods:
+      toggle(이름): "x-on:click. 그 부분을 펼치거나 접는다"
+      isOpen(이름): "x-show, x-bind:aria-expanded. 펼쳤는가"
+      isClosed(이름): "접었는가"
+  cozyFocusKey:
+    purpose: "글을 적는 중이 아닐 때 그 글쇠를 누르면 이 칸으로 옮겨 간다"
+    data:
+      focus-key: "누를 글쇠(기본 /)"
+    methods:
+      focusOnKey: "칸의 x-on:keydown.window"
+  cozyConfirm:
+    purpose: "취소하면 내지 않는다. 일반 POST 폼에 쓴다(앱 메뉴의 종료, 업데이트). htmx로 내는 폼은 hx-confirm, 지우기는 component/delete-confirm(확인 창)을 쓴다"
+    data:
+      confirm-message: "물을 문장"
+    methods:
+      ask: "폼의 x-on:submit"
+  cozyDirtyForm:
+    purpose: "안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. htmx가 오류 폼을 돌려주어도 저장되지 않은 것으로 본다. pattern/form-page가 붙이므로 화면이 따로 쓰지 않는다"
+    methods:
+      mark: "x-on:input, x-on:change. 입력이 바뀌었다"
+      clean: "x-on:submit. 내는 중이다"
+      settled: "x-on:htmx:after-settle.camel. 서버가 오류 폼을 돌려주었는지 본다"
+      warn: "x-on:beforeunload.window"
+  cozyAutoHeight:
+    purpose: "안의 iframe을 내용 높이에 맞추고, 내용이 바뀌면 다시 맞춘다. 카탈로그 미리보기가 쓴다"
+    methods:
+      fit: "감싸는 요소의 x-on:load.capture(iframe에는 식을 달 수 없다)"
+  cozyIconList:
+    purpose: "아이콘 목록을 거르고 누른 칸의 글자를 복사한다. 칸에는 data-name(거를 이름)과 data-copy-text(복사할 글자)를 둔다. 아이콘 목록이 쓴다"
+    methods:
+      filter: "입력의 x-on:input"
+      copy: "목록의 x-on:click"

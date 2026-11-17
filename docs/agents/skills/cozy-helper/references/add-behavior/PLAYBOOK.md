@@ -12,6 +12,7 @@ Declares one Alpine.js component of a module in the module's behavior spec, or c
 - Do not use it for anything that reads or saves data; use htmx (`hx-get`, `hx-post`) and a controller instead.
 - Do not use it for copying, folding, or confirming a plain POST form; use `cozyCopy`, `cozyDisclosure`, or `cozyConfirm`.
 - Do not edit `static/{module}/{module}.js` or `behaviors/{module}.yml` by hand; this command and `cozy sync behaviors` own both files.
+- Do not use it to remove or rename a component; use [remove-behavior](../remove-behavior/PLAYBOOK.md) or [rename-behavior](../rename-behavior/PLAYBOOK.md).
 
 ## Syntax
 
@@ -46,8 +47,7 @@ cozy add behavior memo body-count --purpose "본문을 쓰는 동안 글자 수�
   --action "count:within('textarea', set(length, length(event.value)))"
 ```
 
-- Attach it in the module's template as `<div x-data="memoBodyCount" th:data-length="${length}" data-limit="5000" x-on:input="count">` and show `<div x-text="label">`.
-- Write only names in `x-*` attributes, such as `x-on:click="pick"`, `x-show="over"`, and `x-bind:disabled="none"`.
+- Attach it to the module's template with [attach](../attach/PLAYBOOK.md), such as `cozy attach memoBodyCount --at memo/internal/fields:7 --on input:count`.
 
 ## Failures
 
@@ -62,5 +62,5 @@ cozy add behavior memo body-count --purpose "본문을 쓰는 동안 글자 수�
 
 ## Next
 
-- Run `cozy check`, then `mvn -o verify`.
+- Attach the component with [attach](../attach/PLAYBOOK.md), then run `cozy check` and `mvn -o verify`.
 - Follow the [screens](../screens/PLAYBOOK.md) rules for the markup around the component.

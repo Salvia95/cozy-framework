@@ -6,7 +6,7 @@
   <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
   <div x-data="memoBodyCount" th:data-length="${bodyLength}" data-limit="5000" x-on:input="count">
     <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
-    <div class="form-hint mt-n2 mb-3" x-cloak x-text="label"></div>
+    <div class="form-hint mt-n2 mb-3" x-text="label" x-cloak></div>
   </div>
   <div th:replace="~{cozy/component/field :: field('pinned', '목록 위에 고정', 'switch')}"></div>
 </div>

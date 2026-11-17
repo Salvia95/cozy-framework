@@ -170,3 +170,25 @@ cozy attach cozyCopy --at memo/api/detail:12 --data "copy-text=${#strings.listJo
   - 브라우저(runtime-verifier, 2026-11-17): `demo.html`의 낱말 16개 항목(within의 거름, event.data가 안쪽 요소에서 올라가 찾음, toggleItem·addItem·removeItem, emit의 detail, listens의 창 이벤트와 reset, when, number, event.checked, format의 ko-KR과 목록과 중괄호)이 Alpine CSP 빌드에서 동작한다. reference-app 메모 만들기·수정의 글자 수(처음 값, 제목 칸은 세지 않음, 한도 넘음, 1280·390px)도 같다. 콘솔 오류와 CSP 위반은 0이다.
   - 레시피 픽스처의 cozy 명령 클래스패스(`target/cli/*`)에 clean 없이 쌓인 지난 판의 cozy-cli가 먼저 읽혀 새 옵션을 모르던 문제를 찾았다. 복사할 때 판 번호를 떼도록(`stripVersion`) 고쳤다.
   - 아키텍처 검사가 하나 늘어(C12) 테스트 수를 세는 위반·레시피 픽스처의 기대 값을 1씩 올렸다.
+
+## M47 (2026-11-17, 사용자 지시 "다음 진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다. 새 의존성은 없다(템플릿의 여는 태그는 cozy-cli가 글자로 읽고, 프레임워크 명세는 SnakeYAML로 읽는다).
+- 만든 것:
+  - `cozy attach`(`--detach`), `cozy remove behavior`, `cozy rename behavior`(cozy-cli `BehaviorCommands`, `behavior/Attach`, `behavior/TemplateTags`). 형식은 `docs/conventions/cli.md`의 attach, remove behavior, rename behavior에 있다.
+  - 프레임워크 컴포넌트의 명세 `cozy/behaviors.yml`(cozy-ui). `ui.md`의 프레임워크 컴포넌트 표는 이 명세에서 만들고 표지 주석 사이에 둔다.
+  - R16 이름 검사, 같은 템플릿 안에 감싸는 `x-data`가 없는 앱 템플릿의 바인딩은 오류.
+  - 플레이북 `attach`, `remove-behavior`, `rename-behavior`. `AGENTS.md`는 `x-*` 속성도 손으로 쓰지 않는다고 적는다.
+- 계획과 달라진 것:
+  - **R16이 이름을 읽는 곳**: cozy-rules는 YAML을 읽지 못한다(JDK와 AttoParser만). 그래서 컴포넌트가 내놓는 이름을 JS 파일의 한 줄 주석 `// cozy:component 이름 members=… data=…`(`ComponentContract`)로 적는다. 만든 JS는 cozy가 이 줄을 쓰고, `cozy.js`는 손으로 쓰되 `FrameworkBehaviorsTest`가 프레임워크 명세와 같은지 확인한다. 줄이 없는 컴포넌트(워크벤치의 `workbench…`)는 이름을 보지 않는다.
+  - **이전 판이 만든 JS**: M46의 JS에는 이 줄이 없다. 해시가 맞아도 C12가 실패하고 `cozy sync behaviors`를 알린다(판단할 수 없는 것은 실패로 닫는다).
+  - **줄 고르기**: §3은 "그 줄에 요소가 하나"였다. 버튼과 그 안의 아이콘처럼 한 줄에 시작하는 안쪽 요소가 흔해서, 그 줄에서 시작하는 가장 바깥 요소가 하나면 받는다. 나란히 놓인 요소가 둘 이상이면 실패한다. `th:replace`와 `th:block`은 그려질 때 속성이 남지 않아 거절한다.
+  - **값은 이름만**: §3의 예 `--show "not over"`처럼 식을 받지 않는다. 이름 하나이거나 글자 인자 하나를 받는 프레임워크 메서드의 `이름('글자')`다. 로직은 명세의 계산에 둔다.
+  - **프레임워크 명세의 "내는 이벤트"**: 지금 `cozy…` 컴포넌트는 화면 이벤트를 내지 않아 적지 않았다. 메서드 이름 뒤의 `(이름)`이 글자 인자 하나를 받는다는 표시다(`toggle(이름)`).
+  - **속성 순서**: 새 속성은 마지막 속성 뒤에 `x-data`, `data-*`, `x-on`, `x-bind`, `x-show`, `x-text`, `x-model`, `x-cloak` 순서로 붙인다. reference-app의 두 곳(`memo/internal/fields`의 글자 수, `memo/api/detail`의 복사 버튼)을 명령으로 떼고 다시 붙여 이 순서가 되었다.
+  - **떼면 줄이 합쳐질 수 있다**: 따로 줄에 있던 속성을 떼면 그 줄바꿈도 지운다(복사 버튼의 두 줄이 한 줄이 되었다). 플레이북은 `--detach` 뒤에 줄 번호를 다시 읽으라고 적는다.
+- 확인:
+  - `AttachCommandTest` 15개: 자리와 안쪽 요소, 다시 실행하면 그대로, 값 바꿈, `--dry-run`, 없는 이름·읽지 않는 `data-*`·식·안쪽의 `--data`, 줄 고르기와 `th:replace`, 한 요소에 한 컴포넌트와 모듈 밖, 프레임워크 컴포넌트와 인자, 손으로 고친 바인딩의 R16, 일부 떼기, 뗀 뒤 처음 템플릿과 같음, 컴포넌트를 지우면 붙인 곳도 떼고 빈 명세를 지움, 템플릿이나 다른 항목이 쓰는 항목은 지우지 않음, 이름 바꾸기, reference-app의 바인딩을 모두 떼고 명령으로 다시 붙이면 글자까지 같음.
+  - `FrameworkBehaviorsTest` 5개: 명세와 `cozy.js`의 등록, `cozy:component` 줄, 메서드 정의, `ui.md` 표가 같음, 형식.
+  - `TemplateRulesTest`에 R16 이름 3개(감싸는 컴포넌트의 이름, `x-for`와 객체 키와 `$event`, 같은 템플릿에 없는 `x-data`, 줄이 없는 컴포넌트), `BehaviorRulesTest`에 이전 판의 JS 1개.
+  - 레시피 픽스처 `behavior`: 손으로는 마크업(글자 수를 보일 칸)만 두고 `cozy attach`로 붙인다. 없는 이름과 다른 모듈의 컴포넌트는 거절하고, 다시 실행하면 바뀐 것 없음.

@@ -39,6 +39,9 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Add a read-only screen such as a dashboard | [add-screen](references/add-screen/PLAYBOOK.md) |
 | Publish a fragment for other modules' screens | [add-fragment](references/add-fragment/PLAYBOOK.md) |
 | Declare or change state that stays inside a screen (Alpine.js) | [add-behavior](references/add-behavior/PLAYBOOK.md) |
+| Attach a component to an element of a template, or detach it | [attach](references/attach/PLAYBOOK.md) |
+| Remove a component or some of its entries | [remove-behavior](references/remove-behavior/PLAYBOOK.md) |
+| Rename a component | [rename-behavior](references/rename-behavior/PLAYBOOK.md) |
 | Make module scripts again from their behavior specs, or fix a `[C12]` violation | [sync-behaviors](references/sync-behaviors/PLAYBOOK.md) |
 | Declare that a module uses another module | [link](references/link/PLAYBOOK.md) |
 | Add a value record that other modules see | [add-dto](references/add-dto/PLAYBOOK.md) |

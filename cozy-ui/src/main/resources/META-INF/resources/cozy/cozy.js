@@ -166,6 +166,7 @@
   }
 
   document.addEventListener('alpine:init', function () {
+    // cozy:component cozyDisclosure members=toggle,isOpen,isClosed data=disclosure-closed,disclosure-remember (cozy/behaviors.yml)
     window.Alpine.data('cozyDisclosure', function () {
       // 안쪽 요소(다른 컴포넌트 안의 버튼)에서 부르면 $root가 그 컴포넌트다. 기억할 이름은 처음에 읽어 둔다
       var remember = null;
@@ -196,6 +197,7 @@
       };
     });
 
+    // cozy:component cozyFocusKey members=focusOnKey data=focus-key (cozy/behaviors.yml)
     window.Alpine.data('cozyFocusKey', function () {
       return {
         focusOnKey: function (event) {
@@ -209,6 +211,7 @@
       };
     });
 
+    // cozy:component cozyConfirm members=ask data=confirm-message (cozy/behaviors.yml)
     window.Alpine.data('cozyConfirm', function () {
       var root = null;
       return {
@@ -226,6 +229,7 @@
       };
     });
 
+    // cozy:component cozyDirtyForm members=mark,clean,settled,warn data= (cozy/behaviors.yml)
     window.Alpine.data('cozyDirtyForm', function () {
       var root = null;
       var dirty = false;
@@ -259,6 +263,7 @@
       };
     });
 
+    // cozy:component cozyAutoHeight members=fit data= (cozy/behaviors.yml)
     window.Alpine.data('cozyAutoHeight', function () {
       return {
         init: function () {
@@ -271,6 +276,7 @@
       };
     });
 
+    // cozy:component cozyIconList members=filter,copy data= (cozy/behaviors.yml)
     window.Alpine.data('cozyIconList', function () {
       var root = null;
       return {
@@ -298,6 +304,7 @@
       };
     });
 
+    // cozy:component cozyCopy members=copy data=copy-text (cozy/behaviors.yml)
     window.Alpine.data('cozyCopy', function () {
       var root = null;
       return {

@@ -18,8 +18,7 @@
           <div class="card-header">
             <h3 class="card-title">본문</h3>
             <div class="card-actions" th:unless="${memo.bodyLines.isEmpty()}">
-              <button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
-                      th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}"><svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>복사</button>
+              <button type="button" class="btn btn-sm" x-data="cozyCopy" th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}" x-on:click="copy" x-cloak><svg th:replace="~{cozy/icon/tabler :: icon('copy')}"></svg>복사</button>
             </div>
           </div>
           <div class="card-body">

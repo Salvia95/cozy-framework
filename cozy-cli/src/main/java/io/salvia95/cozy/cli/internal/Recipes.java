@@ -1,5 +1,6 @@
 package io.salvia95.cozy.cli.internal;
 
+import io.salvia95.cozy.cli.internal.recipe.BehaviorCommands;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -281,7 +282,8 @@ public final class Recipes {
 
 	/** 레시피가 아닌 명령의 플레이북: 형식과 폴더 */
 	public static final Map<String, String> OTHER_PLAYBOOKS = Map.of("describe", "cozy describe [--json]", "check",
-			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]", "sync-behaviors", "cozy sync behaviors");
+			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]", "sync-behaviors", "cozy sync behaviors", "attach", BehaviorCommands.ATTACH_USAGE, "remove-behavior",
+			BehaviorCommands.REMOVE_USAGE, "rename-behavior", BehaviorCommands.RENAME_USAGE);
 
 	/** 명령이 아닌 주제의 플레이북 */
 	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens", "screen-layout", "screen-states", "inputs", "wording",

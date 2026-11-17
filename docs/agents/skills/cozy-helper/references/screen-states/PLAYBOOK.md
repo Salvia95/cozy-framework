@@ -30,7 +30,7 @@ Rules for drawing every state of a screen and for choosing how to report results
 - Report create, edit, and delete results with `CozyFlash` before a redirect, and never with a toast.
 - Use `alert(tone, message)` for a notice that stays on the screen or a server error that belongs to no field.
 - Use a toast only for minor confirmations such as a copy, because toasts disappear.
-- Use `deleteConfirm` before every delete, and `modal` or `x-data="cozyConfirm" x-on:submit="ask" data-confirm-message="…"` on a plain POST form for other confirmations.
+- Use `deleteConfirm` before every delete, and `modal` or `cozyConfirm` on a plain POST form for other confirmations (`cozy attach cozyConfirm --at … --data confirm-message=… --on submit:ask`).
 - Validate on submit only, never while the user types, and never disable the primary button.
 - Choose the tone by what it asks of the user: `neutral` asks nothing, `info` informs, `success` confirms, `warning` asks for attention, and `critical` blocks or cannot be undone.
 

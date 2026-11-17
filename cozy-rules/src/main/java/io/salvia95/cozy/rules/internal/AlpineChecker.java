@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.salvia95.cozy.rules.AlpineAttributes;
+import io.salvia95.cozy.rules.ComponentContract;
 import io.salvia95.cozy.rules.ModuleModel;
 import io.salvia95.cozy.rules.Origin;
 import io.salvia95.cozy.rules.ScriptFile;
@@ -64,8 +65,22 @@ final class AlpineChecker {
 
 	private static final Set<String> RESERVED = Set.of("cozy", "fragments", "error");
 
-	/** 등록된 컴포넌트 하나 */
-	private record Component(String name, ScriptFile script) {
+	/** 식 안의 JavaScript 낱말: 이름이 아니다 */
+	private static final Set<String> KEYWORDS = Set.of("true", "false", "null", "undefined", "typeof", "instanceof", "in", "new",
+			"this", "void", "delete", "of");
+
+	/** 컴포넌트의 이름을 부르는 디렉티브 */
+	private static final Pattern BINDING = Pattern.compile("x-(?:on:.+|bind:.+|text|show|model.*|effect|init|if|for)");
+
+	/** 객체 글자의 키 ({@code { active: open }}의 {@code active}) */
+	private static final Pattern OBJECT_KEY = Pattern.compile("\\s*:(?!:)");
+
+	/**
+	 * 등록된 컴포넌트 하나.
+	 *
+	 * @param contract 내놓는 이름({@code // cozy:component} 줄). 없으면 null(이름을 확인하지 않는다)
+	 */
+	private record Component(String name, ScriptFile script, ComponentContract contract) {
 	}
 
 	private final ModuleModel modules;
@@ -130,7 +145,7 @@ final class AlpineChecker {
 						+ "에서 등록했습니다. 다른 이름을 쓰세요.");
 				continue;
 			}
-			this.components.put(name, new Component(name, script));
+			this.components.put(name, new Component(name, script, ComponentContract.parse(script.content()).get(name)));
 		}
 	}
 
@@ -293,6 +308,40 @@ final class AlpineChecker {
 		while (word.find()) {
 			if (GLOBALS.contains(word.group())) {
 				unsupported(file, attribute, display, "전역 이름 " + word.group(), "필요한 값은 컴포넌트의 메서드나 getter에서 구하세요");
+				return;
+			}
+		}
+		if (BINDING.matcher(attribute.name()).matches()) {
+			names(file, attribute, display, code);
+		}
+	}
+
+	/** 식이 부르는 이름이 감싸는 컴포넌트에 있는가. 내놓는 이름을 아는 컴포넌트만 본다 */
+	private void names(TemplateFile file, AlpineAttribute attribute, String display, String code) {
+		if (attribute.scope() == null) {
+			if (file.origin() == Origin.APP) {
+				error(file, attribute.line(), display, "이 요소를 감싸는 x-data가 이 템플릿에 없어 '" + attribute.value()
+						+ "'가 어느 컴포넌트의 이름인지 알 수 없습니다. 컴포넌트를 붙인 요소(x-data)와 같은 템플릿 안에서 씁니다(cozy attach).");
+			}
+			return;
+		}
+		Component component = this.components.get(attribute.scope());
+		if (component == null || component.contract() == null) {
+			return;
+		}
+		Matcher word = WORD.matcher(code);
+		while (word.find()) {
+			String name = word.group();
+			if (name.startsWith("$") || KEYWORDS.contains(name) || attribute.locals().contains(name)) {
+				continue;
+			}
+			if (OBJECT_KEY.matcher(code).region(word.end(), code.length()).lookingAt()) {
+				continue;
+			}
+			if (!component.contract().members().contains(name)) {
+				error(file, attribute.line(), display, "'" + name + "'는 감싸는 컴포넌트 " + component.name() + "에 없습니다. 있는 이름: "
+						+ String.join(", ", component.contract().members().stream().sorted().toList())
+						+ ". 붙이는 이름은 cozy attach가 확인하고, 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.");
 				return;
 			}
 		}

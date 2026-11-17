@@ -22,6 +22,7 @@ import io.salvia95.cozy.cli.internal.behavior.Expr.Name;
 import io.salvia95.cozy.cli.internal.behavior.Expr.Num;
 import io.salvia95.cozy.cli.internal.behavior.Expr.Text;
 import io.salvia95.cozy.rules.BehaviorRules;
+import io.salvia95.cozy.rules.ComponentContract;
 
 /**
  * 동작 명세를 확인하고 그 명세에서 모듈의 JS를 만든다. 같은 명세는 같은 JS가 된다. 만든 JS는 지금 규칙을 그대로 따른다: {@code alpine:init}의
@@ -454,6 +455,7 @@ public final class BehaviorScript {
 			String name = this.c.name(this.module);
 			this.helpers.add("copy");
 			line(2, "// " + name + ": " + this.c.purpose());
+			line(2, ComponentContract.line(name, members(this.c), data(this.c)));
 			line(2, "window.Alpine.data(" + js(name) + ", function () {");
 			line(4, "var root = null;");
 			line(4, "var initial = {};");
@@ -643,6 +645,19 @@ public final class BehaviorScript {
 		private void line(int depth, String text) {
 			this.out.append(indent(depth)).append(text).append('\n');
 		}
+	}
+
+	/** 템플릿이 부를 수 있는 이름: 상태, 계산, 동작 (명세 순서) */
+	public static List<String> members(Component c) {
+		List<String> names = new ArrayList<>(c.state().keySet());
+		names.addAll(c.computed().keySet());
+		names.addAll(c.actions().keySet());
+		return names;
+	}
+
+	/** {@code x-data} 요소에서 읽는 {@code data-*}의 이름 ({@code data-} 뒤) */
+	public static List<String> data(Component c) {
+		return c.state().values().stream().filter((s) -> s.data() != null).map((s) -> s.data().substring("data-".length())).toList();
 	}
 
 	/** {@code data-copy-text} → {@code copyText} */

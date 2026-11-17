@@ -796,6 +796,47 @@ class TemplateRulesTest {
 		}
 
 		@Test
+		void namesAreCheckedAgainstTheEnclosingComponentsContract() {
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", """
+					// cozy:component memoPicker members=ids,none,pick,clear data=ids
+					Alpine.data('memoPicker', function () { return {}; });
+					// cozy:component memoCount members=length,label data=
+					Alpine.data('memoCount', function () { return {}; });""");
+			f.app("memo/api/list.html", """
+					<div x-data="memoPicker" x-on:memo:archived.window="clear($event)">
+					  <button x-on:click="pick" x-bind:disabled="none" x-bind:class="{ active: !none, 'is-empty': none }">고르기</button>
+					  <template x-for="(id, index) in ids"><span x-text="id + index"></span></template>
+					  <p x-text="label"></p>
+					  <div x-data="memoCount"><p x-text="label"></p><p x-show="none"></p></div>
+					  <button x-on:click="pik">오타</button>
+					</div>""");
+			assertThat(f.check()).extracting(Violation::line).containsExactly(4, 5, 6);
+			assertThat(f.check().get(0).format()).contains("'label'는 감싸는 컴포넌트 memoPicker에 없습니다", "있는 이름: clear, ids, none, pick");
+			assertThat(f.check().get(1).format()).contains("memoCount에 없습니다");
+			assertThat(f.check().get(2).format()).contains("'pik'");
+		}
+
+		@Test
+		void anAppBindingNeedsItsComponentInTheSameTemplate() {
+			// 다른 템플릿이 감쌀 x-data는 이 파일만 봐서는 알 수 없다: 실패로 닫는다. 프레임워크 템플릿은 보지 않는다
+			Fixture f = withComponents();
+			f.app("memo/internal/hint.html", "<p th:fragment=\"hint()\" x-text=\"label\"></p>");
+			f.framework("cozy/component/hint.html", "<p th:fragment=\"hint()\" x-text=\"label\"></p>");
+			List<Violation> r16 = f.check().stream().filter((v) -> v.ruleId().equals("R16")).toList();
+			assertThat(r16).extracting(Violation::location).containsExactly("templates/memo/internal/hint.html");
+			assertThat(r16.get(0).format()).contains("감싸는 x-data가 이 템플릿에 없어", "cozy attach");
+		}
+
+		@Test
+		void componentsWithoutAContractAreNotNameChecked() {
+			Fixture f = withComponents();
+			f.appScript("memo/memo.js", "Alpine.data('memoEditor', function () { return {}; });");
+			f.app("memo/api/list.html", "<div x-data=\"memoEditor\"><p x-text=\"anything\"></p></div>");
+			assertThat(f.check()).isEmpty();
+		}
+
+		@Test
 		void registrationsAreCheckedInScripts() {
 			Fixture f = withComponents();
 			f.appScript("memo/memo.js", """

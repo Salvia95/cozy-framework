@@ -94,6 +94,19 @@ public final class RecipeRunner {
 		report("sync agents", plan, List.of(), next, false, dryRun, json, out);
 	}
 
+	/** {@code cozy attach}, {@code cozy remove behavior}, {@code cozy rename behavior}: 화면 안의 동작을 템플릿에 붙이고, 지우고, 이름을 바꾼다 */
+	public static void behaviors(String action, List<String> rest, AppProject project, Supplier<FrameworkJar> framework,
+			LocalDateTime now, boolean dryRun, boolean json, PrintStream out) {
+		Context ctx = new Context(project, framework, now);
+		String next = switch (action) {
+			case "attach" -> BehaviorCommands.attach(ctx, rest);
+			case "remove" -> BehaviorCommands.remove(ctx, rest);
+			default -> BehaviorCommands.rename(ctx, rest);
+		};
+		String name = action.equals("attach") ? "attach" : action + " behavior";
+		report(name, ctx.plan(), List.of(), next, false, dryRun, json, out);
+	}
+
 	/** {@code cozy set arg …}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 */
 	public static void set(List<String> rest, AppProject project, Supplier<FrameworkJar> framework, boolean dryRun, boolean json,
 			PrintStream out) {

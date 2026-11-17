@@ -58,6 +58,9 @@ final class TemplateScanner {
 
 	private static final MarkupParser PARSER = new MarkupParser(ParseConfiguration.htmlConfiguration());
 
+	/** x-data와 x-for의 이름 */
+	private static final Pattern ALPINE_NAME = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]*");
+
 	private TemplateScanner() {
 	}
 
@@ -94,7 +97,7 @@ final class TemplateScanner {
 		 * @param object 이 요소가 th:object를 두었는가
 		 */
 		record Frame(String element, List<String> params, String fragment, Set<String> locals, boolean[] object,
-				ActionGroup group, boolean action) {
+				ActionGroup group, boolean action, String component, Set<String> loops) {
 		}
 
 		/** btn-list 하나. items: 동작마다 주 버튼(btn-primary, btn-danger, cozy-btn-critical-fill)인가 */
@@ -226,7 +229,42 @@ final class TemplateScanner {
 				}
 			}
 			ActionGroup group = tokens.contains("btn-list") ? new ActionGroup(line(cls), new ArrayList<>()) : null;
-			return new Frame(this.elementName, params, declaration, new HashSet<>(params), new boolean[1], group, action);
+			Attribute data = this.attributes.get("x-data");
+			String component = (data != null && ALPINE_NAME.matcher(data.value().strip()).matches()) ? data.value().strip() : null;
+			return new Frame(this.elementName, params, declaration, new HashSet<>(params), new boolean[1], group, action, component,
+					loops(this.attributes.get("x-for")));
+		}
+
+		/** {@code x-for="(item, index) in items"}가 더하는 이름 */
+		private static Set<String> loops(Attribute loop) {
+			Set<String> names = new HashSet<>();
+			if (loop != null) {
+				int in = loop.value().indexOf(" in ");
+				String head = (in >= 0) ? loop.value().substring(0, in) : "";
+				for (String part : head.replace("(", "").replace(")", "").split(",")) {
+					if (ALPINE_NAME.matcher(part.strip()).matches()) {
+						names.add(part.strip());
+					}
+				}
+			}
+			return names;
+		}
+
+		/** 가장 가까운 x-data의 컴포넌트 (이 요소 포함). 이 파일에 없으면 null */
+		private String alpineScope() {
+			for (Frame frame : this.stack) {
+				if (frame.component() != null) {
+					return frame.component();
+				}
+			}
+			return null;
+		}
+
+		/** 감싸는 x-for가 더한 이름 (이 요소 포함) */
+		private Set<String> alpineLocals() {
+			Set<String> names = new HashSet<>();
+			this.stack.forEach((frame) -> names.addAll(frame.loops()));
+			return names;
 		}
 
 		private static Set<String> classTokens(Attribute cls) {
@@ -294,7 +332,7 @@ final class TemplateScanner {
 				String thName = thName(attribute.name());
 				if (AlpineChecker.relevant(attribute.name(), thName)) {
 					this.parsed.alpine.add(new ParsedTemplate.AlpineAttribute(attribute.name(), attribute.value(), attribute.line(),
-							this.elementName));
+							this.elementName, alpineScope(), alpineLocals()));
 				}
 				if (thName != null && INSERTION.contains(thName)) {
 					insertion(thName, attribute);

@@ -105,6 +105,22 @@ class BehaviorRulesTest {
 	}
 
 	@Test
+	void aScriptMadeByAnEarlierCozyWithoutComponentLinesFails() throws IOException {
+		// 템플릿이 부르는 이름은 cozy:component 줄로 확인한다(R16). 그 줄이 없으면 확인할 수 없으므로 다시 만들게 한다
+		String old = "document.addEventListener('alpine:init', function () {\n  window.Alpine.data('memoBodyCount', function () { return {}; });\n});\n";
+		String current = "document.addEventListener('alpine:init', function () {\n  "
+				+ ComponentContract.line("memoBodyCount", List.of("count"), List.of()) + "\n"
+				+ "  window.Alpine.data('memoBodyCount', function () { return {}; });\n});\n";
+		write(BehaviorRules.specPath("memo"), SPEC);
+		write(BehaviorRules.scriptPath("memo"), generated(SPEC, old));
+
+		assertThat(check()).singleElement()
+			.satisfies((v) -> assertThat(v.format()).contains("cozy:component 줄)이 없습니다").endsWith("고치는 명령: cozy sync behaviors"));
+		write(BehaviorRules.scriptPath("memo"), generated(SPEC, current));
+		assertThat(check()).isEmpty();
+	}
+
+	@Test
 	void anAppWithoutBehaviorsHasNothingToReport() {
 		assertThat(check()).isEmpty();
 	}

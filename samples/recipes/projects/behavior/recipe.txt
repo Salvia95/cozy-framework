@@ -1,4 +1,4 @@
-# 모듈의 Alpine 컴포넌트: add behavior가 동작 명세와 그 명세에서 만든 JS를 쓰고 빈칸을 남기지 않는다. 손으로 고친 명세는 cozy check(C12)가
+# 모듈의 Alpine 컴포넌트: add behavior가 동작 명세와 그 명세에서 만든 JS를 쓰고 빈칸을 남기지 않는다. attach가 템플릿에 붙인다. 손으로 고친 명세는 cozy check(C12)가
 # 실패하고 cozy sync behaviors가 정리해 다시 만든다. 다른 모듈의 컴포넌트를 쓰면 R16이 실패한다. 레이아웃이 모듈 파일을 싣고 mvn verify가
 # 화면을 그리고 만든 JS의 문법을 읽는다(C10)
 cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목
@@ -14,7 +14,10 @@ cozy check
 # task 상세가 note의 컴포넌트를 쓴다
 hand behavior-foreign
 cozy? check
-# task 상세가 자기 모듈의 컴포넌트를 쓴다
+# task 상세에 글자 수를 보일 칸을 두고(마크업), 자기 모듈의 컴포넌트를 명령으로 붙인다. 없는 이름과 다른 모듈의 컴포넌트는 거절한다
 hand behavior
+cozy attach taskTitleCount --at task/api/detail:21 --data "title=${item.title}" --text label --cloak
+cozy! attach taskTitleCount --at task/api/detail:21 --text lenght
+cozy! attach notePicker --at task/api/detail:21 --on click:flip
 cozy check
-rerun behavior
+rerun behavior attach

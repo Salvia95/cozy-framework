@@ -174,8 +174,11 @@ fragments:
 
 ### 작성 규칙 (R16이 검사한다)
 
+앱 템플릿의 Alpine 속성은 `cozy attach`로 붙이고 뗀다([cli.md](cli.md)의 attach). 명령이 컴포넌트가 내놓는 이름인지 확인하고, 아래 규칙대로 쓴다.
+
 - 속성은 긴 이름만 쓴다: `x-on:click`, `x-bind:class`. 줄임 표기(`@click`, `:class`)는 쓰지 않는다.
 - `x-data`에는 등록된 컴포넌트 이름만 쓴다: `x-data="cozyCopy"`. 인라인 객체(`x-data="{ open: false }"`)와 인자는 쓰지 않는다.
+- 이벤트와 값은 감싸는 컴포넌트가 내놓는 이름만 부른다. 같은 템플릿 안의 가장 가까운 `x-data`가 그 컴포넌트다. 앱 컴포넌트는 동작 명세의 상태·계산·동작, 프레임워크 컴포넌트는 아래 표의 메서드다.
 - 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `init`에서 `this.$root`를 잡아 두고 그 `dataset`에서 읽는다(다른 컴포넌트 안의 요소에서 부르면 `$root`가 그 안쪽 컴포넌트이기 때문이다). Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
 - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`, `x-text`, `x-ref`, `x-cloak`, `x-transition`, `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. `x-html`과 `x-teleport`는 쓰지 않는다.
 - `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 실행하지 않고 그 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소의 `x-on:load.capture`로 받는다.
@@ -184,21 +187,22 @@ fragments:
 
 ### 프레임워크 컴포넌트
 
-`cozy.js`가 등록한다. 이름은 `cozy`로 시작한다.
+`cozy.js`가 등록한다. 이름은 `cozy`로 시작한다. 목적, 받는 `data-*`, 메서드는 cozy-ui의 `cozy/behaviors.yml`(프레임워크 명세)에 있고, `cozy attach`가 이 명세로 이름을 확인한다. `cozy.js`는 컴포넌트마다 `// cozy:component 이름 members=… data=…` 줄을 둔다(R16이 읽는다). 아래 표는 명세에서 만든다(cozy-cli의 `FrameworkBehaviorsTest`가 명세, `cozy.js`, 이 표가 같은지 확인한다). 메서드 이름 뒤의 `(이름)`은 글자 인자 하나를 받는다는 뜻이다.
 
-| 이름 | 받는 `data-*` | 메서드·속성 | 동작 |
+<!-- cozy:framework-behaviors (cozy-ui의 cozy/behaviors.yml에서 만든 표) -->
+| 이름 | 받는 `data-*` | 메서드 | 동작 |
 | --- | --- | --- | --- |
-| `cozyCopy` | `data-copy-text`: 복사할 글자 | `copy()` | 글자를 복사하고 "복사했습니다" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다 |
-| `cozyDisclosure` | `data-disclosure-closed`: 처음에 접힌 부분의 이름(공백으로 구분). `data-disclosure-remember`: 접은 부분을 브라우저에 기억할 이름(선택) | `toggle(이름)`, `isOpen(이름)`, `isClosed(이름)` | 이름 붙인 부분을 펼치고 접는다. 한 요소 안에 여러 부분을 둘 수 있다. 기억하면 다시 열어도 그대로다(저장소를 쓸 수 없으면 기억하지 않는다) |
-| `cozyFocusKey` | `data-focus-key`: 누를 글쇠(기본 `/`) | `focusOnKey(event)` | 글을 적는 중이 아닐 때 그 글쇠를 누르면 이 칸으로 옮겨 간다. 칸에 `x-on:keydown.window="focusOnKey"`를 단다 |
-| `cozyConfirm` | `data-confirm-message`: 물을 문장 | `ask(event)` | 폼에 `x-on:submit="ask"`. 취소하면 내지 않는다. 일반 POST 폼에 쓴다(앱 메뉴의 종료, 업데이트). htmx로 내는 폼은 `hx-confirm`, 지우기는 `component/delete-confirm`(확인 창)을 쓴다 |
-| `cozyDirtyForm` | 없음 | `mark`, `clean`, `settled`, `warn` | 안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. htmx가 오류 폼을 돌려주어도 저장되지 않은 것으로 본다. `pattern/form-page`가 붙이므로 화면이 따로 쓰지 않는다 |
-| `cozyAutoHeight` | 없음 | `fit(event)` | 안의 iframe을 내용 높이에 맞추고, 내용이 바뀌면 다시 맞춘다. iframe에는 식을 달 수 없어 감싸는 요소에 `x-on:load.capture="fit"`을 단다. 카탈로그 미리보기가 쓴다 |
-| `cozyIconList` | 칸의 `data-name`(거를 이름), `data-copy-text`(복사할 글자) | `filter(event)`, `copy(event)` | 입력에 `x-on:input="filter"`, 목록에 `x-on:click="copy"`. 아이콘 목록이 쓴다 |
+| `cozyCopy` | `data-copy-text`: 복사할 글자 | `copy()`: x-on:click. 글자를 복사한다 | 글자를 복사하고 "복사했습니다" 토스트를 띄운다. 복사할 수 없으면 직접 선택하라는 토스트를 띄운다 |
+| `cozyDisclosure` | `data-disclosure-closed`: 처음에 접힌 부분의 이름(공백으로 구분)<br>`data-disclosure-remember`: 접은 부분을 브라우저에 기억할 이름(선택) | `toggle(이름)`: x-on:click. 그 부분을 펼치거나 접는다<br>`isOpen(이름)`: x-show, x-bind:aria-expanded. 펼쳤는가<br>`isClosed(이름)`: 접었는가 | 이름 붙인 부분을 펼치고 접는다. 한 요소 안에 여러 부분을 둘 수 있다. 기억하면 다시 열어도 그대로다(저장소를 쓸 수 없으면 기억하지 않는다) |
+| `cozyFocusKey` | `data-focus-key`: 누를 글쇠(기본 /) | `focusOnKey()`: 칸의 x-on:keydown.window | 글을 적는 중이 아닐 때 그 글쇠를 누르면 이 칸으로 옮겨 간다 |
+| `cozyConfirm` | `data-confirm-message`: 물을 문장 | `ask()`: 폼의 x-on:submit | 취소하면 내지 않는다. 일반 POST 폼에 쓴다(앱 메뉴의 종료, 업데이트). htmx로 내는 폼은 hx-confirm, 지우기는 component/delete-confirm(확인 창)을 쓴다 |
+| `cozyDirtyForm` | 없음 | `mark()`: x-on:input, x-on:change. 입력이 바뀌었다<br>`clean()`: x-on:submit. 내는 중이다<br>`settled()`: x-on:htmx:after-settle.camel. 서버가 오류 폼을 돌려주었는지 본다<br>`warn()`: x-on:beforeunload.window | 안의 POST 폼에 저장하지 않은 입력이 있으면 떠날 때 브라우저가 확인한다. htmx가 오류 폼을 돌려주어도 저장되지 않은 것으로 본다. pattern/form-page가 붙이므로 화면이 따로 쓰지 않는다 |
+| `cozyAutoHeight` | 없음 | `fit()`: 감싸는 요소의 x-on:load.capture(iframe에는 식을 달 수 없다) | 안의 iframe을 내용 높이에 맞추고, 내용이 바뀌면 다시 맞춘다. 카탈로그 미리보기가 쓴다 |
+| `cozyIconList` | 없음 | `filter()`: 입력의 x-on:input<br>`copy()`: 목록의 x-on:click | 아이콘 목록을 거르고 누른 칸의 글자를 복사한다. 칸에는 data-name(거를 이름)과 data-copy-text(복사할 글자)를 둔다. 아이콘 목록이 쓴다 |
+<!-- /cozy:framework-behaviors -->
 
 ```html
-<button type="button" class="btn btn-sm" x-data="cozyCopy" x-on:click="copy" x-cloak
-        th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}">복사</button>
+<button type="button" class="btn btn-sm" x-data="cozyCopy" th:data-copy-text="${#strings.listJoin(memo.bodyLines, '&#10;')}" x-on:click="copy" x-cloak>복사</button>
 
 <div x-data="cozyDisclosure" data-disclosure-closed="filter">
   <button type="button" class="btn" x-on:click="toggle('filter')" x-bind:aria-expanded="isOpen('filter')" aria-controls="memo-filter">필터</button>
@@ -216,7 +220,7 @@ fragments:
 
 ### 앱 컴포넌트
 
-- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고, 손으로 고치면 C12가 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)).
+- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고(지우기는 `cozy remove behavior`, 이름 바꾸기는 `cozy rename behavior`), 템플릿에는 `cozy attach`로 붙인다. JS를 손으로 고치면 C12가 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)).
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.
@@ -230,7 +234,7 @@ fragments:
 ```html
 <div x-data="memoBodyCount" th:data-length="${bodyLength}" data-limit="5000" x-on:input="count">
   <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
-  <div class="form-hint mt-n2 mb-3" x-cloak x-text="label"></div>
+  <div class="form-hint mt-n2 mb-3" x-text="label" x-cloak></div>
 </div>
 ```
 

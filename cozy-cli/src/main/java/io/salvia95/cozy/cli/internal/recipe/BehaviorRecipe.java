@@ -144,7 +144,7 @@ final class BehaviorRecipe {
 	}
 
 	/** 명세와 JS를 함께 쓴다. 손으로 쓴 JS가 있으면 덮어쓰지 않는다 */
-	private static void write(Plan plan, BehaviorSpec spec, String detail) {
+	static void write(Plan plan, BehaviorSpec spec, String detail) {
 		String module = spec.module();
 		String script = plan.current(scriptFile(module));
 		if (script != null && !BehaviorRules.isGenerated(script)) {

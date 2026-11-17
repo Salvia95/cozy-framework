@@ -2,8 +2,8 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
-- **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
+- **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `attach`, `remove`, `rename` 등을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
 ```bash
@@ -12,7 +12,7 @@ mvn -o package -pl cozy-cli                         # 레포: target/cozy-cli-*.
 cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar check
 ```
 
-- **`--ui <jar나 폴더>`**: `check`와 아이콘을 확인하는 레시피는 cozy-ui의 프레임워크 자원(템플릿, 매니페스트, 아이콘)을 읽는다. 기본은 `--repository`에서 앱의 cozy 버전으로 jar를 찾는다. `--ui`를 주면 저장소를 찾지 않고 그 jar나 풀어 놓은 폴더(`target/classes`)를 읽는다. 워크벤치가 실행 중인 cozy-ui를 넘기는 데 쓴다. 없는 경로면 종료 코드 2다.
+- **`--ui <jar나 폴더>`**: `check`, 아이콘을 확인하는 레시피, 프레임워크 컴포넌트를 붙이는 `attach`는 cozy-ui의 프레임워크 자원(템플릿, 매니페스트, 아이콘, 프레임워크 컴포넌트의 명세)을 읽는다. 기본은 `--repository`에서 앱의 cozy 버전으로 jar를 찾는다. `--ui`를 주면 저장소를 찾지 않고 그 jar나 풀어 놓은 폴더(`target/classes`)를 읽는다. 워크벤치가 실행 중인 cozy-ui를 넘기는 데 쓴다. 없는 경로면 종료 코드 2다.
 - **JDK**: Java 소스를 JDK의 javac 파서로 읽으므로 JRE가 아니라 JDK 25로 실행한다. 번들 명령은 `java`가 25 이상인지 확인한다.
 
 ## 형식
@@ -29,6 +29,8 @@ cozy <동작> [옵션]
   set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
   migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
   migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
+  attach <컴포넌트> --at <템플릿>:<줄> …   템플릿의 요소 하나에 화면 안 동작을 붙이거나 떼기 [--dry-run] [--json]
+  remove behavior <모듈> <동작> […] | rename behavior <모듈> <동작> <새 동작>   동작 지우기, 이름 바꾸기 (붙인 곳도) [--dry-run] [--json]
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -36,7 +38,7 @@ cozy <동작> [옵션]
 | `--project <폴더>` | 현재 폴더 | 앱 폴더. 위로 올라가며 `pom.xml`과 `src/main/java`가 함께 있는 폴더를 찾는다 |
 | `--repository <폴더>` | `COZY_REPOSITORY`, 없으면 `~/.m2/repository` | cozy jar가 있는 Maven 저장소(저장소 배치). `check`가 앱이 쓰는 판의 cozy-ui jar를 여기서 찾는다. `COZY_REPOSITORY`에는 경로 구분자(Windows `;`, 그 밖 `:`)로 여러 저장소를 적고, 앞에서부터 찾는다 |
 | `--json` | 끔 | 기계가 읽는 출력 (아래 형식) |
-| `--dry-run` | 끔 | (`add`, `link`, `enable`, `sync`, `set`, `migrate`) 계획만 보이고 파일을 쓰지 않는다 |
+| `--dry-run` | 끔 | (`add`, `link`, `enable`, `sync`, `set`, `migrate`, `attach`, `remove`, `rename`) 계획만 보이고 파일을 쓰지 않는다 |
 
 | 종료 코드 | 뜻 |
 | --- | --- |
@@ -447,6 +449,56 @@ cozy sync behaviors
 - 손으로 고친 JS는 명세에서 다시 만든 것으로 바뀐다. 명세가 없어진 모듈의 만든 JS는 지운다(`지움`).
 - 명세 폴더에 모듈 이름의 `.yml`이 아닌 파일이 있거나, 명세의 모듈이 없거나, 명세가 있는 모듈의 JS를 손으로 썼으면 아무것도 바꾸지 않고 실패한다.
 - `--force`는 받지 않는다(`sync agents`에만 쓴다).
+
+## attach
+
+```bash
+cozy attach memoBodyCount --at memo/internal/fields:7 --data 'length=${bodyLength}' --data limit=5000 --on input:count
+cozy attach memoBodyCount --at memo/internal/fields:9 --text label --cloak
+cozy attach cozyDisclosure --at memo/api/list:12 --data disclosure-closed=filter --on "click:toggle('filter')" \
+  --bind "aria-expanded:isOpen('filter')"
+cozy attach memoBodyCount --at memo/internal/fields:9 --detach
+```
+
+템플릿의 요소 하나에 화면 안 동작(Alpine 컴포넌트)을 붙인다. 템플릿의 글자는 그대로 두고 그 요소의 여는 태그만 고친다. 앱 템플릿의 `x-*` 속성은 이 명령으로 쓴다.
+
+- **`--at <템플릿>:<줄>`**: 템플릿은 `templates/` 아래 경로이고 `.html`은 빼도 된다(`memo/internal/fields`, `templates/memo/internal/fields.html`). 줄은 요소가 시작하는 줄이다. 그 줄에서 시작하는 가장 바깥 요소가 하나여야 한다(버튼 안의 아이콘처럼 같은 줄의 안쪽 요소는 세지 않는다). `th:replace`와 `th:block` 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않으므로 거절한다.
+- **컴포넌트**: 이름이 `cozy`로 시작하면 프레임워크 컴포넌트이고 cozy-ui의 `cozy/behaviors.yml`([ui.md](ui.md)의 프레임워크 컴포넌트)에서 찾는다. 아니면 모듈의 동작 명세(`behaviors/{모듈}.yml`)에서 찾는다. 모듈 컴포넌트는 그 모듈의 템플릿(`templates/{모듈}/…`)에만 붙인다.
+- **붙이는 자리**: 요소에 `x-data`가 없고 감싸는 요소도 그 컴포넌트가 아니면, 그 요소가 컴포넌트의 자리가 되어 `x-data`를 받는다. 감싸는 요소가 그 컴포넌트면 안쪽 요소이고 이벤트와 값만 받는다. 이미 다른 컴포넌트를 붙인 요소에는 붙이지 않는다.
+
+| 옵션 | 쓰는 속성 | 받는 이름 |
+| --- | --- | --- |
+| `--data 이름=값` (여러 번) | `data-이름`. 값에 Thymeleaf 식(`${…}`, `*{…}`, `#{…}`, `@{…}`, `~{…}`)이 있으면 `th:data-이름` | 컴포넌트가 읽는 `data-*`(명세의 `@data-*`, 프레임워크 명세의 `data`). 컴포넌트의 자리에만 둔다 |
+| `--on 이벤트:동작` (여러 번) | `x-on:이벤트`. 이벤트에 수식어를 붙인다(`keydown.window`, `htmx:after-settle.camel`) | 동작(명세의 `actions`, 프레임워크 명세의 `methods`) |
+| `--text 이름`, `--show 이름` | `x-text`, `x-show` | 상태와 계산, 프레임워크 메서드 |
+| `--bind 속성:이름` (여러 번) | `x-bind:속성` | 상태와 계산, 프레임워크 메서드 |
+| `--model 상태` | `x-model` | `text`와 `bool` 상태 |
+| `--cloak` | `x-cloak` | 스크립트가 있어야만 쓸모 있는 요소에만 쓴다 |
+
+- **값**: 이름 하나이거나, 글자 인자 하나를 받는 프레임워크 메서드면 `이름('글자')`다(`toggle('filter')`). 식(`label.length`, `!open`)은 받지 않는다. 그런 로직은 명세의 계산과 동작에 둔다(`cozy add behavior`).
+- **다시 실행하기**: 같은 명령을 다시 실행하면 `그대로`다. 같은 속성에 다른 값을 주면 그 자리에서 바꾼다(`바꿈 data-limit: "5000" → "200"`). 새 속성은 마지막 속성 뒤에 `x-data`, `data-*`, `x-on:*`, `x-bind:*`, `x-show`, `x-text`, `x-model`, `x-cloak`의 순서로 붙인다.
+- **`--detach`**: 적은 옵션의 속성만 뗀다(값은 무엇이든 된다: `--data limit=x --detach`). 옵션 없이 쓰면 그 요소에서 그 컴포넌트의 것을 모두 뗀다. 컴포넌트의 자리에서 모두 떼려면 안쪽 요소의 것을 먼저 떼어야 한다(남아 있으면 그 줄을 보이며 실패한다).
+- **거절하는 경우**: 없는 컴포넌트, 컴포넌트에 없는 이름, 읽지 않는 `data-*`, 인자 수가 맞지 않는 메서드, 안쪽 요소의 `--data`, 줄에 요소가 없거나 둘 이상. 종료 코드 2이고 파일은 바뀌지 않는다.
+- **출력**: `바꿈  {템플릿 파일}    붙임 <div class="form-hint">: x-text="label", x-cloak`. `--json`의 `recipe`는 `attach`이고 `slots`는 늘 비어 있다.
+- **검사**: 붙인 이름은 `cozy check`(R16)가 다시 본다. 손으로 고친 속성이 감싸는 컴포넌트에 없는 이름을 부르면 오류다([testing.md](testing.md)).
+
+## remove behavior
+
+```bash
+cozy remove behavior memo body-count                       # 컴포넌트를 지우고 붙인 곳에서 뗀다
+cozy remove behavior memo body-count --computed over --state draft   # 항목만 지운다
+```
+
+- 항목 옵션(`--state`, `--computed`, `--action` 이름, `--listen 모듈:이벤트`) 없이 쓰면 컴포넌트를 지운다. 모듈 템플릿에서 그 컴포넌트를 붙인 곳(`x-data`, 읽는 `data-*`, 안쪽 요소의 이벤트와 값)을 모두 떼고 JS를 다시 만든다. 마지막 컴포넌트면 명세와 JS를 지운다.
+- 항목을 지울 때 템플릿이 그 이름을 부르고 있으면 그 줄을 보이며 실패한다. 먼저 `cozy attach … --detach`로 뗀다. 명세의 다른 항목이 그 이름을 쓰고 있어도 실패한다(명세 확인).
+
+## rename behavior
+
+```bash
+cozy rename behavior memo body-count body-length
+```
+
+명세의 키를 바꾸고 JS를 다시 만들며, 모듈 템플릿의 `x-data="memoBodyCount"`를 모두 `x-data="memoBodyLength"`로 바꾼다. 새 이름이 이미 있으면 실패한다.
 
 ## migrate alpine
 

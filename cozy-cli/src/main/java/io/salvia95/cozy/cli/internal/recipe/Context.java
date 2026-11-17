@@ -203,6 +203,14 @@ public final class Context {
 		}
 	}
 
+	/** cozy-ui의 자원. 처음 부를 때 읽는다 */
+	public FrameworkJar framework() {
+		if (this.loaded == null) {
+			this.loaded = this.framework.get();
+		}
+		return this.loaded;
+	}
+
 	/** Tabler Icons 외곽선 아이콘 이름인가 (cozy-ui jar로 확인) */
 	public void requireIcon(String icon) {
 		if (this.loaded == null) {

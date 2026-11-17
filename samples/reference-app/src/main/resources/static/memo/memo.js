@@ -1,6 +1,6 @@
 /* memo 모듈의 화면 안 동작. cozy가 동작 명세(behaviors/memo.yml)에서 만든 파일이라 손으로 고치지 않는다.
    동작은 cozy add behavior memo <동작> …로 바꾸고, 다시 만들 때는 cozy sync behaviors를 쓴다.
-   cozy:behaviors spec=a487e432878c815c9ec9d13d2f094d5d65d4f2282a779fefe95f979b7f20e193 body=2c0a10292904a18e4997a5c4007a6d4ed4b4c34c3b1d1c3824aa7ec9018d5861 */
+   cozy:behaviors spec=a487e432878c815c9ec9d13d2f094d5d65d4f2282a779fefe95f979b7f20e193 body=ec60f3a61f5bdb9be8f1388febf9ad24c548f36b092f303879a6bb46860c4de4 */
 document.addEventListener('alpine:init', function () {
   function readNumber(root, name, fallback) {
     var value = parseFloat(root.dataset[name]);
@@ -37,6 +37,7 @@ document.addEventListener('alpine:init', function () {
   }
 
   // memoBodyCount: 본문을 쓰는 동안 글자 수와 한도를 보인다
+  // cozy:component memoBodyCount members=length,limit,over,text,label,count data=length,limit
   window.Alpine.data('memoBodyCount', function () {
     var root = null;
     var initial = {};

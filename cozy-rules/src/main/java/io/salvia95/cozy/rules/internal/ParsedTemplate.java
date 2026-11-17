@@ -83,7 +83,9 @@ final class ParsedTemplate {
 	 * @param name 속성 이름 (소문자, {@code x-on:click}, {@code th:attr})
 	 * @param value 엔티티를 푼 값
 	 * @param element 속성이 있는 요소 이름 (소문자)
+	 * @param scope 가장 가까운 x-data의 컴포넌트(이 요소 포함, 같은 파일 안). 없으면 null
+	 * @param locals 감싸는 x-for가 더한 이름
 	 */
-	record AlpineAttribute(String name, String value, int line, String element) {
+	record AlpineAttribute(String name, String value, int line, String element, String scope, Set<String> locals) {
 	}
 }

@@ -56,7 +56,7 @@ cozy update --json   # {"current", "latest", "channel", "upToDate", "upgrade", "
   - 인증서: JDK의 인증서(`cacerts`)에 더해 Windows는 Windows 인증서 저장소(`Windows-ROOT`)를 믿는다. 사내 CA로 서명한 서버도 그 CA가 Windows에 들어 있으면 따로 설정하지 않는다.
   - 프록시: 시스템 설정(Windows는 인터넷 옵션의 프록시)을 따른다.
   - 연결은 10초, 응답은 60초까지 기다린다.
-- **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인한다. 새 판이 있으면 오류 출력의 마지막에 한 줄을 보인다.
+- **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`, `attach`, `remove`, `rename`) 뒤에 하루에 한 번 채널을 확인한다. 새 판이 있으면 오류 출력의 마지막에 한 줄을 보인다.
 
   ```text
   [cozy] 새 버전이 있습니다: 2.1.0. cozy upgrade로 올립니다 (바뀌는 것: cozy update)

@@ -76,6 +76,8 @@
   - 앱 모듈 템플릿은 `cozy` 컴포넌트와 자기 모듈(`static/{모듈}/`)의 컴포넌트만 쓴다. `fragments/`와 `error/`는 `cozy` 컴포넌트만 쓴다.
   - 프레임워크 템플릿은 프레임워크 컴포넌트를 모두 쓴다. `cozy`로 시작하지 않는 프레임워크 컴포넌트(워크벤치의 `workbench…`)는 프레임워크 화면 전용이다. dev에만 있으므로 앱 템플릿이 쓰면 오류다.
   - 앱 컴포넌트는 `static/{모듈}/` 아래에서 등록하고, 이름은 모듈 이름 + 대문자로 시작한다(`memoEditor`). `cozy`로 시작하는 이름은 프레임워크 것이다. 같은 이름을 두 번 등록하면 오류다.
+  - **이름 검사**: JS 파일이 컴포넌트마다 내놓는 이름을 `// cozy:component 이름 members=… data=…` 줄로 적으면(`ComponentContract`), 이벤트와 값을 붙이는 속성(`x-on:*`, `x-bind:*`, `x-text`, `x-show`, `x-model`, `x-effect`, `x-init`, `x-if`, `x-for`)이 부르는 이름이 가장 가까운 `x-data`(같은 템플릿 안) 컴포넌트의 `members`에 있어야 한다. `$`로 시작하는 Alpine 이름, `x-for`가 더한 이름, JavaScript 낱말(`true`, `null` 등), 객체 글자의 키는 빼고 본다. 동작 명세에서 만든 JS와 `cozy.js`는 이 줄을 쓴다(`cozy.js`의 줄은 프레임워크 명세 `cozy/behaviors.yml`과 같다). 줄이 없는 컴포넌트(워크벤치의 `workbench…`)는 이름을 보지 않는다.
+  - 앱 템플릿에서 이벤트와 값을 붙인 요소를 감싸는 `x-data`가 그 템플릿에 없으면 오류다(다른 템플릿이 감쌀 컴포넌트는 그 파일만 봐서는 알 수 없다). 프레임워크 템플릿은 보지 않는다.
   - 식 검사: 문자열 리터럴을 지운 뒤 화살표 함수(`=>`), 템플릿 문자열(백틱), 전개(`...`), 속성 대입(`a.b = …`, `a.b++`), 전역 이름(`window`, `document`, `console`, `Math`, `JSON`, `fetch`, `htmx`, `Alpine` 등)을 찾는다. `x-for`는 ` in ` 뒤의 식만 본다. `x-data`, `x-ref`, `x-cloak`, `x-ignore`, `x-transition`은 식이 아니라서 보지 않는다.
   - **없앤 동작 속성**(`AlpineAttributes.removed`): `data-cozy-confirm`, `data-cozy-copy`, `data-cozy-autosize`, `data-cozy-icon-filter`와 그 `th:`·`data-th-` 모양은 오류다. 메시지가 새 cozy 컴포넌트의 모양을 보인다. `cozy migrate alpine`이 바꾸는 것(`AlpineAttributes.MIGRATED`: confirm, copy)은 그 명령을 알려 준다. 값을 담기만 하는 `data-cozy-*`(워크벤치의 `data-cozy-line` 등)는 해당하지 않는다.
   - `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 그 요소에서 식을 실행하지 않고, 같은 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소에서 `x-on:load.capture`로 받고, `src`는 컴포넌트가 정한다. `x-ref`는 된다.
@@ -98,6 +100,7 @@
 [R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
 [R16] templates/memo/api/detail.html:2 → @click="copy" — 줄임 표기는 쓰지 않습니다. x-on:click처럼 긴 이름으로 쓰세요.
 [R16] templates/memo/api/list.html:4 → x-data="cozyDisclosur" — 등록된 컴포넌트 'cozyDisclosur'가 없습니다. 비슷한 이름: cozyDisclosure. 새 컴포넌트는 static/memo/memo.js에 Alpine.data('cozyDisclosur', …)로 등록합니다.
+[R16] templates/memo/internal/fields.html:9 → x-text="lable" — 'lable'는 감싸는 컴포넌트 memoBodyCount에 없습니다. 있는 이름: count, label, length, limit, over, text. 붙이는 이름은 cozy attach가 확인하고, 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.
 [R16] static/app.js:2 → memoEditor — 앱 컴포넌트는 모듈 폴더 static/{모듈}/{모듈}.js에 둡니다. 모듈 이름(memo)의 폴더로 옮기세요.
 [R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.
 ```
