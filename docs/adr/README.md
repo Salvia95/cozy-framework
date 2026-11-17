@@ -45,3 +45,4 @@
 | [0039](0039-msi-installer.md) | 개발 도구 설치 파일(MSI): 사용자별 설치 `%LOCALAPPDATA%\Programs\Cozy`, 영구 사용자 PATH, 위치와 상관없는 Maven 설정, WiX v7, Windows 러너 검증 (0025·0028 개정) | 사용자 결정 |
 | [0040](0040-htmx-alpine.md) | 화면 상호작용: 서버를 거치면 htmx, 화면 안의 상태는 Alpine.js(CSP 빌드). 워크벤치·cozy-ui·생성 앱, R16, `cozy add behavior` (0014·0017·0026·0036 개정). 동작 속성 `data-cozy-*` 제거와 `cozy migrate alpine`, 2.0.0 | 사용자 결정 |
 | [0041](0041-event-contracts-module.md) | 이벤트 계약 모듈 `events`: 이벤트 클래스를 `events/spi/{주인 모듈}/`에 모아 순환 의존을 없앤다. 주인만 발행(C11), `cozy migrate events`(2.0.0) (0029 개정) | 사용자 지적 |
+| [0042](0042-update-channel.md) | 개발 도구 업데이트 채널: 직접 정하는 업데이트 서버(파일 서버, 웹 서버, GitLab, GitHub)의 색인 `cozy-channel.json`, `cozy update`·`cozy upgrade`·`cozy channel`, 사용자 저장소와 읽기 전용 꼬리 저장소 (0025·0028·0039 개정) | 사용자 요청 |
