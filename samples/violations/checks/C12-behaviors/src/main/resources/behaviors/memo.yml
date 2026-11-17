@@ -1,0 +1,8 @@
+# memo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/memo/memo.js를 만든다
+components:
+  pinToggle:
+    purpose: "고정 표시를 켜고 끈다"
+    state:
+      pinned: "bool@data-pinned"
+    actions:
+      flip: "toggle(pinned)"

@@ -13,7 +13,7 @@ public final class Args {
 
 	/** 값을 받는 옵션 */
 	static final Set<String> VALUED = Set.of("label", "entity", "icon", "field", "publish", "pattern", "title", "nav", "param",
-			"purpose", "on", "name", "uses", "returns", "sql", "in", "default", "line", "fragment", "index", "from", "value");
+			"purpose", "on", "name", "uses", "returns", "sql", "in", "default", "line", "fragment", "index", "from", "value", "state", "computed", "action", "listen");
 
 	private final List<String> positional = new ArrayList<>();
 

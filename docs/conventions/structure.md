@@ -104,7 +104,7 @@ static/memo/
 └── memo.js                                           모듈의 Alpine 컴포넌트(memoBodyCount 등). 모듈마다 이 파일 하나
 ```
 
-- **Alpine 컴포넌트**: 모듈의 화면 안 상태는 `static/{모듈}/{모듈}.js`에 모듈 이름으로 시작하는 이름(`memoBodyCount`)으로 등록한다. 레이아웃이 모든 모듈의 파일을 싣는다. 같은 모듈의 템플릿만 쓴다(R16). 만드는 명령은 `cozy add behavior`다([ui.md](ui.md)의 앱 컴포넌트).
+- **Alpine 컴포넌트**: 모듈의 화면 안 상태는 `static/{모듈}/{모듈}.js`에 모듈 이름으로 시작하는 이름(`memoBodyCount`)으로 등록한다. 레이아웃이 모든 모듈의 파일을 싣는다. 같은 모듈의 템플릿만 쓴다(R16). 이 파일은 모듈의 동작 명세 `behaviors/{모듈}.yml`에서 cozy가 만들고 손으로 고치지 않는다(C12). 선언하고 고치는 명령은 `cozy add behavior`다([ui.md](ui.md)의 동작 명세).
 
 ### 참조와 모델 (R1, R3, R9, R10)
 

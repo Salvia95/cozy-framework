@@ -1,0 +1,59 @@
+# demo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/demo/demo.js를 만든다
+components:
+  bodyCount:
+    purpose: "본문을 쓰는 동안 글자 수와 한도를 보인다"
+    state:
+      length: "number@data-length"
+      limit: "number=5000@data-limit"
+    computed:
+      over: "and(gt(limit, 0), gt(length, limit))"
+      text: "format('{length} / {limit}자', 'ko-KR')"
+      label: "if(over, format('{text} · 한도를 넘었습니다'), text)"
+    actions:
+      count: "within('textarea', set(length, length(event.value)))"
+  selection:
+    purpose: "고른 행 수에 따라 묶음 버튼을 켠다"
+    state:
+      ids: "list"
+    computed:
+      picked: "count(ids)"
+      none: "empty(ids)"
+      summary: "format('{picked}개 고름: {ids}')"
+    actions:
+      pick: "toggleItem(ids, event.data.id); emit('demo:selection-changed', ids, picked)"
+      add: "addItem(ids, event.data.id)"
+      drop: "removeItem(ids, event.data.id)"
+      clear: "reset(ids); emit('demo:selection-changed', ids, picked)"
+    listens:
+      "demo:archived": "clear"
+  panel:
+    purpose: "탭, 펼침, 수량, 동의, 메모를 고른다"
+    state:
+      open: "bool=true@data-open"
+      tab: "text=list"
+      quantity: "number=1"
+      agreed: "bool"
+      note: "text"
+      tags: "list=a,b@data-tags"
+    computed:
+      onList: "eq(tab, 'list')"
+      notList: "ne(tab, 'list')"
+      many: "ge(quantity, 10)"
+      few: "le(quantity, 2)"
+      under: "lt(quantity, 5)"
+      tagged: "includes(tags, 'a')"
+      closed: "not(open)"
+      ready: "or(agreed, many)"
+      noteEmpty: "empty(note)"
+      braces: "format('{{{quantity}}}')"
+    actions:
+      toggleOpen: "toggle(open)"
+      showTab: "set(tab, event.data.tab)"
+      more: "increment(quantity)"
+      less: "when(gt(quantity, 1), decrement(quantity))"
+      jump: "increment(quantity, 10)"
+      agree: "set(agreed, event.checked)"
+      write: "set(note, event.value)"
+      setQuantity: "set(quantity, number(event.value))"
+      fromDetail: "set(note, event.detail.message)"
+      clearNote: "reset(note)"

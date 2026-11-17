@@ -37,6 +37,7 @@ class RenderingTest extends CozyRenderingTest {
 | C9 | 빈칸 | `CozyArchitectureTest.slotsAreFilled` | `src/main` 아래에 `cozy:slot` 표시가 남아 있음 (ADR-0032) |
 | C10 | 모듈 스크립트 | `CozyRenderingTest.everyModuleScriptParses` | `static/{모듈}/{모듈}.js`의 JavaScript 문법 오류. 레이아웃이 모든 모듈의 파일을 한 묶음으로 싣으므로 한 파일의 오류가 모든 모듈의 컴포넌트를 멈춘다([ui.md](ui.md)의 앱 컴포넌트) |
 | C11 | 이벤트 주인 | `CozyArchitectureTest.eventsArePublishedByTheirOwner` | 이벤트를 주인 모듈의 `internal/app/command/` 밖에서 만듦(생성자, `of` 같은 static 메서드). 주인은 `events/spi/{주인 모듈}`의 폴더 이름, 옛 자리면 그 모듈이다([events.md](events.md)) |
+| C12 | 동작 명세 | `CozyArchitectureTest.behaviorScriptsMatchTheirSpecs`, `cozy check` | 동작 명세(`behaviors/{모듈}.yml`)에서 만든 `static/{모듈}/{모듈}.js`가 지금 명세와 다름(명세를 고친 뒤 다시 만들지 않음), 만든 JS를 손으로 고침, 명세나 만든 JS 한쪽만 있음, 명세가 있는 모듈의 JS를 손으로 씀, 명세 폴더에 모듈 이름의 `.yml`이 아닌 파일. 고치는 명령은 `cozy sync behaviors`([ui.md](ui.md)의 동작 명세) |
 
 ### 검사별 세부
 
@@ -54,6 +55,8 @@ class RenderingTest extends CozyRenderingTest {
 - **C5 화면 템플릿**: `templates/{모듈}/api/` 아래의 템플릿이 화면 템플릿이다. 스펙 이름은 `api/`를 뺀 경로의 `/`를 `-`로 바꾼 것이다(`memo/api/list` → `memo-list`). `{모듈}/spi/`의 fragment는 매니페스트에 있어야 하고, `{모듈}/internal/`은 대상이 아니다(그것을 쓰는 화면과 fragment로 검사된다). `cozy/`, `fragments/`, `error/`도 대상이 아니다. `fragments/`의 fragment는 매니페스트(R8)가 대신한다.
 - **C8 대상**: 앱 메인 클래스 중 모듈에 속한 것. 어긴 곳마다 `[C8] 클래스 — 고치는 법` 또는 `[C8] 클래스 → 대상 — 고치는 법` 한 줄을 내고, 모두 모아 한 번에 실패한다. 예외 목록은 없다. 판단은 cozy-rules의 `LayerRules`가 하고, cozy-test는 컴파일된 클래스를 읽어 넘긴다([rules.md](rules.md#모듈-구조와-빈칸-api-cozy-rules)).
 - **C10 모듈 스크립트**: 폴더 이름과 같은 이름의 파일(`static/memo/memo.js`)만 읽는다. Closure Compiler의 파서로 최신 문법까지 읽고, 타입과 선언은 보지 않는다. 메시지는 `[C10] src/main/resources/static/memo/memo.js:7 — 파서의 설명. 레이아웃이 …`이다.
+- **C12 동작 명세**: 만든 JS의 머리 주석 끝줄 `cozy:behaviors spec={명세의 SHA-256} body={본문의 SHA-256} */`를 지금 파일과 비교한다. 해시는 BOM을 빼고 줄바꿈을 `\n`으로 맞춘 내용으로 재므로, Windows에서 줄바꿈을 바꿔 체크아웃해도 같다. 명세를 읽거나 JS를 만들지 않고 해시만 비교한다(cozy-rules, JDK만). 명세가 없는 손으로 쓴 모듈 JS는 이 검사의 대상이 아니다. 메시지는 `[C12] src/main/resources/static/memo/memo.js → memo — 동작 명세에서 만든 파일을 손으로 고쳤습니다. … 고치는 명령: cozy sync behaviors`다.
+- **동작 명세의 낱말 시험**: cozy-cli의 `BehaviorScriptTest`가 낱말 전부를 쓰는 `src/test/resources/behaviors/demo.yml`에서 만든 JS를 `demo.js`와 글자까지 비교한다. 만든 JS가 브라우저에서 동작하는지는 레포 루트를 정적 서버로 띄우고 `cozy-cli/src/test/resources/behaviors/demo.html`을 열어 본다(CSP `script-src 'self'`, Alpine CSP 빌드). 낱말을 더하거나 만드는 방식을 바꾸면 `demo.js`를 다시 만들고 이 페이지를 runtime-verifier로 다시 확인한다.
 - **C9 빈칸**: cozy 명령은 에이전트가 채울 자리에 빈칸 표시를 남긴다. 표시가 남아 있으면 빌드가 실패한다. 다 채웠으면 표시를 지운다.
   - 형식: `cozy:slot {id} — {무엇을}`. id는 영문·숫자·`-`·`_`·`.`이다. 설명은 대시(—, -) 뒤부터 주석 끝이나 `"`, `;`, 줄 끝까지다.
 

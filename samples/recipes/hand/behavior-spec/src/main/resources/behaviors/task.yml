@@ -1,0 +1,8 @@
+# 손으로 다시 쓴 명세: 내용은 cozy add behavior가 쓴 것과 같고 모양만 다르다
+components:
+  titleCount:
+    purpose: 제목의 글자 수를 보인다
+    state: { title: text@data-title }
+    computed:
+      length: length( title )
+      label: "format('제목 {length}자')"

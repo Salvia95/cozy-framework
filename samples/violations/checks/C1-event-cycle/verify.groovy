@@ -6,6 +6,6 @@ def log = new File(basedir, "build.log").getText("UTF-8")
   "modulesAreVerified",
   "[C8] it.cozy.app.book.spi.event.BookAdded — it.cozy.app.book.spi.event는 옛 이벤트 자리입니다",
   "고치는 명령: cozy migrate events",
-  "Tests run: 7, Failures: 2, Errors: 0, Skipped: 0",
+  "Tests run: 8, Failures: 2, Errors: 0, Skipped: 0",
 ].each { assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it }
 return true

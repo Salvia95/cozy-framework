@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!--
+  동작 명세 낱말 시험 페이지: demo.yml에서 만든 demo.js를 Alpine CSP 빌드로 돌린다. CSP는 앱과 같다(script-src 'self', eval 없음).
+  레포 루트를 정적 서버로 띄우고 /cozy-cli/src/test/resources/behaviors/demo.html을 연다. 요소마다 id가 있고, 기대 값은 docs/conventions/testing.md에 있다.
+-->
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>동작 명세 낱말 시험</title>
+  <script src="demo.js" defer></script>
+  <script src="../../../../../cozy-ui/src/main/resources/META-INF/resources/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js" defer></script>
+</head>
+<body>
+  <h1>동작 명세 낱말 시험</h1>
+
+  <section id="body-count" x-data="demoBodyCount" data-length="3" data-limit="10" x-on:input="count">
+    <h2>bodyCount: within, set, length, gt, and, if, format(ko-KR)</h2>
+    <input id="body-title" type="text" value="제목 칸(세지 않음)">
+    <textarea id="body-text">abc</textarea>
+    <p id="body-label" x-text="label"></p>
+    <p id="body-over" x-show="over">한도를 넘었습니다</p>
+  </section>
+
+  <section id="selection" x-data="demoSelection">
+    <h2>selection: toggleItem, addItem, removeItem, reset, emit, listens, count, empty, format(목록)</h2>
+    <ul>
+      <li><button id="pick-1" type="button" data-id="1" x-on:click="pick"><span>1번 고르기</span></button></li>
+      <li><button id="pick-2" type="button" data-id="2" x-on:click="pick">2번 고르기</button></li>
+      <li><button id="add-3" type="button" data-id="3" x-on:click="add">3번 더하기</button></li>
+      <li><button id="drop-3" type="button" data-id="3" x-on:click="drop">3번 빼기</button></li>
+    </ul>
+    <p id="selection-summary" x-text="summary"></p>
+    <p id="selection-picked" x-text="picked"></p>
+    <button id="selection-bulk" type="button" x-bind:disabled="none">묶음 작업</button>
+    <button id="selection-clear" type="button" x-on:click="clear">모두 풀기</button>
+  </section>
+
+  <section id="listener" x-data="demoPanel" x-on:demo:selection-changed.window="fromDetail">
+    <h2>emit을 받는 다른 컴포넌트 (x-on:demo:selection-changed.window → fromDetail, event.detail.message 없음 → 빈 글자)</h2>
+    <p id="listener-note" x-text="note">처음</p>
+  </section>
+
+  <section id="panel" x-data="demoPanel" data-open="false" data-tags="a c">
+    <h2>panel: toggle, set(event.data, event.checked, event.value, number), increment, decrement, when, reset, eq, ne, ge, le, lt, includes, not, or, empty</h2>
+    <button id="panel-toggle" type="button" x-on:click="toggleOpen">펼치기</button>
+    <p id="panel-open" x-show="open">펼침</p>
+    <p id="panel-closed" x-show="closed">접힘</p>
+    <button id="tab-list" type="button" data-tab="list" x-on:click="showTab">목록 탭</button>
+    <button id="tab-chart" type="button" data-tab="chart" x-on:click="showTab">차트 탭</button>
+    <p id="panel-on-list" x-show="onList">목록 탭입니다</p>
+    <p id="panel-not-list" x-show="notList">목록 탭이 아닙니다</p>
+    <button id="panel-more" type="button" x-on:click="more">하나 더</button>
+    <button id="panel-less" type="button" x-on:click="less">하나 덜</button>
+    <button id="panel-jump" type="button" x-on:click="jump">열 더</button>
+    <input id="panel-quantity" type="number" x-on:input="setQuantity">
+    <p id="panel-quantity-text" x-text="quantity"></p>
+    <p id="panel-braces" x-text="braces"></p>
+    <p id="panel-many" x-show="many">10개 이상</p>
+    <p id="panel-few" x-show="few">2개 이하</p>
+    <p id="panel-under" x-show="under">5개 미만</p>
+    <p id="panel-tagged" x-show="tagged">a 표시가 있습니다</p>
+    <label><input id="panel-agree" type="checkbox" x-on:change="agree"> 동의</label>
+    <p id="panel-ready" x-show="ready">준비됨</p>
+    <input id="panel-note" type="text" x-on:input="write">
+    <p id="panel-note-text" x-text="note"></p>
+    <p id="panel-note-empty" x-show="noteEmpty">메모 없음</p>
+    <button id="panel-clear-note" type="button" x-on:click="clearNote">메모 지우기</button>
+  </section>
+</body>
+</html>

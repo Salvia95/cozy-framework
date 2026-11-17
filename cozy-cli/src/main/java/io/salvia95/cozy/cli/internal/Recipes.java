@@ -243,7 +243,16 @@ public final class Recipes {
 			Map.entry("fragment", List.of(MODULE, positional("이름", "fragment 이름 (소문자와 -)", "recent-activity"),
 					repeated("param", "파라미터", true, "items:list:ActivityItem").withParts(nameOf("items"), type("list:ActivityItem")),
 					option("purpose", "용도 한 줄", true, "최근 활동 목록"))),
-			Map.entry("behavior", List.of(MODULE, positional("동작", "동작 이름 (소문자와 -). 컴포넌트는 모듈 이름 + 동작", "char-count"))),
+			Map.entry("behavior", List.of(MODULE, positional("동작", "동작 이름 (소문자와 -). 컴포넌트는 모듈 이름 + 동작", "body-count"),
+					option("purpose", "목적 한 문장 (새 동작에 필요)", false, "본문을 쓰는 동안 글자 수를 보인다"),
+					repeated("state", "상태", false, "length:number@data-length").withParts(nameOf("length"),
+							text("declaration", "종류[=처음 값][@data-이름]", true, "number@data-length")),
+					repeated("computed", "계산", false, "label:format('{length}자', 'ko-KR')").withParts(nameOf("label"),
+							text("expression", "식", true, "format('{length}자', 'ko-KR')")),
+					repeated("action", "동작", false, "count:set(length, length(event.value))").withParts(nameOf("count"),
+							text("steps", "단계 (;로 잇는다)", true, "set(length, length(event.value))")),
+					repeated("listen", "받는 화면 이벤트", false, "count:memo:saved").withParts(text("action", "동작", true, "count"),
+							text("event", "화면 이벤트 (모듈:이름)", true, "memo:saved")))),
 			Map.entry("event", List.of(MODULE, positional("이벤트", "이벤트 이름 (PascalCase, 과거형)", "ReportSent"),
 					repeated("field", "필드", true, "reportId:long").withParts(nameOf("reportId"), kind(KINDS, "long")))),
 			Map.entry("listener", List.of(positional("모듈", "받는 모듈", "activity").withFrom("modules"),
@@ -272,7 +281,7 @@ public final class Recipes {
 
 	/** 레시피가 아닌 명령의 플레이북: 형식과 폴더 */
 	public static final Map<String, String> OTHER_PLAYBOOKS = Map.of("describe", "cozy describe [--json]", "check",
-			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]");
+			"cozy check [--json]", "sync-agents", "cozy sync agents [--force]", "sync-behaviors", "cozy sync behaviors");
 
 	/** 명령이 아닌 주제의 플레이북 */
 	public static final List<String> TOPIC_PLAYBOOKS = List.of("screens", "screen-layout", "screen-states", "inputs", "wording",
@@ -291,9 +300,10 @@ public final class Recipes {
 					"읽기 화면 하나(컨트롤러, 화면 DTO, 템플릿, 스펙, 내비게이션). 목록·폼은 crud가 만든다", "컨트롤러 view-model", true),
 			new Recipe("fragment", 1, "cozy add fragment <모듈> <이름> --param 이름:타입 … --purpose \"용도\"",
 					"다른 모듈에 공개하는 fragment와 매니페스트 항목", "템플릿 fragment-body", true),
-			new Recipe("behavior", 1, "cozy add behavior <모듈> <동작>",
-					"화면 안의 상태를 맡는 Alpine 컴포넌트 하나({모듈}{동작}). static/{모듈}/{모듈}.js에 더하고, 레이아웃이 그 파일을 싣는다",
-					"behavior-{컴포넌트}", true),
+			new Recipe("behavior", 1,
+					"cozy add behavior <모듈> <동작> [--purpose 목적] [--state 이름:종류[=처음 값][@data-이름] …] [--computed 이름:식 …] [--action 이름:단계[; 단계] …] [--listen 동작:모듈:이벤트 …]",
+					"화면 안의 상태를 맡는 Alpine 컴포넌트 하나({모듈}{동작})를 동작 명세 behaviors/{모듈}.yml에 선언하거나 고치고, 그 명세에서 static/{모듈}/{모듈}.js를 만든다. 레이아웃이 그 파일을 싣는다",
+					"없음(JS는 명세에서 만든다)", true),
 			new Recipe("event", 1, "cozy add event <모듈> <이벤트> --field 이름:종류 …", "CozyEvent record와 직렬화 샘플 v1",
 					"없음(발행할 한 줄은 에이전트가 넣는다)", true),
 			new Recipe("listener", 1, "cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]",

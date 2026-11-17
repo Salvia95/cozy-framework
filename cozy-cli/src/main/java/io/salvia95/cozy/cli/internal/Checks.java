@@ -14,13 +14,14 @@ import io.salvia95.cozy.rules.Origin;
 import io.salvia95.cozy.rules.RulesInput;
 import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.Severity;
+import io.salvia95.cozy.rules.BehaviorRules;
 import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * {@code cozy check}: 컴파일 없이 소스로 판단할 수 있는 검사. 템플릿 규칙 R1~R16(C2), 모듈 안 구조 C8, 빈칸 C9. 판단은 cozy-test와 같은
+ * {@code cozy check}: 컴파일 없이 소스로 판단할 수 있는 검사. 템플릿 규칙 R1~R16(C2), 모듈 안 구조 C8, 빈칸 C9, 동작 명세와 만든 JS C12. 판단은 cozy-test와 같은
  * cozy-rules가 한다. C1, C3~C7은 앱을 컴파일하고 띄워야 하고 C10은 JavaScript 파서가 필요하므로 {@code mvn verify}가 한다.
  */
 public final class Checks {
@@ -47,6 +48,7 @@ public final class Checks {
 					project.sources().namedInterfacePackages()));
 		}
 		violations.addAll(SlotRules.check(project.dir().resolve("src/main"), "src/main/"));
+		violations.addAll(BehaviorRules.check(project.dir().resolve("src/main/resources"), "src/main/resources/"));
 		Map<String, String> typeFiles = new LinkedHashMap<>();
 		project.sources().types().values().forEach((t) -> typeFiles.put(t.name(), t.unit().relative()));
 		project.sources().packageInfos().values().forEach((p) -> typeFiles.put(p.pkg(), p.unit().relative()));

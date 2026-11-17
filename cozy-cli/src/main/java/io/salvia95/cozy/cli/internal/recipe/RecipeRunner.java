@@ -56,7 +56,7 @@ public final class RecipeRunner {
 			case "listener" -> BasicRecipes.listener(ctx, parsed);
 			case "migration" -> BasicRecipes.migration(ctx, parsed);
 			case "fragment" -> BasicRecipes.fragment(ctx, parsed);
-			case "behavior" -> BasicRecipes.behavior(ctx, parsed);
+			case "behavior" -> BehaviorRecipe.run(ctx, parsed);
 			case "screen" -> ScreenRecipe.run(ctx, parsed);
 			case "crud" -> CrudRecipe.run(ctx, parsed);
 			case "dto" -> StageTwoRecipes.dto(ctx, parsed);
@@ -71,11 +71,23 @@ public final class RecipeRunner {
 		report(recipe, ctx.plan(), ctx.manual(), next.replaceFirst("^다음: ", ""), true, dryRun, json, out);
 	}
 
-	/** {@code cozy sync agents [--force]}: 앱의 에이전트 문서를 이 cozy 명령에 든 것과 같게 맞춘다 */
+	/**
+	 * {@code cozy sync agents [--force]}: 앱의 에이전트 문서를 이 cozy 명령에 든 것과 같게 맞춘다. {@code cozy sync behaviors}: 동작 명세에서
+	 * 모듈의 JS를 다시 만든다
+	 */
 	public static void sync(List<String> rest, AppProject project, boolean force, boolean dryRun, boolean json,
 			PrintStream out) {
+		if (rest.size() == 1 && rest.getFirst().equals("behaviors")) {
+			if (force) {
+				throw new CliException("--force는 cozy sync agents에만 씁니다.");
+			}
+			Plan plan = new Plan(project.dir());
+			String next = BehaviorRecipe.sync(plan, project);
+			report("sync behaviors", plan, List.of(), next, false, dryRun, json, out);
+			return;
+		}
 		if (rest.size() != 1 || !rest.getFirst().equals("agents")) {
-			throw new CliException("cozy sync 뒤에는 agents만 적습니다 (cozy sync agents [--force]).");
+			throw new CliException("cozy sync 뒤에는 agents나 behaviors를 적습니다 (cozy sync agents [--force], cozy sync behaviors).");
 		}
 		Plan plan = new Plan(project.dir());
 		String next = AgentDocs.sync(plan, force);

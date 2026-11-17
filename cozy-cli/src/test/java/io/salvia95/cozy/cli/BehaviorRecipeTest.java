@@ -13,12 +13,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.salvia95.cozy.cli.CozyCliTest.App;
 import io.salvia95.cozy.cli.CozyCliTest.Result;
+import io.salvia95.cozy.rules.BehaviorRules;
 
 /**
- * {@code cozy add behavior <모듈> <이름>}: 모듈의 Alpine 컴포넌트 파일({@code static/{모듈}/{모듈}.js})에 컴포넌트 등록 하나와 빈칸을
- * 만든다. 파일이 있으면 끝에 더한다. 상태와 메서드는 에이전트가 채운다(C9).
+ * {@code cozy add behavior}: 모듈의 동작 명세({@code behaviors/{모듈}.yml})에 컴포넌트를 선언하거나 고치고, 그 명세에서
+ * {@code static/{모듈}/{모듈}.js}를 만든다. 빈칸을 남기지 않는다. {@code cozy sync behaviors}: 명세에서 JS를 다시 만든다. 명세와 JS가 맞지
+ * 않으면 {@code cozy check}가 C12로 실패한다.
  */
 class BehaviorRecipeTest {
+
+	static final String SPEC = "src/main/resources/behaviors/memo.yml";
 
 	static final String FILE = "src/main/resources/static/memo/memo.js";
 
@@ -42,60 +46,175 @@ class BehaviorRecipeTest {
 		return Files.readString(this.dir.resolve(file), StandardCharsets.UTF_8);
 	}
 
-	@Test
-	void theFirstBehaviorCreatesTheModuleFileWithASlot() throws IOException {
-		Result result = run("add", "behavior", "memo", "char-count");
-		assertThat(result.code()).as(result.err()).isZero();
-		assertThat(result.out()).contains("만듦  " + FILE).contains("빈칸 1곳").contains("x-data=\"memoCharCount\"");
-		String js = read(FILE);
-		assertThat(js).startsWith("/*")
-			.contains("document.addEventListener('alpine:init', function () {")
-			.contains("window.Alpine.data('memoCharCount', function () {")
-			.contains("root = this.$root;")
-			.contains("cozy:slot behavior-memoCharCount")
-			.endsWith("});\n");
+	void write(String file, String content) throws IOException {
+		Path path = this.dir.resolve(file);
+		Files.createDirectories(path.getParent());
+		Files.writeString(path, content, StandardCharsets.UTF_8);
+	}
 
-		// 빈칸만 남고 등록 규칙(R16)은 지킨다
+	Result bodyCount() {
+		return run("add", "behavior", "memo", "body-count", "--purpose", "본문을 쓰는 동안 글자 수를 보인다", "--state",
+				"length:number@data-length", "--computed", "label:format('{length}자', 'ko-KR')", "--action",
+				"count:within('textarea', set(length, length(event.value)))");
+	}
+
+	@Test
+	void aNewBehaviorWritesTheSpecAndTheScriptWithoutSlots() throws IOException {
+		Result result = bodyCount();
+
+		assertThat(result.code()).as(result.err()).isZero();
+		assertThat(result.out()).contains("만듦  " + SPEC, "만듦  " + FILE, "x-data=\"memoBodyCount\"").doesNotContain("빈칸");
+		assertThat(read(SPEC)).isEqualTo("""
+				# memo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/memo/memo.js를 만든다
+				components:
+				  bodyCount:
+				    purpose: "본문을 쓰는 동안 글자 수를 보인다"
+				    state:
+				      length: "number@data-length"
+				    computed:
+				      label: "format('{length}자', 'ko-KR')"
+				    actions:
+				      count: "within('textarea', set(length, length(event.value)))"
+				""");
+		assertThat(read(FILE)).contains("window.Alpine.data('memoBodyCount', function () {", "this.length = readNumber(root, 'length', 0);",
+				"get label() {", "count: function (event) {").doesNotContain("cozy:slot");
+		Result check = run("check");
+		assertThat(check.code()).as(check.out()).isZero();
+	}
+
+	@Test
+	void runningTheSameCommandAgainChangesNothing() {
+		bodyCount();
+
+		Result again = bodyCount();
+
+		assertThat(again.code()).as(again.err()).isZero();
+		assertThat(again.out()).contains("바뀐 것 없음");
+	}
+
+	@Test
+	void anExistingBehaviorTakesNewEntriesAndChangedOnes() throws IOException {
+		bodyCount();
+
+		Result result = run("add", "behavior", "memo", "body-count", "--state", "limit:number=5000@data-limit", "--computed",
+				"label:format('{length} / {limit}자', 'ko-KR')", "--computed", "over:gt(length, limit)");
+
+		assertThat(result.code()).as(result.err()).isZero();
+		assertThat(result.out()).contains("상태 limit", "계산 바꿈 label", "계산 over");
+		assertThat(read(SPEC)).contains("purpose: \"본문을 쓰는 동안 글자 수를 보인다\"", "limit: \"number=5000@data-limit\"",
+				"label: \"format('{length} / {limit}자', 'ko-KR')\"", "over: \"gt(length, limit)\"");
+		assertThat(read(FILE)).contains("get over() {");
+	}
+
+	@Test
+	void twoBehaviorsShareOneSpecAndOneScript() throws IOException {
+		bodyCount();
+
+		Result result = run("add", "behavior", "memo", "pin-toggle", "--purpose", "고정을 펼친다", "--state", "open:bool", "--action",
+				"flip:toggle(open)");
+
+		assertThat(result.code()).as(result.err()).isZero();
+		assertThat(read(SPEC)).contains("  bodyCount:", "  pinToggle:");
+		assertThat(read(FILE)).contains("'memoBodyCount'", "'memoPinToggle'");
+	}
+
+	@Test
+	void aHandEditedScriptFailsTheCheckAndSyncMakesItAgain() throws IOException {
+		bodyCount();
+		String made = read(FILE);
+		write(FILE, made.replace("get label() {", "get label() {\n        console.log('x');"));
+
 		Result check = run("check");
 		assertThat(check.code()).isEqualTo(CozyCli.VIOLATIONS);
-		assertThat(check.out()).contains("[C9]").contains("behavior-memoCharCount").doesNotContain("[R16]");
+		assertThat(check.out()).contains("[C12] src/main/resources/static/memo/memo.js → memo — 동작 명세에서 만든 파일을 손으로 고쳤습니다",
+				"고치는 명령: cozy sync behaviors");
+
+		Result sync = run("sync", "behaviors");
+		assertThat(sync.code()).as(sync.err()).isZero();
+		assertThat(sync.out()).contains("바꿈  " + FILE);
+		assertThat(read(FILE)).isEqualTo(made);
+		assertThat(run("check").code()).isZero();
 	}
 
 	@Test
-	void moreBehaviorsAreAddedAtTheEndAndRunningAgainChangesNothing() throws IOException {
-		run("add", "behavior", "memo", "char-count");
-		String first = read(FILE);
-		Result second = run("add", "behavior", "memo", "pin-toggle");
-		assertThat(second.code()).as(second.err()).isZero();
-		assertThat(second.out()).contains("바꿈  " + FILE);
-		String js = read(FILE);
-		assertThat(js.indexOf("'memoCharCount'")).isLessThan(js.indexOf("'memoPinToggle'"));
-		assertThat(js).as("앞의 등록은 그대로다").startsWith(first.substring(0, first.lastIndexOf("});")));
-		assertThat(js).endsWith("});\n");
+	void aHandEditedSpecIsCheckedTidiedAndMadeAgainBySync() throws IOException {
+		bodyCount();
+		write(SPEC, read(SPEC).replace("    actions:\n", "    computed2: {}\n    actions:\n"));
+		assertThat(run("sync", "behaviors").err()).contains("모르는 키 computed2");
 
-		String once = read(FILE);
-		Result again = run("add", "behavior", "memo", "pin-toggle");
-		assertThat(again.code()).isZero();
-		assertThat(again.out()).contains("바뀐 것 없음");
-		assertThat(read(FILE)).isEqualTo(once);
+		write(SPEC, "components:\n  bodyCount:\n    purpose: 본문을 쓰는 동안 글자 수를 보인다\n    state: { length: number@data-length }\n"
+				+ "    computed: { label: \"format('{length}개')\" }\n");
+		assertThat(run("check").out()).contains("[C12] src/main/resources/behaviors/memo.yml → memo — 동작 명세를 고친 뒤");
+
+		Result sync = run("sync", "behaviors");
+		assertThat(sync.code()).as(sync.err()).isZero();
+		assertThat(read(SPEC)).contains("      label: \"format('{length}개')\"").doesNotContain("actions:");
+		assertThat(read(FILE)).doesNotContain("count: function").contains("'개'");
+		assertThat(run("check").code()).isZero();
+		assertThat(run("sync", "behaviors").out()).contains("바뀐 것 없음");
 	}
 
 	@Test
-	void aFileTheCommandDidNotWriteIsLeftAlone() throws IOException {
-		Path file = this.dir.resolve(FILE);
-		Files.createDirectories(file.getParent());
-		Files.writeString(file, "window.Alpine.data('memoOld', function () { return {}; });\n", StandardCharsets.UTF_8);
-		Result result = run("add", "behavior", "memo", "char-count");
+	void syncRemovesAScriptWhoseSpecWasDeleted() throws IOException {
+		bodyCount();
+		Files.delete(this.dir.resolve(SPEC));
+		assertThat(run("check").out()).contains("[C12] src/main/resources/static/memo/memo.js", "명세가 없습니다");
+
+		Result sync = run("sync", "behaviors");
+
+		assertThat(sync.out()).contains("지움  " + FILE);
+		assertThat(this.dir.resolve(FILE)).doesNotExist();
+	}
+
+	@Test
+	void aHandWrittenModuleScriptIsNeverOverwritten() throws IOException {
+		String hand = "document.addEventListener('alpine:init', function () {\n  window.Alpine.data('memoOld', function () {\n"
+				+ "    return {};\n  });\n});\n";
+		write(FILE, hand);
+
+		Result result = bodyCount();
+
 		assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
-		assertThat(result.err()).contains("alpine:init");
-		assertThat(read(FILE)).doesNotContain("memoCharCount");
+		assertThat(result.err()).contains("손으로 쓴 컴포넌트 파일입니다");
+		assertThat(read(FILE)).isEqualTo(hand);
+		assertThat(this.dir.resolve(SPEC)).doesNotExist();
+	}
+
+	@Test
+	void aRefusedCommandChangesNoFile() throws IOException {
+		bodyCount();
+		String spec = read(SPEC);
+		String js = read(FILE);
+
+		for (String[] args : new String[][] { { "--computed", "length:not(true)" }, { "--action", "count:toggle(length)" },
+				{ "--computed", "x:sum(length)" }, { "--state", "x:date" }, { "--listen", "nope:memo:saved" } }) {
+			Result result = run("add", "behavior", "memo", "body-count", args[0], args[1]);
+			assertThat(result.code()).as(String.join(" ", args)).isEqualTo(CozyCli.UNUSABLE);
+		}
+
+		assertThat(read(SPEC)).isEqualTo(spec);
+		assertThat(read(FILE)).isEqualTo(js);
+		assertThat(BehaviorRules.check(this.dir.resolve("src/main/resources"), "")).isEmpty();
 	}
 
 	@Test
 	void argumentsAreChecked() {
-		assertThat(run("add", "behavior", "memo", "CharCount").err()).contains("소문자와 하이픈");
-		assertThat(run("add", "behavior", "nope", "count").err()).contains("모듈 'nope'가 없습니다");
+		assertThat(run("add", "behavior", "memo", "count").err()).contains("--purpose로 목적 한 문장");
+		assertThat(run("add", "behavior", "memo", "CharCount", "--purpose", "x").err()).contains("소문자와 하이픈");
+		assertThat(run("add", "behavior", "nope", "count", "--purpose", "x").err()).contains("모듈 'nope'가 없습니다");
+		assertThat(run("add", "behavior", "memo", "count", "--purpose", "x", "--state", "length").err())
+			.contains("--state는 이름:종류");
 		assertThat(run("add", "behavior", "memo").code()).isEqualTo(CozyCli.UNUSABLE);
+		assertThat(run("sync", "behaviors", "--force").err()).contains("--force는 cozy sync agents에만");
 		assertThat(this.dir.resolve(FILE)).doesNotExist();
+		assertThat(this.dir.resolve(SPEC)).doesNotExist();
+	}
+
+	@Test
+	void syncWithoutSpecsSaysHowToDeclareOne() {
+		Result sync = run("sync", "behaviors");
+
+		assertThat(sync.code()).as(sync.err()).isZero();
+		assertThat(sync.out()).contains("cozy add behavior로 선언합니다");
 	}
 }

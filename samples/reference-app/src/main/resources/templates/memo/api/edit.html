@@ -7,7 +7,7 @@
   <section th:replace="~{cozy/pattern/form-page :: formPage('메모 수정', ${memo.title}, '/memo/' + ${memo.id}, ~{::#memoForm})}">
     <form id="memoForm" class="card" th:fragment="memoForm" th:action="@{/memo/{id}(id=${memo.id})}" method="post" th:object="${form}"
           th:hx-post="@{/memo/{id}(id=${memo.id})}" hx-target="this" hx-swap="outerHTML">
-      <div th:replace="~{memo/internal/fields :: memoFields()}"></div>
+      <div th:replace="~{memo/internal/fields :: memoFields(${form.body != null ? form.body.length() : 0})}"></div>
       <div th:replace="~{cozy/component/form-actions :: formActions('/memo/' + ${memo.id}, 'device-floppy', '저장')}"></div>
     </form>
   </section>

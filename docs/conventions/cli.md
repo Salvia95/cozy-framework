@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -21,10 +21,11 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 cozy <동작> [옵션]
 
   describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
-  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9
+  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12
   recipes [--json]    구조를 만드는 명령 목록
   add <레시피> …       구조 만들기 [--dry-run] [--json]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
+  sync agents [--force] | sync behaviors   에이전트 문서 맞추기, 동작 명세에서 모듈 JS 다시 만들기 [--dry-run] [--json]
   set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
   migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
   migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
@@ -119,7 +120,7 @@ cozy <동작> [옵션]
 
 ```text
 [C8] it.cozy.app.memo.MemoService — 모듈 루트(it.cozy.app.memo)에는 package-info.java만 둡니다. ...
-[cozy check] 오류 7건 (R1~R16, C8, C9). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.
+[cozy check] 오류 7건 (R1~R16, C8, C9, C12). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.
 ```
 
 `--json`은 다음과 같다.
@@ -242,7 +243,8 @@ cozy add module activity --label 활동
 cozy add migration activity create_activity
 cozy add listener activity --on memo.MemoCreated
 cozy add fragment activity recent-activity --param items:list:ActivityItem --purpose "최근 활동 목록"
-cozy add behavior memo body-count
+cozy add behavior memo body-count --purpose "본문을 쓰는 동안 글자 수를 보인다" --state length:number@data-length \
+  --computed "label:format('{length}자', 'ko-KR')" --action "count:within('textarea', set(length, length(event.value)))"
 cozy add screen dashboard index --pattern overview --title 대시보드 --nav 대시보드:dashboard
 cozy link dashboard --uses memo,activity
 cozy add event report ReportSent --field reportId:long --field sentOn:date
@@ -286,10 +288,13 @@ cozy enable workbench
   - 다시 실행: 필드가 모두 같은 타입으로 있고 지금의 `of()`와 가장 높은 샘플이 그 필드를 가지면 바뀐 것 없음이다. 일부만 있거나 같은 이름이 다른 타입이면 실패한다.
   - 출력의 "다음"은 이 이벤트의 리스너(`@ApplicationModuleListener`)를 나열한다. 리스너는 옛 이벤트의 새 필드가 `null`일 때도 처리해야 한다.
   - 이벤트 파일이 바뀌므로 그 뒤에 같은 `cozy add event`(또는 `--publish`가 있는 `crud`)를 다시 실행하면 "내용이 다릅니다"로 실패한다. 빈칸을 채운 뒤의 1단계 명령과 같다.
-- **behavior** (ADR-0040 §5): 화면 안의 상태를 맡는 Alpine 컴포넌트 하나를 `static/{모듈}/{모듈}.js`에 더한다. 이름은 소문자와 하이픈(`body-count`)이고 컴포넌트는 모듈 이름 + 카멜 표기(`memoBodyCount`)다.
-  - 파일이 없으면 `document.addEventListener('alpine:init', …)` 하나와 등록 하나로 만든다. 있으면 그 끝 `});` 앞에 더한다. 끝이 그 모양이 아니면 실패한다(손으로 고친 파일을 깨지 않는다).
-  - 등록은 `init`에서 `root = this.$root`를 잡아 두고, 빈칸 `behavior-{컴포넌트}`를 남긴다. 상태(속성)와 로직(메서드)은 에이전트가 채운다(C9).
-  - 같은 컴포넌트가 이미 있으면 바뀐 것 없음이다. 레이아웃은 모든 모듈의 이 파일을 이은 묶음 하나(`/cozy/modules.js`)를 싣고, R16은 다른 파일의 등록을 오류로 본다.
+- **behavior** (ADR-0043): 화면 안의 상태를 맡는 Alpine 컴포넌트 하나를 모듈의 동작 명세 `behaviors/{모듈}.yml`에 선언하거나 고치고, 그 명세에서 `static/{모듈}/{모듈}.js`를 만든다. 형식과 낱말은 [ui.md](ui.md)의 "동작 명세"에 있다.
+  - 이름은 소문자와 하이픈(`body-count`)이고 컴포넌트는 모듈 이름 + 카멜 표기(`memoBodyCount`)다. 명세의 키는 `bodyCount`다.
+  - 새 동작에는 `--purpose`(목적 한 문장)가 필요하다. 있는 동작에 다시 쓰면 적은 항목만 더하거나 바꾼다(`상태 limit`, `계산 바꿈 label`). 같은 이름이 다른 칸(상태, 계산, 동작)에 있으면 실패한다.
+  - `--state 이름:종류[=처음 값][@data-이름]`, `--computed 이름:식`, `--action 이름:단계[; 단계]`, `--listen 동작:모듈:이벤트`. 여러 번 쓴다. 식에 공백이나 따옴표가 있으면 셸에서 큰따옴표로 묶는다.
+  - 명세 전체를 확인한 뒤(이름, 종류, 낱말, 계산의 순환) 명세와 JS를 함께 쓴다. 하나라도 틀리면 아무 파일도 바꾸지 않는다. 같은 명령을 다시 실행하면 바뀐 것 없음이다.
+  - 빈칸을 남기지 않는다. JS는 명세에서 만드는 파일이라 손으로 고치지 않는다(C12, [testing.md](testing.md)).
+  - 모듈의 JS가 손으로 쓴 파일(명세에서 만든 표시가 없음)이면 덮어쓰지 않고 실패한다.
 - **field** (ADR-0037): `cozy add crud`가 만든 한 벌에 필드 하나를 더한다. 형식은 crud의 필드와 같고 `instant`는 받지 않는다. 남기는 빈칸이 없다.
 
   | 곳 | 더하는 것 (예: `--field dueOn:date:마감일`) |
@@ -428,6 +433,20 @@ cozy set arg memo/api/list --line 47 --fragment badge --index 2 --from neutral -
 - **글자**: 큰따옴표와 `&`는 문자 참조(`&quot;`, `&amp;`), 역슬래시는 `\\`로 적는다. 작은따옴표와 줄바꿈은 거절한다(Thymeleaf가 fragment 인자의 `\'`를 읽지 못한다).
 - **거절하는 경우**: 그 줄에 그 fragment의 호출이 없거나 둘 이상, 인자 번호가 범위 밖, 작은따옴표로 감싼 속성, 지금 값이 다름. 종료 코드 2이고 파일은 바뀌지 않는다.
 - **출력**: 다른 명령과 같은 계획 형식이다. `바꿈  {템플릿 파일}    badge(…) 2번째 인자 tone: 'neutral' → 'info'`. `--json`의 `recipe`는 `set arg`이고 `slots`는 늘 비어 있다.
+
+## sync behaviors
+
+```bash
+cozy sync behaviors --dry-run
+cozy sync behaviors
+```
+
+모든 동작 명세(`src/main/resources/behaviors/{모듈}.yml`)에서 모듈의 JS를 다시 만든다. C12(`cozy check`, `mvn verify`)의 고치는 명령이다.
+
+- 명세를 읽어 확인하고, 정리한 모양(값은 큰따옴표, 식은 같은 글자)으로 다시 쓴다. 손으로 고친 명세도 내용이 맞으면 받는다.
+- 손으로 고친 JS는 명세에서 다시 만든 것으로 바뀐다. 명세가 없어진 모듈의 만든 JS는 지운다(`지움`).
+- 명세 폴더에 모듈 이름의 `.yml`이 아닌 파일이 있거나, 명세의 모듈이 없거나, 명세가 있는 모듈의 JS를 손으로 썼으면 아무것도 바꾸지 않고 실패한다.
+- `--force`는 받지 않는다(`sync agents`에만 쓴다).
 
 ## migrate alpine
 

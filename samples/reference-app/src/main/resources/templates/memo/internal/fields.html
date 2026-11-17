@@ -1,9 +1,10 @@
 <!--/* 메모 입력 칸 (memo 안에서만 쓰는 조각). 메모 만들기(api/form)와 메모 수정(api/edit)이 같이 쓴다.
      칸은 감싸는 form의 th:object에 바인딩된다. 버튼은 화면이 cozy/component/form-actions로 붙인다.
-     본문 아래의 글자 수는 memoBodyCount(static/memo/memo.js)가 쓰는 동안 센다. 스크립트가 없으면 보이지 않는다. */-->
-<div class="card-body" th:fragment="memoFields()">
+     본문 아래의 글자 수는 memoBodyCount가 쓰는 동안 센다. 동작은 동작 명세(behaviors/memo.yml)에 있고 cozy add behavior가 고친다.
+     처음 글자 수(bodyLength → data-length)는 부르는 화면이 넘긴다. 스크립트가 없으면 보이지 않는다. */-->
+<div class="card-body" th:fragment="memoFields(bodyLength)">
   <div th:replace="~{cozy/component/field :: field('title', '제목', 'text')}"></div>
-  <div x-data="memoBodyCount" data-limit="5000" x-on:input="count">
+  <div x-data="memoBodyCount" th:data-length="${bodyLength}" data-limit="5000" x-on:input="count">
     <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
     <div class="form-hint mt-n2 mb-3" x-cloak x-text="label"></div>
   </div>

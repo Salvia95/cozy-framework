@@ -20,7 +20,7 @@ This app is built on the Cozy framework: an internal business tool that runs on 
 - Use htmx for everything that goes through the server, such as search, paging, saving, validation errors, and delete.
 - Use Alpine.js only for state that may be lost on reload, such as an open panel, a selection count, or copying text.
 - Attach a component by name only (`x-data="cozyCopy"`), pass server values as `data-*` attributes, and write long attribute names (`x-on:click`).
-- Use `cozy` components first, and add a module component with `cozy add behavior` in `static/{module}/{module}.js`.
+- Use `cozy` components first, and declare a module component with `cozy add behavior`; never edit `static/{module}/{module}.js` by hand.
 
 ## Rules
 

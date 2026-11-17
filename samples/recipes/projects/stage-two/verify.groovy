@@ -17,7 +17,7 @@ assert event.contains("String title, Boolean pinned, LocalDate dueOn, String not
 assert event.contains("return new MemoCreated(UUID.randomUUID(), 3, memoId, title, pinned, dueOn, note);")
 assert read("src/main/java/it/cozy/app/memo/internal/app/command/MemoFacadeImpl.java").contains("MemoCreated.of(") : "crud가 옛 of()를 부른다"
 ["v1", "v2", "v3"].each { assert new File(basedir, "src/test/resources/events/MemoCreated/" + it + ".json").isFile() : it }
-assert log =~ /Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: [^\n]* in it\.cozy\.app\.ArchitectureTest/ : "C6를 포함한 검사가 통과해야 합니다"
+assert log =~ /Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: [^\n]* in it\.cozy\.app\.ArchitectureTest/ : "C6를 포함한 검사가 통과해야 합니다"
 def recipes = read("recipes.log")
 [
   "--publish(이벤트)에는 cozy-starter-events가 필요합니다",

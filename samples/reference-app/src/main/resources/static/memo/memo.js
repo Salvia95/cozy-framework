@@ -1,29 +1,68 @@
-/* memo 모듈의 Alpine 컴포넌트: 서버를 거치지 않는 화면 안의 상태(펼치기, 선택 수, 입력 미리보기 등). 레이아웃이 모든 화면에 싣는다.
-   - 템플릿은 x-data="이름"으로 붙이고, 이벤트와 값은 x-on:click="메서드", x-text="값"처럼 이름만 쓴다(CSP 빌드, R16).
-   - 서버 값은 x-data 요소의 data-*로 받는다(init에서 잡은 root.dataset). 서버를 거치는 일(조회, 저장)은 htmx가 한다.
-   - 이름의 앞은 모듈 이름(memo)이다. 새 컴포넌트는 cozy add behavior memo <이름>이 이 파일 끝에 더한다. */
+/* memo 모듈의 화면 안 동작. cozy가 동작 명세(behaviors/memo.yml)에서 만든 파일이라 손으로 고치지 않는다.
+   동작은 cozy add behavior memo <동작> …로 바꾸고, 다시 만들 때는 cozy sync behaviors를 쓴다.
+   cozy:behaviors spec=a487e432878c815c9ec9d13d2f094d5d65d4f2282a779fefe95f979b7f20e193 body=2c0a10292904a18e4997a5c4007a6d4ed4b4c34c3b1d1c3824aa7ec9018d5861 */
 document.addEventListener('alpine:init', function () {
-  // 본문 글자 수: 쓰는 동안 "120 / 5000자"를 보인다. 한도(data-limit)는 MemoForm의 @Size와 같고, 넘었는지는 서버가 검증한다
+  function readNumber(root, name, fallback) {
+    var value = parseFloat(root.dataset[name]);
+    return isNaN(value) ? fallback : value;
+  }
+
+  function copy(value) {
+    return Array.isArray(value) ? value.slice() : value;
+  }
+
+  function eventValue(event) {
+    var target = event && event.target;
+    return (target && target.value !== undefined && target.value !== null) ? String(target.value) : '';
+  }
+
+  function within(event, root, selector) {
+    var target = event && event.target;
+    var element = (target && target.closest) ? target.closest(selector) : null;
+    return element !== null && root.contains(element);
+  }
+
+  function lengthOf(value) {
+    return (value === null || value === undefined) ? 0 : String(value).length;
+  }
+
+  function show(value, locale) {
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    if (typeof value === 'number' && locale) {
+      return value.toLocaleString(locale);
+    }
+    return (value === null || value === undefined) ? '' : String(value);
+  }
+
+  // memoBodyCount: 본문을 쓰는 동안 글자 수와 한도를 보인다
   window.Alpine.data('memoBodyCount', function () {
     var root = null;
+    var initial = {};
     return {
       length: 0,
       limit: 0,
       init: function () {
         root = this.$root;
-        this.limit = parseInt(root.dataset.limit, 10) || 0;
-        var area = root.querySelector('textarea');
-        this.length = area ? area.value.length : 0;
+        this.length = readNumber(root, 'length', 0);
+        initial.length = copy(this.length);
+        this.limit = readNumber(root, 'limit', 0);
+        initial.limit = copy(this.limit);
       },
-      /** 감싼 요소의 x-on:input: 본문 칸이 바뀌었다 */
-      count: function (event) {
-        if (event.target.tagName === 'TEXTAREA') {
-          this.length = event.target.value.length;
-        }
+      get over() {
+        return ((this.limit > 0) && (this.length > this.limit));
+      },
+      get text() {
+        return (show(this.length, 'ko-KR') + ' / ' + show(this.limit, 'ko-KR') + '자');
       },
       get label() {
-        var text = this.length.toLocaleString('ko-KR') + ' / ' + this.limit.toLocaleString('ko-KR') + '자';
-        return (this.limit > 0 && this.length > this.limit) ? text + ' · 한도를 넘었습니다' : text;
+        return (this.over ? (show(this.text, null) + ' · 한도를 넘었습니다') : this.text);
+      },
+      count: function (event) {
+        if (within(event, root, 'textarea')) {
+          this.length = lengthOf(eventValue(event));
+        }
       }
     };
   });

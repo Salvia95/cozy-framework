@@ -216,7 +216,7 @@ fragments:
 
 ### 앱 컴포넌트
 
-- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). `cozy add behavior {모듈} {동작}`이 등록과 빈칸을 만든다([cli.md](cli.md)).
+- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고, 손으로 고치면 C12가 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)).
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.
@@ -225,14 +225,89 @@ fragments:
     - **실행 중에 알린다**: 스크립트의 `data-cozy-parts`(`static/memo/memo.js:2;…`, 파일과 묶음에서의 첫 줄)로 `cozy.js`가 브라우저 오류의 묶음 줄을 원래 파일의 줄로 바꿔 콘솔에 낸다(`[cozy] static/memo/memo.js 7줄: …`). 문법 오류면 "화면 동작을 불러오지 못했습니다" 토스트도 띄운다.
   - 폴더 이름과 파일 이름이 다른 JS는 넣지 않는다. 모듈마다 따로 주는 주소는 없다(`/memo/memo.js`는 모듈의 화면 경로 `/memo/{id}`와 겹친다).
 - **쓰는 곳**: 앱 템플릿은 `cozy` 컴포넌트와 자기 모듈의 컴포넌트만 쓴다. `fragments/`와 `error/`는 `cozy` 컴포넌트만 쓴다(R16).
-- **예**: reference-app의 `memoBodyCount`(메모 본문 아래 글자 수)가 `memo/internal/fields`에서 쓴다.
+- **예**: reference-app의 `memoBodyCount`(메모 본문 아래 글자 수)가 `memo/internal/fields`에서 쓴다. 처음 글자 수는 부르는 화면이 fragment 파라미터로 넘긴다(R10: internal fragment는 화면의 모델을 읽지 않는다).
 
 ```html
-<div x-data="memoBodyCount" data-limit="5000" x-on:input="count">
+<div x-data="memoBodyCount" th:data-length="${bodyLength}" data-limit="5000" x-on:input="count">
   <div th:replace="~{cozy/component/field :: field('body', '본문', 'textarea')}"></div>
   <div class="form-hint mt-n2 mb-3" x-cloak x-text="label"></div>
 </div>
 ```
+
+### 동작 명세 (`behaviors/{모듈}.yml`)
+
+모듈의 앱 컴포넌트는 동작 명세에 선언한다. 명세가 원본이고, `static/{모듈}/{모듈}.js`는 cozy가 이 명세에서 만든다(ADR-0043). 명세는 `cozy add behavior`가 쓰고, 손으로 고쳤으면 `cozy sync behaviors`가 확인하고 정리한 모양으로 다시 쓴다.
+
+```yaml
+# memo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/memo/memo.js를 만든다
+components:
+  bodyCount:
+    purpose: "본문을 쓰는 동안 글자 수와 한도를 보인다"
+    state:
+      length: "number@data-length"
+      limit: "number@data-limit"
+    computed:
+      over: "and(gt(limit, 0), gt(length, limit))"
+      text: "format('{length} / {limit}자', 'ko-KR')"
+      label: "if(over, format('{text} · 한도를 넘었습니다'), text)"
+    actions:
+      count: "within('textarea', set(length, length(event.value)))"
+```
+
+| 키 | 값 |
+| --- | --- |
+| `components.{이름}` | 컴포넌트. 등록 이름은 모듈 이름 + 이 이름(`memoBodyCount`). 영문 소문자로 시작하는 카멜 표기 |
+| `purpose` | 목적 한 문장. 꼭 있어야 한다. 만든 JS의 주석, `cozy describe`, 워크벤치가 보인다 |
+| `state.{이름}` | `종류[=처음 값][@data-이름]`. 종류는 `bool`(처음 `false`), `number`(`0`), `text`(`''`), `list`(`[]`, 처음 값은 쉼표로 `=a,b`). `@data-limit`이면 `x-data` 요소의 `data-limit`에서 읽고, 없으면 처음 값이다. `list`는 공백으로 나눈다 |
+| `computed.{이름}` | 식 하나. 상태와 다른 계산만 읽는다. 템플릿은 `x-text="label"`, `x-show="over"`처럼 이름으로 읽는다 |
+| `actions.{이름}` | 단계를 `;`로 잇는다. 템플릿은 `x-on:input="count"`처럼 이름으로 부르고, Alpine이 이벤트를 넘긴다 |
+| `listens.{모듈:이벤트}` | 창(window)에 그 화면 이벤트가 오면 부를 동작. 다른 컴포넌트의 `emit`과 서버의 `HX-Trigger` 머리가 보낸다 |
+
+- 상태, 계산, 동작의 이름은 한 컴포넌트 안에서 겹치지 않는다(템플릿이 이름 하나로 부른다). `init`, `destroy`, `root`, `event`와 JavaScript 예약어는 쓰지 않는다.
+- 모르는 키, 형식이 틀린 값, 낱말 밖의 함수, 없는 이름, 종류가 맞지 않는 인자, 돌고 도는 계산은 실패로 닫는다. 명령은 아무 파일도 바꾸지 않는다.
+- 값은 큰따옴표로 감싼다(`: `나 `#`가 있는 식을 YAML이 다르게 읽지 않게). cozy가 쓰는 명세는 늘 그렇다.
+
+**값**
+
+| 모양 | 뜻 |
+| --- | --- |
+| `length`, `over` | 같은 컴포넌트의 상태나 계산 |
+| `0`, `1.5`, `true`, `false` | 숫자, 참거짓 |
+| `'list'` | 글자. 작은따옴표 안의 `'`는 `\'` |
+| `event.value`, `event.checked` | 이벤트가 일어난 요소의 값(글자), 체크 여부. 동작에서만 쓴다 |
+| `event.data.id` | 이벤트가 일어난 요소부터 `x-data` 요소까지 올라가며 처음 찾은 `data-id`(글자). 동작에서만 쓴다 |
+| `event.detail.message` | 받은 화면 이벤트의 `detail.message`. 없으면 빈 글자. 동작에서만 쓴다 |
+
+**계산 함수**
+
+| 함수 | 결과 |
+| --- | --- |
+| `not(a)`, `and(a, b, …)`, `or(a, b, …)` | 참거짓. 인자도 참거짓 |
+| `eq(a, b)`, `ne(a, b)` | 같음, 다름(종류까지 비교) |
+| `gt`, `lt`, `ge`, `le` | 숫자 비교 (`>`, `<`, `>=`, `<=`) |
+| `empty(a)` | 글자나 목록이 비었는가 |
+| `count(list)`, `length(text)` | 목록의 수, 글자 수 |
+| `includes(list, a)` | 목록에 그 값이 있는가 |
+| `number(a)` | 글자를 숫자로(읽을 수 없으면 `0`). `set(n, number(event.value))` |
+| `if(조건, 참일 때, 거짓일 때)` | 두 값은 같은 종류 |
+| `format('글자 {이름}', 'ko-KR')` | `{이름}` 자리에 상태나 계산의 값. 둘째 인자가 있으면 숫자를 그 형식으로(`5,000`). 목록은 `, `로 잇는다. 중괄호 글자는 `{{`, `}}` |
+
+**동작 단계**
+
+| 단계 | 하는 일 |
+| --- | --- |
+| `set(상태, 값)` | 값을 넣는다. 종류가 같아야 한다 |
+| `toggle(bool 상태)` | 참거짓을 뒤집는다 |
+| `increment(number 상태[, 숫자])`, `decrement(…)` | 더하고 뺀다(기본 1) |
+| `addItem(list, 값)`, `removeItem(list, 값)`, `toggleItem(list, 값)` | 목록에 넣고(이미 있으면 그대로), 빼고, 있으면 빼고 없으면 넣는다 |
+| `reset(상태)` | 처음 값(`data-*`로 읽었으면 그 값)으로 되돌린다 |
+| `emit('모듈:이름', 상태나 계산 …)` | 화면 이벤트를 낸다(Alpine `$dispatch`, 창까지 올라간다). 이름은 이 모듈의 이름으로 시작한다. `detail`에 적은 이름과 값이 들어간다. htmx는 `hx-trigger="memo:selection-changed from:window"`로 받는다 |
+| `when(조건, 단계 …)` | 조건이 참일 때만 |
+| `within('선택자', 단계 …)` | 이벤트가 `x-data` 요소 안의 그 선택자 요소에서 일어났을 때만(`within('textarea', …)`) |
+
+- 낱말로 적을 수 없는 동작은 앱에 손으로 쓰지 않는다. `cozy` 컴포넌트나 낱말을 더하는 일은 프레임워크에서 한다(ADR-0043 §7).
+- 만든 JS는 지금 규칙을 따른다: `alpine:init`의 `Alpine.data` 등록, 서버 값은 `data-*`, 서버에 요청하지 않음. 받는 이벤트는 컴포넌트가 없어질 때(htmx가 영역을 바꿀 때) 뗀다.
+- 낱말 전부를 쓰는 예시는 cozy-cli의 `src/test/resources/behaviors/demo.yml`이고, 그 명세에서 만든 `demo.js`와 브라우저 시험 페이지 `demo.html`이 옆에 있다([testing.md](testing.md)).
 
 ## 설정과 자산
 

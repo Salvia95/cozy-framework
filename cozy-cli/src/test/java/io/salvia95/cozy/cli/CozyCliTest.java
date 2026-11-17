@@ -325,7 +325,8 @@ class CozyCliTest {
 			assertThat(Recipes.ALL.stream()
 				.flatMap((r) -> r.params().stream().filter(Recipes.Param::repeatable).map((p) -> r.name() + " --" + p.name())))
 				.as("여러 번 쓰는 옵션")
-				.containsExactly("crud --field", "screen --field", "fragment --param", "event --field", "dto --field",
+				.containsExactly("crud --field", "screen --field", "fragment --param", "behavior --state", "behavior --computed",
+						"behavior --action", "behavior --listen", "event --field", "dto --field",
 						"query --param", "command --param", "event-version --field");
 			Result json = run("recipes", "--json");
 			assertThat(json.out()).contains("\"params\": [")

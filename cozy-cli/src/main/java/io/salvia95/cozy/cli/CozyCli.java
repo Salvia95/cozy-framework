@@ -40,10 +40,11 @@ import io.salvia95.cozy.rules.Violation;
  *
  * <ul>
  * <li>{@code describe [--json]}: 앱의 지도(모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 빈칸)</li>
- * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R16, C8, C9). 최종 판단은 {@code mvn verify}</li>
+ * <li>{@code check [--json]}: 컴파일 없이 하는 검사(R1~R16, C8, C9, C12). 최종 판단은 {@code mvn verify}</li>
  * <li>{@code recipes [--json]}: 구조를 만드는 명령 목록</li>
  * <li>{@code add <레시피>}, {@code link}, {@code enable events|workbench}: 구조를 만든다 (원자적으로 적용, {@code --dry-run})</li>
  * <li>{@code sync agents [--force]}: 앱의 AGENTS.md와 cozy-helper 스킬을 이 cozy 명령에 든 것과 같게 맞춘다</li>
+ * <li>{@code sync behaviors}: 동작 명세에서 모듈의 JS를 다시 만든다</li>
  * <li>{@code set arg}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 ({@code --dry-run})</li>
  * <li>{@code migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다 ({@code --dry-run})</li>
  * <li>{@code migrate events}: 옛 이벤트 자리({@code {모듈}/spi/event/})의 이벤트를 이벤트 계약 모듈로 옮기고, 저장된 클래스 이름을 바꾸는
@@ -68,13 +69,14 @@ public final class CozyCli {
 			cozy 명령. 앱 폴더(또는 그 아래)에서 실행한다.
 
 			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
-			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9 (컴파일하지 않는다)
+			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12 (컴파일하지 않는다)
 			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link, enable)
-			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version
+			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, behavior, event, listener, migration, dto, query, command, event-version
 			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
 			  cozy enable events       pom에 cozy-starter-events 더하기
 			  cozy enable workbench    pom에 dev 전용 워크벤치(/cozy/dev/workbench) 더하기
 			  cozy sync agents [--force]   AGENTS.md와 cozy-helper 스킬을 이 cozy 명령의 것으로 맞추기
+			  cozy sync behaviors      동작 명세(behaviors/<모듈>.yml)에서 모듈의 JS(static/<모듈>/<모듈>.js)를 다시 만들기
 			  cozy set arg <템플릿> --line <줄> --fragment <이름> --index <번째> --from <지금 값> --value <새 값>
 			                           fragment 호출의 문자열 인자 하나 바꾸기 (워크벤치의 속성 패널이 쓴다)
 			  cozy migrate alpine      앱 템플릿의 없앤 동작 속성(data-cozy-confirm 등)을 cozy 컴포넌트로 바꾸기 (2.0.0으로 올릴 때)
@@ -366,7 +368,7 @@ public final class CozyCli {
 		else {
 			findings.forEach((f) -> out.println(f.violation().format()));
 			out.println("[cozy check] " + ((errors == 0) ? "이상 없음" : "오류 " + errors + "건") + ((warnings > 0) ? ", 경고 "
-					+ warnings + "건" : "") + " (R1~R16, C8, C9). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.");
+					+ warnings + "건" : "") + " (R1~R16, C8, C9, C12). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.");
 		}
 		return (errors == 0) ? OK : VIOLATIONS;
 	}

@@ -6,7 +6,7 @@ def expected = [
   "[C9] src/main/resources/db/migration/V202611080900__memo_create_memo.sql:1 → cozy:slot migration-sql — memo 테이블을 만드는 DDL을 쓰세요.",
   "[C9] src/main/resources/templates/memo/internal/note.html:2 → cozy:slot note-body — 파라미터 text만으로 메모 한 줄을 그리세요.",
   "slotsAreFilled",
-  "Tests run: 7, Failures: 1, Errors: 0, Skipped: 0",
+  "Tests run: 8, Failures: 1, Errors: 0, Skipped: 0",
 ]
 expected.each { assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it }
 return true

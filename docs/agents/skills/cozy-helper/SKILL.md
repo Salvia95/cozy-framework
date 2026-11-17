@@ -38,7 +38,8 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Add list, create, detail, edit, and delete screens with storage | [add-crud](references/add-crud/PLAYBOOK.md) |
 | Add a read-only screen such as a dashboard | [add-screen](references/add-screen/PLAYBOOK.md) |
 | Publish a fragment for other modules' screens | [add-fragment](references/add-fragment/PLAYBOOK.md) |
-| Add state that stays inside a screen (Alpine.js) | [add-behavior](references/add-behavior/PLAYBOOK.md) |
+| Declare or change state that stays inside a screen (Alpine.js) | [add-behavior](references/add-behavior/PLAYBOOK.md) |
+| Make module scripts again from their behavior specs, or fix a `[C12]` violation | [sync-behaviors](references/sync-behaviors/PLAYBOOK.md) |
 | Declare that a module uses another module | [link](references/link/PLAYBOOK.md) |
 | Add a value record that other modules see | [add-dto](references/add-dto/PLAYBOOK.md) |
 | Add a field to an existing CRUD set | [add-field](references/add-field/PLAYBOOK.md) |

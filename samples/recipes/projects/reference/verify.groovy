@@ -10,7 +10,7 @@ def expected = [
   "[C9] src/main/resources/mapper/activity/ActivityMapper.xml:10 → cozy:slot command-sql",
   "[C9] src/main/resources/templates/activity/spi/recent-activity.html:5 → cozy:slot fragment-body",
   "ArchitectureTest.slotsAreFilled",
-  "Tests run: 16, Failures: 1, Errors: 0, Skipped: 0",
+  "Tests run: 17, Failures: 1, Errors: 0, Skipped: 0",
 ]
 expected.each { assert log.contains(it) : "build.log에 기대한 메시지가 없습니다: " + it }
 def recipes = new File(basedir, "recipes.log").getText("UTF-8")

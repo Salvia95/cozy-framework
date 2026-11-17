@@ -151,3 +151,22 @@ cozy attach cozyCopy --at memo/api/detail:12 --data "copy-text=${#strings.listJo
 - **줄 위치는 바뀐다.** `cozy attach --at`의 줄은 명령을 부르기 직전의 describe나 워크벤치에서 읽어야 한다. 줄이 다른 요소를 가리키면 실패로 닫지만, 같은 모양의 요소가 그 줄로 옮겨 오면 막지 못한다. 계획(`--dry-run`)이 붙일 요소의 여는 태그를 보인다.
 - **C13이 개발 중에 시끄러울 수 있다.** 컴포넌트를 선언하고 아직 붙이지 않은 동안 빌드가 실패한다. `cozy:slot`(C9)과 같은 정책이다. 선언과 붙이기를 한 작업으로 하라고 플레이북에 적는다.
 - **만든 JS가 커진다.** 낱말을 일반적인 코드로 풀어 손으로 쓴 것보다 길다. 묶음 하나로 싣고 내용 해시로 캐시하므로(ADR-0040) 화면마다 늘지 않는다.
+
+## M46 (2026-11-17, 사용자 지시 "권장안대로 승인할게 m46부터 진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다(ADR-0017 2026-11-17). 새 의존성은 없다(명세는 cozy-cli의 SnakeYAML, C12는 JDK의 `MessageDigest`).
+- 만든 것: 동작 명세 `behaviors/{모듈}.yml`, 식 파서와 JS 만들기(cozy-cli `internal/behavior`), 새 `cozy add behavior`, `cozy sync behaviors`, C12(cozy-rules `BehaviorRules`, `cozy check`와 `CozyArchitectureTest.behaviorScriptsMatchTheirSpecs`). 형식과 낱말은 `docs/conventions/ui.md`의 "동작 명세"에 있다.
+- 계획과 달라진 것:
+  - **식의 표기**: §1의 예는 연산마다 YAML 묶음(`{ gt: [length, limit] }`)이었다. 함수 호출 모양의 글자 하나(`gt(length, limit)`)로 바꿨다. 명령줄(`--computed over:gt(length, limit)`), 명세, 워크벤치가 같은 글자를 보이고, cozy가 정리한 모양으로 다시 쓴다(같은 식은 같은 글자). 낱말 밖은 똑같이 실패로 닫는다.
+  - **내는 이벤트**: §1의 `emits`(동작 뒤에 낼 이벤트 목록) 대신 동작의 단계 `emit('memo:이름', 상태 …)`로 했다. 언제 내는지가 동작 안에 보인다. describe가 내는 곳을 단계에서 읽는다(M48).
+  - **명령줄 모양**: `--computed 이름:식`, `--action 이름:단계`, `--listen 동작:모듈:이벤트`. 워크벤치 폼이 여러 번 쓰는 옵션을 `:`로 이은 구성으로 다루기 때문이다(`--field 이름:종류`와 같은 모양). §3의 예(`=`)와 다르다.
+  - **낱말을 적어 보며 더한 것**(위험의 "M46에서 적어 보며 확인한다"): 계산 `ne`, `ge`, `le`, `number`, `if`, 단계 `when`, `within`, 이벤트 값 `event.detail.이름`. reference-app의 `memoBodyCount`(textarea에서만 세고, 한도를 넘으면 문구를 붙인다)를 적는 데 `within`과 `if`가 필요했다.
+  - **처음 값**: `memoBodyCount`는 시작할 때 textarea의 값을 읽었다. 명세는 DOM을 읽지 않고 서버가 `data-length`로 넘긴다(ADR-0040 §3 "서버 값은 data-*"). R10 때문에 `memoFields()`가 파라미터 `bodyLength`를 받고 만들기·수정 화면이 넘긴다.
+- 확인:
+  - `BehaviorRulesTest` 10개: 맞는 파일, CRLF와 BOM, 손으로 고친 JS, 다시 만들지 않은 명세, 한쪽만 있음, 명세 옆의 손으로 쓴 JS, 명세 폴더의 다른 파일.
+  - `BehaviorScriptTest` 23개: 낱말 전부를 쓰는 `demo.yml` → `demo.js`(글자까지 같음), 모양만 다른 명세가 같은 파일이 됨, 표시 줄, 서버 요청 없음, 식을 같은 글자로, 낱말 밖·없는 이름·종류·순환·이벤트 값의 자리·예약 이름·이름 겹침·다른 모듈의 이벤트·format의 이름과 중괄호, 파일 형식(모르는 키, 목적 없음, 같은 키 두 번).
+  - `BehaviorRecipeTest` 11개: 명세와 JS를 만들고 빈칸 없음, 다시 실행하면 바뀐 것 없음, 항목 더하기와 바꾸기, 두 동작이 한 명세, 손으로 고친 JS는 C12와 `sync behaviors`, 손으로 고친 명세는 정리, 명세를 지우면 JS를 지움, 손으로 쓴 모듈 JS는 덮어쓰지 않음, 실패한 명령은 아무 파일도 바꾸지 않음.
+  - 위반 픽스처 `C12-behaviors`, 레시피 픽스처 `behavior`(명령만으로 선언, 모양만 다른 명세의 C12와 `sync behaviors`, 다른 모듈 컴포넌트의 R16, 만든 JS의 C10).
+  - 브라우저(runtime-verifier, 2026-11-17): `demo.html`의 낱말 16개 항목(within의 거름, event.data가 안쪽 요소에서 올라가 찾음, toggleItem·addItem·removeItem, emit의 detail, listens의 창 이벤트와 reset, when, number, event.checked, format의 ko-KR과 목록과 중괄호)이 Alpine CSP 빌드에서 동작한다. reference-app 메모 만들기·수정의 글자 수(처음 값, 제목 칸은 세지 않음, 한도 넘음, 1280·390px)도 같다. 콘솔 오류와 CSP 위반은 0이다.
+  - 레시피 픽스처의 cozy 명령 클래스패스(`target/cli/*`)에 clean 없이 쌓인 지난 판의 cozy-cli가 먼저 읽혀 새 옵션을 모르던 문제를 찾았다. 복사할 때 판 번호를 떼도록(`stripVersion`) 고쳤다.
+  - 아키텍처 검사가 하나 늘어(C12) 테스트 수를 세는 위반·레시피 픽스처의 기대 값을 1씩 올렸다.

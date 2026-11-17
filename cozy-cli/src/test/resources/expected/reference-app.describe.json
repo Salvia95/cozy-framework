@@ -415,7 +415,7 @@
             {
               "name": "memoBodyCount",
               "template": "memo/internal/fields",
-              "line": 6
+              "line": 7
             }
           ],
           "outline": [
@@ -475,7 +475,9 @@
               "target": "memo/internal/fields",
               "fragment": "memoFields",
               "id": null,
-              "args": []
+              "args": [
+                "${form.body != null ? form.body.length() : 0}"
+              ]
             },
             {
               "line": 11,
@@ -505,7 +507,7 @@
             {
               "name": "memoBodyCount",
               "template": "memo/internal/fields",
-              "line": 6
+              "line": 7
             }
           ],
           "outline": [
@@ -565,7 +567,9 @@
               "target": "memo/internal/fields",
               "fragment": "memoFields",
               "id": null,
-              "args": []
+              "args": [
+                "${form.body != null ? form.body.length() : 0}"
+              ]
             },
             {
               "line": 11,

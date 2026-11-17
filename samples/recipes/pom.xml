@@ -56,6 +56,8 @@
               <includeScope>test</includeScope>
               <includeArtifactIds>cozy-cli,cozy-rules,attoparser,snakeyaml</includeArtifactIds>
               <outputDirectory>${project.build.directory}/cli</outputDirectory>
+              <!-- 판 번호를 떼어 같은 이름으로 덮어쓴다. clean 없이 판을 바꿔도 옛 cozy-cli가 클래스패스(cli/*)에 남지 않는다 -->
+              <stripVersion>true</stripVersion>
             </configuration>
           </execution>
         </executions>
