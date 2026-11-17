@@ -186,11 +186,11 @@ public final class ChannelCommands {
 		Release existing = index.find(release.version());
 		if (existing != null) {
 			if (sameFiles(existing, release)) {
-				out.println("[cozy] " + version + "은 이미 채널에 있습니다. 바꾼 것이 없습니다.");
+				out.println("[cozy] 이 판(" + version + ")은 이미 채널에 있습니다. 바꾼 것이 없습니다.");
 				return;
 			}
-			throw new CliException("채널에 이미 있는 " + version + "과 다른 파일입니다. 게시한 릴리스의 파일은 바꾸지 않습니다. "
-					+ "채널의 " + version + "을 지우고 다시 더하거나, 새 판으로 냅니다.");
+			throw new CliException("채널에 이미 있는 판(" + version + ")과 다른 파일입니다. 게시한 릴리스의 파일은 바꾸지 않습니다. "
+					+ "채널의 " + version + " 폴더와 색인의 항목을 지우고 다시 더하거나, 새 판으로 냅니다.");
 		}
 		List<ChannelFile> files = new ArrayList<>();
 		for (ChannelFile file : release.files()) {
@@ -220,7 +220,7 @@ public final class ChannelCommands {
 		catch (IOException ex) {
 			throw new CliException(channel + "에 쓰지 못했습니다: " + ex.getMessage() + ". 채널 색인은 바꾸지 않았습니다.");
 		}
-		out.println("[cozy] " + version + "을 채널에 더했습니다: " + channel);
+		out.println("[cozy] 판(" + version + ")을 채널에 더했습니다: " + channel);
 		files.forEach(file -> out.println("  " + version + "/" + file.name()));
 		out.println("  " + INDEX_DIR + "/" + ChannelIndex.FILE_NAME);
 		out.println("  채널 주소: " + channelIndexFile);

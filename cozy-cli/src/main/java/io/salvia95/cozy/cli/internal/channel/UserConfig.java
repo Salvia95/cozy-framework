@@ -68,11 +68,18 @@ public final class UserConfig {
 
 	/** 같은 폴더의 임시 파일에 쓰고 바꾼다. 쓰다 멈춰도 이전 설정이 남는다 */
 	public static void write(Path file, Properties properties) {
+		write(file, properties, "cozy 사용자 설정 (cozy channel set이 쓴다)");
+	}
+
+	/**
+	 * @param comment 파일 첫 줄의 설명
+	 */
+	public static void write(Path file, Properties properties, String comment) {
 		try {
 			Files.createDirectories(file.getParent());
 			Path temp = Files.createTempFile(file.getParent(), "cozy", ".properties");
 			try (Writer out = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
-				properties.store(out, "cozy 사용자 설정 (cozy channel set이 쓴다)");
+				properties.store(out, comment);
 			}
 			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 		}

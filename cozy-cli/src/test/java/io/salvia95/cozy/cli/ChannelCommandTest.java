@@ -255,7 +255,7 @@ class ChannelCommandTest {
 			Result result = run("channel", "add", channel.toString(), release.toString());
 
 			assertThat(result.code()).as(result.err()).isZero();
-			assertThat(result.out()).contains("2.1.0을 채널에 더했습니다");
+			assertThat(result.out()).contains("판(2.1.0)을 채널에 더했습니다");
 			assertThat(channel.resolve("2.1.0/cozy-2.1.0-windows-x64.msi")).hasSameBinaryContentAs(release.resolve("cozy-2.1.0-windows-x64.msi"));
 			assertThat(channel.resolve("2.1.0/cozy-offline-bundle-2.1.0.zip")).exists();
 			assertThat(channel.resolve("2.1.0/cozy-offline-bundle-2.1.0-windows-x64.zip")).exists();
@@ -275,7 +275,7 @@ class ChannelCommandTest {
 			Result again = run("channel", "add", channel.toString(), ChannelCommandTest.this.temp.resolve("release-2.2.0").toString());
 
 			assertThat(again.code()).as(again.err()).isZero();
-			assertThat(again.out()).contains("2.2.0은 이미 채널에 있습니다");
+			assertThat(again.out()).contains("이 판(2.2.0)은 이미 채널에 있습니다");
 			assertThat(Files.readString(channel.resolve("index/cozy-channel.json"))).isEqualTo(index);
 			assertThat(index.indexOf("\"version\": \"2.10.0\"")).isLessThan(index.indexOf("\"version\": \"2.2.0\""));
 			assertThat(index.indexOf("\"version\": \"2.2.0\"")).isLessThan(index.indexOf("\"version\": \"2.1.0\""));

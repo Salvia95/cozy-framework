@@ -5,6 +5,8 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -12,6 +14,8 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import io.salvia95.cozy.cli.internal.AppProject;
@@ -22,7 +26,9 @@ import io.salvia95.cozy.cli.internal.Describe;
 import io.salvia95.cozy.cli.internal.FrameworkJar;
 import io.salvia95.cozy.cli.internal.Json;
 import io.salvia95.cozy.cli.internal.Recipes;
+import io.salvia95.cozy.cli.internal.channel.ChannelClient;
 import io.salvia95.cozy.cli.internal.channel.ChannelCommands;
+import io.salvia95.cozy.cli.internal.channel.UpdateCommands;
 import io.salvia95.cozy.cli.internal.channel.UserConfig;
 import io.salvia95.cozy.cli.internal.recipe.RecipeRunner;
 import io.salvia95.cozy.rules.Violation;
@@ -40,7 +46,10 @@ import io.salvia95.cozy.rules.Violation;
  * <li>{@code migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다 ({@code --dry-run})</li>
  * <li>{@code migrate events}: 옛 이벤트 자리({@code {모듈}/spi/event/})의 이벤트를 이벤트 계약 모듈로 옮기고, 저장된 클래스 이름을 바꾸는
  * 마이그레이션을 만든다 ({@code --dry-run})</li>
+ * <li>{@code channel set|show|add|release}: 개발 도구의 업데이트 채널</li>
+ * <li>{@code update [--json]}: 채널의 새 판을 보인다. 아무것도 바꾸지 않는다</li>
  * </ul>
+ * 채널을 정했으면 앱에 쓰는 명령 뒤에 하루에 한 번 새 판을 확인하고, 있으면 오류 출력에 한 줄을 보인다.
  * 종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음.
  */
 public final class CozyCli {
@@ -70,6 +79,7 @@ public final class CozyCli {
 			  cozy channel show [--json]   정한 채널 보기 (환경 변수 COZY_CHANNEL이 설정 파일보다 앞선다)
 			  cozy channel add <채널 폴더> <릴리스 폴더>   (관리자) 받은 릴리스를 채널 폴더에 더하기
 			  cozy channel release <릴리스 폴더> <channel.yml>   (릴리스 워크플로) 릴리스 하나의 cozy-channel.json 만들기
+			  cozy update [--json]     채널의 새 판, 요약, 호환 깨짐, 앱에서 돌릴 명령 보기 (아무것도 바꾸지 않는다)
 
 			옵션
 			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
@@ -80,16 +90,59 @@ public final class CozyCli {
 			  --dry-run                (add, link, enable, sync, set, migrate, channel add) 바꿀 파일만 보이고 쓰지 않는다
 			  --force                  (sync agents) 앱에서 고친 AGENTS.md도 바꾼다
 
+			채널을 정했으면 하루에 한 번 새 판을 확인하고, 있으면 명령 끝에 한 줄을 보인다 (--json 출력에는 보이지 않는다)
+
 			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
 			""";
+
+	/** 이 명령 뒤에 새 판 알림을 보인다. 채널과 업데이트 명령, 도움말 뒤에는 보이지 않는다 */
+	private static final Set<String> NOTICE_ACTIONS = Set.of("describe", "check", "recipes", "add", "link", "enable", "sync",
+			"set", "migrate");
+
+	private static final Duration UPDATE_CONNECT = Duration.ofSeconds(10);
+
+	private static final Duration UPDATE_REQUEST = Duration.ofSeconds(60);
+
+	private static final Duration NOTICE_TIMEOUT = Duration.ofSeconds(3);
 
 	private CozyCli() {
 	}
 
 	public static void main(String[] args) {
+		// 채널 서버에 닿을 때 시스템의 프록시 설정을 따른다. 기본 프록시 선택기를 처음 만들기 전에 정해야 한다
+		System.setProperty("java.net.useSystemProxies", "true");
 		PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 		PrintStream err = new PrintStream(System.err, true, StandardCharsets.UTF_8);
-		System.exit(runWith(args, Path.of(""), System.getenv(), out, err));
+		int code = runWith(args, Path.of(""), System.getenv(), out, err);
+		notice(args, System.getenv(), windows(), LocalDate.now(), () -> ChannelClient.forThisPc(windows(), NOTICE_TIMEOUT,
+				NOTICE_TIMEOUT), err);
+		System.exit(code);
+	}
+
+	/**
+	 * 명령 뒤의 새 판 알림. 앱에 쓰는 명령의 사람이 읽는 출력 뒤에만 보이고, 명령의 결과(출력, 종료 코드)를 바꾸지 않는다.
+	 *
+	 * @param args 명령의 인자
+	 */
+	static void notice(String[] args, Map<String, String> env, boolean windows, LocalDate today, Supplier<ChannelClient> client,
+			PrintStream err) {
+		String action = null;
+		for (int i = 0; i < args.length; i++) {
+			switch (args[i]) {
+				case "--json" -> {
+					return;
+				}
+				case "--project", "--repository", "--ui" -> i++;
+				default -> {
+					if (action == null) {
+						action = args[i];
+					}
+				}
+			}
+		}
+		if (action != null && NOTICE_ACTIONS.contains(action)) {
+			UpdateCommands.notice(env, windows, today, client, err);
+		}
 	}
 
 	/**
@@ -180,6 +233,11 @@ public final class CozyCli {
 				}
 				case "channel" -> {
 					ChannelCommands.run(rest.subList(1, rest.size()), env, windows(), now().toLocalDate(), dryRun, json, out);
+					yield OK;
+				}
+				case "update" -> {
+					UpdateCommands.update(rest.subList(1, rest.size()), env, windows(), now().toLocalDate(), json,
+							ChannelClient.forThisPc(windows(), UPDATE_CONNECT, UPDATE_REQUEST), out);
 					yield OK;
 				}
 				case "help", "--help", "-h" -> {

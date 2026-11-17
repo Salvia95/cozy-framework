@@ -61,6 +61,23 @@ Check ((& cozy version) -eq $version) "cozy version = $version"
 $mvnVersion = (& mvn -v) -join "`n"
 Check ($LASTEXITCODE -eq 0 -and $mvnVersion.Contains("runtime: $dir\jdk")) "mvn -v의 runtime이 $dir\jdk"
 
+# cozy update: 설치 폴더의 판을 파일 채널과 비교한다. 출력은 --json으로 본다(영어 Windows의 콘솔은 한글을 바꾼다)
+$channel = Join-Path $Work 'channel\index'
+New-Item -ItemType Directory -Force -Path $channel | Out-Null
+$channelFile = Join-Path $channel 'cozy-channel.json'
+$sha = 'a' * 64
+$release = if ($version -match '^\d+\.\d+\.\d+$') { $version } else { '1.0.0' }
+Set-Content -Encoding ASCII -Path $channelFile -Value ('{"schema": 1, "releases": [{"version": "' + $release + '", "date": "2026-11-17", "breaking": false, "summary": "check", "appSteps": [], "files": [{"kind": "msi", "path": "../' + $release + '/cozy.msi", "sha256": "' + $sha + '", "size": 1}]}]}')
+$env:COZY_CHANNEL = $channelFile
+$update = (& cozy update --json) -join "`n"
+if ($release -eq $version) {
+  Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upToDate": true') -and $update.Contains('"current": "' + $version + '"')) "cozy update가 설치 폴더의 판 ${version}을 채널과 비교한다"
+}
+else {
+  Check ($LASTEXITCODE -eq 2) "개발 판 ${version}의 cozy update는 비교하지 않고 종료 코드 2 (지금 $LASTEXITCODE)"
+}
+Remove-Item Env:COZY_CHANNEL
+
 # 한글 인수: java와 Maven은 Windows의 ANSI 코드 페이지로 인수를 받는다. 한국어 Windows(949)에서는 그대로지만,
 # 영어 Windows(1252, CI 러너)에서는 ?로 바뀐다. 여기서는 그래도 빌드가 되는지(스펙의 따옴표)를 보고, 한글이 그대로인지는 사람이 본다
 $apps = Join-Path $Work 'apps'

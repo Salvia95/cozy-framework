@@ -107,7 +107,9 @@ class BundleCommandsTest {
 			.contains("<maven.repo.local.tail>`${maven.home}/../repository</maven.repo.local.tail>")
 			.contains("<activeProfile>cozy-bundle</activeProfile>")
 			.contains("이전 판에만 있던 파일")
-			.contains("$env:COZY_REPOSITORY = $UserRepository + ';' + (Join-Path $Root 'repository')");
+			.contains("$env:COZY_REPOSITORY = $UserRepository + ';' + (Join-Path $Root 'repository')")
+			.contains("$env:COZY_HOME = $Root")
+			.contains("'channel', 'update')");
 	}
 
 	@Test
@@ -276,12 +278,24 @@ class BundleCommandsTest {
 					+ ":" + dest.resolve("repository"));
 		}
 
+		/** cozy update는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */
+		@Test
+		void cozyUpdateTellsTheCliWhereCozyIsInstalled() throws Exception {
+			Path dest = this.temp.resolve("installed");
+			assertThat(run(this.bundle.resolve("cozy"), "install", dest.toString()).code()).isZero();
+
+			Result update = run(dest.resolve("bin/cozy"), "update", "--json");
+
+			assertThat(update.output()).contains(" update --json ").contains("COZY_HOME=" + dest);
+			assertThat(dest.resolve("COZY_VERSION")).isRegularFile();
+		}
+
 		/** JDK 25인 척하는 java. {@code -XshowSettings}에는 버전을, 그 밖에는 이름과 인수를 출력한다 */
 		void jdk(Path home, String name) throws IOException {
 			executable(write(home.resolve("bin/java"), """
 					#!/bin/sh
 					case "$*" in *-XshowSettings*) echo "    java.specification.version = 25" >&2; exit 0 ;; esac
-					echo "%s $* COZY_REPOSITORY=$COZY_REPOSITORY"
+					echo "%s $* COZY_REPOSITORY=$COZY_REPOSITORY COZY_HOME=$COZY_HOME"
 					""".formatted(name)));
 		}
 

@@ -167,3 +167,22 @@ cozy channel show
 - 확인: `ChannelCommandTest` 18개. 설정 파일과 환경 변수의 순서, 토큰을 보이지 않음, 주소 형식 거부, 릴리스 색인(SHA256SUMS 대조, 다른 판의 노트, SNAPSHOT, 빠진 파일), 채널에 더하기(판 폴더와 색인, 새 판부터, 같은 판 다시 더하기, 같은 판의 다른 파일 거부, 깨진 파일은 복사 전에 거부, 읽을 수 없는 색인은 덮어쓰지 않음, `--dry-run`). `check-version.sh`의 `channel.yml` 판 대조는 손으로 확인했다.
 - 워크플로의 새 단계(`cozy channel release`)는 태그 빌드에서만 돈다. 다음 릴리스(2.1.0)에서 처음 돈다.
 
+
+## M43 (2026-11-17, 사용자 지시 "진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다(ADR-0017 2026-11-17). 새 의존성은 없다(JDK의 `HttpClient`와 `KeyStore`만 쓴다).
+- `cozy update [--json]`과 하루 한 번의 새 판 알림을 만들었다. 사용법은 `docs/conventions/channel.md`의 "`cozy update`와 새 판 알림"에 있다.
+- 정한 것:
+  - **지금 판**: 번들의 cozy 명령(bash, PowerShell)이 설치 폴더를 환경 변수 `COZY_HOME`으로 cozy-cli에 넘기고, cozy-cli는 그 폴더의 `COZY_VERSION`을 읽는다. 설치 폴더를 모르거나 개발 판(SNAPSHOT)이면 `cozy update`는 종료 코드 2, 알림은 확인하지 않는다. M44의 `cozy upgrade`도 이 값으로 설치 폴더와 설치 모양을 안다.
+  - **올릴 판**: 지금 판과 주 버전이 같은 가장 새 판. 주 버전이 바뀐 판은 `--to`로 적어야 한다는 §4를 `cozy update`가 그대로 보인다.
+  - **토큰은 채널 주소와 같은 서버에만 보낸다.** 넘겨주기를 직접 따르고(5번까지), 다른 서버(scheme, 호스트, 포트가 다른 곳)로 넘어가면 토큰을 빼고 요청한다. GitHub의 `releases/latest/download/`는 자산 저장소로 넘겨주기 때문이다. `https`에서 `http`로 넘겨주면 따르지 않는다.
+  - **인증서**: JDK의 `cacerts`와 Windows의 `Windows-ROOT`를 함께 믿는다(둘 가운데 하나가 믿으면 믿는다. 이름 확인은 각 관리자가 한다). §3은 `Windows-ROOT`만 적었지만, Windows 인증서 저장소의 공용 루트는 처음 쓸 때 받아 오는 경우가 있어 폐쇄망 PC에서 비어 있을 수 있다.
+  - **프록시**: `main`이 `java.net.useSystemProxies`를 켜고 시작한다.
+- 계획과 달라진 것:
+  - **알림의 자리와 범위**: 오류 출력(stderr)의 마지막 줄에 보이고, 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`)의 사람이 읽는 출력 뒤에만 확인한다. `--json`(에이전트와 워크벤치가 읽는다), `cozy update`, `cozy channel`, 도움말 뒤에는 하지 않는다. 확인은 3초까지만 기다리고(파일 서버의 응답 없는 UNC 경로도 같다), 실패하면 그날은 다시 확인하지 않는다. 확인한 날은 설정 파일 옆의 `update-check.properties`에 적는다. 문구는 판 뒤에 조사가 붙지 않게 `새 버전이 있습니다: 2.1.0. cozy upgrade로 올립니다 (바뀌는 것: cozy update)`로 바꿨고(판의 끝 숫자에 따라 조사가 달라진다), 호환이 깨지는 판만 있으면 `cozy upgrade` 대신 `cozy update`를 권한다.
+  - 번들의 `cozy version`, `cozy new`, `cozy install`은 셸 스크립트가 하므로 알림이 없다.
+- 확인:
+  - `UpdateCommandTest` 27개. 파일 채널(경로, `file:`)과 JDK `HttpServer`로 띄운 로컬 서버. 새 판 목록과 요약, `--json`, 최신 판, 호환 깨짐 판과 `--to`, 낮은 채널, 모르는 `schema`, 없는 색인, 채널·설치 폴더·릴리스 판이 없을 때, 기본 머리(`Authorization: Bearer`)와 이름을 정한 머리(`PRIVATE-TOKEN`), 401과 404(토큰을 보이지 않음), 같은 서버와 다른 서버로의 넘겨주기, 끝없는 넘겨주기, 상대 경로(`../`), 알림(하루 한 번, 다음 날, 호환 깨짐, 실패, `--json`·update·channel·도움말 제외, `cozy update`가 적은 날).
+  - 인증서: `keytool`로 만든 자체 서명 인증서의 로컬 HTTPS 서버를 JDK 인증서만으로는 거부하고, 그 인증서를 담은 저장소를 더하면 읽는다. `Windows-ROOT` 자체는 Linux에서 확인할 수 없다(windows-verification.md에 항목을 더했다).
+  - `BundleCommandsTest`: 설치한 `bin/cozy`가 `update`를 cozy-cli에 넘기고 `COZY_HOME`을 알려 준다. PowerShell 스크립트도 같다.
+  - `verify-msi.ps1`: 설치한 MSI의 `cozy update --json`이 설치 폴더의 판을 파일 채널과 비교한다(개발 판이면 종료 코드 2). Windows 러너에서는 M45 뒤의 러너 검증 때 돈다.

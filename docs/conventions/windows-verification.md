@@ -264,6 +264,24 @@ mvn -o -Pdist package
 - [ ] "설치된 앱"에서 제거하면 새 창에서 `cozy`를 찾지 못하고, 사용자 PATH에서 `...\Cozy\bin`이 빠지고, `%LOCALAPPDATA%\Programs\Cozy`가 남지 않는다. 사용자 저장소 `%LOCALAPPDATA%\Cozy\repository`는 남는다.
 - [ ] 관리자 PowerShell에서 `msiexec /i cozy-{버전}-windows-x64.msi ALLUSERS=1`을 하면 "Cozy는 사용자별로만 설치합니다" 메시지로 거부된다. 한글 메시지가 깨지지 않는다.
 
+## 업데이트 채널 (ADR-0042)
+
+CI의 Windows 러너는 파일 채널의 `cozy update --json`만 확인한다(`verify-msi.ps1`). 사내 서버, 인증서, 프록시는 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
+
+```powershell
+cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
+cozy channel show
+cozy update
+cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
+```
+
+- [ ] 공유 폴더(UNC)와 연결한 드라이브(`Z:\cozy\index\cozy-channel.json`)의 채널을 `cozy update`가 읽는다. 공유 폴더에 연결하지 않았으면 "채널 색인 …이 없습니다"로 끝난다.
+- [ ] 사내 CA로 서명한 `https` 채널을 따로 설정하지 않고 읽는다(그 CA가 Windows 인증서 저장소에 있다). 인증서 오류면 메시지에 호스트가 보인다.
+- [ ] 프록시를 거쳐야 하는 PC에서 인터넷 옵션의 프록시로 채널을 읽는다.
+- [ ] GitLab 채널: `--header PRIVATE-TOKEN`과 `$env:COZY_CHANNEL_TOKEN`으로 읽고, 토큰 없이는 "요청을 거부했습니다(HTTP 401)"로 끝난다. 출력 어디에도 토큰이 보이지 않는다.
+- [ ] 새 판이 있는 채널이면 그날 첫 `cozy check` 끝에 "새 버전이 있습니다: …" 한 줄이 보이고, 같은 날 다음 명령에는 보이지 않는다. 채널 서버가 꺼져 있어도 `cozy check`가 몇 초 안에 끝나고 결과가 같다.
+- [ ] 한글 출력이 깨지지 않는다(한국어 Windows의 PowerShell과 cmd).
+
 ## 기록
 
 | 날짜 | 마일스톤 | 결과 | 비고 |

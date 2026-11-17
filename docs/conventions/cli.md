@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `migrate alpine|events`, `channel set|show|add|release`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `migrate alpine|events`, `channel set|show|add|release`, `update`
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -493,6 +493,13 @@ UPDATE cozy_inbox SET listener_id = replace(listener_id, '({옛 이름})', '({�
 | `cozy channel release <릴리스 폴더> <channel.yml>` | (릴리스 워크플로) 릴리스 하나의 `cozy-channel.json`을 만든다 |
 
 - 판단할 수 없으면(모르는 주소 형식, 읽을 수 없는 색인, SHA-256이 다른 파일, 같은 판의 다른 파일) 아무것도 바꾸지 않고 종료 코드 2로 끝낸다.
+
+## update
+
+`cozy update [--json]`은 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 지금 판은 번들의 cozy 명령이 알려 주는 설치 폴더(`COZY_HOME`)의 `COZY_VERSION`이다. 출력, `--json`의 키, 웹 서버의 인증과 인증서는 [channel.md](channel.md#cozy-update와-새-판-알림)에 있다.
+
+- 채널을 정하지 않았거나, 지금 판을 모르거나(설치 폴더 밖의 cozy-cli jar, 개발 판), 색인을 읽을 수 없으면 종료 코드 2로 끝낸다.
+- **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인하고, 새 판이 있으면 오류 출력에 한 줄을 보인다. `--json` 출력 뒤에는 하지 않는다. 명령의 출력과 종료 코드는 바뀌지 않는다.
 
 ## 의존
 

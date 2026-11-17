@@ -3,8 +3,8 @@
 설치한 개발 도구(MSI나 오프라인 번들)를 새 판으로 올릴 때 새 판을 받아 오는 곳이다. 결정과 이유는 ADR-0042에 있다. 앱의 자체 업데이트(`cozy.update.*`, [distribution.md](distribution.md))와는 다르다.
 
 - **채널**: 색인 파일 `cozy-channel.json`의 주소 하나다. 색인과 파일은 정적 파일이라 서버의 API를 쓰지 않는다. 그래서 파일 서버, 사내 웹 서버, GitLab, GitHub 어디에나 둘 수 있다.
-- **흐름**: 관리자가 릴리스를 받아 채널에 더한다(`cozy channel add`). 각 PC는 채널을 한 번 정한다(`cozy channel set`). 그 뒤 새 판을 보고 올린다(`cozy update`, `cozy upgrade`. 다음 판에서 더한다).
-- **네트워크**: `cozy channel`의 명령은 네트워크를 쓰지 않는다. `set`은 주소의 형식만 본다.
+- **흐름**: 관리자가 릴리스를 받아 채널에 더한다(`cozy channel add`). 각 PC는 채널을 한 번 정한다(`cozy channel set`). 그 뒤 새 판을 보고(`cozy update`) 올린다(`cozy upgrade`. 다음 판에서 더한다).
+- **네트워크**: `cozy channel`의 명령은 네트워크를 쓰지 않는다. `set`은 주소의 형식만 본다. 채널을 읽는 것은 `cozy update`와 하루 한 번의 새 판 알림이다.
 
 ## 채널 주소
 
@@ -38,6 +38,35 @@ cozy channel show --json     # {"address", "source", "header", "token", "config"
   - 설정 파일의 토큰은 평문이다. 환경 변수를 권한다.
   - `show`와 그 밖의 출력은 토큰을 보이지 않는다. 있는지만 보인다.
 - **채널을 정하지 않으면**: 업데이트를 확인하지 않는다. 기본 채널은 없다(폐쇄망에서 인터넷 주소의 시간 초과를 기다리지 않게).
+
+## `cozy update`와 새 판 알림
+
+```bash
+cozy update          # 지금 판, 최신 판, 새 판마다 날짜·요약·호환 깨짐·앱에서 돌릴 명령, cozy upgrade가 올릴 판
+cozy update --json   # {"current", "latest", "channel", "upToDate", "upgrade", "breaking", "releases": [{"version", "date", "breaking", "summary", "appSteps"}]}
+```
+
+- 채널 색인을 읽어 비교만 한다. 아무것도 받거나 바꾸지 않는다. 어디서나 실행한다.
+- **지금 판**: 설치한 cozy 명령(설치 폴더의 `bin/cozy`, `bin\cozy.cmd`, 번들 폴더의 `cozy`)이 설치 폴더를 `COZY_HOME`으로 알려 주고, 그 폴더의 `COZY_VERSION`이 지금 판이다. 설치 폴더를 모르거나 개발 판(SNAPSHOT)이면 비교하지 않고 종료 코드 2로 끝낸다.
+- **올릴 판**(`upgrade`): 지금 판과 주 버전이 같은 가장 새 판. 주 버전이 바뀐 판(`breaking`)은 `cozy upgrade --to <판>`으로 적어야 올린다. `--json`의 `breaking`은 그런 판 가운데 최신 판이다.
+- **채널이 더 낮으면**: 채널의 최신 판이 지금 판보다 낮으면 알리기만 한다. 낮은 판으로는 올리지 않는다.
+- **실패로 닫는 것**(종료 코드 2): 채널을 정하지 않음, 색인이 없음(파일이 없거나 HTTP 404), 거부(HTTP 401, 403), 연결하지 못함, 읽을 수 없는 색인(모르는 `schema`, 빠진 필드).
+- **웹 서버**:
+  - 토큰은 채널 주소와 같은 서버(scheme, 호스트, 포트)에만 보낸다. 다른 서버로 넘겨주면(GitHub의 자산 저장소 등) 토큰 없이 따른다. 넘겨주기는 5번까지, `https`에서 `http`로는 따르지 않는다.
+  - 인증서: JDK의 인증서(`cacerts`)에 더해 Windows는 Windows 인증서 저장소(`Windows-ROOT`)를 믿는다. 사내 CA로 서명한 서버도 그 CA가 Windows에 들어 있으면 따로 설정하지 않는다.
+  - 프록시: 시스템 설정(Windows는 인터넷 옵션의 프록시)을 따른다.
+  - 연결은 10초, 응답은 60초까지 기다린다.
+- **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인한다. 새 판이 있으면 오류 출력의 마지막에 한 줄을 보인다.
+
+  ```text
+  [cozy] 새 버전이 있습니다: 2.1.0. cozy upgrade로 올립니다 (바뀌는 것: cozy update)
+  [cozy] 호환이 깨지는 새 버전이 있습니다: 3.0.0. 바뀌는 것과 앱에서 돌릴 명령은 cozy update로 봅니다
+  ```
+
+  - `--json` 출력, `cozy update`, `cozy channel`, 도움말 뒤에는 확인하지 않는다. 명령의 출력과 종료 코드는 바뀌지 않는다.
+  - 확인은 3초까지 기다린다. 실패하거나 늦으면 아무것도 보이지 않고 다음 날 다시 확인한다. 자동으로 설치하지 않는다.
+  - 확인한 날은 설정 파일 옆의 `update-check.properties`(`checked`, `latest`)에 적는다. `cozy update`도 적는다. 지우면 다음 명령이 다시 확인한다.
+  - 알림을 끄려면 채널을 정하지 않는다(설정 파일의 `channel`을 지운다).
 
 ## `cozy channel add` (관리자)
 
