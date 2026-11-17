@@ -333,6 +333,19 @@ class UpdateCommandTest {
 		}
 
 		@Test
+		void aHeaderWithASchemePutsTheSchemeBeforeTheToken() throws IOException {
+			Recorded recorded = new Recorded();
+			String base = serve(recorded, exchange -> respond(exchange, 200, index(release("2.1.0", "2026-12-01", "첫째 판"))));
+			assertThat(run("channel", "set", base + "/cozy/index/cozy-channel.json", "--header", "Authorization: Basic").code()).isZero();
+			UpdateCommandTest.this.env.put("COZY_CHANNEL_TOKEN", "ZGV2OnMzY3JldA==");
+
+			Result result = run("update");
+
+			assertThat(result.code()).as(result.err()).isZero();
+			assertThat(recorded.headers.getFirst().get("Authorization")).containsExactly("Basic ZGV2OnMzY3JldA==");
+		}
+
+		@Test
 		void aRefusedRequestSaysWhatToCheckWithoutShowingTheToken() throws IOException {
 			Recorded recorded = new Recorded();
 			String base = serve(recorded, exchange -> respond(exchange, 401, ""));

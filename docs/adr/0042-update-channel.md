@@ -207,3 +207,20 @@ cozy channel show
   - `BundleCommandsTest`: bash와 PowerShell의 cozy 명령이 `upgrade`를 넘기고, MSI만 `COZY_INSTALLER`를 쓰고, 워크플로가 `verify-msi-upgrade.ps1`을 돈다.
   - cozy-cli 테스트 238개 통과.
   - `verify-msi-upgrade.ps1`은 Linux에서 돌릴 수 없다. M45 뒤의 러너 검증 때 처음 돈다.
+
+## M45 (2026-11-17, 사용자 지시 "진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다(ADR-0017 2026-11-17). 새 의존성은 없다.
+- 문서:
+  - `docs/conventions/install-and-update.md`를 새로 썼다. PC 쪽(설치한 것이 놓이는 곳, 설치, 채널 정하기, 판 올리기와 올리지 못했을 때, 앱을 새 판으로 옮기기, 지우기)과 관리자 쪽(릴리스 들여오기, 파일 서버, 사내 웹 서버, GitLab)이다. `channel.md`는 명령과 형식의 참조로 두고, 서버마다의 절차는 새 문서로 옮겼다.
+  - 번들 README: 명령 목록과 cozy-cli가 맡는 명령에 `migrate`, `channel`, `update`, `upgrade`를 더하고, "MSI로 올릴 때"를 `cozy upgrade` 기준으로 고쳤다.
+  - 에이전트 문서: 주제 플레이북 `upgrade`(개발 도구는 사용자가 올리고, 앱은 cozy-parent 판, 판마다의 앱 명령, `cozy sync agents`, `cozy check`, `mvn -o clean verify` 순서로 옮긴다)를 더하고, `SKILL.md`의 표와 결과 읽기에 새 판 알림 줄을 더했다. 에이전트는 사용자가 시키지 않으면 `cozy upgrade`를 돌리지 않는다. `AGENTS.md`는 40줄 제한 때문에 바꾸지 않았다(스킬의 설명과 표가 가리킨다).
+  - `distribution/release/channel.yml`의 `appSteps`를 `cozy sync agents`로 했다. 이 판에서 에이전트 문서가 바뀌었기 때문이다.
+- 정한 것:
+  - **웹 서버 인증**: 머리 하나로 확인하는 방식만 쓴다. 머리 이름에 방식을 붙여 적으면(`Authorization: Basic`) 토큰 앞에 붙는다. 이미 있던 동작이고, 문서에 적으면서 테스트를 더했다. Windows 통합 인증(NTLM, Kerberos)은 쓸 수 없다고 적었다.
+  - **GitLab의 읽는 토큰**: PC마다 개인 토큰을 두지 않고 `read_package_registry` 범위의 배포 토큰(`--header DEPLOY-TOKEN`)을 권한다. 머리 이름과 범위는 GitLab 문서(Generic packages repository)를 따랐다. 패키지 판 `index`와 같은 이름의 파일을 다시 올렸을 때 받는 파일은 GitLab 문서에 적혀 있지 않아, 올린 뒤 `cozy update`로 확인하는 단계를 절차에 넣었다.
+- 확인:
+  - `AgentDocsTest`: 새 플레이북의 절 순서, 영어와 마침표, `SKILL.md`의 링크.
+  - `UpdateCommandTest`: `--header "Authorization: Basic"`이 `Basic <토큰>`을 보낸다.
+  - cozy-cli 테스트 239개 통과.
+- 남은 것: 러너 검증(`gh workflow run release.yml`)으로 Windows 경로(`verify-msi.ps1`의 `cozy update`, `verify-msi-upgrade.ps1`)를 처음 돌린다. 실제 GitLab과 IIS에 올리는 절차는 이 레포에서 확인하지 못했다. 사내 서버에서 처음 올릴 때 확인한다.

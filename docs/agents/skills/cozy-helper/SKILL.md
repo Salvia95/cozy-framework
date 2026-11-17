@@ -1,6 +1,6 @@
 ---
 name: cozy-helper
-description: Add Cozy app structure with cozy commands (module, CRUD, field, screen, fragment, event, listener, migration, DTO, query, command) and fix cozy check or mvn verify violations.
+description: Add Cozy app structure with cozy commands (module, CRUD, field, screen, fragment, event, listener, migration, DTO, query, command), fix cozy check or mvn verify violations, and move the app to a newer Cozy release.
 ---
 
 # cozy-helper
@@ -11,6 +11,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 
 - Use this skill to add a module, CRUD set, CRUD field, read-only screen, public fragment, event, listener, migration, spi DTO, Finder read, or Facade write.
 - Use this skill to declare that one module uses another module.
+- Use this skill to upgrade Cozy or to move the app to a newer Cozy release.
 - Use this skill to fix a `cozy check` or `mvn -o verify` violation, including an unfilled `cozy:slot` marker (`[C9]`).
 
 ## When NOT to use
@@ -55,6 +56,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | Choose the input for a typed value, a value from a fixed set, or several rows of the same shape | [inputs](references/inputs/PLAYBOOK.md) |
 | Write button labels, titles, messages, and terms shown on screens | [wording](references/wording/PLAYBOOK.md) |
 | Update `AGENTS.md` and this skill after a Cozy upgrade | [sync-agents](references/sync-agents/PLAYBOOK.md) |
+| Upgrade Cozy, or move the app to a newer Cozy release | [upgrade](references/upgrade/PLAYBOOK.md) |
 
 ## Reading results
 
@@ -64,6 +66,7 @@ Cozy commands generate structure, and you fill only the slots they leave. A comm
 | `[cozy] 바뀐 것 없음` | The same structure already exists. | Do nothing; rerunning a command is safe. |
 | `[cozy] 적용했습니다. 남은 일 N곳` | The command wrote files but could not edit N screens. | Insert the printed markup into each listed file. |
 | Exit code 2 | The command was refused and no file changed. | Read stderr, fix the arguments, and rerun. |
+| `[cozy] 새 버전이 있습니다` | A newer Cozy release is on the update channel. | Tell the user, and never upgrade on your own ([upgrade](references/upgrade/PLAYBOOK.md)). |
 
 - A plan line starting with `만듦` is a new file, `바꿈` is an edited file, and `그대로` is an unchanged file.
 - Add `--json` to any command for machine-readable output.

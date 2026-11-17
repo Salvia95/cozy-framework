@@ -20,8 +20,8 @@ Windows PC는 보통 번들 대신 같은 릴리스의 설치 파일 `cozy-{버�
 | `jdk/` | (Windows x64 번들만) Eclipse Temurin JDK 25. `lib/src.zip`만 뺐다. 라이선스는 `jdk/legal/`과 `jdk/NOTICE`, 소스 묶음은 같은 릴리스의 `OpenJDK25U-jdk-sources_*.tar.gz`(ADR-0025 보완) |
 | `repository/` | 번들 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인. 설치하면 Maven이 읽기만 한다 |
 | `apache-maven-3.10.1-bin.zip` | Maven 배포판 |
-| `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`, `cozy version`, `cozy help` |
-| `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`, `enable`, `sync`, `set`을 맡는다(ADR-0032) |
+| `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`·`cozy migrate`, `cozy channel`·`cozy update`·`cozy upgrade`(개발 도구 업데이트), `cozy version`, `cozy help` |
+| `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`, `enable`, `sync`, `set`, `migrate`, `channel`, `update`, `upgrade`를 맡는다(ADR-0032, ADR-0042) |
 | `docs/` | 앱의 에이전트 문서 원본(`agents/`: AGENTS.md, cozy-helper 스킬), 규약 문서(`conventions/`), 결정 기록(`adr/`) |
 | `COZY_VERSION` | 프레임워크 버전 |
 | `LICENSE`, `NOTICE` | Cozy의 라이선스(Apache-2.0) |
@@ -65,6 +65,8 @@ distribution/offline-bundle/add-jdk.sh build/offline-bundle/cozy-offline-bundle-
 
 ## 설치와 사용 (오프라인 PC)
 
+설치, 채널 정하기, 새 판으로 올리기, 앱 옮기기, 지우기의 전체 절차와 관리자가 사내 채널(파일 서버, 웹 서버, GitLab)을 만드는 절차는 `docs/conventions/install-and-update.md`에 있다.
+
 ```powershell
 Expand-Archive cozy-offline-bundle-2.1.0-SNAPSHOT-windows-x64.zip C:\cozy-bundle
 cd C:\cozy-bundle\cozy-offline-bundle-2.1.0-SNAPSHOT-windows-x64
@@ -86,7 +88,7 @@ mvn -o -Pdist package
   - 설치 폴더의 `repository`는 읽기만 하는 꼬리 저장소다(늘 켜진 프로필 `cozy-bundle`의 `maven.repo.local.tail`, `${maven.home}/../repository`). 절대 경로가 없어 설치 폴더를 옮겨도 맞는다.
   - `offline=true`로 둔다. 이 Maven으로는 네트워크에 나가지 않는다.
 - **다시 설치할 때**: 설치 폴더의 `repository`를 새 번들의 것으로 바꾸기 전에, 이전 저장소에만 있던 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성, 예전 설치가 저장소에 쓴 앱)을 사용자 저장소로 옮긴다. 그래서 아직 판을 올리지 않은 앱도 오프라인으로 빌드된다. 사용자 저장소에 이미 있는 파일은 덮어쓰지 않는다.
-- **MSI로 올릴 때**: MSI는 설치하기 전에 이전 판의 파일을 옮기지 못하고 지운다. MSI를 더블클릭해 올리면 이전 판의 cozy 모듈이 남지 않으므로, 그 판을 쓰던 앱은 `pom.xml`의 cozy-parent 판을 올린다.
+- **MSI로 올릴 때**: `cozy upgrade`로 올린다. 설치하기 전의 저장소를 떠 두었다가 이전 판에만 있던 파일을 사용자 저장소로 옮긴다. MSI를 더블클릭해 올리면 MSI가 이전 판의 파일을 지우므로, 그 판을 쓰던 앱은 `pom.xml`의 cozy-parent 판을 올린다.
 - **JDK**: 번들에 `jdk\`가 있으면 설치 폴더에 복사한다. 이전 설치의 `jdk\`는 지운다.
   - `cozy`와 `bin\mvn.cmd`는 그 JDK로 돈다. Maven이 그 JDK로 돌면 테스트, 패키징(`jpackage`)도 같은 JDK를 쓴다.
   - 시스템의 `JAVA_HOME`과 PATH 설정은 바꾸지 않는다. 다른 Java 프로그램에는 영향이 없다.

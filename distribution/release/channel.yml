@@ -4,4 +4,4 @@
 version: 2.1.0
 summary: "개발 도구 업데이트 채널(cozy channel, cozy update, cozy upgrade)과 이전 판을 남기는 사용자 저장소"
 # 앱 폴더에서 돌릴 명령. 없으면 []
-appSteps: []
+appSteps: ["cozy sync agents"]

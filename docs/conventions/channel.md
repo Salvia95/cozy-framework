@@ -1,6 +1,6 @@
 # 개발 도구 업데이트 채널
 
-설치한 개발 도구(MSI나 오프라인 번들)를 새 판으로 올릴 때 새 판을 받아 오는 곳이다. 결정과 이유는 ADR-0042에 있다. 앱의 자체 업데이트(`cozy.update.*`, [distribution.md](distribution.md))와는 다르다.
+설치한 개발 도구(MSI나 오프라인 번들)를 새 판으로 올릴 때 새 판을 받아 오는 곳이다. PC에 설치하고 올리는 절차와 관리자가 채널을 만드는 절차는 [install-and-update.md](install-and-update.md)에, 결정과 이유는 ADR-0042에 있다. 앱의 자체 업데이트(`cozy.update.*`, [distribution.md](distribution.md))와는 다르다.
 
 - **채널**: 색인 파일 `cozy-channel.json`의 주소 하나다. 색인과 파일은 정적 파일이라 서버의 API를 쓰지 않는다. 그래서 파일 서버, 사내 웹 서버, GitLab, GitHub 어디에나 둘 수 있다.
 - **흐름**: 관리자가 릴리스를 받아 채널에 더한다(`cozy channel add`). 각 PC는 채널을 한 번 정한다(`cozy channel set`). 그 뒤 새 판을 보고(`cozy update`) 올린다(`cozy upgrade`).
@@ -33,7 +33,7 @@ cozy channel show --json     # {"address", "source", "header", "token", "config"
   - 그 밖: `$XDG_CONFIG_HOME/cozy/cozy.properties`, 없으면 `~/.config/cozy/cozy.properties`
 - **키**: `channel`(주소), `channel.header`(머리 이름), `channel.token`(토큰). `set`은 `channel`과 `channel.header`만 쓴다. `--header` 없이 다시 `set`하면 머리 이름을 지운다.
 - **환경 변수**: `COZY_CHANNEL`이 있으면 설정 파일의 `channel`보다 앞선다. 여러 PC에 같은 채널을 둘 때 쓴다.
-- **인증**: 머리 이름을 정하지 않으면 `Authorization: Bearer <토큰>`이다. GitLab의 개인 토큰은 `--header PRIVATE-TOKEN`이다.
+- **인증**: 머리 이름을 정하지 않으면 `Authorization: Bearer <토큰>`이다. 머리 이름만 적으면 토큰을 그대로 보내고(GitLab의 개인 토큰 `--header PRIVATE-TOKEN`, 배포 토큰 `--header DEPLOY-TOKEN`), `이름: 방식`으로 적으면 방식을 토큰 앞에 붙인다(Basic 인증 `--header "Authorization: Basic"`, 토큰은 `사용자:비밀번호`의 Base64).
   - 토큰은 환경 변수 `COZY_CHANNEL_TOKEN`이 설정 파일의 `channel.token`보다 앞선다. 명령줄 인자로는 받지 않는다(셸 기록에 남지 않게).
   - 설정 파일의 토큰은 평문이다. 환경 변수를 권한다.
   - `show`와 그 밖의 출력은 토큰을 보이지 않는다. 있는지만 보인다.
@@ -134,16 +134,7 @@ cozy channel add '\\fileserver\share\cozy' ./cozy-2.1.0 --dry-run   # 복사할 
 ```
 - 같은 판이 이미 같은 파일로 있으면 바꾸지 않는다. 같은 판이 다른 파일로 있으면 거부한다. 게시한 릴리스의 파일은 바꾸지 않는다.
 - 채널 색인을 읽을 수 없으면(모르는 `schema`, 빠진 필드) 덮어쓰지 않고 멈춘다.
-- **웹 서버와 GitLab**: 로컬 폴더나 파일 서버에서 채널 폴더를 만들고, 같은 모양으로 올린다. 판 폴더의 파일을 먼저 올리고 `index/cozy-channel.json`을 마지막에 올린다.
-  - **GitLab Generic Package Registry**: 패키지 이름 하나(`cozy`)에 폴더 이름을 패키지 판으로 올린다. 판 폴더 `2.1.0/`의 파일은 패키지 판 `2.1.0`에, 색인은 패키지 판 `index`에 둔다. 색인을 바꿀 때마다 같은 이름으로 다시 올리므로, 프로젝트 설정에서 Generic 패키지의 중복을 막았다면 `index`에는 허용한다.
-
-    ```bash
-    curl --fail --header "PRIVATE-TOKEN: $TOKEN" --upload-file 2.1.0/cozy-2.1.0-windows-x64.msi \
-      "https://gitlab.example/api/v4/projects/42/packages/generic/cozy/2.1.0/cozy-2.1.0-windows-x64.msi"
-    # 두 번들도 같게 올린 뒤 마지막에
-    curl --fail --header "PRIVATE-TOKEN: $TOKEN" --upload-file index/cozy-channel.json \
-      "https://gitlab.example/api/v4/projects/42/packages/generic/cozy/index/cozy-channel.json"
-    ```
+- **웹 서버와 GitLab**: 로컬 폴더나 파일 서버에서 채널 폴더를 만들고, 같은 모양으로 올린다. 판 폴더의 파일을 먼저 올리고 `index/cozy-channel.json`을 마지막에 올린다. 서버마다의 절차(파일 서버 권한, 웹 서버의 캐시·MIME·인증, GitLab Generic Package Registry의 패키지 판과 토큰)는 [install-and-update.md](install-and-update.md)의 "채널 만들기"에 있다.
 - **채널 폴더의 쓰기 권한**: 채널에 쓸 수 있는 사람은 배포할 수 있는 사람이다. 쓰기 권한을 관리자로 좁힌다. SHA-256은 깨진 파일과 전송 오류를 막고, 바꿔치기는 막지 않는다.
 
 ## 색인 형식 `cozy-channel.json`

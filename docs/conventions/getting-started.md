@@ -1,6 +1,6 @@
 # 새 앱 만들기 (cozy-archetype)
 
-아키타입으로 Cozy 앱을 만든다(PRD §6.6, §10). 인터넷이 없는 PC에서는 오프라인 번들의 `cozy new` 명령을 쓴다([distribution/offline-bundle/README.md](../../distribution/offline-bundle/README.md)).
+아키타입으로 Cozy 앱을 만든다(PRD §6.6, §10). 인터넷이 없는 PC에서는 오프라인 번들의 `cozy new` 명령을 쓴다([distribution/offline-bundle/README.md](../../distribution/offline-bundle/README.md)). 개발 도구를 설치하고 새 판으로 올리는 절차는 [install-and-update.md](install-and-update.md)에 있다.
 
 ```bash
 mvn org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate -DarchetypeCatalog=local \
