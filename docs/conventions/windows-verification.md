@@ -266,7 +266,7 @@ mvn -o -Pdist package
 
 ## 업데이트 채널 (ADR-0042)
 
-CI의 Windows 러너는 파일 채널의 `cozy update --json`만 확인한다(`verify-msi.ps1`). 사내 서버, 인증서, 프록시는 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
+CI의 Windows 러너는 파일 채널의 `cozy update --json`(`verify-msi.ps1`)과, 판만 다른 MSI 두 개로 `cozy upgrade`(`verify-msi-upgrade.ps1`: 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄)를 확인한다. 사내 서버, 인증서, 프록시, 회사 PC 정책, 사람이 쓰는 창은 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
 
 ```powershell
 cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
@@ -281,6 +281,12 @@ cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
 - [ ] GitLab 채널: `--header PRIVATE-TOKEN`과 `$env:COZY_CHANNEL_TOKEN`으로 읽고, 토큰 없이는 "요청을 거부했습니다(HTTP 401)"로 끝난다. 출력 어디에도 토큰이 보이지 않는다.
 - [ ] 새 판이 있는 채널이면 그날 첫 `cozy check` 끝에 "새 버전이 있습니다: …" 한 줄이 보이고, 같은 날 다음 명령에는 보이지 않는다. 채널 서버가 꺼져 있어도 `cozy check`가 몇 초 안에 끝나고 결과가 같다.
 - [ ] 한글 출력이 깨지지 않는다(한국어 Windows의 PowerShell과 cmd).
+- [ ] MSI로 설치한 PC에서 `cozy upgrade`가 새 판을 받아 창 없이 설치하고, 다음 `cozy` 명령의 첫 줄에 "판을 올렸습니다: …"가 보인다. 올리기 전에 만든 앱이 네트워크 없이 `mvn -o verify`로 빌드된다.
+- [ ] `cozy upgrade` 바로 뒤에 PowerShell 창을 닫아도 설치가 끝난다(새 창의 `cozy version`이 새 판).
+- [ ] 사용자 이름이 한글인 계정(`C:\Users\홍길동`)에서도 받기와 설치가 된다.
+- [ ] zip으로 설치한 폴더(`.\cozy.cmd install`)에서 `cozy upgrade`가 windows-x64 번들로 같은 폴더에 다시 설치한다.
+- [ ] 회사 PC 정책으로 `msiexec`이나 스크립트 실행이 막히면 다음 명령이 "설치하지 못했습니다"와 받은 파일의 위치를 보이고, 그 MSI를 손으로 설치할 수 있다.
+- [ ] 호환이 깨지는 판만 있는 채널이면 `cozy upgrade`가 앱에서 돌릴 명령을 보이고 멈추고, `cozy upgrade --to <판>`으로 올린다.
 
 ## 기록
 

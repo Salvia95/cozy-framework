@@ -28,7 +28,9 @@ if (-not $root -or -not (Test-Path (Join-Path $root.FullName 'jdk\bin\java.exe')
 $staging = Join-Path $work 'staging'
 & (Join-Path $root.FullName 'cozy.cmd') install $staging
 if ($LASTEXITCODE -ne 0) { throw "[cozy] cozy install 실패 (종료 코드 $LASTEXITCODE)" }
-foreach ($path in @('bin\cozy.cmd', 'bin\mvn.cmd', 'lib\cozy.ps1', 'jdk\bin\java.exe', 'repository', 'COZY_VERSION')) {
+# MSI로 설치한 폴더라는 표시. cozy upgrade가 보고 새 판도 MSI로 설치한다(zip으로 설치한 폴더에는 없다)
+[System.IO.File]::WriteAllText((Join-Path $staging 'COZY_INSTALLER'), "msi`n", (New-Object System.Text.ASCIIEncoding))
+foreach ($path in @('bin\cozy.cmd', 'bin\mvn.cmd', 'lib\cozy.ps1', 'jdk\bin\java.exe', 'repository', 'COZY_VERSION', 'COZY_INSTALLER')) {
   if (-not (Test-Path (Join-Path $staging $path))) { throw "[cozy] 설치 폴더에 ${path}가 없습니다" }
 }
 

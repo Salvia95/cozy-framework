@@ -3,6 +3,7 @@ package io.salvia95.cozy.cli.internal.channel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.ProxySelector;
 import java.net.Socket;
@@ -17,13 +18,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -115,8 +120,75 @@ public final class ChannelClient {
 
 	/** 채널 색인을 읽는다 */
 	public ChannelIndex index(ChannelSettings settings) {
-		byte[] bytes = read(settings.address(), settings, MAX_INDEX);
-		return ChannelIndex.parse(new String(bytes, StandardCharsets.UTF_8), settings.address());
+		String location = settings.address();
+		byte[] bytes = open(location, settings, "채널 색인 " + location + "이 없습니다. 채널 주소가 맞는지(cozy channel show), 공유 "
+				+ "폴더에 연결했는지 확인합니다.", (in) -> limited(in, MAX_INDEX, location));
+		return ChannelIndex.parse(new String(bytes, StandardCharsets.UTF_8), location);
+	}
+
+	/**
+	 * 채널의 파일을 받아 색인에 적힌 크기와 SHA-256을 확인한다. 같은 폴더의 임시 파일({@code .part})에 받고 둘 다 맞을 때만
+	 * {@code target}으로 바꾼다. 맞지 않거나 받다가 멈추면 아무것도 남기지 않는다.
+	 */
+	public void download(ChannelSettings settings, ChannelIndex.ChannelFile file, Path target) {
+		String location = resolve(settings.address(), file.path());
+		Path part = target.resolveSibling(target.getFileName() + ".part");
+		try {
+			Files.createDirectories(target.toAbsolutePath().getParent());
+			String sha256 = open(location, settings, "채널에 " + file.name() + "이 없습니다(" + location + "). 채널 관리자가 cozy "
+					+ "channel add로 더한 판인지 확인합니다.", (in) -> copy(in, part, file.size(), location));
+			if (!sha256.equalsIgnoreCase(file.sha256())) {
+				throw new CliException("받은 " + file.name() + "의 SHA-256이 채널 색인과 다릅니다(색인 " + file.sha256() + ", 받은 파일 "
+						+ sha256 + "). 채널의 파일이 깨졌거나 색인과 다른 파일입니다. 설치하지 않습니다.");
+			}
+			Files.move(part, target, StandardCopyOption.REPLACE_EXISTING);
+		}
+		catch (IOException ex) {
+			throw new CliException(file.name() + "을 " + target.getParent() + "에 받지 못했습니다: " + ex.getMessage());
+		}
+		finally {
+			try {
+				Files.deleteIfExists(part);
+			}
+			catch (IOException ex) {
+				// 다음에 받을 때 덮어쓴다
+			}
+		}
+	}
+
+	/** 받은 내용을 다룬다 */
+	@FunctionalInterface
+	private interface Body<T> {
+
+		T read(InputStream in) throws IOException;
+	}
+
+	/** {@code size} 바이트를 받아 파일에 쓰고 SHA-256을 돌려준다. 더 많거나 적으면 실패한다 */
+	private static String copy(InputStream in, Path part, long size, String location) throws IOException {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch (NoSuchAlgorithmException ex) {
+			throw new IllegalStateException(ex);
+		}
+		long total = 0;
+		try (OutputStream out = Files.newOutputStream(part)) {
+			byte[] buffer = new byte[1 << 16];
+			for (int n = in.read(buffer); n >= 0; n = in.read(buffer)) {
+				total += n;
+				if (total > size) {
+					throw new CliException(location + "이 채널 색인에 적힌 크기(" + size + "바이트)보다 큽니다. 설치하지 않습니다.");
+				}
+				digest.update(buffer, 0, n);
+				out.write(buffer, 0, n);
+			}
+		}
+		if (total != size) {
+			throw new CliException(location + "을 " + total + "바이트만 받았습니다(채널 색인 " + size + "바이트). 연결이 끊겼거나 채널의 "
+					+ "파일이 색인과 다릅니다. 다시 하면 처음부터 받습니다.");
+		}
+		return HexFormat.of().formatHex(digest.digest());
 	}
 
 	/** 색인 주소 기준의 상대 경로를 주소로 바꾼다 */
@@ -135,9 +207,9 @@ public final class ChannelClient {
 		return lower.startsWith("http://") || lower.startsWith("https://");
 	}
 
-	private byte[] read(String location, ChannelSettings settings, long max) {
+	private <T> T open(String location, ChannelSettings settings, String missing, Body<T> body) {
 		if (web(location)) {
-			return get(location, settings, max);
+			return get(location, settings, body);
 		}
 		Path file;
 		try {
@@ -146,22 +218,18 @@ public final class ChannelClient {
 		catch (IllegalArgumentException ex) {
 			throw new CliException("채널 주소 " + location + "를 파일 경로로 읽을 수 없습니다: " + ex.getMessage());
 		}
-		try {
-			if (Files.size(file) > max) {
-				throw new CliException(location + "이 너무 큽니다(" + max + "바이트 넘음). 채널 색인이 맞는지 확인합니다.");
-			}
-			return Files.readAllBytes(file);
+		try (InputStream in = Files.newInputStream(file)) {
+			return body.read(in);
 		}
 		catch (NoSuchFileException ex) {
-			throw new CliException("채널 색인 " + location + "이 없습니다. 채널 주소가 맞는지(cozy channel show), 공유 폴더에 연결했는지 "
-					+ "확인합니다.");
+			throw new CliException(missing);
 		}
 		catch (IOException ex) {
-			throw new CliException("채널 색인 " + location + "을 읽지 못했습니다: " + ex.getMessage());
+			throw new CliException(location + "을 읽지 못했습니다: " + ex.getMessage());
 		}
 	}
 
-	private byte[] get(String location, ChannelSettings settings, long max) {
+	private <T> T get(String location, ChannelSettings settings, Body<T> body) {
 		URI origin = URI.create(settings.address());
 		URI uri = URI.create(location);
 		HttpClient client = HttpClient.newBuilder()
@@ -200,11 +268,11 @@ public final class ChannelClient {
 					uri = target;
 					continue;
 				}
-				try (InputStream body = response.body()) {
+				try (InputStream in = response.body()) {
 					if (status != 200) {
 						throw new CliException(failure(status, location, settings));
 					}
-					return limited(body, max, location);
+					return body.read(in);
 				}
 			}
 		}

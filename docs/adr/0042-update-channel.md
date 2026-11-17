@@ -95,7 +95,7 @@ cozy channel show
 
 - `cozy install`이 쓰는 `settings.xml`은 `localRepository`를 사용자 저장소로 하고, 늘 켜진 프로필의 속성 `maven.repo.local.tail`을 설치 폴더의 저장소로 한다. 명령줄 인자가 아니라 `settings.xml`에 두므로 번들의 Maven을 지정한 IDE도 같은 설정을 읽는다.
 - Maven 3.10.1에서 확인했다(2026-11-17). 빈 사용자 저장소와 꼬리로 오프라인 빌드가 되고, 사용자 저장소에는 `mvn install`한 것만 생긴다. 같은 `settings.xml`에서 프로필만 빼면 오프라인 빌드가 의존성을 찾지 못해 실패한다.
-- **이전 판을 남긴다.** `cozy upgrade`는 설치하기 전에, 지금 번들 저장소에 있고 새 번들 저장소에 없는 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성)을 사용자 저장소로 옮긴다. 새 판의 파일 목록은 받은 패키지에서 읽는다. 그래서 올리기 전의 앱도 계속 오프라인으로 빌드된다. 늘어나는 크기는 판 사이의 차이만큼이다.
+- **이전 판을 남긴다.** `cozy upgrade`는 지금 번들 저장소에 있고 새 번들 저장소에 없는 파일(이전 판의 cozy 모듈, 그 판만 쓰는 의존성)을 사용자 저장소로 옮긴다. zip은 받은 번들의 `cozy install`이 옮기고, MSI는 설치하기 전의 저장소를 하드 링크로 떠 두었다가 설치한 뒤 옮긴다(M44). 그래서 올리기 전의 앱도 계속 오프라인으로 빌드된다. 늘어나는 크기는 판 사이의 차이만큼이다.
 - **2.0.0에서 처음 올릴 때**: 2.0.0에는 `cozy upgrade`가 없으므로 첫 판(2.1.0)은 MSI나 `cozy install`로 설치한다.
   - `cozy install`(zip)은 설치 폴더 저장소에만 있던 파일(2.0.0 판의 cozy 모듈, `mvn install` 결과)을 사용자 저장소로 옮긴다.
   - MSI는 설치하기 전에 코드를 돌리지 않으므로(`cozy.wxs`에 사용자 작업이 없다) 2.0.0 판의 cozy 모듈을 지운다. Maven이 설치 폴더에 쓴 파일은 MSI의 것이 아니라 남고, 꼬리로 계속 읽힌다. 2.0.0을 쓰던 앱은 cozy-parent 판을 올린다.
@@ -186,3 +186,24 @@ cozy channel show
   - 인증서: `keytool`로 만든 자체 서명 인증서의 로컬 HTTPS 서버를 JDK 인증서만으로는 거부하고, 그 인증서를 담은 저장소를 더하면 읽는다. `Windows-ROOT` 자체는 Linux에서 확인할 수 없다(windows-verification.md에 항목을 더했다).
   - `BundleCommandsTest`: 설치한 `bin/cozy`가 `update`를 cozy-cli에 넘기고 `COZY_HOME`을 알려 준다. PowerShell 스크립트도 같다.
   - `verify-msi.ps1`: 설치한 MSI의 `cozy update --json`이 설치 폴더의 판을 파일 채널과 비교한다(개발 판이면 종료 코드 2). Windows 러너에서는 M45 뒤의 러너 검증 때 돈다.
+
+## M44 (2026-11-17, 사용자 지시 "진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다(ADR-0017 2026-11-17). 새 의존성은 없다(JDK의 `HttpClient`, `MessageDigest`, `ZipFile`, 하드 링크만 쓴다).
+- `cozy upgrade [--to 판]`을 만들었다. 사용법은 `docs/conventions/channel.md`의 "`cozy upgrade`"에 있다.
+- 정한 것:
+  - **설치한 모양을 아는 방법**: `build-msi.ps1`이 설치 폴더 모양에 표시 파일 `COZY_INSTALLER`(`msi`)를 넣는다. 없으면 zip 설치이고, `jdk/`가 있으면 Windows는 `windows-x64`, 없으면 `portable`을 받는다. Linux에서 JDK를 담은 번들(linux-x64, 검증용)은 채널에 맞는 파일이 없어 올리지 않는다(JDK 없는 번들로 바꾸면 번들 JDK가 지워진다).
+  - **받기**: 사용자 데이터 폴더(`%LOCALAPPDATA%\Cozy\upgrade\{판}`, Linux `~/.local/share/cozy/upgrade/{판}`)의 `.part`에 받으면서 SHA-256을 재고, 크기와 SHA-256이 색인과 같을 때만 남긴다. 전에 받은 파일이 맞으면 다시 받지 않는다(실패한 설치를 다시 할 때). zip은 cozy가 끝나기 전에 풀어 그 판의 번들인지, 폴더 밖 항목이 없는지 본다. 설치하기 전에 알 수 있는 실패는 모두 cozy가 끝나기 전에 종료 코드 2로 알린다.
+  - **설치 스크립트**: 받은 폴더에 쓰고 따로 띄운다. Linux는 `setsid bash install.sh`, Windows는 `cmd /c start`로 새 콘솔에 숨긴 창의 PowerShell(BOM 있는 UTF-8)을 띄운다. 그래서 cozy를 실행한 창을 닫아도 설치가 이어진다. 스크립트는 cozy-cli와 (Windows는) 그것을 띄운 PowerShell이 끝나기를 기다리고, Windows는 cmd가 `cozy.cmd`의 마지막 줄을 읽도록 2초 더 기다린다. 자기 PID를 `pid`에, 종료 코드를 `result`에 남긴다.
+  - **결과 보이기**: 맡긴 설치는 설정 폴더의 `upgrade.properties`에 적고, 다음 cozy-cli 명령이 시작할 때 오류 출력에 한 번 보이고 지운다. 스크립트가 돌고 있으면(PID가 살아 있거나 2분이 지나지 않음) "설치하는 중"이라 보이고 `cozy upgrade`를 다시 받지 않는다. 성공은 종료 코드 0과 설치 폴더의 `COZY_VERSION`으로 판단하고, 받은 폴더를 지운다. 실패하면 받은 파일을 남기고 위치를 알린다.
+  - **`--to`**: 적은 판이 지금 판이면 아무것도 하지 않고(종료 코드 0), 낮으면 멈춘다. `--json`과 `--dry-run`은 받지 않는다(올릴 판은 `cozy update`가 보인다).
+- 계획과 달라진 것:
+  - **새 판의 파일 목록**: §5는 "받은 패키지에서 읽는다"였다. zip은 받은 번들의 `cozy install`이 이전 저장소와 새 저장소를 비교해 옮기므로 같다. MSI는 받은 파일에서 저장소 목록을 읽으려면 MSI 표를 읽는 도구(msiexec의 관리 설치나 WiX)가 필요해, 대신 설치하기 전의 저장소를 하드 링크로 떠 두었다가 설치한 뒤 새 저장소와 비교해 옮긴다. 하드 링크라 디스크가 늘지 않고, 하드 링크를 만들 수 없는 곳이면 복사한다. §5를 고쳐 적었다.
+  - **종단 검증의 자리**: §6의 `-Pe2e`가 아니라 cozy-cli의 테스트(`UpgradeBundleTest`)다. 번들의 진짜 cozy 스크립트와 이 빌드의 cozy-cli로 설치 → 채널 → `cozy upgrade` → 설치 스크립트 → 다음 명령까지 돌린다. 몇 초면 끝나 늘 도는 빌드에 둔다. 번들의 Maven과 저장소는 작은 가짜다. 이전 판의 앱이 진짜 Maven으로 빌드되는 것은 M41에서 같은 `cozy install`로 확인했다.
+  - **Windows 러너**: `verify-msi.ps1`에 더하지 않고 `verify-msi-upgrade.ps1`로 나눴다. 번들에서 판만 다른 MSI 두 개(개발 판이면 `-SNAPSHOT`을 뗀 판과 끝자리 + 1)를 만들고, 앞 판에만 표시 파일을 둔다. 워크플로의 Windows 작업 시간 제한을 120분으로 늘렸다.
+- 확인:
+  - `UpgradeCommandTest` 22개. 받기·풀기·스크립트 맡기와 스크립트를 직접 돌린 설치, 성공·실패·설치하는 중·결과 없이 끝남의 결과 줄, 실패한 뒤 받은 파일 다시 쓰기, cozy가 끝나기를 기다림, 다른 판의 번들, 주 버전이 같은 최신 판과 호환 깨짐 판의 알림, 호환 깨짐 판만 있을 때 멈춤과 `--to`, 낮은 판(채널, `--to`), 지금 판, 채널에 없는 판, 인자, `--dry-run`, SHA-256과 크기가 다른 파일(남기지 않음), 웹 채널에서 파일 받기에도 토큰, 맞는 파일 종류가 없음, Linux의 JDK 번들 설치, 채널과 릴리스 판이 없을 때. Windows 모양(MSI의 PowerShell 스크립트 내용, BOM과 CRLF, 하드 링크로 뜬 저장소와 잠금 파일 제외, `windows-x64` 번들을 JDK로 풀기, 폴더 밖 항목 거부, Linux의 MSI 설치 거부).
+  - `UpgradeBundleTest`: 위의 종단 흐름. 설치 폴더의 판, 새 번들 저장소, 사용자 저장소로 옮긴 이전 판의 cozy-ui, 옮기지 않은 공통 파일, 다음 명령의 "판을 올렸습니다"와 지운 받은 폴더.
+  - `BundleCommandsTest`: bash와 PowerShell의 cozy 명령이 `upgrade`를 넘기고, MSI만 `COZY_INSTALLER`를 쓰고, 워크플로가 `verify-msi-upgrade.ps1`을 돈다.
+  - cozy-cli 테스트 238개 통과.
+  - `verify-msi-upgrade.ps1`은 Linux에서 돌릴 수 없다. M45 뒤의 러너 검증 때 처음 돈다.

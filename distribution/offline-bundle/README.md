@@ -96,6 +96,7 @@ mvn -o -Pdist package
 - **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, 앱이 쓰는 판의 cozy-ui jar를 사용자 저장소에서 먼저, 없으면 설치 폴더의 `repository/`에서 찾는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
 - **`cozy channel`**: 개발 도구의 업데이트 채널(파일 서버, 웹 서버, GitLab, GitHub의 `cozy-channel.json`)을 정하고(`set`, `show`), 관리자가 받은 릴리스로 채널 폴더를 만든다(`add`). 어디서나 실행하고 네트워크를 쓰지 않는다. 형식은 `docs/conventions/channel.md`에 있다.
 - **`cozy update`**: 채널의 새 판, 요약, 호환이 깨지는 판, 앱에서 돌릴 명령을 보인다. 아무것도 바꾸지 않는다. 채널을 정했으면 다른 cozy 명령 뒤에 하루에 한 번 새 판을 확인해 한 줄로 알린다.
+- **`cozy upgrade [--to <판>]`**: 채널에서 새 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치한 모양대로(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`) 다시 설치한다. 이전 판에만 있던 저장소 파일은 사용자 저장소로 옮겨 올리기 전의 앱도 빌드된다. 결과는 다음 cozy 명령이 처음에 한 줄로 보인다. 호환이 깨지는 판은 `--to`로 적는다. MSI를 더블클릭해 올리면 이전 판의 파일을 옮기지 않는다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:
   - `appId`: 영문 소문자·하이픈. 기본값은 artifactId다.

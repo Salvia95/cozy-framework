@@ -61,12 +61,8 @@ public final class UpdateCommands {
 			throw new CliException("cozy update는 인자를 받지 않습니다(" + String.join(" ", args) + "). 올리는 것은 cozy upgrade입니다.");
 		}
 		Path config = UserConfig.file(env, windows);
-		ChannelSettings settings = ChannelSettings.resolve(env, config);
-		if (!settings.configured()) {
-			throw new CliException("채널을 정하지 않았습니다. 업데이트를 받을 곳을 cozy channel set <주소>로 정합니다(파일 서버, 웹 서버, "
-					+ "GitLab, GitHub의 " + ChannelIndex.FILE_NAME + "). 설정 파일: " + config);
-		}
-		Version current = Installed.require(env);
+		ChannelSettings settings = settings(env, config);
+		Version current = Installed.require(env).release();
 		ChannelIndex index = client.index(settings);
 		Plan plan = Plan.of(current, index);
 		try {
@@ -98,13 +94,7 @@ public final class UpdateCommands {
 		}
 		out.println();
 		out.println("새 판 " + plan.newer().size() + "개");
-		for (Release release : plan.newer()) {
-			out.println("  " + release.version() + " (" + release.date() + ")  " + (release.breaking() ? "[호환 깨짐] " : "")
-					+ release.summary());
-			if (!release.appSteps().isEmpty()) {
-				out.println("      앱에서 돌릴 명령: " + String.join(", ", release.appSteps()));
-			}
-		}
+		releaseLines(plan.newer(), out);
 		out.println();
 		if (plan.upgrade() != null) {
 			out.println("[cozy] cozy upgrade로 " + plan.upgrade() + "까지 올립니다.");
@@ -112,6 +102,27 @@ public final class UpdateCommands {
 		if (plan.breakingLatest() != null) {
 			out.println("[cozy] 호환이 깨지는 판(" + plan.breakingLatest() + ")은 앱에서 돌릴 명령을 보고 준비가 되면 판을 적어 올립니다: "
 					+ "cozy upgrade --to " + plan.breakingLatest());
+		}
+	}
+
+	/** 정한 채널. 정하지 않았으면 판단할 수 없으므로 실패한다 */
+	static ChannelSettings settings(Map<String, String> env, Path config) {
+		ChannelSettings settings = ChannelSettings.resolve(env, config);
+		if (!settings.configured()) {
+			throw new CliException("채널을 정하지 않았습니다. 업데이트를 받을 곳을 cozy channel set <주소>로 정합니다(파일 서버, 웹 서버, "
+					+ "GitLab, GitHub의 " + ChannelIndex.FILE_NAME + "). 설정 파일: " + config);
+		}
+		return settings;
+	}
+
+	/** 판마다 한 줄(판, 날짜, 호환 깨짐, 요약)과 앱에서 돌릴 명령 */
+	static void releaseLines(List<Release> releases, PrintStream out) {
+		for (Release release : releases) {
+			out.println("  " + release.version() + " (" + release.date() + ")  " + (release.breaking() ? "[호환 깨짐] " : "")
+					+ release.summary());
+			if (!release.appSteps().isEmpty()) {
+				out.println("      앱에서 돌릴 명령: " + String.join(", ", release.appSteps()));
+			}
 		}
 	}
 

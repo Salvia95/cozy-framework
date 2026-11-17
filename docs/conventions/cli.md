@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `migrate alpine|events`, `channel set|show|add|release`, `update`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`를 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -500,6 +500,14 @@ UPDATE cozy_inbox SET listener_id = replace(listener_id, '({옛 이름})', '({�
 
 - 채널을 정하지 않았거나, 지금 판을 모르거나(설치 폴더 밖의 cozy-cli jar, 개발 판), 색인을 읽을 수 없으면 종료 코드 2로 끝낸다.
 - **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인하고, 새 판이 있으면 오류 출력에 한 줄을 보인다. `--json` 출력 뒤에는 하지 않는다. 명령의 출력과 종료 코드는 바뀌지 않는다.
+
+## upgrade
+
+`cozy upgrade [--to <판>]`은 채널에서 판을 받아 크기와 SHA-256을 확인하고, 이 명령이 끝난 뒤에 도는 설치 스크립트에 설치를 맡긴다. 설치 방법은 설치한 모양을 따른다(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`). 올릴 판, 받을 파일, 이전 판의 파일, 결과를 보이는 방법은 [channel.md](channel.md#cozy-upgrade)에 있다.
+
+- 올릴 판은 주 버전이 같은 가장 새 판이다. 호환이 깨지는 판은 `--to`로 적는다. 낮은 판으로는 가지 않는다.
+- 맡긴 설치의 결과는 다음 cozy-cli 명령이 처음에 오류 출력에 한 번 보인다(`[cozy] 판을 올렸습니다: 2.1.0 → 2.1.1.`). 명령의 출력과 종료 코드는 바뀌지 않는다.
+- 판단할 수 없으면(채널이나 지금 판을 모름, 크기나 SHA-256이 다른 파일, 맞는 파일이 없음, 설치하는 중) 아무것도 설치하지 않고 종료 코드 2로 끝낸다. `--json`과 `--dry-run`은 없다.
 
 ## 의존
 

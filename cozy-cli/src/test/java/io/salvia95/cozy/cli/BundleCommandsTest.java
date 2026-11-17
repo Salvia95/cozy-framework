@@ -109,7 +109,22 @@ class BundleCommandsTest {
 			.contains("이전 판에만 있던 파일")
 			.contains("$env:COZY_REPOSITORY = $UserRepository + ';' + (Join-Path $Root 'repository')")
 			.contains("$env:COZY_HOME = $Root")
-			.contains("'channel', 'update')");
+			.contains("'channel', 'update', 'upgrade')");
+	}
+
+	/**
+	 * MSI로 설치한 폴더에는 표시 파일이 있어 cozy upgrade가 새 판도 MSI로 설치한다. zip 설치({@code cozy install})는 이 파일을 쓰지
+	 * 않는다. Windows 러너가 MSI 두 판으로 업그레이드를 확인한다.
+	 */
+	@Test
+	void theMsiMarksItsInstallFolderAndTheRunnerChecksAnUpgrade() throws IOException {
+		String build = Files.readString(BUNDLE.resolveSibling("msi/build-msi.ps1"), StandardCharsets.UTF_8);
+		String workflow = Files.readString(BUNDLE.resolve("../../.github/workflows/release.yml"), StandardCharsets.UTF_8);
+
+		assertThat(build).contains("[System.IO.File]::WriteAllText((Join-Path $staging 'COZY_INSTALLER'), \"msi`n\"");
+		assertThat(Files.readString(BUNDLE.resolve("cozy"), StandardCharsets.UTF_8)).doesNotContain("COZY_INSTALLER");
+		assertThat(Files.readString(BUNDLE.resolve("cozy.ps1"), StandardCharsets.UTF_8)).doesNotContain("COZY_INSTALLER");
+		assertThat(workflow).contains("distribution\\msi\\verify-msi-upgrade.ps1 -Bundle");
 	}
 
 	@Test

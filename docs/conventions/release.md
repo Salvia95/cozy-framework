@@ -44,7 +44,7 @@
    - `-Pe2e install`
    - 번들 만들기(JDK 없는 번들, Windows x64 번들, 검증용 Linux x64 번들)와 JDK 소스 묶음 받기
    - 오프라인 검증(JDK 없는 번들, Linux x64 번들은 시스템 JDK를 막고)
-   - MSI 만들기와 검증(Windows 러너: 설치, 앱 생성·빌드·패키징, 제거, 컴퓨터별 설치 거부)
+   - MSI 만들기와 검증(Windows 러너: 설치, 앱 생성·빌드·패키징, 제거, 컴퓨터별 설치 거부, 판만 다른 MSI 두 개로 `cozy upgrade`)
    - 채널 색인 `cozy-channel.json` 만들기(`cozy channel release`)와 릴리스 초안 만들기
 
 5. **게시**: 초안의 "변경 내용"을 채우고 Windows 확인 결과를 적은 뒤 게시한다.
@@ -91,13 +91,14 @@ mvn -o clean verify             # 옮기기 전의 클래스가 target/에 남�
 | `distribution/release/jdk-sources.sh <폴더>` | `jdk.env`의 JDK 소스 묶음을 받아 SHA-256을 확인한다 |
 | `distribution/msi/build-msi.ps1 -Bundle <windows-x64 zip>` | (Windows, WiX 필요) 번들의 `cozy.cmd install`로 설치 폴더 모양을 만들고 `cozy.wxs`로 묶는다. 결과는 `cozy-{버전}-windows-x64.msi`. MSI 판은 `-SNAPSHOT`을 뗀 숫자 세 자리 |
 | `distribution/msi/verify-msi.ps1 -Msi <msi>` | (Windows) 조용히 설치 → 설치 폴더·사용자 PATH·Maven 설정 → 시스템 JDK를 막고 앱 생성·`cozy add`·`verify`·`-Pdist package` → 실패한 빌드의 종료 코드 → 제거 → 컴퓨터별 설치 거부 |
+| `distribution/msi/verify-msi-upgrade.ps1 -Bundle <windows-x64 zip>` | (Windows, WiX 필요) 번들에서 판만 다른 MSI 두 개를 만들어 앞 판을 설치 → 뒤 판을 담은 파일 채널 → `cozy upgrade` → 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄 → 제거 |
 | `distribution/offline-bundle/add-jdk.sh <번들 zip> <windows-x64\|linux-x64> [배포판]` | JDK 없는 번들에 `jdk.env`의 Temurin을 더한 플랫폼 번들을 만든다(SHA-256, 도구, 판 확인, `lib/src.zip` 제거, 라이선스 목록 다시 만들기) |
 
 ## 워크플로 (`.github/workflows/release.yml`)
 
 | 실행 | 하는 일 | 결과 |
 | --- | --- | --- |
-| 태그 `v*` push | `bundle`: 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬. `windows`: MSI 만들기·검증. `release`: 체크섬 확인 → 채널 색인 → 노트 → 초안 | 실행 결과 + **릴리스 초안** |
+| 태그 `v*` push | `bundle`: 버전 확인 → `-Pe2e install` → 번들 → JDK 번들·소스 묶음 → 오프라인 검증(두 번) → 체크섬. `windows`: MSI 만들기·검증·업그레이드 검증. `release`: 체크섬 확인 → 채널 색인 → 노트 → 초안 | 실행 결과 + **릴리스 초안** |
 | 수동(`workflow_dispatch`) | 같은 빌드와 검증. SNAPSHOT 버전도 된다 | 실행 결과만 |
 
 - 액션은 커밋 SHA로 고정한다. 버전은 ADR-0017 표에 있다.
