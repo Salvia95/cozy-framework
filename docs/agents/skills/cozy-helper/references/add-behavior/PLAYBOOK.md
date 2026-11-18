@@ -11,6 +11,7 @@ Declares one Alpine.js component of a module in the module's behavior spec, or c
 
 - Do not use it for anything that reads or saves data; use htmx (`hx-get`, `hx-post`) and a controller instead.
 - Do not use it for copying, folding, or confirming a plain POST form; use `cozyCopy`, `cozyDisclosure`, or `cozyConfirm`.
+- Do not use it for modals, dropdowns, or tooltips; use the Tabler markup and the `modal` component.
 - Do not edit `static/{module}/{module}.js` or `behaviors/{module}.yml` by hand; this command and `cozy sync behaviors` own both files.
 - Do not use it to remove or rename a component; use [remove-behavior](../remove-behavior/PLAYBOOK.md) or [rename-behavior](../rename-behavior/PLAYBOOK.md).
 

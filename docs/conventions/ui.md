@@ -182,7 +182,7 @@ fragments:
 - 서버 값은 `x-data` 요소의 `data-*` 속성으로 넘긴다(`th:data-copy-text="${…}"`). 컴포넌트가 `init`에서 `this.$root`를 잡아 두고 그 `dataset`에서 읽는다(다른 컴포넌트 안의 요소에서 부르면 `$root`가 그 안쪽 컴포넌트이기 때문이다). Thymeleaf로 `x-*` 값을 만들지 않는다(`th:attr`, `th:x-*`).
 - 쓰는 디렉티브: `x-data`, `x-init`, `x-show`, `x-bind:*`, `x-on:*`, `x-model`, `x-text`, `x-ref`, `x-cloak`, `x-transition`, `x-if`, `x-for`, `x-id`, `x-effect`, `x-ignore`. `x-html`과 `x-teleport`는 쓰지 않는다.
 - `iframe`과 `script` 요소에는 식이 있는 디렉티브를 달지 않는다. CSP 빌드가 실행하지 않고 그 컴포넌트의 나머지 초기화도 멈춘다. iframe의 `load`는 감싸는 요소의 `x-on:load.capture`로 받는다.
-- 식은 짧게 쓴다. 속성 읽기, 메서드 호출, 변수 대입(`open = !open`), 비교만 쓴다. 화살표 함수, 템플릿 문자열, 전개, 속성 대입(`user.name = …`), 전역(`window`, `console`, `Math` 등)은 CSP 빌드가 읽지 못한다. 그런 로직은 컴포넌트의 getter와 메서드로 옮긴다.
+- 식은 짧게 쓴다. `cozy attach`는 이름 하나나 `이름('글자')`만 쓴다. 이미 있는 손으로 쓴 속성도 속성 읽기, 메서드 호출, 변수 대입(`open = !open`), 비교만 쓴다. 화살표 함수, 템플릿 문자열, 전개, 속성 대입(`user.name = …`), 전역(`window`, `console`, `Math` 등)은 CSP 빌드가 읽지 못한다. 그런 로직은 컴포넌트의 getter와 메서드로 옮긴다.
 - `x-cloak`은 Alpine이 시작할 때까지 요소를 숨긴다(`cozy.css`). 스크립트가 있어야만 쓸모 있는 요소(복사 버튼 등)에만 쓴다. 보기와 저장 같은 기본 동작은 스크립트 없이도 된다.
 
 ### 프레임워크 컴포넌트

@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events`, `channel set|show|add|release`, `update`, `upgrade`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events|behaviors`, `channel set|show|add|release`, `update`, `upgrade`
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `attach`, `remove`, `rename` 등을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -129,12 +129,12 @@ cozy <동작> [옵션]
 | `kind` | 어디서 읽는가 | 키 |
 | --- | --- | --- |
 | `behavior` | 내는 곳: 동작 명세의 `emit`. 받는 곳: `listens` | `module`, `component`, `action` |
-| `server` | 내는 곳: 글자 `"HX-Trigger"`가 있는 Java 파일의 글자들에 든 이벤트 이름(`"{\"memo:archived\": true}"`) | `file` |
+| `server` | 내는 곳: 응답 머리 `"HX-Trigger"`(`-After-Swap`, `-After-Settle` 포함)를 요청 머리 읽기(`getHeader`) 밖에서 쓰는 Java 파일의 글자들에 든 이벤트 이름(`"{\"memo:archived\": true}"`) | `file` |
 | `htmx` | 받는 곳: 템플릿의 `hx-trigger`(쉼표로 나눈 각 트리거의 첫 낱말) | `template`, `line` |
 | `alpine` | 받는 곳: 템플릿의 `x-on:모듈:이름`(수식어 앞까지) | `template`, `line` |
 
 - 글 출력은 `화면 이벤트 memo:archived 내는 곳: … → 받는 곳: memoSelection.clear, memo/api/list:12(htmx)`이고, 없으면 `없음`이다.
-- 서버 쪽은 글자를 찾을 뿐이다. 다른 뜻으로 쓴 같은 모양의 글자도 내는 곳으로 읽고, 글자를 이어 붙여 만든 이름은 찾지 못한다.
+- 서버 쪽은 글자를 찾을 뿐이다. 그 파일에서 다른 뜻으로 쓴 같은 모양의 글자도 내는 곳으로 읽고, 글자를 이어 붙여 만든 이름은 찾지 못한다. 찾지 못한 이름을 받는 `listens`는 C13이 실패로 닫는다(cozy-rules `ServerEvents`, [testing.md](testing.md)).
 
 ### 화면의 구조 (`--json`의 `screens[].outline`)
 
@@ -627,8 +627,8 @@ cozy check
 | `if (조건) { … }`, `this.$dispatch('memo:closed', { open: this.open })` | `when`, `emit('memo:closed', open)` |
 | `event.target.value`, `event.target.checked`, `event.target.dataset.id`, `event.detail.ids` | `event.value`, `event.checked`, `event.data.id`, `event.detail.ids` |
 
-- **옮기지 않는 것**: 그 밖의 모든 JS다. 다른 메서드 부르기, `else`, 반복문, 화살표 함수로 거르기, 숫자 더하기, 화면의 다른 요소 읽기(`querySelector`), `destroy`, 템플릿 문자열, `null`, 서버 요청이 그렇다. 한 컴포넌트라도 낱말 밖이면 그 모듈은 바꾸지 않는다(한 모듈에 손으로 쓴 JS와 만든 JS를 함께 둘 수 없다). 출력의 "남은 일"에 `파일:줄`, 컴포넌트, 무엇이 낱말 밖인지, 그 자리의 JS가 나온다. 그런 동작은 프레임워크 컴포넌트(`cozy…`)나 새 낱말이 필요하다(ADR-0043 §7).
-- **뜻이 조금 달라지는 곳**: `parseInt`로 읽던 `data-*`는 소수점 아래도 읽는다(만든 JS는 `parseFloat`). 받는 화면 이벤트는 만든 JS가 `destroy`에서 뗀다. 이벤트의 `data-*`(`event.target.dataset.id`)는 그 요소에 없으면 컴포넌트 안의 감싸는 요소에서 찾는다.
+- **옮기지 않는 것**: 그 밖의 모든 JS다. 다른 메서드 부르기, `else`, 느슨한 비교(`==`, `!=`. `===`로 바꾼 뒤 다시 실행한다), 반복문, 화살표 함수로 거르기, 숫자 더하기, 화면의 다른 요소 읽기(`querySelector`), `destroy`, 템플릿 문자열, `null`, 서버 요청이 그렇다. 한 컴포넌트라도 낱말 밖이면 그 모듈은 바꾸지 않는다(한 모듈에 손으로 쓴 JS와 만든 JS를 함께 둘 수 없다). 출력의 "남은 일"에 `파일:줄`, 컴포넌트, 무엇이 낱말 밖인지, 그 자리의 JS가 나온다. 그런 동작은 프레임워크 컴포넌트(`cozy…`)나 새 낱말이 필요하다(ADR-0043 §7).
+- **뜻이 조금 달라지는 곳**: `parseInt`로 읽던 `data-*`는 소수점 아래도 읽는다(만든 JS는 `parseFloat`). 받는 화면 이벤트는 만든 JS가 `destroy`에서 뗀다. 이벤트의 `data-*`(`event.target.dataset.id`)는 그 요소에 없으면 컴포넌트 안의 감싸는 요소에서 찾는다. `Number(…)`로 읽을 수 없는 글자는 `NaN` 대신 `0`이 된다. `data-*`가 없을 때는 `||` 뒤의 값이 처음 값이다.
 - **그대로 두는 것**: 템플릿. 이름(컴포넌트, 상태, 계산, 동작)이 같으므로 손으로 붙인 속성이 그대로 맞는다. 옮긴 뒤에는 R16이 그 이름을 확인하고 C13이 붙인 곳과 화면 이벤트를 본다.
 - **이미 명세가 있는 모듈**: 명세에 컴포넌트를 더한다. 같은 이름이 있으면 그 모듈은 바꾸지 않고 알린다(`cozy rename behavior`로 한쪽 이름을 바꾼다).
 - **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 손으로 쓴 모듈 JS가 없으면 "바뀐 것 없음"이라서 두 번째 실행도 그렇다.
