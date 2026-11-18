@@ -127,7 +127,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 | `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm`. 확인 창은 모두 같은 구조다: Tabler의 `modal modal-blur fade`(바탕 흐림, 페이드), `role="dialog"`, 제목 `h2.modal-title`(id는 `{id}-title`), `aria-labelledby`가 제목을 가리킨다 |
 | `component/toast` | `toast('success', '복사했습니다')` | 사소한 확인만. 중립 바탕, critical만 빨강. 스크립트는 `Cozy.toast(message, kind)` |
 | `component/loading` | `loading()` | `htmx-indicator` |
-| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.51.0 전체 (외곽선 5,233개, 채운 1,054개) |
+| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.52.0 전체 (외곽선 5,490개, 채운 1,054개) |
 
 ## 매니페스트 `cozy/fragments.yml`
 
@@ -325,9 +325,9 @@ components:
 - **`ScreenSpec.verify()`**: 모든 상태의 fixture를 모델 타입으로 바꿔 본다. 렌더링할 때와 같은 변환이고, 맞지 않으면 상태와 모델 이름을 담아 실패한다.
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
-- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
+- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.52.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
 - **스크립트 순서**: layout은 Tabler → htmx → `cozy.js` → 앱 모듈의 컴포넌트 묶음(`/cozy/modules.js`) → 화면의 `cozyScripts` → Alpine 순서로 `defer`로 싣는다. `cozy.js`가 `alpine:init`에서 컴포넌트를 등록하고 Alpine이 마지막에 시작한다.
-- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
+- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.52.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
 - **아이콘 목록**: `/cozy/dev/catalog/icons`(카탈로그가 켜진 앱)에서 이름으로 찾고, 칸을 누르면 `icon('이름')`이 복사된다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
 - **app-shell의 앱 메뉴**: 사이드 내비 아래에 "진단 내보내기"와 "종료"가 내비 항목 모양으로 있다. 런타임의 `POST /cozy/diagnostics`, `POST /cozy/shutdown`을 부른다([runtime.md](runtime.md)).

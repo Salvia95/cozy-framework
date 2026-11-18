@@ -63,7 +63,7 @@ class RenderingTest extends CozyRenderingTest {
   - **부르는 곳**: 감싸는 `x-data`가 그 컴포넌트인 요소(같은 템플릿 안)의 Alpine 식에 동작의 이름이 있거나, 그 컴포넌트의 `listens`가 그 동작을 부른다.
   - **받는 곳**: 앱 컴포넌트의 `listens`, 템플릿의 `hx-trigger`·`th:hx-trigger`·`data-hx-trigger`(쉼표로 나눈 조각마다 첫 낱말, `[…]` 거르기 앞), `x-on:모듈:이름`.
   - **내는 곳**: 앱 컴포넌트의 `emit`, 서버. 서버는 `src/main/java`의 Java 파일 가운데 글자 `"HX-Trigger"`(`-After-Swap`, `-After-Settle` 포함)를 요청 머리 읽기(`getHeader`) 밖에서 쓰는 파일의 글자 안에 있는 `모듈:이름`이다(cozy-rules `ServerEvents`, describe의 `uiEvents[]`와 같다). 이름을 이어 붙여 만들거나 다른 파일의 상수로 넘기면 찾지 못하고 실패한다(판단할 수 없는 것은 실패로 닫는다). 이름은 글자 그대로 적는다.
-  - 메시지는 `[C13] src/main/resources/behaviors/memo.yml:3 → memoPanel — 컴포넌트 memoPanel을 어느 템플릿에도 붙이지 않았습니다. …`처럼 명세의 줄과, 고칠 때 쓸 명령(`cozy attach`, `cozy add behavior … --listen`, `cozy remove behavior`)을 담는다. 템플릿의 줄은 정할 수 없으므로 `command`는 비어 있다.
+  - 메시지는 `[C13] src/main/resources/behaviors/memo.yml:3 → memoPanel — 어느 템플릿에도 붙이지 않은 컴포넌트입니다: memoPanel. …`처럼 명세의 줄과, 고칠 때 쓸 명령(`cozy attach`, `cozy add behavior … --listen`, `cozy remove behavior`)을 담는다. 템플릿의 줄은 정할 수 없으므로 `command`는 비어 있다.
   - 선언하고 아직 붙이지 않은 동안 빌드가 실패한다. `cozy add behavior`와 `cozy attach`를 한 작업으로 한다(C9의 빈칸과 같은 정책).
 - **동작 명세의 낱말 시험**: cozy-cli의 `BehaviorScriptTest`가 낱말 전부를 쓰는 `src/test/resources/behaviors/demo.yml`에서 만든 JS를 `demo.js`와 글자까지 비교한다. 만든 JS가 브라우저에서 동작하는지는 레포 루트를 정적 서버로 띄우고 `cozy-cli/src/test/resources/behaviors/demo.html`을 열어 본다(CSP `script-src 'self'`, Alpine CSP 빌드). 낱말을 더하거나 만드는 방식을 바꾸면 `demo.js`를 다시 만들고 이 페이지를 runtime-verifier로 다시 확인한다.
 - **C9 빈칸**: cozy 명령은 에이전트가 채울 자리에 빈칸 표시를 남긴다. 표시가 남아 있으면 빌드가 실패한다. 다 채웠으면 표시를 지운다.

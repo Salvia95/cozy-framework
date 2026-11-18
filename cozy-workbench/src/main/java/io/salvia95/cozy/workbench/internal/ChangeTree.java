@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
  * <tr><td>공개 API</td><td>{@code {모듈}/spi/**}, {@code templates/{모듈}/spi/**}, 공개 프래그먼트 매니페스트</td></tr>
  * <tr><td>내부 구현</td><td>{@code {모듈}/internal/**}의 Java</td></tr>
  * <tr><td>화면</td><td>{@code {모듈}/api/**}, 그 밖의 {@code templates/{모듈}/**}</td></tr>
+ * <tr><td>화면 안의 동작</td><td>동작 명세 {@code behaviors/{모듈}.yml}과 그 명세에서 만든 {@code static/{모듈}/{모듈}.js}</td></tr>
  * <tr><td>SQL</td><td>{@code mapper/{모듈}/**}, {@code db/migration/V…__{모듈}_….sql}</td></tr>
  * <tr><td>화면 명세</td><td>{@code specs/{모듈}-….yml}</td></tr>
  * <tr><td>테스트</td><td>{@code src/test/**}</td></tr>
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
  */
 final class ChangeTree {
 
-	static final List<String> LAYERS = List.of("공개 API", "내부 구현", "화면", "SQL", "화면 명세", "테스트", "설정");
+	static final List<String> LAYERS = List.of("공개 API", "내부 구현", "화면", "화면 안의 동작", "SQL", "화면 명세", "테스트", "설정");
 
 	/** 모듈에 딸리지 않은 파일의 묶음 이름 */
 	static final String APP = "앱 공통";
@@ -163,6 +164,12 @@ final class ChangeTree {
 		}
 		if (segments.length == 2 && segments[0].equals("specs") && segments[1].matches("[a-z][a-z0-9]*-.+\\.yml")) {
 			return new String[] { segments[1].substring(0, segments[1].indexOf('-')), "화면 명세", "specs" };
+		}
+		if (segments.length == 2 && segments[0].equals("behaviors") && segments[1].matches("[a-z][a-z0-9]*\\.yml")) {
+			return new String[] { segments[1].substring(0, segments[1].length() - ".yml".length()), "화면 안의 동작", "behaviors" };
+		}
+		if (segments.length == 3 && segments[0].equals("static") && segments[2].equals(segments[1] + ".js")) {
+			return new String[] { segments[1], "화면 안의 동작", "static/" + segments[1] };
 		}
 		if (file.equals("src/main/resources/cozy/fragments.yml")) {
 			return new String[] { "", "공개 API", "src/main/resources/cozy" };

@@ -236,7 +236,7 @@ class DescribeBehaviorsTest {
 				.containsEntry("file", "src/main/resources/behaviors/memo.yml")
 				.containsEntry("line", 12)
 				.containsEntry("slot", "memoSelection → memo:picked");
-			assertThat(String.valueOf(slot.get("what"))).startsWith("화면 이벤트 memo:picked를 받는 곳이 없습니다");
+			assertThat(String.valueOf(slot.get("what"))).startsWith("받는 곳이 없는 화면 이벤트입니다: memo:picked");
 		});
 	}
 }

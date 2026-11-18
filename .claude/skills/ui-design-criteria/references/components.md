@@ -55,7 +55,7 @@
 
 | 표시 이름 | 호출 | 언제 |
 | --- | --- | --- |
-| 아이콘 | `cozy/icon/tabler :: icon('plus')` | 외곽선 아이콘(5,233개) |
+| 아이콘 | `cozy/icon/tabler :: icon('plus')` | 외곽선 아이콘(5,490개) |
 | 아이콘 (채움) | `cozy/icon/tabler :: iconFilled('star')` | 채운 아이콘(1,054개). 켜짐 상태 등 |
 
 ## 비슷한 것 가운데 고르기

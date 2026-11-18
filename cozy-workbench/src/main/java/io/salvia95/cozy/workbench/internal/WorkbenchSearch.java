@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 워크벤치 검색. 화면, 컴포넌트, 생성 항목, 모듈을 한글 이름과 식별자로 찾는다.
+ * 워크벤치 검색. 화면, 화면 안의 동작(컴포넌트 이름, 목적), 화면 이벤트, 컴포넌트, 생성 항목, 모듈을 한글 이름과 식별자로 찾는다.
  *
  * <p>
  * 검색어는 공백으로 나눈 낱말이고, 모든 낱말이 한 항목 안에 있어야 찾는다. 대소문자와 띄어쓰기, 식별자의 구분 글자({@code - _ / . :})는 보지
@@ -64,7 +64,53 @@ final class WorkbenchSearch {
 	}
 
 	/** 묶음의 순서 */
-	static final List<String> KINDS = List.of("화면", "컴포넌트", "생성 항목", "모듈");
+	static final List<String> KINDS = List.of("화면", "화면 안의 동작", "화면 이벤트", "컴포넌트", "생성 항목", "모듈");
+
+	/**
+	 * {@code cozy describe --json}의 동작 명세 컴포넌트({@code modules[].behaviors[]})와 화면 이벤트({@code uiEvents[]}).
+	 *
+	 * @param modulePage 모듈 화면의 주소 ({@code /cozy/dev/workbench/map?module=}). 모듈 이름과 자리(#)를 붙인다
+	 */
+	static List<Entry> behaviors(Map<String, Object> describe, String modulePage) {
+		List<Entry> entries = new ArrayList<>();
+		if (describe.get("modules") instanceof List<?> modules) {
+			for (Object m : modules) {
+				Map<?, ?> module = (Map<?, ?>) m;
+				if (!(module.get("behaviors") instanceof List<?> behaviors)) {
+					continue;
+				}
+				for (Object b : behaviors) {
+					Map<?, ?> behavior = (Map<?, ?>) b;
+					String name = String.valueOf(behavior.get("name"));
+					String purpose = (behavior.get("purpose") instanceof String p) ? p : "";
+					List<String> more = new ArrayList<>(List.of(purpose));
+					for (String part : List.of("state", "computed", "actions")) {
+						if (behavior.get(part) instanceof List<?> items) {
+							items.forEach((item) -> more.add(String.valueOf(((Map<?, ?>) item).get("name"))));
+						}
+					}
+					entries.add(new Entry("화면 안의 동작", name, name, "", module.get("name") + " · " + purpose,
+							modulePage + module.get("name") + "#behavior-" + name, List.copyOf(more)));
+				}
+			}
+		}
+		if (describe.get("uiEvents") instanceof List<?> events) {
+			for (Object e : events) {
+				Map<?, ?> event = (Map<?, ?>) e;
+				String name = String.valueOf(event.get("event"));
+				int emitted = (event.get("emittedBy") instanceof List<?> l) ? l.size() : 0;
+				int received = (event.get("receivedBy") instanceof List<?> l) ? l.size() : 0;
+				entries.add(new Entry("화면 이벤트", name, name, "", event.get("module") + " · 내는 곳 " + emitted + " · 받는 곳 " + received,
+						modulePage + event.get("module") + "#" + eventAnchor(name), List.of()));
+			}
+		}
+		return entries;
+	}
+
+	/** 모듈 화면에서 화면 이벤트 줄의 id ({@code memo:archived} → {@code ui-event-memo-archived}) */
+	static String eventAnchor(String event) {
+		return "ui-event-" + event.replace(':', '-');
+	}
 
 	/** 비교할 글: 소문자로, 띄어쓰기와 구분 글자를 뺀다 */
 	static String normalize(String text) {

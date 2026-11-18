@@ -139,11 +139,11 @@ class AttachCommandTest {
 			attachRoot();
 
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "lable").err())
-				.contains("memoBodyCount에 상태나 계산 'lable'가 없습니다", "있는 것: length, limit, draft, label, over");
+				.contains("memoBodyCount에 없는 상태나 계산입니다: lable", "있는 것: length, limit, draft, label, over");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--on", "click:label").err())
-				.contains("동작 'label'가 없습니다", "있는 것: count");
+				.contains("memoBodyCount에 없는 동작입니다: label", "있는 것: count");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:6", "--model", "length").err())
-				.contains("x-model에 쓸 상태(text, bool) 'length'가 없습니다", "있는 것: draft");
+				.contains("x-model에 쓸 상태(text, bool)가 아닙니다: length", "있는 것: draft");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--data", "size=1").err())
 				.contains("data-size를 읽지 않습니다", "data-length, data-limit");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "label.length").err())

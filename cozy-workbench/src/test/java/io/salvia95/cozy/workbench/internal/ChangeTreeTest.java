@@ -68,6 +68,19 @@ class ChangeTreeTest {
 		assertThat(files(app, "설정")).containsExactly("pom.xml ");
 	}
 
+	@Test
+	void theBehaviorSpecAndItsScriptBelongToTheirModule() {
+		List<WorkbenchEngine.Change> plan = List.of(new WorkbenchEngine.Change("edit", "src/main/resources/behaviors/memo.yml", "계산 under"),
+				new WorkbenchEngine.Change("edit", "src/main/resources/static/memo/memo.js", "동작 명세에서 만듦"),
+				new WorkbenchEngine.Change("edit", "src/main/resources/templates/memo/internal/fields.html", "붙임"),
+				new WorkbenchEngine.Change("edit", "src/main/resources/static/memo/logo.svg", null));
+		List<ChangeTree.Module> tree = ChangeTree.of(plan, "io.x", Map.of());
+
+		assertThat(tree).extracting(ChangeTree.Module::label).as("모듈의 static 안 다른 파일만 앱 공통").containsExactly("memo 모듈", "앱 공통");
+		assertThat(tree.getFirst().layers()).extracting(ChangeTree.Layer::label).containsExactly("화면", "화면 안의 동작");
+		assertThat(files(tree.getFirst(), "화면 안의 동작")).containsExactly("memo.yml behaviors", "memo.js static/memo");
+	}
+
 	static List<String> files(ChangeTree.Module module, String layer) {
 		return module.layers()
 			.stream()

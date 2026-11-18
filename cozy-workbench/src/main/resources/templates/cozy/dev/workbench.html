@@ -91,6 +91,14 @@
               <a class="nav-link" th:classappend="${view == 'spec'} ? 'active'"
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='spec')}">화면 명세</a>
             </li>
+            <li class="nav-item" th:if="${!behaviorModules.isEmpty()}">
+              <a class="nav-link" th:classappend="${view == 'behavior'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='behavior')}">동작 명세</a>
+            </li>
+            <li class="nav-item" th:if="${!behaviorModules.isEmpty()}">
+              <a class="nav-link" th:classappend="${view == 'script'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='script')}">만든 JS</a>
+            </li>
           </ul>
           <!--/* 좌우 칸을 접어 가운데를 넓힌다. 접은 상태는 브라우저가 기억한다(cozyDisclosure) */-->
           <div class="btn-list ms-auto flex-nowrap">
@@ -155,23 +163,21 @@
           </div>
         </th:block>
 
-        <th:block th:if="${view == 'template' or view == 'spec'}">
-          <div class="card-body" th:if="${sourceFile == null or sourceLines.isEmpty()}">
-            <p class="text-secondary mb-0">소스를 읽을 수 없습니다.</p>
-          </div>
-          <th:block th:if="${sourceFile != null and !sourceLines.isEmpty()}">
-            <div class="card-body border-bottom py-2"><code class="small" th:text="${sourceFile}">src/main/resources/templates/memo/api/list.html</code></div>
-            <div class="table-responsive cozy-workbench-scroll">
-              <table class="table table-sm table-borderless cozy-workbench-source mb-0">
-                <tbody>
-                  <tr th:each="line : ${sourceLines}" th:id="|L${line.number}|">
-                    <td class="cozy-workbench-source-number text-secondary" th:text="${line.number}">1</td>
-                    <td><pre class="cozy-workbench-source-text" th:text="${line.text}">소스</pre></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </th:block>
+        <th:block th:if="${view == 'template' or view == 'spec' or view == 'behavior' or view == 'script'}">
+          <!--/* 화면이 넣는 다른 앱 템플릿, 화면이 쓰는 컴포넌트의 다른 모듈 */-->
+          <nav class="card-body border-bottom py-2 cozy-workbench-source-files" aria-label="볼 템플릿"
+               th:if="${view == 'template' and screenTemplates.size() > 1}">
+            <a class="btn btn-sm" th:each="t : ${screenTemplates}" th:classappend="${t == shownTemplate} ? 'active'"
+               th:aria-current="${t == shownTemplate} ? 'true'" th:text="${t}"
+               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template',template=${t})}">memo/internal/fields</a>
+          </nav>
+          <nav class="card-body border-bottom py-2 cozy-workbench-source-files" aria-label="볼 모듈"
+               th:if="${(view == 'behavior' or view == 'script') and behaviorModules.size() > 1}">
+            <a class="btn btn-sm" th:each="m : ${behaviorModules}" th:classappend="${m == shownModule} ? 'active'"
+               th:aria-current="${m == shownModule} ? 'true'" th:text="${m}"
+               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view=${view},module=${m})}">memo</a>
+          </nav>
+          <th:block th:replace="~{cozy/dev/workbench-source :: sourceLines(${sourceFile}, ${sourceLines}, ${sourceNote})}"></th:block>
         </th:block>
       </section>
 

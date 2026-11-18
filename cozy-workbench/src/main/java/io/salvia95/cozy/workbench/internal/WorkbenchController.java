@@ -53,7 +53,7 @@ public class WorkbenchController {
 	/** 미리보기 폭. {@code full}은 칸 전체 */
 	static final List<String> WIDTHS = List.of("full", "1024", "768", "390");
 
-	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec");
+	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec", "behavior", "script");
 
 	/** 상태 비교에서 한 번에 고를 수 있는 상태 수. 상태마다 미리보기를 하나씩 그린다 */
 	static final int COMPARE_LIMIT = 4;
@@ -92,12 +92,15 @@ public class WorkbenchController {
 	@GetMapping
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
 			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view,
-			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node, Model model) {
+			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node,
+			@RequestParam(required = false) String module, @RequestParam(required = false) String template, Model model) {
 		if (spec == null) {
 			return overview(model);
 		}
 		model.addAttribute("compareOpen", compare);
 		model.addAttribute("node", node);
+		model.addAttribute("sourceModule", module);
+		model.addAttribute("sourceTemplate", template);
 		return screen(spec, state, w, view, model);
 	}
 
@@ -161,6 +164,9 @@ public class WorkbenchController {
 		List<ScreenTree.Item> tree = List.of();
 		List<BehaviorViews.Element> elements = List.of();
 		String specFile = null;
+		// 소스 탭: 화면이 넣는 앱 템플릿, 화면이 쓰는 앱 컴포넌트의 모듈
+		List<String> screenTemplates = new ArrayList<>(List.of(screen.template()));
+		List<String> behaviorModules = new ArrayList<>();
 		if (this.engine.available()) {
 			WorkbenchEngine.Described all = this.engine.described();
 			Optional<WorkbenchEngine.Screen> described = all.screens()
@@ -171,8 +177,20 @@ public class WorkbenchController {
 				elements = BehaviorViews.elements(described.get().bindings(), BehaviorViews.components(all.behaviors(), this.framework));
 				tree = BehaviorViews.attach(ScreenTree.of(described.get().outline(), this.manifest, templateFile), elements);
 				specFile = described.get().spec();
+				described.get().outline().forEach((n) -> addTemplate(screenTemplates, n.target()));
+				Map<String, String> owners = new LinkedHashMap<>();
+				all.behaviors().forEach((b) -> owners.put(b.name(), b.module()));
+				for (WorkbenchEngine.Binding b : described.get().bindings()) {
+					addTemplate(screenTemplates, b.template());
+					String owner = (b.component() == null) ? null : owners.get(b.component());
+					if (owner != null && !behaviorModules.contains(owner)) {
+						behaviorModules.add(owner);
+					}
+				}
 			}
 		}
+		model.addAttribute("screenTemplates", screenTemplates);
+		model.addAttribute("behaviorModules", behaviorModules);
 		model.addAttribute("screenBehaviors", elements);
 		model.addAttribute("tree", tree);
 		model.addAttribute("nodes", ScreenTree.nest(tree));
@@ -189,13 +207,32 @@ public class WorkbenchController {
 				model.addAttribute("fixtureSections", FixtureForm.of(text, selectedState, screen.model(), draft, this::docs));
 			}
 		}
+		String shownTemplate = (model.getAttribute("sourceTemplate") instanceof String t) ? t : screen.template();
+		if (view.equals("template") && !screenTemplates.contains(shownTemplate)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"[cozy] 화면 " + screen.screen() + "이 넣는 앱 템플릿이 아닙니다: " + shownTemplate + ". 있는 것: " + String.join(", ", screenTemplates));
+		}
+		model.addAttribute("shownTemplate", shownTemplate);
+		String shownModule = null;
+		if (view.equals("behavior") || view.equals("script")) {
+			shownModule = (model.getAttribute("sourceModule") instanceof String m) ? m
+					: behaviorModules.isEmpty() ? null : behaviorModules.getFirst();
+			if (shownModule == null || !behaviorModules.contains(shownModule)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 " + screen.screen() + "이 쓰는 앱 컴포넌트의 모듈이 아닙니다: "
+						+ shownModule + ". 있는 것: " + (behaviorModules.isEmpty() ? "없음" : String.join(", ", behaviorModules)));
+			}
+		}
+		model.addAttribute("shownModule", shownModule);
 		String sourceFile = switch (view) {
-			case "template" -> "src/main/resources/" + templateFile;
+			case "template" -> "src/main/resources/templates/" + shownTemplate + ".html";
 			case "spec" -> specFile;
+			case "behavior" -> behaviorSpec(shownModule);
+			case "script" -> behaviorScript(shownModule);
 			default -> null;
 		};
 		model.addAttribute("sourceFile", sourceFile);
 		model.addAttribute("sourceLines", (sourceFile != null) ? lines(sourceFile) : List.of());
+		model.addAttribute("sourceNote", sourceNote(view));
 		return "cozy/dev/workbench";
 	}
 
@@ -292,7 +329,7 @@ public class WorkbenchController {
 		return "cozy/dev/workbench-overview";
 	}
 
-	// ── 검색: 화면, 컴포넌트, 생성 항목, 모듈 ─────────────────────────────────────
+	// ── 검색: 화면, 화면 안의 동작, 화면 이벤트, 컴포넌트, 생성 항목, 모듈 ─────────────────────────────────────
 
 	/** 카탈로그의 묶음 이름 (패턴 카탈로그와 같다) */
 	private static final Map<String, String> CATALOG_GROUPS = Map.of("pattern", "패턴", "component", "컴포넌트", "icon", "아이콘", "layout",
@@ -316,6 +353,9 @@ public class WorkbenchController {
 		for (WorkbenchEngine.Recipe recipe : this.engine.recipes()) {
 			entries.add(new WorkbenchSearch.Entry("생성 항목", recipe.title(), recipe.commandText(), recipe.group(), recipe.does(),
 					PATH + "/commands?recipe=" + recipe.name(), List.of(recipe.does(), recipe.name())));
+		}
+		if (this.engine.available()) {
+			entries.addAll(WorkbenchSearch.behaviors(this.engine.describe(), PATH + "/map?module="));
 		}
 		if (this.engine.available() && this.engine.describe().get("modules") instanceof List<?> modules) {
 			List<Map<String, Object>> list = new ArrayList<>();
@@ -880,6 +920,9 @@ public class WorkbenchController {
 
 	private static final List<String> MAP_VIEWS = List.of("diagram", "table");
 
+	/** 모듈 화면에서 여는 소스: 동작 명세, 만든 JS */
+	private static final List<String> SOURCES = List.of("behavior", "script");
+
 	/**
 	 * 모듈 화면: 의존성 다이어그램(또는 표)과 선택한 모듈의 속성.
 	 *
@@ -888,7 +931,8 @@ public class WorkbenchController {
 	 */
 	@GetMapping("/map")
 	@SuppressWarnings("unchecked")
-	String map(@RequestParam(required = false) String module, @RequestParam(defaultValue = "diagram") String view, Model model) {
+	String map(@RequestParam(required = false) String module, @RequestParam(defaultValue = "diagram") String view,
+			@RequestParam(required = false) String source, Model model) {
 		if (!MAP_VIEWS.contains(view)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] view는 " + MAP_VIEWS + " 가운데 하나입니다: " + view);
 		}
@@ -919,6 +963,19 @@ public class WorkbenchController {
 		if (ModuleGraph.EVENTS.equals(module)) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 					"[cozy] events는 이벤트 계약 모듈이라 모듈 의존성에 그리지 않습니다. 이벤트는 주인 모듈을 선택하면 보입니다.");
+		}
+		if (source != null) {
+			if (!SOURCES.contains(source)) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] source는 " + SOURCES + " 가운데 하나입니다: " + source);
+			}
+			if (selected == null || !(selected.get("behaviors") instanceof List<?> declared) || declared.isEmpty()) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 동작 명세가 있는 모듈을 고르세요: " + module);
+			}
+			String file = source.equals("behavior") ? behaviorSpec(module) : behaviorScript(module);
+			model.addAttribute("source", source);
+			model.addAttribute("sourceFile", file);
+			model.addAttribute("sourceLines", lines(file));
+			model.addAttribute("sourceNote", sourceNote(source));
 		}
 		ModuleGraph graph = ModuleGraph.of(modules, module);
 		model.addAttribute("graph", graph);
@@ -967,6 +1024,7 @@ public class WorkbenchController {
 			}
 		}
 		model.addAttribute("behaviorScreens", behaviorScreens);
+		model.addAttribute("behaviorLines", (module != null) ? componentLines(module) : Map.of());
 		List<UiEventRow> uiEvents = new ArrayList<>();
 		if (selected != null && map.get("uiEvents") instanceof List<?> events) {
 			for (Object item : events) {
@@ -1007,6 +1065,48 @@ public class WorkbenchController {
 			case "server" -> w.get("file") + " (서버)";
 			default -> w.get("template") + ":" + w.get("line") + " (" + w.get("kind") + ")";
 		};
+	}
+
+	/** 동작 명세의 컴포넌트 줄: 이름({@code memoBodyCount}) → 그 키({@code   bodyCount:})의 줄. 명세가 없으면 빈 맵 */
+	Map<String, Integer> componentLines(String module) {
+		Map<String, Integer> found = new LinkedHashMap<>();
+		String[] lines = this.engine.source(behaviorSpec(module)).orElse("").split("\\R", -1);
+		for (int i = 0; i < lines.length; i++) {
+			java.util.regex.Matcher m = COMPONENT_KEY.matcher(lines[i]);
+			if (m.matches()) {
+				found.put(module + Character.toUpperCase(m.group(1).charAt(0)) + m.group(1).substring(1), i + 1);
+			}
+		}
+		return found;
+	}
+
+	/** 동작 명세에서 컴포넌트를 여는 줄 ({@code components:} 바로 아래, 들여쓰기 두 칸) */
+	private static final java.util.regex.Pattern COMPONENT_KEY = java.util.regex.Pattern.compile("  ([a-z][A-Za-z0-9]*):\\s*");
+
+	/** 소스 위에 보일 안내: 동작 명세와 만든 JS는 고치는 길을 알린다 */
+	static String sourceNote(String source) {
+		return switch (source) {
+			case "behavior" -> "동작 명세가 원본입니다. cozy add behavior가 고치고, 손으로 고쳤으면 cozy sync behaviors가 정리하고 JS를 다시 만듭니다.";
+			case "script" -> "cozy가 동작 명세에서 만든 파일입니다. 손으로 고치지 않습니다(C12). 동작을 바꾸려면 동작 명세를 고칩니다.";
+			default -> "";
+		};
+	}
+
+	/** 모듈의 동작 명세 ({@code src/main/resources/behaviors/memo.yml}) */
+	static String behaviorSpec(String module) {
+		return "src/main/resources/behaviors/" + module + ".yml";
+	}
+
+	/** 동작 명세에서 만든 JS ({@code src/main/resources/static/memo/memo.js}) */
+	static String behaviorScript(String module) {
+		return "src/main/resources/static/" + module + "/" + module + ".js";
+	}
+
+	/** 앱 템플릿이면(프레임워크 템플릿과 이름 없는 대상은 빼고) 한 번만 더한다 */
+	private static void addTemplate(List<String> templates, String template) {
+		if (template != null && !template.isEmpty() && !template.startsWith("cozy/") && !templates.contains(template)) {
+			templates.add(template);
+		}
 	}
 
 	private List<Line> lines(String file) {

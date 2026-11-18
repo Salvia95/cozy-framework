@@ -50,7 +50,7 @@
 | htmx | 2.0.11 (4.x는 `next` 태그) | cozy-ui 벤더 자산 |
 | Alpine.js CSP 빌드 (`@alpinejs/csp`) | 3.17.5 | cozy-ui 벤더 자산. 표준 빌드(`alpinejs`)는 쓰지 않는다 (ADR-0040, 승인 2026-11-13) |
 | Pretendard | 1.3.9 | cozy-ui 벤더 자산 |
-| Tabler Icons (`@tabler/icons-sprite`) | 3.51.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
+| Tabler Icons (`@tabler/icons-sprite`) | 3.52.0 | cozy-ui 벤더 자산. 전체 세트 (ADR-0030, 승인 2026-11-06) |
 | agent-browser | 0.42.0 | 개발 PC 도구. runtime-verifier의 화면 확인 (ADR-0030). 빌드·번들에 들어가지 않는다 |
 
 ## 근거
@@ -75,3 +75,4 @@
 - 2026-11-12(번들 JDK): Windows x64 번들에 Temurin JDK 25.0.5+8을 담는다(ADR-0025 보완). 빌드 PC의 JDK와 같은 판이다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 Adoptium API와 릴리스 자산의 `.sha256.txt`가 같다.
 - 2026-11-17(릴리스 2.0.0): 다시 확인했다. Maven 3.10.1(빌드 PC, 번들의 Maven 배포판, 릴리스 워크플로. SHA-512는 Maven Central과 archive.apache.org의 `.sha512`가 같다), Closure Compiler v20261112, actions/setup-java 6.3.0으로 올렸다. Tabler Icons 3.52.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, 다른 플러그인, Temurin 25.0.5+8, WiX 7.0.1, Tabler 1.7.5, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9, 다른 GitHub Actions). 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4와 `next` 태그의 htmx 4뿐이라 올리지 않는다.
 - 2026-11-18(릴리스 2.2.0): 다시 확인했다. Closure Compiler v20261116(2026-11-17 Maven Central)으로 올렸다. Tabler Icons 3.52.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다(Temurin 25.0.5+8, Maven 3.10.1, Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, 플러그인, GitHub Actions, WiX 7.0.1, Tabler 1.7.5, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4, 조기 접근판인 JDK 25.0.6, `next` 태그의 htmx 4뿐이라 올리지 않는다.
+- 2026-11-18(M51): 시작할 때 다시 확인했다. 릴리스 2.2.0의 확인과 같다. 미뤄 둔 Tabler Icons 3.52.0(외곽선 5,490개, 채운 1,054개. `align-justified`가 빠졌고 레포는 쓰지 않는다)으로 올리고 화면을 확인했다.

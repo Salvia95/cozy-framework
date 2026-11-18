@@ -89,8 +89,13 @@ final class BehaviorRecipe {
 		components.put(key, component);
 		BehaviorSpec next = new BehaviorSpec(module, components);
 		write(plan, next, String.join(", ", changes));
-		return "다음: cozy attach " + name + " --at <템플릿>:<줄>로 화면의 요소에 붙이고 동작마다 부르는 이벤트를 잇습니다(--on 이벤트:동작). "
-				+ "붙이기 전에는 cozy check가 C13으로 실패합니다. " + scriptFile(module) + "는 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
+		String keep = scriptFile(module) + "는 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
+		if (existing == null) {
+			return "다음: cozy attach " + name + " --at <템플릿>:<줄>로 화면의 요소에 붙이고 동작마다 부르는 이벤트를 잇습니다(--on 이벤트:동작). "
+					+ "붙이기 전에는 cozy check가 C13으로 실패합니다. " + keep;
+		}
+		return "다음: 이미 붙인 곳은 그대로 새 명세를 씁니다. 새 동작은 cozy attach " + name
+				+ " --at <템플릿>:<줄> --on 이벤트:동작으로 잇습니다. 부르는 곳이 없는 동작은 cozy check가 C13으로 알립니다. " + keep;
 	}
 
 	/** {@code cozy sync behaviors}: 모든 명세를 정리해 다시 쓰고 JS를 다시 만든다. 명세가 없는 만든 JS는 지운다 */

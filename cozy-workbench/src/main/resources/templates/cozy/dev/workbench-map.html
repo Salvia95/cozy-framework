@@ -25,6 +25,23 @@
 
     <div class="cozy-workbench-map-panes">
       <div class="cozy-workbench-map-main">
+      <!--/* 선택한 모듈의 동작 명세나 만든 JS (source=behavior|script) */-->
+      <section class="card mb-3" aria-label="동작 소스" th:if="${source != null}" id="behavior-source">
+        <div class="card-header">
+          <ul class="nav nav-tabs card-header-tabs" aria-label="동작 소스">
+            <li class="nav-item">
+              <a class="nav-link" th:classappend="${source == 'behavior'} ? 'active'" th:aria-current="${source == 'behavior'} ? 'page'"
+                 th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='behavior')}">동작 명세</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" th:classappend="${source == 'script'} ? 'active'" th:aria-current="${source == 'script'} ? 'page'"
+                 th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='script')}">만든 JS</a>
+            </li>
+          </ul>
+          <a class="btn btn-sm ms-auto" th:href="${diagramUrl}">닫기</a>
+        </div>
+        <th:block th:replace="~{cozy/dev/workbench-source :: sourceLines(${sourceFile}, ${sourceLines}, ${sourceNote})}"></th:block>
+      </section>
       <section class="card mb-3" aria-label="모듈 의존성">
         <div class="card-header">
           <h3 class="card-title">모듈 의존성</h3>
@@ -220,6 +237,11 @@
                     <span class="d-block" th:text="${behavior.purpose}">본문을 쓰는 동안 글자 수와 한도를 보인다</span>
                     <span class="d-block text-secondary small mt-1"
                           th:text="|붙인 화면 ${placed == null ? 0 : placed.size()}개 · 붙인 요소 ${behavior.attached.size()}개|">붙인 화면 2개 · 붙인 요소 2개</span>
+                    <span class="d-block small" th:id="|behavior-${behavior.name}|">
+                      <a th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='behavior')} + ${behaviorLines.containsKey(behavior.name) ? '#L' + behaviorLines.get(behavior.name) : ''}">동작 명세</a>
+                      <span class="text-secondary">·</span>
+                      <a th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='script')}">만든 JS</a>
+                    </span>
                     <th:block th:if="${placed != null}" th:each="template : ${placed}">
                       <a class="d-block" th:if="${screenNames.containsKey(template)}" th:text="${template}"
                          th:href="@{/cozy/dev/workbench(spec=${screenNames.get(template)})}">memo/api/form</a>
@@ -229,7 +251,7 @@
                 </tr>
                 <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면 이벤트</th></tr>
                 <tr th:if="${uiEvents.isEmpty()}"><td colspan="2" class="text-secondary">화면 이벤트가 없습니다.</td></tr>
-                <tr th:each="event : ${uiEvents}">
+                <tr th:each="event : ${uiEvents}" th:id="|ui-event-${#strings.replace(event.event, ':', '-')}|">
                   <th scope="row"><code th:text="${event.event}">memo:archived</code></th>
                   <td>
                     <span class="d-block text-secondary small">내는 곳</span>

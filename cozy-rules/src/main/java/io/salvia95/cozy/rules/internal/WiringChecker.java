@@ -132,14 +132,14 @@ public final class WiringChecker {
 			String remove = "cozy remove behavior " + c.module() + " " + c.kebab();
 			ComponentContract.Wiring wiring = c.contract().wiring();
 			if (!attached.contains(c.name())) {
-				violations.add(error(spec, line, c.name(), "컴포넌트 " + c.name() + "을 어느 템플릿에도 붙이지 않았습니다. 선언과 붙이기는 한 작업으로 합니다. "
+				violations.add(error(spec, line, c.name(), "어느 템플릿에도 붙이지 않은 컴포넌트입니다: " + c.name() + ". 선언과 붙이기는 한 작업으로 합니다. "
 						+ "화면의 요소에 cozy attach " + c.name() + " --at <템플릿>:<줄>로 붙이거나, 쓰지 않으면 " + remove + "로 지웁니다"));
 			}
 			else {
 				Set<String> names = called.getOrDefault(c.name(), Set.of());
 				for (String action : wiring.actions()) {
 					if (!names.contains(action) && !wiring.listens().containsValue(action)) {
-						violations.add(error(spec, line, c.name() + "." + action, "동작 " + action + "을 부르는 요소가 없습니다. 요소의 이벤트에 잇거나(cozy attach "
+						violations.add(error(spec, line, c.name() + "." + action, "부르는 요소가 없는 동작입니다: " + action + ". 요소의 이벤트에 잇거나(cozy attach "
 								+ c.name() + " --at <템플릿>:<줄> --on <이벤트>:" + action + "), 받는 화면 이벤트에 잇거나(cozy add behavior " + c.module() + " "
 								+ c.kebab() + " --listen " + action + ":<모듈>:<이벤트>), 쓰지 않으면 지웁니다(" + remove + " --action " + action + ")"));
 					}
@@ -147,14 +147,14 @@ public final class WiringChecker {
 			}
 			for (String event : sorted(wiring.emits())) {
 				if (!received.contains(event)) {
-					violations.add(error(spec, line, c.name() + " → " + event, "화면 이벤트 " + event + "를 받는 곳이 없습니다. 받을 컴포넌트의 동작에 잇거나"
+					violations.add(error(spec, line, c.name() + " → " + event, "받는 곳이 없는 화면 이벤트입니다: " + event + ". 받을 컴포넌트의 동작에 잇거나"
 							+ "(cozy add behavior <모듈> <동작> --listen <동작>:" + event + "), htmx 요청이 받게 하거나(hx-trigger=\"" + event
 							+ " from:window\"), 내지 않으면 그 emit 단계를 지웁니다(cozy add behavior " + c.module() + " " + c.kebab() + " --action …)"));
 				}
 			}
 			for (String event : sorted(wiring.listens().keySet())) {
 				if (!emitted.contains(event)) {
-					violations.add(error(spec, line, c.name() + " ← " + event, "화면 이벤트 " + event + "를 내는 곳이 없습니다. 다른 컴포넌트의 동작이 emit('"
+					violations.add(error(spec, line, c.name() + " ← " + event, "내는 곳이 없는 화면 이벤트입니다: " + event + ". 다른 컴포넌트의 동작이 emit('"
 							+ event + "')로 내거나, 서버가 내면 컨트롤러가 응답 머리 HX-Trigger의 값에 이름을 글자 그대로(\"" + event
 							+ "\") 적습니다. 이어 붙여 만든 이름은 찾지 못합니다. 받지 않으면 " + remove + " --listen " + event + "로 지웁니다"));
 				}

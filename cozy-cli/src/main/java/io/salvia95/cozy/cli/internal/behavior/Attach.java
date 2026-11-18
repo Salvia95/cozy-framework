@@ -241,8 +241,9 @@ public final class Attach {
 		boolean model = attribute.equals("x-model");
 		java.util.Set<String> allowed = handler ? target.handlers() : model ? target.models() : target.values();
 		if (!allowed.contains(name)) {
-			String what = handler ? "동작" : model ? "x-model에 쓸 상태(text, bool)" : "상태나 계산";
-			throw new CliException(target.name() + "에 " + what + " '" + name + "'가 없습니다. 있는 것: "
+			String missing = model ? target.name() + "의 x-model에 쓸 상태(text, bool)가 아닙니다: " + name
+					: target.name() + "에 없는 " + (handler ? "동작" : "상태나 계산") + "입니다: " + name;
+			throw new CliException(missing + ". 있는 것: "
 					+ (allowed.isEmpty() ? "없음" : String.join(", ", allowed)) + ". 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.");
 		}
 		boolean argument = m.group(2) != null;

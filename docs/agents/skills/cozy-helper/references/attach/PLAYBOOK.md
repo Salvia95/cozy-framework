@@ -50,7 +50,7 @@ cozy attach cozyCopy --at memo/api/detail:21 --data 'copy-text=${memo.body}' --o
 
 | Message contains | Action |
 | --- | --- |
-| `에 상태나 계산` or `에 동작` and `가 없습니다` | Use a name from the printed list, or add the entry first with `cozy add behavior`. |
+| `에 없는 상태나 계산` or `에 없는 동작` or `x-model에 쓸 상태` | Use a name from the printed list, or add the entry first with `cozy add behavior`. |
 | `시작하는 요소가` | Pick the line where exactly one element starts. |
 | `그려질 때 다른 것으로 바뀌어` | Attach to the surrounding element or to an element inside the fragment's own template. |
 | `이미` and `를 붙였습니다` | Attach to another element, or detach the other component first as printed. |

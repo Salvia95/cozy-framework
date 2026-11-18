@@ -47,9 +47,9 @@ cozy check [--json]
 | Result | Action |
 | --- | --- |
 | Exit code 1 | Fix the listed violations and rerun. |
-| `[C13]` and `붙이지 않았습니다` | Attach the component with [attach](../attach/PLAYBOOK.md) in the same task, or remove it with [remove-behavior](../remove-behavior/PLAYBOOK.md) when the screen does not need it. |
-| `[C13]` and `부르는 요소가 없습니다` | Connect the action with `cozy attach … --on 이벤트:동작` or `--listen`, or remove the action as printed. |
-| `[C13]` and `받는 곳이 없습니다` or `내는 곳이 없습니다` | Add the printed receiver or sender; for a server event, write the event name as one literal string in the `HX-Trigger` header value. |
+| `[C13]` and `붙이지 않은 컴포넌트` | Attach the component with [attach](../attach/PLAYBOOK.md) in the same task, or remove it with [remove-behavior](../remove-behavior/PLAYBOOK.md) when the screen does not need it. |
+| `[C13]` and `부르는 요소가 없는 동작` | Connect the action with `cozy attach … --on 이벤트:동작` or `--listen`, or remove the action as printed. |
+| `[C13]` and `받는 곳이 없는` or `내는 곳이 없는` | Add the printed receiver or sender; for a server event, write the event name as one literal string in the `HX-Trigger` header value. |
 | `[C12 경고]` and `손으로 쓴 모듈 JS` | Run `cozy migrate behaviors`, and tell the user about each `남은 일` that it prints. |
 | Exit code 2 with `cozy-ui … jar가 없습니다` | Run `mvn -o dependency:resolve` once in the app folder and rerun. |
 

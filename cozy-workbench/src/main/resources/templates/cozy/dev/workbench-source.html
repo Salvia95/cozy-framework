@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--/*
+  워크벤치의 소스 보기 한 벌: 파일 경로, 안내 한 줄(없으면 빈 글자), 번호가 붙은 줄. 줄마다 id가 L{번호}여서 #L7로 그 줄에 간다.
+  화면 보기의 가운데 칸(템플릿, 화면 명세, 동작 명세, 만든 JS)과 모듈 화면의 동작 소스가 쓴다.
+  cozyFile은 프로젝트 기준 경로, cozyLines는 WorkbenchController.Line 목록, cozyNote는 파일 위에 보일 안내다.
+*/-->
+<html lang="ko">
+<body>
+<th:block th:fragment="sourceLines(cozyFile, cozyLines, cozyNote)">
+  <div class="card-body" th:if="${cozyFile == null or cozyLines.isEmpty()}">
+    <p class="text-secondary mb-0">소스를 읽을 수 없습니다.</p>
+  </div>
+  <th:block th:if="${cozyFile != null and !cozyLines.isEmpty()}">
+    <div class="card-body border-bottom py-2 cozy-workbench-source-path">
+      <code class="small" th:text="${cozyFile}">src/main/resources/templates/memo/api/list.html</code>
+      <p class="text-secondary small mb-0 mt-1" th:if="${!#strings.isEmpty(cozyNote)}" th:text="${cozyNote}">안내</p>
+    </div>
+    <div class="table-responsive cozy-workbench-scroll">
+      <table class="table table-sm table-borderless cozy-workbench-source mb-0">
+        <tbody>
+          <tr th:each="line : ${cozyLines}" th:id="|L${line.number}|">
+            <td class="cozy-workbench-source-number text-secondary" th:text="${line.number}">1</td>
+            <td><pre class="cozy-workbench-source-text" th:text="${line.text}">소스</pre></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </th:block>
+</th:block>
+</body>
+</html>

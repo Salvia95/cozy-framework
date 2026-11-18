@@ -15,7 +15,9 @@
     <tr class="cozy-workbench-behavior-start">
       <th scope="row">요소</th>
       <td><code th:text="${b.element}">&lt;div class="form-hint"&gt;</code>
-        <span class="d-block text-secondary"><code th:text="${el.location()}">templates/memo/internal/fields.html:9</code></span></td>
+        <a class="d-block" th:aria-label="|${el.location()} 소스 보기|"
+           th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template',template=${b.template})} + '#L' + ${b.line}"><code
+           th:text="${el.location()}">templates/memo/internal/fields.html:9</code></a></td>
     </tr>
     <tr th:if="${b.component != null}">
       <th scope="row">컴포넌트</th>
