@@ -6,6 +6,7 @@ Makes every module's script again from its behavior spec, and tidies each spec i
 
 - Use it when `cozy check` or `mvn -o verify` prints `[C12]` with `고치는 명령: cozy sync behaviors`.
 - Use it after the user edited a `behaviors/{module}.yml` file by hand.
+- Use it after upgrading Cozy when `[C12]` says that an earlier cozy made the script, because the script lacks the `cozy:component` lines that the checks read.
 
 ## When NOT to use
 
@@ -41,6 +42,7 @@ cozy sync behaviors
 | `모르는 키` or `를 모릅니다` | Fix the printed entry of the spec with `cozy add behavior`, or show the user the line they edited by hand. |
 | `손으로 쓴 컴포넌트 파일입니다` | Tell the user that the module has a hand-written script next to a spec, and do not delete it yourself. |
 | `모듈 '` and `가 없습니다` | Ask the user whether to delete the spec of the removed module. |
+| `[C12 경고]` and `손으로 쓴 모듈 JS` | Run `cozy migrate behaviors` instead; this command never overwrites a hand-written script. |
 
 ## Next
 

@@ -241,3 +241,23 @@ cozy attach cozyCopy --at memo/api/detail:12 --data "copy-text=${#strings.listJo
   - 위반 픽스처 `C13-behaviors`(4곳), 레시피 픽스처 `behavior`(순서), `migrate-behaviors`(새 픽스처: 경고 → 옮기기 → 다시 실행 → 경고 없이 통과, mvn verify의 렌더링과 C10). 아키텍처 검사가 하나 늘어 테스트 수를 세는 위반·레시피 픽스처의 기대 값을 1씩 올렸다.
   - 화면(runtime-verifier, 2026-11-18, reference-app의 복사본에 붙이지 않은 컴포넌트를 하나 더해): 워크벤치 개요의 미구현 항목(숫자 카드 `1건`, 메시지와 `memo.yml:14`), 검사 화면(파일별 묶음, `오류 C13`, 수정 명령은 "직접 수정"), 모듈 화면의 미구현 항목, 위반이 없을 때 검사 화면의 새 문구. 1280·390px에서 가로 넘침, 콘솔 오류, CSP 위반 0. 390px의 검사 표에서 내용 칸이 좁아 긴 메시지가 짧게 끊기는 것은 이전부터의 표 모양이다.
   - 전체 `mvn -o install` 통과(10분 58초): 위반 픽스처 18개, 레시피 픽스처 12개, 아키타입 3조합.
+
+## M50 (2026-11-18, 사용자 지시 "진행해줘")
+
+- 시작할 때 최신 GA: 같은 날 확인한 그대로다. 새 의존성은 없다.
+- 완료 기준을 테스트로: cozy-cli `BehaviorDocsTest` 6개. 이 테스트가 다음을 본다.
+  - `ui.md`의 동작 명세와 `add-behavior` 플레이북의 Syntax가 JS를 만드는 코드의 낱말 목록(계산 함수, 동작 단계)과 이벤트 값, 상태의 종류를 빠짐없이 싣는다.
+  - `cli.md`에 동작 명령마다 절이 있고, describe가 `behaviors[]`·`bindings[]`·`uiEvents[]`·C13의 `slots[]`를 적는다.
+  - `testing.md`·`rules.md`·`workbench.md`·`check` 플레이북이 C12·C13과 경고를 적는다.
+  - `release.md`에 "앱을 2.2.0으로 올리기"가 있고, `upgrade` 플레이북이 `cozy migrate behaviors`를 적는다.
+  - `AGENTS.md`가 명령, JS를 손으로 쓰지 않는 규칙, C13을 적는다.
+- 고친 문서:
+  - 규약: `ui.md`(붙이기와 완결성, 2.2.0 전의 손으로 쓴 모듈 JS), `structure.md`(`behaviors/{모듈}.yml`의 자리), `release.md`(2.2.0 절과 앱을 올리는 절차), `distribution/release/channel.yml`(다음 릴리스 2.2.0의 요약과 `appSteps`).
+  - M46~M49에서 함께 쓴 문서: `cli.md`의 명령, `rules.md`·`testing.md`의 검사, `workbench.md`.
+  - 에이전트 문서: `AGENTS.md`(선언과 붙이기를 한 작업으로, C12 경고와 `cozy migrate behaviors`), `describe` 플레이북(`behaviors[]`, `bindings[]`, `uiEvents[]`, 화면 안의 동작과 화면 이벤트 줄, C13의 `slots[]`), `add-behavior`(붙이기까지의 예, 화면 이벤트를 htmx와 서버에 잇는 법), `attach`·`sync-behaviors`·`check`·`upgrade`의 실패 표와 다음 일.
+- 계획과 달라진 것:
+  - **`add-behavior` 다시 쓰기와 `attach` 플레이북**: M46·M47에서 새 형식으로 이미 썼다. 이번에는 C13과 붙이기까지의 흐름을 더했다.
+  - **릴리스 노트**: 릴리스 노트 초안(`release-notes.sh`)의 "변경 내용"은 게시 전에 손으로 채운다. 그래서 옮기는 절차는 2.0.0 때처럼 `release.md`의 "앱을 2.2.0으로 올리기"에 두고, 절차가 그 절을 노트에 옮기라고 적는다. 2.2.0은 호환이 깨지지 않는 판이다(손으로 쓴 모듈 JS는 경고). 그래도 R16이 같은 템플릿 안의 `x-data`를 요구하게 된 것(M47)은 올릴 때 손이 갈 수 있어 그 절에 적었다.
+  - **`channel.yml`**: 절차는 릴리스 때 고치라고 하지만 이 판의 `appSteps`(`cozy sync agents`, `cozy migrate behaviors`)를 정한 지금 적었다. 판 확인은 태그 빌드에서만 한다.
+  - **`AGENTS.md`의 길이**: 늘 읽히는 파일이라 40줄 이하다(`AgentDocsTest`). 붙이기에 관한 두 줄을 한 줄로 합쳐 새 규칙 두 줄을 넣었다.
+- 확인: `BehaviorDocsTest` 6개, `AgentDocsTest`·`SyncAgentsTest`, 전체 `mvn -o install` 통과(10분 31초, 위반 픽스처 18개, 레시피 픽스처 12개, 아키타입 3조합). 화면은 바꾸지 않았다.

@@ -100,11 +100,14 @@ templates/memo/
 ├── spi/        summary.html                          다른 모듈용 fragment (cozy/fragments.yml에 등록)
 └── internal/   fields.html                           form·detail이 같이 쓰는 입력 칸과 버튼
 
+behaviors/
+└── memo.yml                                          모듈의 동작 명세(memoBodyCount 등). 원본이고 cozy add behavior가 고친다
+
 static/memo/
-└── memo.js                                           모듈의 Alpine 컴포넌트(memoBodyCount 등). 모듈마다 이 파일 하나
+└── memo.js                                           동작 명세에서 cozy가 만든 Alpine 컴포넌트. 모듈마다 이 파일 하나, 손으로 고치지 않는다
 ```
 
-- **Alpine 컴포넌트**: 모듈의 화면 안 상태는 `static/{모듈}/{모듈}.js`에 모듈 이름으로 시작하는 이름(`memoBodyCount`)으로 등록한다. 레이아웃이 모든 모듈의 파일을 싣는다. 같은 모듈의 템플릿만 쓴다(R16). 이 파일은 모듈의 동작 명세 `behaviors/{모듈}.yml`에서 cozy가 만들고 손으로 고치지 않는다(C12). 선언하고 고치는 명령은 `cozy add behavior`다([ui.md](ui.md)의 동작 명세).
+- **Alpine 컴포넌트**: 모듈의 화면 안 상태는 `static/{모듈}/{모듈}.js`에 모듈 이름으로 시작하는 이름(`memoBodyCount`)으로 등록한다. 레이아웃이 모든 모듈의 파일을 싣는다. 같은 모듈의 템플릿만 쓴다(R16). 이 파일은 모듈의 동작 명세 `behaviors/{모듈}.yml`에서 cozy가 만들고 손으로 고치지 않는다(C12). 선언하고 고치는 명령은 `cozy add behavior`, 템플릿에 붙이는 명령은 `cozy attach`이고, 붙이지 않은 컴포넌트는 C13이 막는다([ui.md](ui.md)의 동작 명세).
 
 ### 참조와 모델 (R1, R3, R9, R10)
 

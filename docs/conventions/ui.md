@@ -311,6 +311,8 @@ components:
 
 - 낱말로 적을 수 없는 동작은 앱에 손으로 쓰지 않는다. `cozy` 컴포넌트나 낱말을 더하는 일은 프레임워크에서 한다(ADR-0043 §7).
 - 만든 JS는 지금 규칙을 따른다: `alpine:init`의 `Alpine.data` 등록, 서버 값은 `data-*`, 서버에 요청하지 않음. 받는 이벤트는 컴포넌트가 없어질 때(htmx가 영역을 바꿀 때) 뗀다.
+- **붙이기와 완결성**: 선언한 컴포넌트는 같은 작업에서 `cozy attach`로 템플릿에 붙이고, 동작마다 부르는 이벤트(`--on 이벤트:동작`)나 받는 화면 이벤트(`listens`)를 잇는다. 만든 JS가 명세와 다르면 C12, 붙이지 않은 컴포넌트, 부르는 곳이 없는 동작, 받는 곳이 없는 `emit`, 내는 곳(다른 컴포넌트의 `emit`, 서버의 `HX-Trigger`)이 없는 `listens`는 C13이 빌드를 실패시킨다([testing.md](testing.md)). `cozy describe`와 워크벤치가 컴포넌트마다 붙인 곳과 화면 이벤트의 흐름을 보인다([cli.md](cli.md)의 describe, [workbench.md](workbench.md)).
+- **손으로 쓴 모듈 JS (2.2.0 전)**: 명세가 없는 `static/{모듈}/{모듈}.js`는 2.x에서 그대로 싣고 C12 경고를 낸다. `cozy migrate behaviors`가 낱말로 적을 수 있는 컴포넌트를 명세로 옮긴다([cli.md](cli.md)의 migrate behaviors).
 - 낱말 전부를 쓰는 예시는 cozy-cli의 `src/test/resources/behaviors/demo.yml`이고, 그 명세에서 만든 `demo.js`와 브라우저 시험 페이지 `demo.html`이 옆에 있다([testing.md](testing.md)).
 
 ## 설정과 자산

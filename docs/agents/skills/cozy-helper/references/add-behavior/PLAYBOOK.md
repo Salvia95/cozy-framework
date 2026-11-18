@@ -47,7 +47,14 @@ cozy add behavior memo body-count --purpose "본문을 쓰는 동안 글자 수�
   --action "count:within('textarea', set(length, length(event.value)))"
 ```
 
-- Attach it to the module's template with [attach](../attach/PLAYBOOK.md), such as `cozy attach memoBodyCount --at memo/internal/fields:7 --on input:count`.
+```bash
+cozy attach memoBodyCount --at memo/internal/fields:7 --data 'length=${bodyLength}' --data limit=5000 --on input:count
+cozy attach memoBodyCount --at memo/internal/fields:9 --text label --cloak
+```
+
+- Attach it in the same task with [attach](../attach/PLAYBOOK.md), using the `template:line` from `cozy describe --json`.
+- To tell an htmx request about a change, add a step `emit('memo:selection-changed', ids)` and receive it with `hx-trigger="memo:selection-changed from:window"` on the requesting element.
+- To react to a server change, add `--listen clear:memo:archived` and have the controller set the header `HX-Trigger` to the literal `memo:archived`.
 
 ## Failures
 

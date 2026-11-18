@@ -19,8 +19,9 @@ This app is built on the Cozy framework: an internal business tool that runs on 
 
 - Use htmx for everything that goes through the server, such as search, paging, saving, validation errors, and delete.
 - Use Alpine.js only for state that may be lost on reload, such as an open panel, a selection count, or copying text.
-- Attach a component with `cozy attach`, which writes `x-data` with its name, passes server values as `data-*` attributes, and checks every bound name.
-- Use `cozy` components first, declare a module component with `cozy add behavior`, and attach components with `cozy attach`; never write `x-*` attributes or `static/{module}/{module}.js` by hand.
+- Use `cozy` components first, declare a module component with `cozy add behavior`, and attach components with `cozy attach`, which writes `x-data`, passes server values as `data-*` attributes, and checks every bound name; never write `x-*` attributes or `static/{module}/{module}.js` by hand.
+- Declare a component and attach it in the same task, because `cozy check` fails with `[C13]` while a declared component, action, or screen event is not connected.
+- When `cozy check` prints `[C12 경고]` for a hand-written module script, run `cozy migrate behaviors` and report each `남은 일` to the user instead of rewriting that script.
 
 ## Rules
 

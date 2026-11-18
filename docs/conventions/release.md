@@ -56,8 +56,29 @@
    ```
 
 - **2.0.0** (ADR-0040, ADR-0041): 동작을 붙이던 `data-cozy-*` 속성을 없애고 Alpine.js 컴포넌트로 바꿨고, 이벤트의 자리를 이벤트 계약 모듈 `events`로 옮겼으므로 호환이 깨진다. 이 변경이 들어간 첫 릴리스는 `2.0.0`이다(3단계의 `set-version.sh 2.0.0`). 릴리스 노트의 "변경 내용"에 아래 "앱을 2.0.0으로 올리기"를 그대로 적는다.
+- **2.2.0** (ADR-0043): 화면 안의 동작을 동작 명세(`behaviors/{모듈}.yml`)에서 만든다. 호환은 깨지지 않는다(손으로 쓴 모듈 JS는 경고이고, 다음 주 버전에서 오류가 된다). 릴리스 노트의 "변경 내용"에 아래 "앱을 2.2.0으로 올리기"를 적고, `channel.yml`의 `appSteps`는 `cozy sync agents`, `cozy migrate behaviors`다.
 - **패치 릴리스**(`1.0.1`): 의존성은 패치 버전과 보안 수정만 올린다. Boot 마이너처럼 동작이 바뀔 수 있는 판올림은 다음 마이너 릴리스에서 한다.
 - **태그를 잘못 붙였을 때**: 초안 릴리스와 태그를 지우고 다시 붙인다. 게시한 릴리스의 파일은 바꾸지 않는다. 고칠 것이 있으면 새 패치 버전으로 낸다.
+
+## 앱을 2.2.0으로 올리기
+
+2.1.0으로 만든 앱을 2.2.0으로 올리는 절차다. 앱 폴더에서 실행한다.
+
+```bash
+# pom.xml의 cozy-parent 버전을 2.2.0으로 바꾼 뒤
+cozy sync agents                  # AGENTS.md와 cozy-helper 스킬에 동작 명세, attach, C13
+cozy check                        # [C12 경고] 손으로 쓴 모듈 JS, R16의 감싸는 x-data
+cozy migrate behaviors --dry-run  # 동작 명세로 옮길 컴포넌트와 남은 일을 본다
+cozy migrate behaviors            # static/{모듈}/{모듈}.js → behaviors/{모듈}.yml과 그 명세에서 만든 JS
+cozy check                        # 옮긴 컴포넌트의 이름(R16)과 붙인 곳·화면 이벤트(C13)
+mvn -o verify
+```
+
+- **바뀐 것**: 모듈의 화면 안 동작은 동작 명세가 원본이고 JS는 cozy가 만든다. `cozy add behavior`는 빈칸 대신 상태, 계산, 동작을 옵션으로 받아 명세와 JS를 함께 쓴다. 템플릿의 Alpine 속성은 `cozy attach`가 붙이고 이름을 확인한다([ui.md](ui.md)의 동작 명세, [cli.md](cli.md)).
+- **손으로 쓴 모듈 JS**: 2.1.0의 `cozy add behavior`가 만들고 빈칸을 채운 `static/{모듈}/{모듈}.js`는 그대로 실리고 `[C12 경고]`만 낸다. `cozy migrate behaviors`가 낱말로 적을 수 있는 컴포넌트를 옮긴다. 출력의 "남은 일"에 옮기지 못한 곳(`파일:줄`, 무엇이 낱말 밖인지, 그 자리의 JS)이 있다. 그 모듈은 바뀌지 않고 경고가 남는다. 화면의 다른 요소를 읽는 것(`querySelector`)처럼 낱말 밖인 동작은 `cozy` 컴포넌트가 필요하니 Cozy 관리자에게 알린다. 템플릿은 그대로 둔다(이름이 같다).
+- **R16이 더 보는 것**: 이벤트와 값을 붙인 속성(`x-on`, `x-text` 등)은 같은 템플릿 안에 감싸는 `x-data`가 있어야 한다. 다른 템플릿에서 `x-data`를 붙인 fragment 안의 바인딩은 오류다. `x-data`를 그 fragment 안의 바깥 요소로 옮긴다. 동작 명세의 컴포넌트는 `cozy attach … --detach` 뒤 `cozy attach`로 옮기고, 손으로 쓴 컴포넌트는 먼저 `cozy migrate behaviors`로 옮긴다. 동작 명세에서 만든 컴포넌트와 `cozy` 컴포넌트는 부르는 이름이 컴포넌트에 있는지도 본다.
+- **C13**: 동작 명세의 컴포넌트를 붙이지 않았거나, 부르지 않는 동작이나 받거나 내는 곳이 없는 화면 이벤트가 있으면 빌드가 실패한다. 옮긴 컴포넌트의 `window.addEventListener`로 받던 화면 이벤트를 서버가 낸다면 컨트롤러의 `HX-Trigger` 값에 이름이 글자 그대로 있어야 한다([testing.md](testing.md)).
+- **새로 쓸 수 있는 것**: `cozy describe --json`의 `behaviors[]`, `screens[].bindings[]`, `uiEvents[]`. 워크벤치의 구조 트리와 속성 표가 요소마다 붙은 동작을 보이고 붙이고 뗀다. `cozy remove behavior`, `cozy rename behavior`.
 
 ## 앱을 2.0.0으로 올리기
 

@@ -58,7 +58,8 @@ cozy attach cozyCopy --at memo/api/detail:21 --data 'copy-text=${memo.body}' --o
 | `--data는 컴포넌트를 붙인 요소` | Put `--data` on the root element that has `x-data`. |
 | `안쪽 요소에 붙인 것이 남아 있습니다` | Detach the printed inner lines first, then the root. |
 | `R16` and `감싸는 컴포넌트` | Run `cozy attach` with a name from the printed list instead of the hand-written attribute. |
+| `[C13]` | Attach the printed component, or connect the printed action with `--on`, as the message says. |
 
 ## Next
 
-- Run `cozy check`, then `mvn -o verify`.
+- Run `cozy check`, which fails with `[C13]` until every declared component is attached and every action has a caller, then `mvn -o verify`.

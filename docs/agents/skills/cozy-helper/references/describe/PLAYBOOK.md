@@ -13,7 +13,8 @@ Prints the app map so you can find modules and contracts without opening files.
 cozy describe [--json]
 ```
 
-- `--json` prints the same map as `modules[]`, `slots[]`, and `problems[]`.
+- `--json` prints the same map as `modules[]`, `screens[]`, `events[]`, `uiEvents[]`, `slots[]`, and `problems[]`.
+- `modules[].behaviors[]` lists each component of the behavior spec, and `screens[].bindings[]` lists each element with the Alpine and htmx attributes bound to it and the `template` and `line` for `cozy attach --at`.
 
 ## Creates
 
@@ -22,6 +23,7 @@ cozy describe [--json]
 ## Slots
 
 - `describe` lists every open `cozy:slot` as `file:line` with its task.
+- `slots[]` also lists each `[C13]` item with `check` set to `C13`, such as a declared component that no template uses.
 
 ## Example
 
@@ -33,6 +35,7 @@ cozy describe [--json]
   읽기 MemoFinder
     Optional<MemoItem> find(long id)
   컴포넌트 memoBodyCount
+  화면 안의 동작 memoBodyCount — 본문을 쓰는 동안 글자 수와 한도를 보인다 · 붙인 곳 memo/internal/fields:7, memo/internal/fields:9
   화면 memo/api/form — src/main/resources/specs/memo-form.yml: default, empty, invalid · 컴포넌트 memoBodyCount(memo/internal/fields:6)
 
 이벤트 memo.MemoCreated(long memoId, String title) 발행: src/main/java/.../MemoFacadeImpl.java → activity(MemoCreatedListener)
@@ -42,6 +45,8 @@ cozy describe [--json]
 - Events are listed once for the whole app as `{owner}.{Event}`, after the modules, with the files that publish them and the modules that receive them after `→`.
 - An event without a `발행:` file is not published anywhere yet, and `받는 곳 없음` means no listener receives it.
 - `컴포넌트` under a module lists the Alpine components that `static/{module}/{module}.js` registers.
+- `화면 안의 동작` lists each component of the behavior spec with its purpose and the template lines it is attached to.
+- `화면 이벤트` lines, after the events, list each screen event with the places that send it before `→` and the places that receive it after `→`.
 - `컴포넌트` on a screen lists the components the screen uses, including those inside the app fragments it includes, with the template and line to edit.
 
 ## Failures
