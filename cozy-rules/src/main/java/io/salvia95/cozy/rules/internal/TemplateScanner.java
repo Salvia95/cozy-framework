@@ -330,6 +330,10 @@ final class TemplateScanner {
 			checkScope();
 			for (Attribute attribute : this.attributes.values()) {
 				String thName = thName(attribute.name());
+				String plain = (thName != null) ? thName : attribute.name();
+				if (plain.equals("hx-trigger") || plain.equals("data-hx-trigger")) {
+					this.parsed.triggers.add(new Problem(attribute.value(), plain, attribute.line()));
+				}
 				if (AlpineChecker.relevant(attribute.name(), thName)) {
 					this.parsed.alpine.add(new ParsedTemplate.AlpineAttribute(attribute.name(), attribute.value(), attribute.line(),
 							this.elementName, alpineScope(), alpineLocals()));

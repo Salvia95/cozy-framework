@@ -221,4 +221,22 @@ class DescribeBehaviorsTest {
 		assertThat((List<Object>) model.get("problems")).anySatisfy((p) -> assertThat(String.valueOf(p))
 			.contains("src/main/resources/behaviors/memo.yml").contains("purpose"));
 	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void unwiredBehaviorsAreLeftWorkInSlots() throws IOException {
+		// 만든 JS가 있어야 C13이 컴포넌트를 안다. 붙인 곳은 있지만 memo:picked를 받는 곳이 없다
+		Result sync = CozyCliTest.run("sync", "behaviors", "--project", this.dir.toString());
+		assertThat(sync.code()).as(sync.err()).isZero();
+
+		List<Map<String, Object>> slots = (List<Map<String, Object>>) describe().get("slots");
+
+		assertThat(slots).singleElement().satisfies((slot) -> {
+			assertThat(slot).containsEntry("check", "C13")
+				.containsEntry("file", "src/main/resources/behaviors/memo.yml")
+				.containsEntry("line", 12)
+				.containsEntry("slot", "memoSelection → memo:picked");
+			assertThat(String.valueOf(slot.get("what"))).startsWith("화면 이벤트 memo:picked를 받는 곳이 없습니다");
+		});
+	}
 }

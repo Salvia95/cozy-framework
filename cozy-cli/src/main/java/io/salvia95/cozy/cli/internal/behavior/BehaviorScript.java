@@ -455,7 +455,8 @@ public final class BehaviorScript {
 			String name = this.c.name(this.module);
 			this.helpers.add("copy");
 			line(2, "// " + name + ": " + this.c.purpose());
-			line(2, ComponentContract.line(name, members(this.c), data(this.c)));
+			line(2, ComponentContract.line(name, members(this.c), data(this.c), List.copyOf(this.c.actions().keySet()),
+					List.copyOf(emits(this.c)), this.c.listens()));
 			line(2, "window.Alpine.data(" + js(name) + ", function () {");
 			line(4, "var root = null;");
 			line(4, "var initial = {};");
@@ -653,6 +654,22 @@ public final class BehaviorScript {
 		names.addAll(c.computed().keySet());
 		names.addAll(c.actions().keySet());
 		return names;
+	}
+
+	/** 동작이 내는 화면 이벤트 (명세 순서, when·within 안도) */
+	public static Set<String> emits(Component c) {
+		Set<String> events = new LinkedHashSet<>();
+		c.actions().values().forEach((steps) -> steps.forEach((step) -> emitted(step, events)));
+		return events;
+	}
+
+	private static void emitted(Expr expr, Set<String> events) {
+		if (expr instanceof Call call) {
+			if (call.function().equals("emit") && !call.args().isEmpty() && call.args().getFirst() instanceof Text text) {
+				events.add(text.value());
+			}
+			call.args().forEach((arg) -> emitted(arg, events));
+		}
 	}
 
 	/** {@code x-data} 요소에서 읽는 {@code data-*}의 이름 ({@code data-} 뒤) */

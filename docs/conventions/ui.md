@@ -220,7 +220,7 @@ fragments:
 
 ### 앱 컴포넌트
 
-- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고(지우기는 `cozy remove behavior`, 이름 바꾸기는 `cozy rename behavior`), 템플릿에는 `cozy attach`로 붙인다. JS를 손으로 고치면 C12가 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)).
+- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고(지우기는 `cozy remove behavior`, 이름 바꾸기는 `cozy rename behavior`), 템플릿에는 `cozy attach`로 붙인다. JS를 손으로 고치면 C12가, 선언한 컴포넌트를 붙이지 않았거나 동작을 부르는 곳이나 화면 이벤트를 내고 받는 곳이 없으면 C13이 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)). 2.2.0 전에 손으로 쓴 모듈 JS는 C12 경고이고 `cozy migrate behaviors`가 명세로 옮긴다.
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.

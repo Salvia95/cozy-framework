@@ -120,7 +120,7 @@ public final class RecipeRunner {
 
 	/**
 	 * {@code cozy migrate alpine}: 앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾼다. {@code cozy migrate events}: 옛 이벤트 자리의
-	 * 이벤트를 이벤트 계약 모듈로 옮긴다.
+	 * 이벤트를 이벤트 계약 모듈로 옮긴다. {@code cozy migrate behaviors}: 손으로 쓴 모듈 JS를 동작 명세로 옮긴다.
 	 *
 	 * @param now 마이그레이션 이름의 시각 (events)
 	 */
@@ -141,8 +141,15 @@ public final class RecipeRunner {
 				String next = MigrateEvents.run(ctx, rest);
 				report("migrate events", ctx.plan(), ctx.manual(), next, false, dryRun, json, out);
 			}
-			default -> throw new CliException("cozy migrate 뒤에는 alpine이나 events를 적습니다 (" + MigrateAlpine.USAGE + ", "
-					+ MigrateEvents.USAGE + ").");
+			case "behaviors" -> {
+				Context ctx = new Context(project, () -> {
+					throw new IllegalStateException("cozy migrate behaviors는 cozy-ui를 읽지 않습니다");
+				}, now);
+				String next = MigrateBehaviors.run(ctx, rest);
+				report("migrate behaviors", ctx.plan(), ctx.manual(), next, false, dryRun, json, out);
+			}
+			default -> throw new CliException("cozy migrate 뒤에는 alpine, events, behaviors를 적습니다 (" + MigrateAlpine.USAGE + ", "
+					+ MigrateEvents.USAGE + ", " + MigrateBehaviors.USAGE + ").");
 		}
 	}
 

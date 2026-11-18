@@ -42,6 +42,7 @@ cozy version
 
 - This playbook leaves no slot.
 - A command in step 3 can print remaining work (`남은 일`) as `file:line`; fix each one by hand and rerun `cozy check`.
+- When `cozy check` prints `[C12 경고]` for a hand-written module script, run `cozy migrate behaviors`; a component that it cannot move stays hand-written, so tell the user what each `남은 일` says.
 
 ## Example
 

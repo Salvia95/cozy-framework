@@ -63,7 +63,8 @@ class BehaviorRecipeTest {
 		Result result = bodyCount();
 
 		assertThat(result.code()).as(result.err()).isZero();
-		assertThat(result.out()).contains("만듦  " + SPEC, "만듦  " + FILE, "x-data=\"memoBodyCount\"").doesNotContain("빈칸");
+		assertThat(result.out()).contains("만듦  " + SPEC, "만듦  " + FILE, "다음: cozy attach memoBodyCount --at <템플릿>:<줄>", "C13")
+			.doesNotContain("빈칸");
 		assertThat(read(SPEC)).isEqualTo("""
 				# memo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/memo/memo.js를 만든다
 				components:
@@ -78,8 +79,15 @@ class BehaviorRecipeTest {
 				""");
 		assertThat(read(FILE)).contains("window.Alpine.data('memoBodyCount', function () {", "this.length = readNumber(root, 'length', 0);",
 				"get label() {", "count: function (event) {").doesNotContain("cozy:slot");
+		// 선언만 하고 붙이지 않았으면 C13이다. 붙이면 통과한다
 		Result check = run("check");
-		assertThat(check.code()).as(check.out()).isZero();
+		assertThat(check.code()).isEqualTo(CozyCli.VIOLATIONS);
+		assertThat(check.out()).contains("[C13] src/main/resources/behaviors/memo.yml:3 → memoBodyCount — 컴포넌트 memoBodyCount을 어느 템플릿에도 붙이지 않았습니다");
+		write(AttachCommandTest.TEMPLATE, AttachCommandTest.EDIT);
+		assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--on", "input:count").code()).isZero();
+		assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "label").code()).isZero();
+		Result attached = run("check");
+		assertThat(attached.code()).as(attached.out()).isZero();
 	}
 
 	@Test
@@ -133,7 +141,7 @@ class BehaviorRecipeTest {
 		assertThat(sync.code()).as(sync.err()).isZero();
 		assertThat(sync.out()).contains("바꿈  " + FILE);
 		assertThat(read(FILE)).isEqualTo(made);
-		assertThat(run("check").code()).isZero();
+		assertThat(run("check").out()).doesNotContain("[C12]").contains("[C13]", "을 어느 템플릿에도 붙이지 않았습니다");
 	}
 
 	@Test
@@ -150,7 +158,7 @@ class BehaviorRecipeTest {
 		assertThat(sync.code()).as(sync.err()).isZero();
 		assertThat(read(SPEC)).contains("      label: \"format('{length}개')\"").doesNotContain("actions:");
 		assertThat(read(FILE)).doesNotContain("count: function").contains("'개'");
-		assertThat(run("check").code()).isZero();
+		assertThat(run("check").out()).doesNotContain("[C12]");
 		assertThat(run("sync", "behaviors").out()).contains("바뀐 것 없음");
 	}
 

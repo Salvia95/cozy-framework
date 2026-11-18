@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -90,10 +91,15 @@ class BehaviorRulesTest {
 	}
 
 	@Test
-	void aHandWrittenScriptWithoutASpecIsNotThisChecksBusiness() throws IOException {
+	void aHandWrittenScriptWithoutASpecIsAWarningWithTheMigrateCommand() throws IOException {
 		write(BehaviorRules.scriptPath("memo"), BODY);
+		write("static/vendor/other.js", BODY);
 
-		assertThat(check()).isEmpty();
+		assertThat(check()).singleElement().satisfies((v) -> {
+			assertThat(v.isError()).isFalse();
+			assertThat(v.format()).startsWith("[C12 경고] src/main/resources/static/memo/memo.js → memo — 손으로 쓴 모듈 JS입니다(직접 쓴 코드)")
+				.endsWith("고치는 명령: cozy migrate behaviors");
+		});
 	}
 
 	@Test
@@ -106,18 +112,40 @@ class BehaviorRulesTest {
 
 	@Test
 	void aScriptMadeByAnEarlierCozyWithoutComponentLinesFails() throws IOException {
-		// 템플릿이 부르는 이름은 cozy:component 줄로 확인한다(R16). 그 줄이 없으면 확인할 수 없으므로 다시 만들게 한다
-		String old = "document.addEventListener('alpine:init', function () {\n  window.Alpine.data('memoBodyCount', function () { return {}; });\n});\n";
-		String current = "document.addEventListener('alpine:init', function () {\n  "
-				+ ComponentContract.line("memoBodyCount", List.of("count"), List.of()) + "\n"
-				+ "  window.Alpine.data('memoBodyCount', function () { return {}; });\n});\n";
+		// 템플릿이 부르는 이름(R16)과 붙인 곳·화면 이벤트(C13)는 cozy:component 줄로 확인한다. 그 줄이 없거나 동작과 이벤트가 없으면
+		// 확인할 수 없으므로 다시 만들게 한다
+		String register = "  window.Alpine.data('memoBodyCount', function () { return {}; });\n});\n";
+		String head = "document.addEventListener('alpine:init', function () {\n";
+		String none = head + register;
+		String members = head + "  " + ComponentContract.line("memoBodyCount", List.of("count"), List.of()) + "\n" + register;
+		String current = head + "  "
+				+ ComponentContract.line("memoBodyCount", List.of("count"), List.of(), List.of("count"), List.of(), Map.of()) + "\n"
+				+ register;
 		write(BehaviorRules.specPath("memo"), SPEC);
-		write(BehaviorRules.scriptPath("memo"), generated(SPEC, old));
-
-		assertThat(check()).singleElement()
-			.satisfies((v) -> assertThat(v.format()).contains("cozy:component 줄)이 없습니다").endsWith("고치는 명령: cozy sync behaviors"));
+		for (String old : List.of(none, members)) {
+			write(BehaviorRules.scriptPath("memo"), generated(SPEC, old));
+			assertThat(check()).singleElement()
+				.satisfies((v) -> assertThat(v.format()).contains("cozy:component 줄)가 없습니다").endsWith("고치는 명령: cozy sync behaviors"));
+		}
 		write(BehaviorRules.scriptPath("memo"), generated(SPEC, current));
 		assertThat(check()).isEmpty();
+	}
+
+	@Test
+	void componentLinesCarryActionsAndScreenEvents() {
+		String line = ComponentContract.line("memoSelection", List.of("ids", "pick", "clear"), List.of("ids"),
+				List.of("pick", "clear"), List.of("memo:selection-changed"), Map.of("memo:archived", "clear"));
+
+		assertThat(line).isEqualTo("// cozy:component memoSelection members=ids,pick,clear data=ids actions=pick,clear "
+				+ "emits=memo:selection-changed listens=memo:archived:clear");
+		ComponentContract contract = ComponentContract.parse(line).get("memoSelection");
+		assertThat(contract.members()).containsExactlyInAnyOrder("ids", "pick", "clear");
+		assertThat(contract.wiring().actions()).containsExactlyInAnyOrder("pick", "clear");
+		assertThat(contract.wiring().emits()).containsExactly("memo:selection-changed");
+		assertThat(contract.wiring().listens()).containsExactlyEntriesOf(Map.of("memo:archived", "clear"));
+		assertThat(ComponentContract.parse(ComponentContract.line("cozyCopy", List.of("copy"), List.of("copy-text")))
+			.get("cozyCopy")
+			.wiring()).isNull();
 	}
 
 	@Test

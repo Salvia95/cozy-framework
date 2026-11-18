@@ -55,11 +55,17 @@ public final class Describe {
 		List<Object> slots = new ArrayList<>();
 		for (Violation slot : SlotRules.check(project.dir().resolve("src/main"), "src/main/")) {
 			Map<String, Object> s = new LinkedHashMap<>();
+			s.put("check", slot.ruleId());
 			s.put("file", slot.location());
 			s.put("line", slot.line());
 			s.put("slot", slot.reference().replace(SlotRules.MARKER, "").strip());
 			s.put("what", slot.message());
 			slots.add(s);
+		}
+		// 붙이지 않은 동작과 이어지지 않은 화면 이벤트도 남은 일이다
+		for (Violation wiring : Checks.wiring(project)) {
+			slots.add(ordered("check", wiring.ruleId(), "file", wiring.location(), "line", wiring.line(), "slot", wiring.reference(), "what",
+					wiring.message()));
 		}
 		List<Object> problems = new ArrayList<>(project.problems().stream().map((v) -> (Object) v.format()).toList());
 		problems.addAll(behaviorProblems);

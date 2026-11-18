@@ -1,16 +1,17 @@
-# 모듈의 Alpine 컴포넌트: add behavior가 동작 명세와 그 명세에서 만든 JS를 쓰고 빈칸을 남기지 않는다. attach가 템플릿에 붙인다. 손으로 고친 명세는 cozy check(C12)가
-# 실패하고 cozy sync behaviors가 정리해 다시 만든다. 다른 모듈의 컴포넌트를 쓰면 R16이 실패한다. 레이아웃이 모듈 파일을 싣고 mvn verify가
-# 화면을 그리고 만든 JS의 문법을 읽는다(C10)
+# 모듈의 Alpine 컴포넌트: add behavior가 동작 명세와 그 명세에서 만든 JS를 쓰고 빈칸을 남기지 않는다. 선언만 하고 붙이지 않은 동안은 cozy check가
+# C13으로 실패하고, attach가 템플릿에 붙이면 통과한다. 손으로 고친 명세는 cozy check(C12)가 실패하고 cozy sync behaviors가 정리해 다시 만든다.
+# 다른 모듈의 컴포넌트를 쓰면 R16이 실패한다. 쓰지 않는 컴포넌트는 remove behavior가 지운다. 레이아웃이 모듈 파일을 싣고 mvn verify가 화면을 그리고
+# 만든 JS의 문법을 읽는다(C10)
 cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목
 cozy add module note --label 노트
 cozy add behavior task title-count --purpose "제목의 글자 수를 보인다" --state title:text@data-title --computed length:length(title) --computed "label:format('제목 {length}자')"
 cozy add behavior note picker --purpose "누를 때마다 고름과 풂을 바꾼다" --state picked:bool --action flip:toggle(picked)
-cozy check
+cozy? check
 # 명세를 손으로 다시 썼다(내용은 같다): 다시 만들기 전에는 C12, cozy sync behaviors가 정리한다
 hand behavior-spec
 cozy? check
 cozy sync behaviors
-cozy check
+cozy? check
 # task 상세가 note의 컴포넌트를 쓴다
 hand behavior-foreign
 cozy? check
@@ -19,5 +20,8 @@ hand behavior
 cozy attach taskTitleCount --at task/api/detail:21 --data "title=${item.title}" --text label --cloak
 cozy! attach taskTitleCount --at task/api/detail:21 --text lenght
 cozy! attach notePicker --at task/api/detail:21 --on click:flip
-cozy check
+# note의 picker는 아직 어디에도 붙이지 않았다(C13)
+cozy? check
 rerun behavior attach
+cozy remove behavior note picker
+cozy check

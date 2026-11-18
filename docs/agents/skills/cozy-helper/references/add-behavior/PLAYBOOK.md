@@ -58,9 +58,11 @@ cozy add behavior memo body-count --purpose "본문을 쓰는 동안 글자 수�
 | `이름 '` and `이 없습니다` | Declare the state or computed entry first, in the same command or an earlier one. |
 | `손으로 쓴 컴포넌트 파일입니다` | Tell the user that the module has a hand-written script, and do not delete it yourself. |
 | `[C12]` | Run `cozy sync behaviors` exactly as printed. |
+| `[C13]` | Attach the component and connect each action in the same task, as the message prints. |
 | `R16` and `모듈의 컴포넌트입니다` | Use only `cozy` components and components of the template's own module. |
 
 ## Next
 
-- Attach the component with [attach](../attach/PLAYBOOK.md), then run `cozy check` and `mvn -o verify`.
+- Attach the component with [attach](../attach/PLAYBOOK.md) in the same task, because `cozy check` fails with `[C13]` until a template uses the component and each action has a caller.
+- Run `cozy check` and `mvn -o verify`.
 - Follow the [screens](../screens/PLAYBOOK.md) rules for the markup around the component.

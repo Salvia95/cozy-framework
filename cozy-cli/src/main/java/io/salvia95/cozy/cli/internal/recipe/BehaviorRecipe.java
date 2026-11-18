@@ -89,8 +89,8 @@ final class BehaviorRecipe {
 		components.put(key, component);
 		BehaviorSpec next = new BehaviorSpec(module, components);
 		write(plan, next, String.join(", ", changes));
-		return "다음: " + module + " 화면 템플릿에 x-data=\"" + name + "\"를 붙이고, 이벤트와 값은 이름만 씁니다(x-on:input=\"동작\", "
-				+ "x-text=\"계산\"). " + scriptFile(module) + "는 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
+		return "다음: cozy attach " + name + " --at <템플릿>:<줄>로 화면의 요소에 붙이고 동작마다 부르는 이벤트를 잇습니다(--on 이벤트:동작). "
+				+ "붙이기 전에는 cozy check가 C13으로 실패합니다. " + scriptFile(module) + "는 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
 	}
 
 	/** {@code cozy sync behaviors}: 모든 명세를 정리해 다시 쓰고 JS를 다시 만든다. 명세가 없는 만든 JS는 지운다 */
@@ -145,16 +145,23 @@ final class BehaviorRecipe {
 
 	/** 명세와 JS를 함께 쓴다. 손으로 쓴 JS가 있으면 덮어쓰지 않는다 */
 	static void write(Plan plan, BehaviorSpec spec, String detail) {
+		write(plan, spec, detail, false);
+	}
+
+	/**
+	 * @param migrated 손으로 쓴 JS를 이 명세로 옮겼다 (그 파일을 만든 JS로 바꾼다)
+	 */
+	static void write(Plan plan, BehaviorSpec spec, String detail, boolean migrated) {
 		String module = spec.module();
 		String script = plan.current(scriptFile(module));
-		if (script != null && !BehaviorRules.isGenerated(script)) {
+		if (!migrated && script != null && !BehaviorRules.isGenerated(script)) {
 			throw new CliException(scriptFile(module) + "는 손으로 쓴 컴포넌트 파일입니다. 동작 명세에서 만드는 파일과 함께 둘 수 없어 덮어쓰지 않습니다. "
 					+ "그 파일의 컴포넌트를 cozy add behavior로 명세에 옮긴 뒤 손으로 쓴 파일을 지웁니다.");
 		}
 		String specText = spec.write();
 		String js = BehaviorScript.generate(spec, specText);
 		plan.replace(specFile(module), specText, detail.isEmpty() ? "동작 명세" : detail);
-		plan.replace(scriptFile(module), js, "동작 명세에서 만듦");
+		plan.replace(scriptFile(module), js, migrated ? "손으로 쓴 JS를 동작 명세에서 만든 JS로 바꿈" : "동작 명세에서 만듦");
 	}
 
 	/** 같은 칸의 같은 이름은 바꾸고, 다른 칸에 있는 이름은 거부한다 */

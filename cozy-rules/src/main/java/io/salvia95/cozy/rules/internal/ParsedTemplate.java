@@ -49,6 +49,9 @@ final class ParsedTemplate {
 	/** Alpine 속성({@code x-*}, 줄임 표기)과 Alpine 속성을 만드는 Thymeleaf 속성 (R16) */
 	final List<AlpineAttribute> alpine = new ArrayList<>();
 
+	/** htmx가 요청을 보내는 이벤트({@code hx-trigger}, {@code th:hx-trigger}, {@code data-hx-trigger}의 값) (C13) */
+	final List<Problem> triggers = new ArrayList<>();
+
 	ParsedTemplate(TemplateFile file) {
 		this.file = file;
 	}

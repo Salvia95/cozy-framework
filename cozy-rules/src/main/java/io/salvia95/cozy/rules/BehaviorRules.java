@@ -29,6 +29,9 @@ import java.util.stream.Stream;
  * <li>{@code behaviors/}에 모듈 이름의 {@code .yml}이 아닌 파일이 있다</li>
  * </ul>
  *
+ * <p>명세가 없는 모듈의 손으로 쓴 JS({@code static/{모듈}/{모듈}.js}, 머리가 없다)는 경고다. 동작 명세로 옮기는 명령은
+ * {@value #MIGRATE}다.
+ *
  * <p>해시는 BOM을 빼고 줄바꿈을 {@code \n}으로 맞춘 내용으로 잰다. Windows에서 줄바꿈을 바꿔 체크아웃해도 결과가 같다. 명세를 읽거나 JS를 만드는
  * 일은 cozy 명령이 하고, 이 검사는 해시만 비교한다(JDK만 쓴다).
  */
@@ -40,6 +43,9 @@ public final class BehaviorRules {
 	public static final String STAMP = "cozy:behaviors";
 
 	public static final String FIX = "cozy sync behaviors";
+
+	/** 손으로 쓴 모듈 JS를 동작 명세로 옮기는 명령 */
+	public static final String MIGRATE = "cozy migrate behaviors";
 
 	/** 명세 폴더 ({@code src/main/resources} 기준) */
 	public static final String SPEC_DIR = "behaviors";
@@ -124,11 +130,20 @@ public final class BehaviorRules {
 			Path statics = resources.resolve("static");
 			if (Files.isDirectory(statics)) {
 				try (Stream<Path> dirs = Files.list(statics)) {
-					for (Path dir : dirs.filter(Files::isDirectory).toList()) {
+					for (Path dir : dirs.filter(Files::isDirectory).sorted().toList()) {
 						String module = dir.getFileName().toString();
 						Path script = dir.resolve(module + ".js");
-						if (Files.isRegularFile(script) && isGenerated(read(script))) {
+						if (!Files.isRegularFile(script)) {
+							continue;
+						}
+						if (isGenerated(read(script))) {
 							modules.add(module);
+						}
+						else if (!modules.contains(module)) {
+							violations.add(new Violation(displayPrefix + scriptPath(module), 0, RULE, Severity.WARNING, module,
+									"손으로 쓴 모듈 JS입니다(직접 쓴 코드). 화면 안의 동작은 동작 명세(" + specPath(module)
+											+ ")에서 만듭니다. 고치는 명령이 낱말로 적을 수 있는 컴포넌트를 명세로 옮기고, 옮길 수 없는 곳을 알립니다",
+									MIGRATE));
 						}
 					}
 				}
@@ -182,9 +197,11 @@ public final class BehaviorRules {
 		while (registration.find()) {
 			registered++;
 		}
-		if (ComponentContract.parse(script).size() != registered) {
+		long wired = ComponentContract.parse(script).values().stream().filter((c) -> c.wiring() != null).count();
+		if (wired != registered) {
 			violations.add(violation(scriptLocation, module,
-					"이전 판의 cozy가 만든 파일이라 컴포넌트가 내놓는 이름(" + ComponentContract.MARKER + " 줄)이 없습니다. 템플릿이 부르는 이름을 확인할 수 없습니다",
+					"이전 판의 cozy가 만든 파일이라 컴포넌트가 내놓는 이름과 화면 이벤트(" + ComponentContract.MARKER
+							+ " 줄)가 없습니다. 템플릿이 부르는 이름과 붙인 곳을 확인할 수 없습니다",
 					FIX));
 		}
 	}

@@ -21,7 +21,7 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 cozy <동작> [옵션]
 
   describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 화면 안의 동작, 공개 fragment, 남은 빈칸
-  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12
+  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12, 화면 안의 동작 C13
   recipes [--json]    구조를 만드는 명령 목록
   add <레시피> …       구조 만들기 [--dry-run] [--json]
   link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
@@ -29,6 +29,7 @@ cozy <동작> [옵션]
   set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
   migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
   migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
+  migrate behaviors [--purpose 컴포넌트=목적 …]   손으로 쓴 모듈 JS를 동작 명세로 옮기기 [--dry-run] [--json]
   attach <컴포넌트> --at <템플릿>:<줄> …   템플릿의 요소 하나에 화면 안 동작을 붙이거나 떼기 [--dry-run] [--json]
   remove behavior <모듈> <동작> […] | rename behavior <모듈> <동작> <새 동작>   동작 지우기, 이름 바꾸기 (붙인 곳도) [--dry-run] [--json]
 ```
@@ -75,7 +76,7 @@ cozy <동작> [옵션]
 | `modules[]` | `name`, `package`, `dependsOn`(선언한 의존. 선언하지 않았으면 `null` = open), `facades[]`·`finders[]`(`type`, `methods[]` 시그니처), `dtos[]`(`type`, `fields[]`), `listeners[]`(`type`, `method`, `on` = `모듈.이벤트`), `controllers[]`, `components[]`(모듈이 `static/{모듈}/{모듈}.js`에 등록한 Alpine 컴포넌트), `behaviors[]`(동작 명세의 컴포넌트. 아래 "화면 안의 동작"), `screens[]`(`template`, `spec`, `states[]`, `components[]`: 화면이 쓰는 Alpine 컴포넌트. 아래 "화면의 컴포넌트". `bindings[]`: 화면의 요소마다 붙은 Alpine·htmx 속성, `outline[]`: 화면의 구조), `fragments[]`(공개 fragment `id`, `signature`) |
 | `events[]` | 앱의 이벤트(모듈 순서): `type`, `owner`(주인 모듈), `fields[]`(`eventId`·`schemaVersion` 제외), `publishedIn[]`(발행하는 파일), `listeners[]`(`module`, `type` 받는 리스너 클래스). 이벤트 계약 모듈과 옛 자리(`{주인}/spi/event/`)의 이벤트를 모두 싣는다 |
 | `uiEvents[]` | 화면 이벤트(`모듈:이름`, 이름 순서): `event`, `module`, `emittedBy[]`(내는 곳), `receivedBy[]`(받는 곳). 아래 "화면 이벤트" |
-| `slots[]` | 남은 빈칸: `file`, `line`, `slot`(id), `what` |
+| `slots[]` | 남은 일: `check`(`C9` 빈칸, `C13` 이어지지 않은 화면 안의 동작), `file`, `line`, `slot`(빈칸의 id, C13은 `memoPanel`·`memoSelection.drop`·`memoSelection → memo:picked` 같은 대상), `what` |
 | `problems[]` | 읽지 못한 것(아래 "판단할 수 없는 것") |
 
 - **이벤트**: 모듈 항목이 아니라 앱의 `events[]`에 한 번씩 싣는다. 주인은 이벤트 계약 모듈의 폴더 이름이고(옛 자리 `{모듈}/spi/event/`에 남은 이벤트면 그 모듈), 주인 폴더에 맞는 모듈이 없는 이벤트는 싣지 않는다(C8이 알린다). 리스너의 `on`도 `주인.이벤트`다. 글 출력은 모듈 다음에 `이벤트 memo.MemoCreated(long memoId, String title) 발행: … → activity(MemoCreatedListener)`이다.
@@ -162,6 +163,8 @@ cozy <동작> [옵션]
 | C2 (R1~R16) | 앱 템플릿, cozy-ui jar의 템플릿·매니페스트·아이콘, 앱 매니페스트, `cozy.rules.allow-same-layer` | 없음 |
 | C8 | Java 소스(javac 파서). 이름은 import, 같은 패키지, 와일드카드 import로 푼다 | 메타 애너테이션을 모른다. 알려진 스프링 애너테이션(`@Controller`, `@RestController`, `@Component`, `@Service`, `@Repository`, `@Configuration`, `@ControllerAdvice`)만 본다 |
 | C9 | `src/main` 아래 모든 파일 | 없음 |
+| C12 | 동작 명세와 만든 JS(`src/main/resources`) | 없음 |
+| C13 | 만든 JS의 `cozy:component` 줄, 앱 템플릿, `src/main/java`의 `HX-Trigger` | 없음 |
 
 - **하지 않는 검사**: C1(Modulith), C3~C5(렌더링·스펙), C6(이벤트 호환), C7(뷰 이름)은 앱을 컴파일하고 띄워야 한다. 이것은 `mvn verify`가 한다. `check`가 통과해도 `mvn verify`는 실패할 수 있다.
 - **cozy-ui jar**: 앱이 cozy-ui를 쓰면 `--repository`에서 `io/salvia95/cozy/cozy-ui/{cozy-parent 버전}/`의 jar를 찾는다. jar는 zip으로만 읽고 클래스는 쓰지 않는다. jar가 없으면 프레임워크 템플릿 없이 판단할 수 없으므로 종료 코드 2로 끝난다(앱 폴더에서 `mvn -o dependency:resolve`를 한 번 실행하면 생긴다).
@@ -170,7 +173,7 @@ cozy <동작> [옵션]
 
 ```text
 [C8] it.cozy.app.memo.MemoService — 모듈 루트(it.cozy.app.memo)에는 package-info.java만 둡니다. ...
-[cozy check] 오류 7건 (R1~R16, C8, C9, C12). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.
+[cozy check] 오류 7건 (R1~R16, C8, C9, C12, C13). 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn verify가 합니다.
 ```
 
 `--json`은 다음과 같다.
@@ -198,8 +201,8 @@ cozy <동작> [옵션]
 
 | 키 | 값 |
 | --- | --- |
-| `id` | `R1`~`R15`, `C8`, `C9`, `CLI`(읽지 못한 것) |
-| `severity` | `error` 또는 `warning`(`th:include`의 R7). 경고는 종료 코드에 영향을 주지 않는다 |
+| `id` | `R1`~`R16`, `C8`, `C9`, `C12`, `C13`, `CLI`(읽지 못한 것) |
+| `severity` | `error` 또는 `warning`(`th:include`의 R7, 손으로 쓴 모듈 JS의 C12). 경고는 종료 코드에 영향을 주지 않는다 |
 | `location` | 메시지의 위치: 템플릿 경로, 소스 경로, C8이면 타입·패키지 이름 |
 | `file` | 고칠 파일의 프로젝트 기준 경로. C8의 타입은 그 소스 파일, 패키지는 그 폴더. 프레임워크 jar 안이면 `null` |
 | `line` | 줄 번호. 모르면 0 |
@@ -599,6 +602,37 @@ UPDATE cozy_inbox SET listener_id = replace(listener_id, '({옛 이름})', '({�
 - **손으로 할 일**: 받는 모듈이 주인을 `"memo"`나 `"memo :: *"`처럼 다른 형식으로 적었으면 지우지 않고 알린다. 자원 파일(`src/main/resources`, `src/test/resources`의 글 파일)에 옛 이름이 남아 있어도 알린다. 이미 적용된 마이그레이션(`db/migration`)은 보지 않는다.
 - **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 옛 자리에 이벤트가 없으면 "바뀐 것 없음"이라서 두 번째 실행도 그렇다.
 - **출력**: `만듦  …/events/spi/memo/MemoCreated.java`, `지움  …/memo/spi/event/MemoCreated.java    → …`, `바꿈  {파일}    이벤트 이름을 이벤트 계약 모듈(events.spi)로`. `--json`의 `recipe`는 `migrate events`다.
+
+## migrate behaviors
+
+2.2.0부터 모듈의 화면 안 동작은 동작 명세(`behaviors/{모듈}.yml`)가 원본이고 JS는 cozy가 만든다([ui.md](ui.md)의 동작 명세). 그 전에 손으로 쓴 모듈 JS(`static/{모듈}/{모듈}.js`)는 2.x에서 그대로 싣고 `cozy check`와 `mvn verify`가 C12 경고로 이 명령을 알린다([testing.md](testing.md)). 이 명령이 그 파일의 컴포넌트를 낱말로 읽어 명세로 옮기고, 그 명세에서 JS를 다시 만든다.
+
+```bash
+cozy migrate behaviors --dry-run                          # 옮길 파일과 남은 일만 본다
+cozy migrate behaviors --purpose "memoPanel=패널을 바꾼다"   # 목적 주석이 없는 컴포넌트
+cozy check
+```
+
+- **읽는 모양**: 옛 `cozy add behavior`가 만든 모양이다. 파일에는 `document.addEventListener('alpine:init', function () { … })`와 그 안의 `window.Alpine.data('이름', function () { var root = null; return { … }; })`만 둔다(화살표 함수도 읽는다). 등록 바로 위의 주석 첫 줄이 목적이다. 없으면 `--purpose 컴포넌트=목적`으로 준다.
+
+| JS | 명세 |
+| --- | --- |
+| `open: false`, `limit: 0`, `title: ''`, `ids: []` | 상태와 처음 값 (`bool`, `number`, `text`, `list`) |
+| `init`의 `this.limit = parseInt(root.dataset.limit, 10) \|\| 5000`, `Number(…)`, `root.dataset.x === 'true'`, `root.dataset.x \|\| '글자'` | `number=5000@data-limit` 같은 `data-*` 상태 (`this.$root.dataset`, `this.$el.dataset`도) |
+| `init`의 `window.addEventListener('memo:archived', function () { self.close(); })` | `listens` |
+| `get label() { return this.open ? '접기' : '펼치기'; }` | 계산 `if(open, '접기', '펼치기')` |
+| `!`, `&&`, `\|\|`, `===`·`!==`·`>`·`<`·`>=`·`<=`, `? :`, `.length`, `.includes(v)`, `Number(…)`, getter 안의 지역 변수 | `not`, `and`, `or`, `eq`·`ne`·`gt`·`lt`·`ge`·`le`, `if`, `length`·`count`, `includes`, `number` |
+| `this.title + ' · ' + this.limit.toLocaleString('ko-KR') + '자'` | `format('{title} · {limit}자', 'ko-KR')` |
+| `this.open = !this.open`, `this.n += 1`·`this.n++`·`this.n = this.n - 2`, `this.ids = []`(처음 값), `this.x = 값` | `toggle`, `increment`·`decrement`, `reset`, `set` |
+| `if (조건) { … }`, `this.$dispatch('memo:closed', { open: this.open })` | `when`, `emit('memo:closed', open)` |
+| `event.target.value`, `event.target.checked`, `event.target.dataset.id`, `event.detail.ids` | `event.value`, `event.checked`, `event.data.id`, `event.detail.ids` |
+
+- **옮기지 않는 것**: 그 밖의 모든 JS다. 다른 메서드 부르기, `else`, 반복문, 화살표 함수로 거르기, 숫자 더하기, 화면의 다른 요소 읽기(`querySelector`), `destroy`, 템플릿 문자열, `null`, 서버 요청이 그렇다. 한 컴포넌트라도 낱말 밖이면 그 모듈은 바꾸지 않는다(한 모듈에 손으로 쓴 JS와 만든 JS를 함께 둘 수 없다). 출력의 "남은 일"에 `파일:줄`, 컴포넌트, 무엇이 낱말 밖인지, 그 자리의 JS가 나온다. 그런 동작은 프레임워크 컴포넌트(`cozy…`)나 새 낱말이 필요하다(ADR-0043 §7).
+- **뜻이 조금 달라지는 곳**: `parseInt`로 읽던 `data-*`는 소수점 아래도 읽는다(만든 JS는 `parseFloat`). 받는 화면 이벤트는 만든 JS가 `destroy`에서 뗀다. 이벤트의 `data-*`(`event.target.dataset.id`)는 그 요소에 없으면 컴포넌트 안의 감싸는 요소에서 찾는다.
+- **그대로 두는 것**: 템플릿. 이름(컴포넌트, 상태, 계산, 동작)이 같으므로 손으로 붙인 속성이 그대로 맞는다. 옮긴 뒤에는 R16이 그 이름을 확인하고 C13이 붙인 곳과 화면 이벤트를 본다.
+- **이미 명세가 있는 모듈**: 명세에 컴포넌트를 더한다. 같은 이름이 있으면 그 모듈은 바꾸지 않고 알린다(`cozy rename behavior`로 한쪽 이름을 바꾼다).
+- **원자적이고 멱등이다**: 다른 명령처럼 계획을 보인 뒤 한 번에 적용한다. 손으로 쓴 모듈 JS가 없으면 "바뀐 것 없음"이라서 두 번째 실행도 그렇다.
+- **출력**: `만듦  src/main/resources/behaviors/memo.yml`, `바꿈  src/main/resources/static/memo/memo.js    손으로 쓴 JS를 동작 명세에서 만든 JS로 바꿈`. `--json`의 `recipe`는 `migrate behaviors`이고, 손으로 할 일은 `manual`에 있다.
 
 ## channel
 

@@ -13,13 +13,14 @@ import org.springframework.modulith.core.ApplicationModules;
 import io.salvia95.cozy.rules.RulesInput;
 import io.salvia95.cozy.rules.ScriptFile;
 import io.salvia95.cozy.rules.BehaviorRules;
+import io.salvia95.cozy.rules.BehaviorWiring;
 import io.salvia95.cozy.rules.SlotRules;
 import io.salvia95.cozy.rules.TemplateFile;
 import io.salvia95.cozy.rules.TemplateRules;
 import io.salvia95.cozy.rules.Violation;
 
 /**
- * 아키텍처 검사 (C1, C2, C6, C8, C9, C11, C12). 앱은 한 줄만 쓴다.
+ * 아키텍처 검사 (C1, C2, C6, C8, C9, C11, C12, C13). 앱은 한 줄만 쓴다.
  *
  * <pre>
  * class ArchitectureTest extends CozyArchitectureTest {
@@ -35,7 +36,10 @@ import io.salvia95.cozy.rules.Violation;
  * <li>C9: {@code src/main} 아래에 채우지 않은 빈칸({@code cozy:slot} 표시)이 없다</li>
  * <li>C11: 이벤트는 주인 모듈의 internal.app.command에서만 만든다(이벤트 계약 모듈 {@code events.spi.{주인 모듈}}이면 폴더 이름이
  * 주인이다)</li>
- * <li>C12: 동작 명세({@code behaviors/{모듈}.yml})에서 만든 JS({@code static/{모듈}/{모듈}.js})가 지금 명세와 같고 손으로 고치지 않았다</li>
+ * <li>C12: 동작 명세({@code behaviors/{모듈}.yml})에서 만든 JS({@code static/{모듈}/{모듈}.js})가 지금 명세와 같고 손으로 고치지 않았다.
+ * 명세가 없는 손으로 쓴 모듈 JS는 경고로 표준 출력에 보고한다({@code cozy migrate behaviors})</li>
+ * <li>C13: 동작 명세의 컴포넌트를 앱 템플릿에 붙였고, 동작마다 부르는 요소나 받는 화면 이벤트가 있고, 내는 화면 이벤트를 받는 곳과 받는 화면 이벤트를
+ * 내는 곳(다른 컴포넌트, 서버의 {@code HX-Trigger})이 있다</li>
  * </ul>
  * 문서: docs/conventions/structure.md, docs/conventions/testing.md, docs/conventions/rules.md
  */
@@ -118,9 +122,21 @@ public abstract class CozyArchitectureTest {
 
 	@Test
 	public final void behaviorScriptsMatchTheirSpecs() {
-		List<Violation> problems = BehaviorRules.check(sourceRoot().resolve("resources"), "src/main/resources/");
+		List<Violation> all = BehaviorRules.check(sourceRoot().resolve("resources"), "src/main/resources/");
+		all.stream().filter((v) -> !v.isError()).forEach((v) -> System.out.println(v.format()));
+		List<Violation> problems = all.stream().filter(Violation::isError).toList();
 		if (!problems.isEmpty()) {
 			throw new AssertionFailedError("[C12] 동작 명세와 만든 JS가 맞지 않음 " + problems.size() + "곳 (docs/conventions/ui.md)\n"
+					+ problems.stream().map(Violation::format).collect(Collectors.joining("\n")));
+		}
+	}
+
+	@Test
+	public final void behaviorsAreWired() {
+		List<Violation> problems = BehaviorWiring.check(CozyProject.appTemplates(templateRoot()), CozyProject.appScripts(staticRoot()),
+				sourceRoot(), "src/main/");
+		if (!problems.isEmpty()) {
+			throw new AssertionFailedError("[C13] 이어지지 않은 화면 안의 동작 " + problems.size() + "곳 (docs/conventions/ui.md)\n"
 					+ problems.stream().map(Violation::format).collect(Collectors.joining("\n")));
 		}
 	}

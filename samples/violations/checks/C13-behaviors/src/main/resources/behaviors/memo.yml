@@ -1,0 +1,18 @@
+# memo 모듈의 화면 안 동작(동작 명세). cozy add behavior가 고치고, 이 명세에서 static/memo/memo.js를 만든다
+components:
+  panel:
+    purpose: "패널을 펼치고 접는다"
+    state:
+      open: "bool"
+    actions:
+      flip: "toggle(open)"
+  selection:
+    purpose: "고른 행을 센다"
+    state:
+      ids: "list"
+    actions:
+      pick: "toggleItem(ids, event.data.id); emit('memo:picked', ids)"
+      drop: "reset(ids)"
+      clear: "reset(ids)"
+    listens:
+      "memo:archived": "clear"

@@ -136,7 +136,7 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
 
 ## 모듈 구조와 빈칸 API (cozy-rules)
 
-모듈 안 구조(C8)와 빈칸(C9)의 판단도 cozy-rules에 있다. cozy-test는 컴파일된 클래스로, cozy-cli는 소스로 같은 판단을 쓴다(ADR-0032 §4).
+모듈 안 구조(C8), 빈칸(C9), 동작 명세(C12), 화면 안의 동작(C13)의 판단도 cozy-rules에 있다. cozy-test는 컴파일된 클래스로, cozy-cli는 소스로 같은 판단을 쓴다(ADR-0032 §4).
 
 | 타입 | 무엇 |
 | --- | --- |
@@ -146,6 +146,10 @@ List<Violation> violations = TemplateRules.check(new RulesInput(
 | `ModulePackage` | 모듈 이름과 기준 패키지 |
 | `LayerRules.check(모듈, 타입, Named Interface 패키지)` | C8 위반 목록. 같은 메시지는 한 번만, 메시지 순서로 |
 | `SlotRules.check(src/main, 표시할 접두사)`, `SlotRules.scan(위치, 내용)` | C9 빈칸 목록. 경로 순서, 파일 안에서는 줄 순서 |
+| `BehaviorRules.check(src/main/resources, 표시할 접두사)` | C12 동작 명세와 만든 JS의 위반과 손으로 쓴 모듈 JS의 경고. 모듈 이름 순서. `isGenerated(JS)`, `stampLine(명세, 본문)` |
+| `ComponentContract.parse(JS)`, `ComponentContract.line(…)` | 컴포넌트가 내놓는 이름의 주석 줄(`// cozy:component 이름 members=… data=…`). 동작 명세에서 만든 JS는 `actions=… emits=… listens=이벤트:동작`(`wiring()`)까지 적는다 |
+| `BehaviorWiring.check(앱 템플릿, 앱 JS, src/main, 표시할 접두사)` | C13 이어지지 않은 화면 안의 동작 목록. 명세 순서 |
+| `ServerEvents.events(Java 소스)`, `ServerEvents.scan(src/main/java, 표시할 접두사)` | 서버가 응답 머리 `HX-Trigger`로 내는 화면 이벤트. describe의 `uiEvents[]`와 C13이 쓴다 |
 
 - **자리 표와 검사가 같은지**: `LayerRulesTest`가 `Role`의 모든 역할을 표대로 만든 타입으로 바꿔 C8을 통과하는지 확인한다. 역할을 더하거나 검사를 바꾸면 이 테스트가 어긋남을 잡는다.
 - **`Violation`의 참조**: C8의 배치 위반처럼 위치 자체가 문제면 `reference`가 `null`이다. 이때 `format()`은 `→ 참조` 없이 `[C8] 위치 — 메시지`를 낸다.

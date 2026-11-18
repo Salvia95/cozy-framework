@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import io.salvia95.cozy.rules.ServerEvents;
 import io.salvia95.cozy.cli.internal.behavior.BehaviorSpec;
 import io.salvia95.cozy.cli.internal.behavior.Expr;
 import io.salvia95.cozy.cli.internal.behavior.TemplateTags;
@@ -35,11 +36,8 @@ final class ScreenBehaviors {
 
 	private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_$][\\w$]*");
 
-	/** 글자 안의 화면 이벤트 이름 ({@code memo:archived}) */
-	private static final Pattern EVENT = Pattern.compile("(?<![\\w:-])([a-z][a-z0-9]*):([a-z][a-z0-9]*(?:-[a-z0-9]+)*)(?![\\w:-])");
-
-	/** Java의 글자 하나 */
-	private static final Pattern STRING = Pattern.compile("\"((?:[^\"\\\\\\n]|\\\\.)*)\"");
+	/** 화면 이벤트 이름 ({@code memo:archived}) */
+	private static final Pattern EVENT = ServerEvents.EVENT;
 
 	/** 읽은 템플릿: 여는 태그들 */
 	record Parsed(String template, List<Tag> tags) {
@@ -255,17 +253,7 @@ final class ScreenBehaviors {
 			catch (IOException ex) {
 				throw new UncheckedIOException(ex);
 			}
-			if (!source.contains("\"HX-Trigger\"")) {
-				continue;
-			}
-			Set<String> names = new LinkedHashSet<>();
-			Matcher literal = STRING.matcher(source);
-			while (literal.find()) {
-				Matcher event = EVENT.matcher(literal.group(1).replace("\\\"", "\""));
-				while (event.find()) {
-					names.add(event.group());
-				}
-			}
+			Set<String> names = ServerEvents.events(source);
 			names.forEach((name) -> add(emitted, moduleNames, name, Describe.ordered("kind", "server", "file", unit.relative())));
 		}
 		for (Parsed t : templates) {
@@ -273,7 +261,8 @@ final class ScreenBehaviors {
 				for (Attr a : tag.attrs()) {
 					if (a.name().endsWith("hx-trigger") && htmx(a.name()) && a.value() != null) {
 						for (String part : a.value().split(",")) {
-							String first = part.strip().split("\\s+")[0].replaceFirst("\\[.*$", "");
+							String first = part.strip().replaceAll("^['|]+", "").split("\\s+")[0].replaceFirst("\\[.*$", "")
+								.replaceAll("['|]+$", "");
 							add(received, moduleNames, first, Describe.ordered("kind", "htmx", "template", t.template(), "line", tag.line()));
 						}
 					}

@@ -201,9 +201,11 @@ class CozyCliTest {
 				Result result = run("check", "--json", "--project", app.toString());
 				assertThat(result.err()).isEmpty();
 				assertThat(result.code()).as(result.out()).isEqualTo(CozyCli.VIOLATIONS);
-				List<String> ids = ids(result.out());
+				// 손으로 쓴 모듈 JS(R16 픽스처의 컴포넌트)는 C12 경고 하나를 더 낸다. 그 밖의 경고는 없다
+				String errors = result.out().replaceAll("(?s)\\{\\s*\"id\": \"C12\",\\s*\"severity\": \"warning\",[^}]*\"text\": \"\\[C12 경고\\] [^\"]*손으로 쓴 모듈 JS입니다[^}]*\\},?", "");
+				List<String> ids = ids(errors);
 				assertThat(ids).as(result.out()).isNotEmpty().allMatch(rule::equals);
-				assertThat(result.out()).doesNotContain("\"severity\": \"warning\"");
+				assertThat(errors).doesNotContain("\"severity\": \"warning\"");
 			}));
 		}
 

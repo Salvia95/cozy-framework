@@ -214,3 +214,30 @@ cozy attach cozyCopy --at memo/api/detail:12 --data "copy-text=${#strings.listJo
   - `DescribeBehaviorsTest` 5개: 명세와 붙인 곳(`when` 안의 `emit`), 넣은 fragment의 요소와 화면 줄, htmx만 있는 요소, 붙인 자리의 `data-*`, 프레임워크 컴포넌트, 서버의 `HX-Trigger`·`listens`·`hx-trigger`로 이은 화면 이벤트, 글 출력, 읽을 수 없는 명세는 `problems[]`.
   - reference-app의 describe 기대 파일(글과 JSON)을 다시 만들었다.
   - `WorkbenchBehaviorTest` 6개(reference-app): 트리의 `동작 2`와 속성 표(요소, 명세, 이벤트, 묶인 값, 넘기는 값, htmx), 프레임워크 명세, 붙이기 변경 파일 → 적용 → 떼면 처음과 같음, 없는 이름은 거절하고 파일은 그대로, CSRF·Origin·`step`·`option`·없는 화면, 모듈 화면의 목록.
+
+## M49 (2026-11-18, 사용자 지시 "진행해줘")
+
+- 시작할 때 최신 GA: 전날 확인한 그대로다. 새 의존성은 없다(C13은 cozy-rules의 템플릿 스캐너와 JDK, 옛 JS는 cozy-cli가 낱말로 나눠 읽는다).
+- 만든 것:
+  - C13(cozy-rules `BehaviorWiring`, `cozy check`와 `CozyArchitectureTest.behaviorsAreWired`): 붙이지 않은 컴포넌트, 부르는 요소도 받는 화면 이벤트도 없는 동작, 받는 곳이 없는 `emit`, 내는 곳이 없는 `listens`. 위치는 명세의 컴포넌트 줄이다. `cozy describe`의 `slots[]`에 `check: C13`으로 실려 워크벤치의 미구현 항목에 보인다.
+  - 손으로 쓴 모듈 JS의 경고(C12 경고, 고치는 명령 `cozy migrate behaviors`).
+  - `cozy migrate behaviors`(cozy-cli `behavior/LegacyScript`, `recipe/MigrateBehaviors`). 형식과 옮기는 모양은 `docs/conventions/cli.md`의 migrate behaviors에 있다.
+  - 서버의 `HX-Trigger`를 찾는 일을 cozy-rules `ServerEvents`로 옮겨 describe의 `uiEvents[]`와 C13이 같은 판단을 쓴다.
+- 계획과 달라진 것:
+  - **C13이 읽는 곳**: cozy-rules는 YAML을 읽지 못한다. 만든 JS의 `cozy:component` 줄에 `actions=… emits=… listens=이벤트:동작`을 더해 읽는다(M47의 이름 줄과 같은 방법). 이 줄이 없는 만든 JS(M46~M48 개발 중의 판)는 C12가 `cozy sync behaviors`를 알린다. 프레임워크 컴포넌트의 줄은 그대로다(C13 대상이 아니다).
+  - **서버 이름을 찾지 못하면**(M48의 남은 위험): 실패로 닫는다. `listens`의 이벤트를 내는 곳이 없으면 오류이고, 메시지가 이름을 `HX-Trigger` 값에 글자 그대로 적으라고 알린다. 요청 머리를 읽기만 하는 `getHeader("HX-Trigger")`는 내는 곳으로 세지 않는다.
+  - **"부른다"의 뜻**: 감싸는 `x-data`가 그 컴포넌트인 요소(같은 템플릿)의 Alpine 식에 동작의 이름이 있거나, 그 컴포넌트의 `listens`가 그 동작을 부른다. 붙이지 않은 컴포넌트는 동작마다 따로 알리지 않는다(한 줄로 충분하다).
+  - **받는 곳**: `hx-trigger`는 `th:hx-trigger`의 글자 식(`'memo:picked from:window'`)도 읽는다. describe도 같이 고쳤다.
+  - **고치는 명령**: C13은 `command`를 비운다. 붙일 템플릿의 줄을 cozy가 정할 수 없어서다. 메시지 안에 `cozy attach … --at <템플릿>:<줄>`, `--listen`, `cozy remove behavior …`를 적는다.
+  - **경고의 자리**: 손으로 쓴 모듈 JS의 경고는 C12의 경고로 냈다(명세와 JS의 관계를 보는 검사라서). `mvn verify`는 경고를 표준 출력에 보고만 한다.
+  - **옮기는 범위**(정할 것 2의 "옮길 수 있는 것"): 옛 `cozy add behavior`의 모양(`alpine:init` 안의 `Alpine.data` 등록, `var root = null`, `return { … }`)에 채운 상태, getter, 메서드 가운데 낱말과 뜻이 같은 JS만 읽는다. 한 컴포넌트라도 낱말 밖이면 그 모듈은 바꾸지 않는다(한 모듈에 손으로 쓴 JS와 만든 JS를 함께 둘 수 없다). `else`는 앞의 `if`가 조건의 상태를 바꾸면 뜻이 달라져 옮기지 않는다. `parseInt`로 읽던 `data-*`는 만든 JS가 `parseFloat`로 읽는다(cli.md에 적었다).
+  - **2.1.0까지의 reference-app `memoBodyCount`**: 시작할 때 화면의 textarea를 읽어(`querySelector`) 옮기지 못한다. M46에서 손으로 바꾼 일(서버가 `data-length`로 넘김)이 그대로 필요하다. 이 모양을 테스트로 남겼다.
+  - **레시피 픽스처 `behavior`**: 선언 뒤의 `cozy check`가 C13으로 실패하도록 순서를 바꿨다. 붙이지 않는 note의 컴포넌트는 마지막에 `cozy remove behavior`로 지운다.
+- 확인:
+  - `BehaviorWiringTest` 9개(cozy-rules): 붙인 곳과 부르는 곳, 붙이지 않음(명세의 줄, 다른 모듈의 템플릿은 세고 프레임워크 템플릿은 세지 않음), 부르지 않는 동작(받는 화면 이벤트는 부르는 것, 글자와 다른 객체의 속성은 아님), 컴포넌트 밖의 요소, 받는 곳(`hx-trigger`, `th:hx-trigger`, `data-hx-trigger`의 거르기, `x-on`, 다른 컴포넌트의 `listens`), 내는 곳(서버의 JSON 글자, 이어 붙인 이름은 실패, `getHeader`는 아님), 손으로 쓴 JS와 프레임워크 JS는 보지 않음, `ServerEvents`.
+  - `BehaviorRulesTest`: 손으로 쓴 모듈 JS의 경고, 동작과 이벤트가 없는 이름 줄은 다시 만들게 함, 이름 줄의 형식.
+  - `MigrateBehaviorsTest` 7개: 옛 모양의 컴포넌트 하나가 명세(상태, `data-*`, 계산, 동작, `if`, `$dispatch`, `listens`)로 옮겨지고 다시 실행하면 바뀐 것 없음, 낱말 밖인 모듈은 그대로 두고 `파일:줄`과 JS를 알림(옛 reference-app의 글자 수), 낱말 밖의 모양 10가지(느슨한 비교 `==` 포함), `||` 뒤의 값이 처음 값, 파일의 모양과 목적(`--purpose`), 명세의 같은 이름, 할 일이 없을 때.
+  - `DescribeBehaviorsTest`에 C13의 `slots[]` 1개. `BehaviorRecipeTest`, `AttachCommandTest`는 선언 뒤 C13, 붙인 뒤 통과로 바꿨다.
+  - 위반 픽스처 `C13-behaviors`(4곳), 레시피 픽스처 `behavior`(순서), `migrate-behaviors`(새 픽스처: 경고 → 옮기기 → 다시 실행 → 경고 없이 통과, mvn verify의 렌더링과 C10). 아키텍처 검사가 하나 늘어 테스트 수를 세는 위반·레시피 픽스처의 기대 값을 1씩 올렸다.
+  - 화면(runtime-verifier, 2026-11-18, reference-app의 복사본에 붙이지 않은 컴포넌트를 하나 더해): 워크벤치 개요의 미구현 항목(숫자 카드 `1건`, 메시지와 `memo.yml:14`), 검사 화면(파일별 묶음, `오류 C13`, 수정 명령은 "직접 수정"), 모듈 화면의 미구현 항목, 위반이 없을 때 검사 화면의 새 문구. 1280·390px에서 가로 넘침, 콘솔 오류, CSP 위반 0. 390px의 검사 표에서 내용 칸이 좁아 긴 메시지가 짧게 끊기는 것은 이전부터의 표 모양이다.
+  - 전체 `mvn -o install` 통과(10분 58초): 위반 픽스처 18개, 레시피 픽스처 12개, 아키타입 3조합.

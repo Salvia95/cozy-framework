@@ -1,0 +1,9 @@
+# 손으로 쓴 모듈 JS(옛 cozy add behavior의 모양에 에이전트가 채운 컴포넌트)와 그것을 손으로 붙인 상세 화면. cozy check는 C12 경고로
+# cozy migrate behaviors를 알린다. 옮긴 뒤에는 동작 명세에서 만든 JS가 되고, cozy check(C12, C13, R16의 이름)와 mvn verify(렌더링, C10)를 통과한다
+cozy add crud task --entity Task --label "할 일" --icon list-details --field title:text!:제목
+hand migrate-behaviors
+cozy check
+cozy migrate behaviors
+# 두 번째 실행은 바꾸는 파일이 없다
+rerun migrate
+cozy check

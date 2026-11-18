@@ -19,7 +19,7 @@
 
   <th:block th:if="${engineAvailable and check.clean()}">
     <div class="card"><div class="card-body">
-      <div th:replace="~{cozy/component/empty-state :: emptyState('circle-check', '위반 없음', '템플릿 규칙(R1~R16), 모듈 내부 구조(C8), 미구현 항목(C9) 검사에서 위반이 없습니다. 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn -o verify로 확인하세요.')}"></div>
+      <div th:replace="~{cozy/component/empty-state :: emptyState('circle-check', '위반 없음', '템플릿 규칙(R1~R16), 모듈 내부 구조(C8), 미구현 항목(C9), 동작 명세(C12), 화면 안의 동작(C13) 검사에서 위반이 없습니다. 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn -o verify로 확인하세요.')}"></div>
     </div></div>
   </th:block>
 

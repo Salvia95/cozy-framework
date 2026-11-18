@@ -201,8 +201,11 @@ class AttachCommandTest {
 				.contains("copy는 인자를 받지 않습니다");
 			assertThat(run("attach", "cozyNothing", "--at", "memo/api/edit:4").err()).contains("프레임워크 컴포넌트 cozyNothing가 없습니다",
 					"cozyCopy");
+			// 이 앱의 memoBodyCount는 아직 붙이지 않았다(C13). 프레임워크 컴포넌트의 이름은 R16이 보고 통과한다
 			Result check = run("check");
-			assertThat(check.code()).as(check.out()).isZero();
+			assertThat(check.out()).doesNotContain("[R16]").contains("[C13] src/main/resources/behaviors/memo.yml:3 → memoBodyCount — ");
+			attachRoot();
+			assertThat(run("check").code()).as(run("check").out()).isZero();
 		}
 
 		@Test
