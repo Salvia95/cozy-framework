@@ -291,6 +291,59 @@ public final class CozyCli {
 		}
 	}
 
+	/**
+	 * 화면 안의 동작 명령 여럿({@code add behavior}, {@code remove behavior}, {@code rename behavior}, {@code attach})을 한 계획으로
+	 * 실행한다. 워크벤치가 고치기 폼의 "지운 항목 → {@code remove}, 바꾼 항목 → {@code add}"를 이것으로 부른다. 뒤의 명령은 앞의 명령이 계획한 내용을
+	 * 읽고, 하나라도 거절하면 아무 파일도 쓰지 않는다. 같은 명령을 터미널에서 차례로 실행한 것과 같은 파일이 된다.
+	 *
+	 * @param commands 명령마다 {@code cozy} 뒤의 인자
+	 * @param options 공통 옵션: {@code --project}, {@code --ui}, {@code --repository}(뒤에 폴더), {@code --json}, {@code --dry-run}
+	 * @param repositoryEnv {@code COZY_REPOSITORY} 값 (없으면 {@code null})
+	 * @return 종료 코드
+	 */
+	public static int runTogether(List<List<String>> commands, List<String> options, Path workDir, String repositoryEnv, PrintStream out,
+			PrintStream err) {
+		Path project = null;
+		Path ui = null;
+		List<Path> repository = repositories(repositoryEnv);
+		boolean json = false;
+		boolean dryRun = false;
+		for (int i = 0; i < options.size(); i++) {
+			String option = options.get(i);
+			switch (option) {
+				case "--json" -> json = true;
+				case "--dry-run" -> dryRun = true;
+				case "--project", "--ui", "--repository" -> {
+					if (i + 1 >= options.size()) {
+						err.println("[cozy] " + option + " 뒤에 폴더를 적습니다.");
+						return UNUSABLE;
+					}
+					Path value = workDir.resolve(options.get(++i));
+					switch (option) {
+						case "--project" -> project = value;
+						case "--ui" -> ui = value;
+						default -> repository = List.of(value);
+					}
+				}
+				default -> {
+					err.println("[cozy] 함께 쓰는 옵션은 --project, --ui, --repository, --json, --dry-run입니다: " + option);
+					return UNUSABLE;
+				}
+			}
+		}
+		try {
+			AppProject app = project(project, workDir);
+			List<Path> repo = repository;
+			Path uiLocation = ui;
+			RecipeRunner.together(commands, app, () -> framework(app, repo, uiLocation, "프레임워크 컴포넌트의 이름"), now(), dryRun, json, out);
+			return OK;
+		}
+		catch (CliException ex) {
+			err.println("[cozy] " + ex.getMessage());
+			return UNUSABLE;
+		}
+	}
+
 	/** 앱이 쓰는 버전의 cozy-ui jar. 없으면 판단할 수 없으므로 실패한다 */
 	private static FrameworkJar framework(AppProject project, List<Path> repositories, Path ui, String what) {
 		if (ui != null) {

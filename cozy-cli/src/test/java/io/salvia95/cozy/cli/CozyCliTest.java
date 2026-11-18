@@ -394,9 +394,16 @@ class CozyCliTest {
 				.flatMap((r) -> r.params().stream().filter((p) -> p.from() != null && !p.strict()).map((p) -> r.name() + " " + p.name())))
 				.as("새 값도 받는 출처: crud와 screen은 없는 모듈을 만든다")
 				.containsExactly("crud 모듈", "screen 모듈");
+			assertThat(Recipes.ALL.stream()
+				.flatMap((r) -> r.params().stream()
+					.flatMap((p) -> p.parts().stream().filter((part) -> part.from() != null && !part.strict()).map((part) -> r.name() + " " + p.name() + "." + part.name()))))
+				.as("낱말을 제안하는 칸: 동작의 상태 종류, 식, 단계")
+				.containsExactly("behavior state.declaration", "behavior computed.expression", "behavior action.steps");
 			assertThat(Recipes.SOURCES).containsOnlyKeys("modules", "entities", "events", "app-events", "finders", "facades", "dtos",
-					"icons");
+					"icons", "behavior-types", "behavior-values", "behavior-steps");
 			Result json = run("recipes", "--json");
+			assertThat(json.out()).contains("\"vocabulary\": [", "\"kind\": \"step\"", "\"shape\": \"gt(a, b)\"", "\"from\": \"behavior-values\"");
+			assertThat(json.out().indexOf("\"vocabulary\"")).as("낱말은 동작 레시피에만 있다").isEqualTo(json.out().lastIndexOf("\"vocabulary\""));
 			assertThat(json.out()).contains("\"parts\": [")
 				.contains("\"from\": \"modules\"")
 				.contains("\"flag\": \"!\"")

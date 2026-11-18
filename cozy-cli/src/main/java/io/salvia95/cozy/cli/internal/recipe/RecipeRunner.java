@@ -107,6 +107,39 @@ public final class RecipeRunner {
 		report(name, ctx.plan(), List.of(), next, false, dryRun, json, out);
 	}
 
+	/** 한 계획으로 묶을 수 있는 명령 */
+	public static final List<String> TOGETHER = List.of("add behavior", "remove behavior", "rename behavior", "attach");
+
+	/**
+	 * 화면 안의 동작 명령 여럿({@link #TOGETHER})을 한 계획으로 실행한다. 뒤의 명령은 앞의 명령이 계획한 내용을 읽고, 하나라도 거절하면 아무 파일도
+	 * 쓰지 않는다. 같은 명령을 터미널에서 차례로 실행한 것과 같은 파일이 된다. 다음 할 일은 마지막 명령의 것이다.
+	 *
+	 * @param commands 명령마다 {@code cozy} 뒤의 인자 ({@code [remove, behavior, memo, body-count, --state, limit]})
+	 */
+	public static void together(List<List<String>> commands, AppProject project, Supplier<FrameworkJar> framework,
+			LocalDateTime now, boolean dryRun, boolean json, PrintStream out) {
+		if (commands.isEmpty()) {
+			throw new CliException("한 계획으로 묶을 명령이 없습니다.");
+		}
+		Context ctx = new Context(project, framework, now);
+		List<String> names = new ArrayList<>();
+		String next = "";
+		for (List<String> command : commands) {
+			String action = command.isEmpty() ? "" : command.getFirst();
+			List<String> rest = command.subList(Math.min(1, command.size()), command.size());
+			String what = (action.equals("attach") || rest.isEmpty()) ? action : action + " " + rest.getFirst();
+			next = switch (what) {
+				case "add behavior" -> BehaviorRecipe.run(ctx, Args.parse(rest.subList(1, rest.size()))).replaceFirst("^다음: ", "");
+				case "remove behavior" -> BehaviorCommands.remove(ctx, rest);
+				case "rename behavior" -> BehaviorCommands.rename(ctx, rest);
+				case "attach" -> BehaviorCommands.attach(ctx, rest);
+				default -> throw new CliException("한 계획으로 묶는 명령은 " + String.join(", ", TOGETHER) + "입니다: " + String.join(" ", command));
+			};
+			names.add(what);
+		}
+		report(String.join(", ", names), ctx.plan(), List.of(), next, false, dryRun, json, out);
+	}
+
 	/** {@code cozy set arg …}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 */
 	public static void set(List<String> rest, AppProject project, Supplier<FrameworkJar> framework, boolean dryRun, boolean json,
 			PrintStream out) {

@@ -64,7 +64,7 @@ public record FrameworkBehaviors(Map<String, Component> components) {
 				for (Map.Entry<?, ?> e : m.entrySet()) {
 					Matcher method = METHOD.matcher(String.valueOf(e.getKey()));
 					if (!method.matches()) {
-						throw new CliException(file + " 컴포넌트 " + name + ": 메서드 " + e.getKey() + "는 이름이나 이름(인자) 모양입니다");
+						throw new CliException(file + " 컴포넌트 " + name + ": 메서드는 이름이나 이름(인자) 모양입니다: " + e.getKey());
 					}
 					methods.put(method.group(1), new Method(method.group(1), method.group(3), String.valueOf(e.getValue())));
 				}

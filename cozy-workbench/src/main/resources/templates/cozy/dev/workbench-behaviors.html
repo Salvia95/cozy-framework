@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--/*
-  속성 표의 "화면 안의 동작" 구획. 요소마다 위치, 컴포넌트(누르면 명세), 이벤트와 묶인 값, htmx 요청을 보인다.
+  속성 표의 "화면 안의 동작" 구획. 요소마다 위치, 컴포넌트(누르면 명세, 앱 컴포넌트는 고치기 링크), 이벤트와 묶인 값, htmx 요청을 보인다.
   앱 템플릿의 요소는 여기서 붙이고 뗀다: POST /cozy/dev/workbench/attach가 cozy attach로 변경 파일을 보이고 적용한다.
   구조 트리의 표는 선택할 때 오른쪽 칸으로 복제되므로 id를 두지 않는다. 폼은 workbenchPicker가 htmx에 알린다.
   cozyElements는 BehaviorViews.Element 목록, cozyNode는 돌아가서 다시 고를 구조의 줄(없으면 null)이다.
@@ -34,6 +34,8 @@
             </th:block>
           </th:block>
         </details>
+        <a class="btn btn-sm mt-1" th:if="${el.component != null and !#strings.startsWith(b.component, 'cozy')}"
+           th:href="@{/cozy/dev/workbench/commands(recipe='behavior',edit=${b.component})}" th:aria-label="|${b.component} 고치기|">고치기</a>
         <th:block th:if="${el.component == null}">
           <code th:text="${b.component}">workbenchPicker</code> <span class="text-secondary small">명세 없음</span>
         </th:block>

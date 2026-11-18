@@ -339,7 +339,8 @@ final class AlpineChecker {
 				continue;
 			}
 			if (!component.contract().members().contains(name)) {
-				error(file, attribute.line(), display, "'" + name + "'는 감싸는 컴포넌트 " + component.name() + "에 없습니다. 있는 이름: "
+				error(file, attribute.line(), display, "감싸는 컴포넌트 " + component.name() + "에 없는 이름입니다: " + name + "."
+						+ io.salvia95.cozy.rules.Closest.hint(name, component.contract().members().stream().sorted().toList()) + " 있는 이름: "
 						+ String.join(", ", component.contract().members().stream().sorted().toList())
 						+ ". 붙이는 이름은 cozy attach가 확인하고, 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.");
 				return;

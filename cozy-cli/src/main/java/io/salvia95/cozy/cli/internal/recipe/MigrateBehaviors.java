@@ -81,7 +81,7 @@ final class MigrateBehaviors {
 		}
 		for (String component : purposes.keySet()) {
 			if (!named.contains(component)) {
-				throw new CliException("--purpose의 컴포넌트 '" + component + "'가 손으로 쓴 모듈 JS에 없습니다. 있는 컴포넌트: "
+				throw new CliException("손으로 쓴 모듈 JS에 없는 컴포넌트입니다(--purpose): " + component + ". 있는 컴포넌트: "
 						+ (named.isEmpty() ? "없음" : String.join(", ", named.stream().filter((n) -> n != null).toList())));
 			}
 		}

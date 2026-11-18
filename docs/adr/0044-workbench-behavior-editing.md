@@ -116,3 +116,32 @@
   - 아이콘 수: `CozyIconsTest`.
 - **화면 확인(runtime-verifier, 1280·390px)**: 탭, 위치 링크와 `:target`, 모듈 화면의 소스 카드와 닫기, 검색의 묶음과 도착 줄, 아이콘 3.52.0(목록·상세·워크벤치·아이콘 카탈로그, 스프라이트 404 없음)이 통과했다. 가로 넘침, 콘솔 오류, CSP 위반은 없다. 확인 중에 소스 위의 띠가 늘어나 빈 칸이 생기는 것(동작 명세 229px)을 찾아 띠를 내용만큼으로 고쳤다(78px, 미리보기는 그대로 칸을 채운다).
 - **남은 것**: 식과 명세를 읽는 오류(`Expr`, `BehaviorSpec`)의 `'…'을` 조사는 M52의 폼 오류와 함께 고친다.
+
+## M52 (2026-11-19, 사용자 지시 "다음 바로 진행해")
+
+- **시작할 때 확인한 최신 GA**: 바뀐 것이 없다(ADR-0017). SnakeYAML 2.7이 나와 있으나 Boot BOM이 2.6을 관리하므로 Boot를 따른다.
+- **고치기 폼**
+  - 모듈 화면과 속성 표의 앱 컴포넌트에 **고치기**를 두었다. `/cozy/dev/workbench/commands?recipe=behavior&edit=memoBodyCount`가 화면 동작 폼을 지금 항목으로 채운다(`BehaviorEdit`). 모듈과 동작 칸은 없고 컴포넌트가 정한다.
+  - 보낸 폼을 지금 항목과 이름으로 견준다. 바꾸거나 더한 행만 `cozy add behavior`에 넘기고, 지운 행은 `cozy remove behavior … --state 이름`이다. 바뀐 것이 없으면 명령을 부르지 않는다.
+  - **"정할 것" 1의 구현을 바꾼 곳**: 두 명령을 따로 차례로 부르지 않고 cozy-cli의 한 계획으로 부른다(`CozyCli.runTogether`). 뒤의 명령이 앞의 명령이 계획한 내용을 읽고, 하나라도 거절하면 아무 파일도 쓰지 않는다. 그래서 "위험"의 반쯤 적용되는 상태가 없다. 결과는 같은 명령을 터미널에서 같은 순서로 실행한 것과 글자까지 같다.
+  - **순서는 더하기 → 지우기**다("위험"에 적은 지우기 → 더하기에서 바꿨다). `remove`는 남는 명세를 확인하므로, 지울 상태를 읽던 계산을 같은 폼에서 고치려면 고치기가 먼저여야 한다(reference-app: `label`이 `text` 대신 같은 글을 만들게 고치고 `text`를 지운다). 지운 이름을 다른 칸에 다시 쓸 때만 지우기가 먼저다.
+  - 폼에 연 때의 동작 명세 지문(`specHash`)을 넣고, 다르면 명령을 부르지 않고 다시 열라고 한다.
+  - **컴포넌트 전체**: 이름 바꾸기(`cozy rename behavior`)와 지우기(확인 창 → `cozy remove behavior`)를 폼 아래의 따로 된 구획에 두었다.
+- **낱말**
+  - 낱말의 원본을 cozy-cli의 목록 하나(`BehaviorVocabulary`: 종류, 이름, 모양, 한 줄 설명)로 모았다. JS를 만드는 코드의 함수·단계 목록이 여기서 나온다. `cozy recipes --json`의 `behavior`가 `vocabulary`로 내고, ui.md의 표와 같은지 `BehaviorDocsTest`가 본다.
+  - 폼의 상태·계산·동작 그리드 아래에 접힌 낱말 표를 두었다. 상태의 종류, 식, 단계 칸은 글 칸이면서 목록을 제안한다(구성 요소의 `strict: false`, 출처 `behavior-types`, `behavior-values`, `behavior-steps`). 식 칸은 그 컴포넌트의 상태·계산 이름도 제안한다.
+- **가까운 이름**: 없는 이름의 오류가 가장 가까운 이름 하나를 보인다("…입니다: lable. label인가요?"). `cozy attach`, `add`·`remove`·`rename behavior`, 명세 확인, R16이 같은 함수(cozy-rules `Closest`)를 쓴다.
+- **문구(M51에서 넘긴 것)**: `Expr`, `BehaviorSpec`, `BehaviorScript`, `BehaviorCommands`, `BehaviorRecipe`, R16의 오류에서 이름 뒤 조사를 없애고 "…입니다: 이름" 모양으로 바꿨다. 플레이북의 실패 표를 같이 바꿨다. `cozy migrate behaviors`의 남은 일(`LegacyScript`) 문구는 M55에서 그 화면과 함께 본다.
+- **모듈 화면의 링크**: 고치기, 동작 명세, 만든 JS를 작은 버튼으로 바꿔 390px에서도 누를 자리를 넓혔다(M51 남은 위험).
+- **완료 기준 테스트**
+  - cozy-cli `BehaviorTogetherTest`(한 계획 = 터미널의 차례 실행, 거절이면 아무것도 쓰지 않음, 묶을 수 있는 명령과 옵션), `BehaviorScriptTest`(새 문구와 가까운 이름), `BehaviorDocsTest`(낱말 = 코드 = 문서), `CozyCliTest`(`vocabulary`, 제안 칸, 출처), `AttachCommandTest`.
+  - cozy-rules `ClosestTest`, `TemplateRulesTest`(R16 제안).
+  - cozy-workbench `BehaviorEditTest`(채우기, 견주기, 순서), `CommandFormTest`(제안 칸과 출처).
+  - reference-app `WorkbenchBehaviorEditTest`: 채운 폼과 낱말 표, 고치기의 한 계획과 적용(터미널과 같은 파일), 바뀐 것 없음과 거절, 오래된 폼, 이름 바꾸기와 지우기, 요청 조건.
+- **화면 확인(runtime-verifier, 1280·390px, 앱 복사본에 적용)**
+  - 통과한 것: 모듈 화면의 버튼(390px에서 57×32 등), 채운 폼과 낱말 표, 한 계획의 두 명령과 변경 파일 트리, 거절, 오래된 폼, 적용 뒤 다시 채운 폼, 이름 바꾸기, 지우기 확인 창(390px에서 374px 폭), 속성 표의 고치기, 새 동작 폼의 낱말 표.
+  - 가로 넘침, 콘솔 오류, CSP 위반은 없다. 낱말 표 제목의 대비는 5.74:1이다.
+  - 확인 중에 같은 계획에서 같은 파일을 두 번 고치면 내용이 "동작 명세에서 만듦; 동작 명세에서 만듦"으로 겹치는 것을 찾았다. `Plan`이 같은 내용을 한 번만 잇게 고쳤다.
+- **남은 것**
+  - 적용한 동작이 미리보기에 보이려면 지금처럼 다시 빌드해야 한다(M54).
+  - 붙이기 폼의 이름 칸을 선택 칸으로 바꾸는 일은 M53에서 새 요소에 붙이기와 함께 한다.

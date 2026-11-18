@@ -118,7 +118,7 @@ public sealed interface Expr {
 				skip();
 				if (accept('(')) {
 					if (!NAME.matcher(word).matches()) {
-						throw fail("함수 이름 '" + word + "'을 읽을 수 없습니다");
+						throw fail("읽을 수 없는 함수 이름입니다: " + word);
 					}
 					List<Expr> args = new ArrayList<>();
 					skip();
@@ -133,7 +133,7 @@ public sealed interface Expr {
 				}
 				return word(word, start);
 			}
-			throw fail("'" + c + "'을 읽을 수 없습니다. 값은 이름, 숫자, true·false, '글자', event.value 같은 이벤트 값입니다");
+			throw fail("읽을 수 없는 글자입니다: " + c + ". 값은 이름, 숫자, true·false, '글자', event.value 같은 이벤트 값입니다");
 		}
 
 		private Expr word(String word, int start) {
@@ -149,11 +149,11 @@ public sealed interface Expr {
 					return new EventRef(parts[1], parts[2]);
 				}
 				this.at = start;
-				throw fail("이벤트 값 '" + word + "'을 모릅니다. event.value, event.checked, event.data.이름, event.detail.이름을 씁니다");
+				throw fail("모르는 이벤트 값입니다: " + word + ". event.value, event.checked, event.data.이름, event.detail.이름을 씁니다");
 			}
 			if (!NAME.matcher(word).matches()) {
 				this.at = start;
-				throw fail("이름 '" + word + "'을 읽을 수 없습니다. 이름은 영문 소문자로 시작하는 카멜 표기입니다");
+				throw fail("읽을 수 없는 이름입니다: " + word + ". 이름은 영문 소문자로 시작하는 카멜 표기입니다");
 			}
 			return new Name(word);
 		}
@@ -191,7 +191,7 @@ public sealed interface Expr {
 			String text = this.source.substring(start, this.at);
 			if (!NUMBER.matcher(text).matches()) {
 				this.at = start;
-				throw fail("숫자 '" + text + "'을 읽을 수 없습니다");
+				throw fail("읽을 수 없는 숫자입니다: " + text);
 			}
 			return new Num(canonicalNumber(text));
 		}
@@ -207,7 +207,7 @@ public sealed interface Expr {
 
 		private void expect(char c) {
 			if (!accept(c)) {
-				throw fail("'" + c + "'가 와야 합니다");
+				throw fail("여기에 와야 하는 글자: " + c);
 			}
 		}
 

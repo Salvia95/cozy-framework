@@ -791,43 +791,101 @@ public class WorkbenchController {
 	static final List<String> STEPS = List.of("plan", "apply");
 
 	@GetMapping("/commands")
-	String commands(@RequestParam(required = false) String recipe, Model model) {
-		commandModel(recipe, Map.of(), null, model);
+	String commands(@RequestParam(required = false) String recipe, @RequestParam(required = false) String edit, Model model) {
+		WorkbenchEngine.Behavior editing = editing(recipe, edit);
+		commandModel(recipe, (editing == null) ? Map.of() : BehaviorEdit.values(editing), null, editing, model);
 		return "cozy/dev/workbench-commands";
 	}
+
+	/** 컴포넌트를 고치는 폼에서 하는 일: 항목 고치기, 이름 바꾸기, 지우기 */
+	static final List<String> CHANGES = List.of("edit", "rename", "delete");
 
 	/**
 	 * 폼의 값으로 cozy 명령을 만들어 계획하거나({@code step=plan}) 적용한다({@code step=apply}). 인자는 폼의 값뿐이고, 쓰는 경로는 cozy 명령의
 	 * 계획이 정한다. 그리드의 행 버튼({@code row=add:opt.field} 등)은 명령을 부르지 않고 행만 고친 폼을 다시 보인다.
+	 *
+	 * <p>
+	 * 컴포넌트를 고치는 폼({@code edit}): 바꾸거나 더한 행은 {@code cozy add behavior}, 지운 행은 {@code cozy remove behavior}이고 둘은 한
+	 * 계획이다({@link BehaviorEdit}). {@code change=rename}은 {@code cozy rename behavior}, {@code change=delete}는 {@code cozy remove
+	 * behavior}(컴포넌트 전체)다. 폼을 연 뒤 동작 명세가 바뀌었으면({@code specHash}) 명령을 부르지 않고 다시 열라고 한다.
 	 */
 	@PostMapping("/commands")
 	String execute(@RequestParam String recipe, @RequestParam(required = false) String step,
-			@RequestParam(required = false) String row, @RequestParam MultiValueMap<String, String> form, HttpServletRequest request,
+			@RequestParam(required = false) String row, @RequestParam(required = false) String edit,
+			@RequestParam(defaultValue = "") String specHash, @RequestParam(defaultValue = "edit") String change,
+			@RequestParam(defaultValue = "") String newName, @RequestParam MultiValueMap<String, String> form, HttpServletRequest request,
 			Model model) {
 		if (row == null && !STEPS.contains(step)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		if (!CHANGES.contains(change)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] change는 " + CHANGES + " 가운데 하나입니다: " + change);
 		}
 		requireSameOrigin(request);
 		if (row == null && !this.engine.available()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
+		WorkbenchEngine.Behavior editing = editing(recipe, edit);
 		Map<String, List<String>> values = new LinkedHashMap<>();
 		form.forEach((name, list) -> {
 			if (name.startsWith("arg.") || name.startsWith("opt.")) {
 				values.put(name, List.copyOf(list));
 			}
 		});
-		CommandForm built = commandModel(recipe, values, row, model);
+		if (editing != null) {
+			// 고치는 컴포넌트는 주소가 정한다. 폼의 모듈과 동작 칸은 보이지 않는다
+			BehaviorEdit.values(editing).entrySet()
+				.stream()
+				.filter((e) -> e.getKey().startsWith("arg."))
+				.forEach((e) -> values.put(e.getKey(), e.getValue()));
+		}
+		CommandForm built = commandModel(recipe, values, row, editing, model);
 		if (row != null) {
+			model.addAttribute("specHash", specHash);
 			return "cozy/dev/workbench-commands";
 		}
-		model.addAttribute("missing", built.missing());
-		if (!built.missing().isEmpty()) {
+		if (editing != null && !specHash.equals(model.getAttribute("specHash"))) {
+			model.addAttribute("specHash", specHash);
+			model.addAttribute("stale", true);
 			return "cozy/dev/workbench-commands";
 		}
 		boolean dryRun = step.equals("plan");
-		WorkbenchEngine.Outcome outcome = this.engine.execute(built.args(), dryRun);
-		model.addAttribute("commandLine", commandLine(built.args()));
+		List<List<String>> commands;
+		if (editing == null) {
+			model.addAttribute("missing", built.missing());
+			if (!built.missing().isEmpty()) {
+				return "cozy/dev/workbench-commands";
+			}
+			commands = List.of(built.args());
+		}
+		else {
+			String module = editing.module();
+			String action = BehaviorEdit.action(module, editing.name());
+			model.addAttribute("change", change);
+			model.addAttribute("newName", newName.strip());
+			commands = switch (change) {
+				case "rename" -> newName.isBlank() ? List.of() : List.of(List.of("rename", "behavior", module, action, newName.strip()));
+				case "delete" -> List.of(List.of("remove", "behavior", module, action));
+				default -> built.missing().isEmpty() ? BehaviorEdit.commands(editing, values) : List.of();
+			};
+			if (change.equals("edit") && !built.missing().isEmpty()) {
+				model.addAttribute("missing", built.missing());
+				return "cozy/dev/workbench-commands";
+			}
+			if (change.equals("rename") && newName.isBlank()) {
+				model.addAttribute("missing", List.of("새 이름"));
+				return "cozy/dev/workbench-commands";
+			}
+			if (commands.isEmpty()) {
+				model.addAttribute("unchanged", true);
+				return "cozy/dev/workbench-commands";
+			}
+		}
+		WorkbenchEngine.Outcome outcome = (editing == null) ? this.engine.execute(commands.getFirst(), dryRun)
+				: this.engine.executeTogether(commands, dryRun);
+		List<String> lines = commands.stream().map(WorkbenchController::commandLine).toList();
+		model.addAttribute("commandLines", lines);
+		model.addAttribute("commandText", String.join("\n", lines));
 		model.addAttribute("outcome", outcome);
 		model.addAttribute("dryRun", dryRun);
 		Map<String, Object> described = this.engine.describe();
@@ -835,11 +893,55 @@ public class WorkbenchController {
 		model.addAttribute("changed", outcome.changes().stream().filter((c) -> !c.action().equals("unchanged")).count());
 		model.addAttribute("needsRestart", outcome.applied()
 				&& outcome.changes().stream().anyMatch((c) -> !c.action().equals("unchanged")));
+		if (editing != null && outcome.applied()) {
+			// 적용한 뒤에는 바뀐 명세로 폼을 다시 채운다. 지웠으면 새 동작을 만드는 폼이다
+			String now = change.equals("rename") ? editing.module() + camel(newName.strip()) : editing.name();
+			WorkbenchEngine.Behavior after = change.equals("delete") ? null : behavior(now);
+			commandModel(recipe, (after == null) ? Map.of() : BehaviorEdit.values(after), null, after, model);
+			model.addAttribute("removedComponent", change.equals("delete") ? editing.name() : null);
+		}
 		return "cozy/dev/workbench-commands";
 	}
 
-	/** @return 고른 레시피의 폼. 고르지 않았으면 {@code null} */
-	private CommandForm commandModel(String recipe, Map<String, List<String>> values, String row, Model model) {
+	/** 소문자와 -의 동작 이름을 컴포넌트의 뒷부분으로 ({@code body-length} → {@code BodyLength}) */
+	private static String camel(String kebab) {
+		StringBuilder out = new StringBuilder();
+		for (String part : kebab.split("-")) {
+			if (!part.isEmpty()) {
+				out.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+			}
+		}
+		return out.toString();
+	}
+
+	/** 주소의 {@code edit}: 고칠 컴포넌트. 없으면 {@code null} */
+	private WorkbenchEngine.Behavior editing(String recipe, String edit) {
+		if (edit == null) {
+			return null;
+		}
+		if (!"behavior".equals(recipe)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] edit는 화면 동작(recipe=behavior)에만 씁니다: " + recipe);
+		}
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 동작을 고칠 수 있습니다");
+		}
+		WorkbenchEngine.Behavior found = behavior(edit);
+		if (found == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 동작 명세에 없는 컴포넌트입니다: " + edit);
+		}
+		return found;
+	}
+
+	private WorkbenchEngine.Behavior behavior(String name) {
+		return this.engine.described().behaviors().stream().filter((b) -> b.name().equals(name)).findFirst().orElse(null);
+	}
+
+	/**
+	 * @param editing 고치는 컴포넌트. 새로 만들면 {@code null}
+	 * @return 고른 레시피의 폼. 고르지 않았으면 {@code null}
+	 */
+	private CommandForm commandModel(String recipe, Map<String, List<String>> values, String row, WorkbenchEngine.Behavior editing,
+			Model model) {
 		List<WorkbenchEngine.Recipe> recipes = this.engine.recipes();
 		WorkbenchEngine.Recipe selected = (recipe == null) ? null
 				: recipes.stream()
@@ -856,13 +958,21 @@ public class WorkbenchController {
 		model.addAttribute("recipeGroups", groups);
 		model.addAttribute("selected", selected);
 		model.addAttribute("missing", List.of());
+		model.addAttribute("editing", editing);
+		if (editing != null) {
+			model.addAttribute("editAction", BehaviorEdit.action(editing.module(), editing.name()));
+			model.addAttribute("specHash", hash(this.engine.source(behaviorSpec(editing.module())).orElse("")));
+		}
 		if (selected == null) {
 			return null;
 		}
+		Map<String, List<WorkbenchEngine.Word>> words = new LinkedHashMap<>();
+		selected.vocabulary().forEach((w) -> words.computeIfAbsent(w.kind(), (k) -> new ArrayList<>()).add(w));
+		model.addAttribute("vocabulary", words);
 		CommandForm built;
 		try {
-			built = CommandForm.of(selected, values,
-					CommandForm.sources(this.engine.available() ? this.engine.describe() : Map.of(), CozyIcons.outline()), row);
+			built = CommandForm.of(selected, values, CommandForm.sources(this.engine.available() ? this.engine.describe() : Map.of(),
+					CozyIcons.outline(), selected.vocabulary(), editing), row);
 		}
 		catch (IllegalArgumentException ex) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());

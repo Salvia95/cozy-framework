@@ -37,8 +37,8 @@ cozy rename behavior memo body-count body-length
 
 | Message contains | Action |
 | --- | --- |
-| `가 이미 있습니다` | Pick another new name. |
-| `가 없습니다. 있는 것` | Use a name from the printed list. |
+| `이미 있는 동작입니다` | Pick another new name. |
+| `없는 동작입니다` | Use a name from the printed list; a trailing `인가요?` names the closest one. |
 
 ## Next
 

@@ -1,5 +1,6 @@
 package io.salvia95.cozy.cli.internal;
 
+import io.salvia95.cozy.cli.internal.behavior.BehaviorVocabulary;
 import io.salvia95.cozy.cli.internal.recipe.BehaviorCommands;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,9 +118,15 @@ public final class Recipes {
 	 * @param from 앱에서 가져오는 선택지. 없으면 {@code null}
 	 * @param flag 켜면 앞 요소 뒤에 붙는 글자({@code !}). 플래그가 아니면 {@code null}
 	 * @param example 예시 값. 플래그는 켜면 그 글자, 끄면 빈 글자
+	 * @param strict {@code from}의 값만 받는가. 거짓이면 앱의 값과 낱말은 제안이고 다른 글도 받는다(동작의 식)
 	 */
 	public record Part(String name, String label, boolean required, List<String> choices, Map<String, String> choiceLabels,
-			String from, String flag, String example) {
+			String from, String flag, String example, boolean strict) {
+
+		/** 적는 칸이고 이 출처의 값을 제안한다 */
+		Part suggesting(String source) {
+			return new Part(this.name, this.label, this.required, this.choices, this.choiceLabels, source, this.flag, this.example, false);
+		}
 	}
 
 	/**
@@ -128,7 +135,9 @@ public final class Recipes {
 	 */
 	public static final Map<String, String> SOURCES = ordered("modules", "앱의 모듈", "entities", "선택한 모듈의 CRUD 엔티티", "events",
 			"선택한 모듈의 이벤트", "app-events", "앱의 모든 이벤트 (모듈.이벤트)", "finders", "선택한 모듈의 조회 인터페이스", "facades",
-			"선택한 모듈의 명령 인터페이스", "dtos", "선택한 모듈의 DTO와 그 목록 (Record, list:Record)", "icons", "Tabler Icons의 외곽선 아이콘");
+			"선택한 모듈의 명령 인터페이스", "dtos", "선택한 모듈의 DTO와 그 목록 (Record, list:Record)", "icons", "Tabler Icons의 외곽선 아이콘",
+			"behavior-types", "상태의 종류 (vocabulary의 type)", "behavior-values", "계산의 함수(vocabulary의 function)와 고치는 컴포넌트의 상태·계산",
+			"behavior-steps", "동작의 단계(vocabulary의 step), 이벤트 값(event)과 고치는 컴포넌트의 상태·계산");
 
 	private static Param positional(String name, String label, String example) {
 		return new Param(name, label, false, true, false, List.of(), example, Map.of(), null, null, List.of(), false);
@@ -151,7 +160,7 @@ public final class Recipes {
 	}
 
 	private static Part text(String name, String label, boolean required, String example) {
-		return new Part(name, label, required, List.of(), Map.of(), null, null, example);
+		return new Part(name, label, required, List.of(), Map.of(), null, null, example, true);
 	}
 
 	/** 필드나 파라미터의 이름 */
@@ -161,17 +170,17 @@ public final class Recipes {
 
 	/** 필드 종류 */
 	private static Part kind(List<String> kinds, String example) {
-		return new Part("kind", "종류", true, kinds, labels(kinds), null, null, example);
+		return new Part("kind", "종류", true, kinds, labels(kinds), null, null, example, true);
 	}
 
 	/** 종류나 같은 모듈의 DTO */
 	private static Part type(String example) {
-		return new Part("type", "타입", true, KINDS, labels(KINDS), "dtos", null, example);
+		return new Part("type", "타입", true, KINDS, labels(KINDS), "dtos", null, example, true);
 	}
 
 	/** {@code !}: 필수 */
 	private static Part requiredFlag(boolean example) {
-		return new Part("required", "필수", false, List.of(), Map.of(), null, "!", example ? "!" : "");
+		return new Part("required", "필수", false, List.of(), Map.of(), null, "!", example ? "!" : "", true);
 	}
 
 	/** 필드 종류. crud 한 벌은 instant를 쓰지 않는다 */
@@ -240,18 +249,18 @@ public final class Recipes {
 					repeated("field", "화면 DTO의 필드", false, "total:long:전체").withParts(nameOf("total"), kind(KINDS, "long"),
 							text("label", "라벨", false, "전체")),
 					option("nav", "내비게이션", false, "대시보드:dashboard").withParts(text("label", "라벨", true, "대시보드"),
-							new Part("icon", "아이콘", true, List.of(), Map.of(), "icons", null, "dashboard")))),
+							new Part("icon", "아이콘", true, List.of(), Map.of(), "icons", null, "dashboard", true)))),
 			Map.entry("fragment", List.of(MODULE, positional("이름", "fragment 이름 (소문자와 -)", "recent-activity"),
 					repeated("param", "파라미터", true, "items:list:ActivityItem").withParts(nameOf("items"), type("list:ActivityItem")),
 					option("purpose", "용도 한 줄", true, "최근 활동 목록"))),
 			Map.entry("behavior", List.of(MODULE, positional("동작", "동작 이름 (소문자와 -). 컴포넌트는 모듈 이름 + 동작", "body-count"),
 					option("purpose", "목적 한 문장 (새 동작에 필요)", false, "본문을 쓰는 동안 글자 수를 보인다"),
 					repeated("state", "상태", false, "length:number@data-length").withParts(nameOf("length"),
-							text("declaration", "종류[=처음 값][@data-이름]", true, "number@data-length")),
+							text("declaration", "종류[=처음 값][@data-이름]", true, "number@data-length").suggesting("behavior-types")),
 					repeated("computed", "계산", false, "label:format('{length}자', 'ko-KR')").withParts(nameOf("label"),
-							text("expression", "식", true, "format('{length}자', 'ko-KR')")),
+							text("expression", "식", true, "format('{length}자', 'ko-KR')").suggesting("behavior-values")),
 					repeated("action", "동작", false, "count:set(length, length(event.value))").withParts(nameOf("count"),
-							text("steps", "단계 (;로 잇는다)", true, "set(length, length(event.value))")),
+							text("steps", "단계 (;로 잇는다)", true, "set(length, length(event.value))").suggesting("behavior-steps")),
 					repeated("listen", "받는 화면 이벤트", false, "count:memo:saved").withParts(text("action", "동작", true, "count"),
 							text("event", "화면 이벤트 (모듈:이름)", true, "memo:saved")))),
 			Map.entry("event", List.of(MODULE, positional("이벤트", "이벤트 이름 (PascalCase, 과거형)", "ReportSent"),
@@ -338,16 +347,23 @@ public final class Recipes {
 				for (Part part : p.parts()) {
 					parts.add(Describe.ordered("name", part.name(), "label", part.label(), "required", part.required(), "choices",
 							new ArrayList<Object>(part.choices()), "choiceLabels", new LinkedHashMap<String, Object>(part.choiceLabels()),
-							"from", part.from(), "flag", part.flag(), "example", part.example()));
+							"from", part.from(), "flag", part.flag(), "example", part.example(), "strict", part.from() != null && part.strict()));
 				}
 				params.add(Describe.ordered("name", p.name(), "label", p.label(), "option", p.option(), "required", p.required(),
 						"repeatable", p.repeatable(), "choices", new ArrayList<Object>(p.choices()), "example", p.example(),
 						"choiceLabels", new LinkedHashMap<String, Object>(p.choiceLabels()), "from", p.from(), "strict",
 						p.from() != null && p.strict(), "separator", p.separator(), "parts", parts));
 			}
-			recipes.add(Describe.ordered("name", r.name(), "stage", r.stage(), "title", r.title(), "group", r.group(), "usage",
-					r.usage(), "does", r.does(), "slots",
-					r.slots(), "available", r.available(), "command", new ArrayList<Object>(r.command()), "params", params));
+			Map<String, Object> recipe = Describe.ordered("name", r.name(), "stage", r.stage(), "title", r.title(), "group", r.group(),
+					"usage", r.usage(), "does", r.does(), "slots", r.slots(), "available", r.available(), "command",
+					new ArrayList<Object>(r.command()), "params", params);
+			if (r.name().equals("behavior")) {
+				List<Object> words = new ArrayList<>();
+				BehaviorVocabulary.WORDS.forEach((w) -> words.add(Describe.ordered("kind", w.kind(), "name", w.name(), "shape", w.shape(),
+						"text", w.text())));
+				recipe.put("vocabulary", words);
+			}
+			recipes.add(recipe);
 		}
 		return Describe.ordered("recipes", recipes, "groups", new ArrayList<Object>(GROUPS), "sources",
 				new LinkedHashMap<String, Object>(SOURCES));

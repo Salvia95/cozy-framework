@@ -124,7 +124,7 @@ public final class Attach {
 		}
 		Tag tag = starting.get(0);
 		if (tag.name().equals("th:block") || tag.attr("th:replace") != null || tag.attr("data-th-replace") != null) {
-			throw new CliException(where + ":" + line + "의 " + open(text, tag) + "는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다. 감싸는 요소나 "
+			throw new CliException(where + ":" + line + "의 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다: " + open(text, tag) + ". 감싸는 요소나 "
 					+ "그 안의 요소에 붙입니다.");
 		}
 		Attr own = tag.attr("x-data");
@@ -132,7 +132,7 @@ public final class Attach {
 		boolean root;
 		if (own != null) {
 			if (!target.name().equals(own.value())) {
-				throw new CliException(where + ":" + line + "의 요소에는 이미 " + own.value() + "를 붙였습니다. 다른 요소에 붙이거나 먼저 떼어 냅니다"
+				throw new CliException(where + ":" + line + "의 요소에는 이미 다른 컴포넌트를 붙였습니다: " + own.value() + ". 다른 요소에 붙이거나 먼저 떼어 냅니다"
 						+ " (cozy attach " + own.value() + " --at " + where + ":" + line + " --detach).");
 			}
 			root = true;
@@ -163,7 +163,7 @@ public final class Attach {
 		}
 		for (String[] pair : request.data()) {
 			if (!target.data().contains(pair[0])) {
-				throw new CliException(target.name() + "는 data-" + pair[0] + "를 읽지 않습니다. 읽는 것: "
+				throw new CliException(target.name() + "에 없는 data-* 속성입니다: data-" + pair[0] + "." + io.salvia95.cozy.rules.Closest.hint(pair[0], target.data()) + " 읽는 것: "
 						+ (target.data().isEmpty() ? "없음" : "data-" + String.join(", data-", target.data())));
 			}
 			boolean server = THYMELEAF.matcher(pair[1]).find();
@@ -243,13 +243,13 @@ public final class Attach {
 		if (!allowed.contains(name)) {
 			String missing = model ? target.name() + "의 x-model에 쓸 상태(text, bool)가 아닙니다: " + name
 					: target.name() + "에 없는 " + (handler ? "동작" : "상태나 계산") + "입니다: " + name;
-			throw new CliException(missing + ". 있는 것: "
+			throw new CliException(missing + "." + io.salvia95.cozy.rules.Closest.hint(name, allowed) + " 있는 것: "
 					+ (allowed.isEmpty() ? "없음" : String.join(", ", allowed)) + ". 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.");
 		}
 		boolean argument = m.group(2) != null;
 		if (target.withArgument().contains(name) != argument) {
-			throw new CliException(target.withArgument().contains(name) ? name + "는 글자 인자 하나를 받습니다 (예: " + name + "('filter'))."
-					: name + "는 인자를 받지 않습니다. 이름만 씁니다.");
+			throw new CliException(target.withArgument().contains(name) ? "글자 인자 하나를 받는 이름입니다: " + name + " (예: " + name + "('filter'))."
+					: "인자를 받지 않는 이름입니다: " + name + ". 이름만 씁니다.");
 		}
 	}
 

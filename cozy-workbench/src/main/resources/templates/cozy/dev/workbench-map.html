@@ -237,11 +237,14 @@
                     <span class="d-block" th:text="${behavior.purpose}">본문을 쓰는 동안 글자 수와 한도를 보인다</span>
                     <span class="d-block text-secondary small mt-1"
                           th:text="|붙인 화면 ${placed == null ? 0 : placed.size()}개 · 붙인 요소 ${behavior.attached.size()}개|">붙인 화면 2개 · 붙인 요소 2개</span>
-                    <span class="d-block small" th:id="|behavior-${behavior.name}|">
-                      <a th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='behavior')} + ${behaviorLines.containsKey(behavior.name) ? '#L' + behaviorLines.get(behavior.name) : ''}">동작 명세</a>
-                      <span class="text-secondary">·</span>
-                      <a th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='script')}">만든 JS</a>
-                    </span>
+                    <div class="btn-list mt-1 mb-1" th:id="|behavior-${behavior.name}|">
+                      <a class="btn btn-sm" th:href="@{/cozy/dev/workbench/commands(recipe='behavior',edit=${behavior.name})}"
+                         th:aria-label="|${behavior.name} 고치기|">고치기</a>
+                      <a class="btn btn-sm" th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='behavior')} + ${behaviorLines.containsKey(behavior.name) ? '#L' + behaviorLines.get(behavior.name) : ''}"
+                         th:aria-label="|${behavior.name} 동작 명세 보기|">동작 명세</a>
+                      <a class="btn btn-sm" th:href="@{/cozy/dev/workbench/map(module=${selected.name},source='script')}"
+                         th:aria-label="|${behavior.name} 만든 JS 보기|">만든 JS</a>
+                    </div>
                     <th:block th:if="${placed != null}" th:each="template : ${placed}">
                       <a class="d-block" th:if="${screenNames.containsKey(template)}" th:text="${template}"
                          th:href="@{/cozy/dev/workbench(spec=${screenNames.get(template)})}">memo/api/form</a>

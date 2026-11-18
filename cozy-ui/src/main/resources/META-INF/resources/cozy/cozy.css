@@ -197,6 +197,9 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-behavior-row { display: flex; align-items: flex-start; gap: .5rem; }
 .cozy-workbench-behavior-text { flex: 1 1 auto; min-width: 0; }
 .cozy-workbench-behavior-spec summary { cursor: pointer; }
+/* 코드 생성 폼의 낱말 표: 접어 두고, 모양과 한 줄 설명을 두 칸으로 */
+.cozy-workbench-words > summary { cursor: pointer; font-size: var(--tblr-font-size-h5); color: var(--tblr-secondary); }
+.cozy-workbench-words-table th { width: 40%; font-weight: var(--tblr-font-weight-normal); }
 .cozy-workbench-canvas { position: relative; margin: 0 auto; }
 .cozy-workbench-box { position: absolute; pointer-events: none; border-radius: 2px; }
 .cozy-workbench-box-hover { outline: 1px dashed var(--tblr-primary); }

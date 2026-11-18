@@ -39,9 +39,9 @@ cozy sync behaviors
 
 | Message contains | Action |
 | --- | --- |
-| `모르는 키` or `를 모릅니다` | Fix the printed entry of the spec with `cozy add behavior`, or show the user the line they edited by hand. |
+| `모르는 키` or `모르는 함수` or `모르는 종류` | Fix the printed entry of the spec with `cozy add behavior`, or show the user the line they edited by hand. |
 | `손으로 쓴 컴포넌트 파일입니다` | Tell the user that the module has a hand-written script next to a spec, and do not delete it yourself. |
-| `모듈 '` and `가 없습니다` | Ask the user whether to delete the spec of the removed module. |
+| `없는 모듈의 동작 명세입니다` | Ask the user whether to delete the spec of the removed module. |
 | `[C12 경고]` and `손으로 쓴 모듈 JS` | Run `cozy migrate behaviors` instead; this command never overwrites a hand-written script. |
 
 ## Next

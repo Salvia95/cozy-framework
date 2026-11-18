@@ -45,6 +45,28 @@ class CommandFormTest {
 	}
 
 	@Test
+	void behaviorCellsSuggestTheVocabularyAndTheComponentsNames() {
+		WorkbenchEngine.Recipe behavior = recipe("behavior");
+		Map<String, List<CommandForm.Group>> sources = CommandForm.sources(DESCRIBE, List.of(), behavior.vocabulary(), BehaviorEditTest.BODY_COUNT);
+
+		CommandForm form = CommandForm.of(behavior, BehaviorEdit.values(BehaviorEditTest.BODY_COUNT), sources, null);
+
+		CommandForm.Grid computed = form.grids().stream().filter((g) -> g.field().equals("opt.computed")).findFirst().orElseThrow();
+		CommandForm.Input expression = computed.rows().getFirst().cells().get(1);
+		assertThat(expression.control()).as("식 칸은 적는 칸이고 제안을 보인다").isEqualTo("suggest");
+		assertThat(expression.value()).isEqualTo("gt(length, limit)");
+		assertThat(expression.groups()).extracting(CommandForm.Group::label).containsExactly("이 컴포넌트의 이름", "계산 함수");
+		assertThat(expression.groups().getFirst().options()).extracting(CommandForm.Option::value).containsExactly("length", "limit", "over", "label");
+		assertThat(expression.groups().get(1).options()).extracting(CommandForm.Option::value).contains("gt(a, b)", "format('글자 {이름}', 'ko-KR')");
+		CommandForm.Grid actions = form.grids().stream().filter((g) -> g.field().equals("opt.action")).findFirst().orElseThrow();
+		assertThat(actions.rows().getFirst().cells().get(1).groups()).extracting(CommandForm.Group::label)
+			.containsExactly("이 컴포넌트의 이름", "동작 단계", "이벤트 값");
+		assertThat(form.args()).as("채운 폼의 명령은 지금 항목 그대로다").contains("--computed", "over:gt(length, limit)");
+		assertThat(behavior.vocabulary()).extracting(WorkbenchEngine.Word::kind).containsOnly("type", "event", "function", "step");
+		assertThat(recipe("crud").vocabulary()).isEmpty();
+	}
+
+	@Test
 	void singleArgumentsAreRowsOfAPropertyTableAndRepeatedOnesAreGrids() {
 		CommandForm crud = form("crud", Map.of());
 		assertThat(crud.fields()).extracting(CommandForm.Field::identifier)

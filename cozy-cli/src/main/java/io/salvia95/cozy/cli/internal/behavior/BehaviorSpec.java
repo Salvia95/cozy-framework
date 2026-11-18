@@ -99,7 +99,7 @@ public record BehaviorSpec(String module, Map<String, Component> components) {
 				data = rest.substring(at + 1);
 				rest = rest.substring(0, at);
 				if (!DATA.matcher(data).matches()) {
-					throw new CliException(where + ": 읽을 속성 '" + data + "'은 data-소문자-하이픈 모양입니다 (예: @data-limit)");
+					throw new CliException(where + ": 읽을 속성은 data-소문자-하이픈 모양입니다 (예: @data-limit): " + data);
 				}
 			}
 			String initial = null;
@@ -110,7 +110,9 @@ public record BehaviorSpec(String module, Map<String, Component> components) {
 			}
 			Type type = Type.of(rest.strip());
 			if (type == null) {
-				throw new CliException(where + ": 종류 '" + rest.strip() + "'을 모릅니다. bool, number, text, list를 씁니다 (예: length:number=0@data-length)");
+				throw new CliException(where + ": 모르는 종류입니다: " + rest.strip() + "."
+						+ io.salvia95.cozy.rules.Closest.hint(rest.strip(), BehaviorVocabulary.names(BehaviorVocabulary.TYPE))
+						+ " bool, number, text, list를 씁니다 (예: length:number=0@data-length)");
 			}
 			return new State(type, (initial != null) ? initial(type, initial, where) : null, data);
 		}
@@ -310,7 +312,7 @@ public record BehaviorSpec(String module, Map<String, Component> components) {
 
 	private static Map<?, ?> map(Object value, String file, String what) {
 		if (!(value instanceof Map<?, ?> map)) {
-			throw new CliException(file + ": " + what + "는 키와 값의 묶음이어야 합니다");
+			throw new CliException(file + ": 키와 값의 묶음이어야 합니다: " + what);
 		}
 		return map;
 	}
@@ -331,12 +333,12 @@ public record BehaviorSpec(String module, Map<String, Component> components) {
 			return result;
 		}
 		if (!(value instanceof Map<?, ?> map)) {
-			throw new CliException(where + ": " + section + "는 이름과 값의 묶음이어야 합니다");
+			throw new CliException(where + ": 이름과 값의 묶음이어야 합니다: " + section);
 		}
 		for (Map.Entry<?, ?> e : map.entrySet()) {
 			String name = String.valueOf(e.getKey());
 			if (!NAME.matcher(name).matches()) {
-				throw new CliException(where + " " + section + ": 이름 '" + name + "'은 영문 소문자로 시작하는 카멜 표기입니다");
+				throw new CliException(where + " " + section + ": 이름은 영문 소문자로 시작하는 카멜 표기입니다: " + name);
 			}
 			String text = text(e.getValue(), where + " " + section + " " + name);
 			if (text == null || text.isBlank()) {

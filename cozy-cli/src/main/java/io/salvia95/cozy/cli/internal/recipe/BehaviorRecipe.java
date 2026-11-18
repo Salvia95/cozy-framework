@@ -89,7 +89,7 @@ final class BehaviorRecipe {
 		components.put(key, component);
 		BehaviorSpec next = new BehaviorSpec(module, components);
 		write(plan, next, String.join(", ", changes));
-		String keep = scriptFile(module) + "는 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
+		String keep = "만든 JS(" + scriptFile(module) + ")는 손으로 고치지 않습니다. 동작을 바꿀 때는 이 명령을 다시 씁니다";
 		if (existing == null) {
 			return "다음: cozy attach " + name + " --at <템플릿>:<줄>로 화면의 요소에 붙이고 동작마다 부르는 이벤트를 잇습니다(--on 이벤트:동작). "
 					+ "붙이기 전에는 cozy check가 C13으로 실패합니다. " + keep;
@@ -109,8 +109,8 @@ final class BehaviorRecipe {
 					for (Path file : files.sorted().toList()) {
 						String fileName = file.getFileName().toString();
 						if (!fileName.endsWith(".yml") || !fileName.substring(0, fileName.length() - 4).matches("[a-z][a-z0-9]*")) {
-							throw new CliException(RESOURCES + BehaviorRules.SPEC_DIR + "/" + fileName
-									+ "는 동작 명세가 아닙니다. 동작 명세 폴더에는 모듈 이름의 .yml만 둡니다.");
+							throw new CliException("동작 명세가 아닌 파일입니다: " + RESOURCES + BehaviorRules.SPEC_DIR + "/" + fileName
+									+ ". 동작 명세 폴더에는 모듈 이름의 .yml만 둡니다.");
 						}
 						modules.add(fileName.substring(0, fileName.length() - 4));
 					}
@@ -118,7 +118,7 @@ final class BehaviorRecipe {
 			}
 			for (String module : modules) {
 				if (!project.modules().containsKey(module)) {
-					throw new CliException(specFile(module) + "의 모듈 '" + module + "'가 없습니다. 있는 모듈: "
+					throw new CliException("없는 모듈의 동작 명세입니다: " + specFile(module) + "." + io.salvia95.cozy.rules.Closest.hint(module, project.modules().keySet()) + " 있는 모듈: "
 							+ String.join(", ", project.modules().keySet()));
 				}
 				write(plan, read(plan, module), "명세에서 다시 만듦");
@@ -160,7 +160,7 @@ final class BehaviorRecipe {
 		String module = spec.module();
 		String script = plan.current(scriptFile(module));
 		if (!migrated && script != null && !BehaviorRules.isGenerated(script)) {
-			throw new CliException(scriptFile(module) + "는 손으로 쓴 컴포넌트 파일입니다. 동작 명세에서 만드는 파일과 함께 둘 수 없어 덮어쓰지 않습니다. "
+			throw new CliException("손으로 쓴 컴포넌트 파일입니다: " + scriptFile(module) + ". 동작 명세에서 만드는 파일과 함께 둘 수 없어 덮어쓰지 않습니다. "
 					+ "그 파일의 컴포넌트를 cozy add behavior로 명세에 옮긴 뒤 손으로 쓴 파일을 지웁니다.");
 		}
 		String specText = spec.write();
@@ -174,7 +174,7 @@ final class BehaviorRecipe {
 			List<String> changes) {
 		String other = component.sectionOf(name);
 		if (other != null && !other.equals(label)) {
-			throw new CliException("컴포넌트 " + component.key() + "에 '" + name + "'이 이미 " + other + "으로 있습니다. 템플릿이 이름 하나로 부르므로 "
+			throw new CliException("컴포넌트 " + component.key() + "의 " + other + "에 이미 있는 이름입니다: " + name + ". 템플릿이 이름 하나로 부르므로 "
 					+ "다른 이름을 씁니다.");
 		}
 		T before = section.put(name, value);

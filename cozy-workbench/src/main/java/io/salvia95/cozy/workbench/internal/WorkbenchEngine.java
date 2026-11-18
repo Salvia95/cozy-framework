@@ -339,9 +339,19 @@ public class WorkbenchEngine {
 	 * 값의 구성 요소 하나 ({@code params[].parts[]}).
 	 *
 	 * @param flag 켜면 앞 요소 뒤에 붙는 글자({@code !}). 플래그가 아니면 {@code null}
+	 * @param strict {@code from}의 값만 받는가. 거짓이면 그 값은 제안이고 다른 글도 받는다(동작의 식)
 	 */
 	public record Part(String name, String label, boolean required, List<String> choices, java.util.Map<String, String> choiceLabels,
-			String from, String flag, String example) {
+			String from, String flag, String example, boolean strict) {
+	}
+
+	/**
+	 * 동작 명세의 낱말 하나 ({@code recipes[].vocabulary[]}).
+	 *
+	 * @param kind {@code type}(상태의 종류), {@code event}(이벤트 값), {@code function}(계산 함수), {@code step}(동작 단계)
+	 * @param shape 적는 모양 ({@code gt(a, b)})
+	 */
+	public record Word(String kind, String name, String shape, String text) {
 	}
 
 	/**
@@ -350,9 +360,10 @@ public class WorkbenchEngine {
 	 * @param title 목록에 보일 제목 ({@code CRUD 화면})
 	 * @param group 목록에서 묶는 분류 ({@code 화면})
 	 * @param command {@code cozy} 뒤에 오는 동작 ({@code [add, crud]})
+	 * @param vocabulary 동작 명세의 낱말. 동작 레시피가 아니면 빈 목록
 	 */
 	public record Recipe(String name, int stage, String title, String group, String usage, String does, String slots,
-			List<String> command, List<Param> params) {
+			List<String> command, List<Param> params, List<Word> vocabulary) {
 
 		/** 화면에 보일 명령 ({@code cozy add crud}) */
 		public String commandText() {
@@ -377,16 +388,21 @@ public class WorkbenchEngine {
 				for (JsonNode part : p.path("parts")) {
 					parts.add(new Part(part.path("name").asString(), part.path("label").asString(), part.path("required").asBoolean(),
 							strings(part.path("choices")), labels(part.path("choiceLabels")), text(part, "from"), text(part, "flag"),
-							part.path("example").asString("")));
+							part.path("example").asString(""), part.path("strict").asBoolean(true)));
 				}
 				params.add(new Param(p.path("name").asString(), p.path("label").asString(), p.path("option").asBoolean(),
 						p.path("required").asBoolean(), p.path("repeatable").asBoolean(), strings(p.path("choices")),
 						p.path("example").asString(""), labels(p.path("choiceLabels")), text(p, "from"), text(p, "separator"),
 						List.copyOf(parts), p.path("strict").asBoolean(true)));
 			}
+			List<Word> words = new ArrayList<>();
+			for (JsonNode w : r.path("vocabulary")) {
+				words.add(new Word(w.path("kind").asString(), w.path("name").asString(), w.path("shape").asString(), w.path("text").asString("")));
+			}
 			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("title").asString(),
 					r.path("group").asString(), r.path("usage").asString(),
-					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params)));
+					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params),
+					List.copyOf(words)));
 		}
 		return recipes;
 	}
@@ -468,7 +484,35 @@ public class WorkbenchEngine {
 		if (dryRun) {
 			all.add("--dry-run");
 		}
-		Result result = run(all);
+		return outcome(run(all));
+	}
+
+	/**
+	 * 화면 안의 동작 명령 여럿을 한 계획으로 실행한다({@link CozyCli#runTogether}). 하나라도 거절하면 아무 파일도 쓰지 않는다. 같은 명령을 터미널에서
+	 * 차례로 실행한 것과 같은 파일이 된다.
+	 *
+	 * @param commands 명령마다 {@code cozy} 뒤의 인자
+	 */
+	public Outcome executeTogether(List<List<String>> commands, boolean dryRun) {
+		if (this.projectDir == null) {
+			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
+		}
+		List<String> options = new ArrayList<>(List.of("--json", "--project", this.projectDir.toString()));
+		if (dryRun) {
+			options.add("--dry-run");
+		}
+		if (this.uiLocation != null) {
+			options.add("--ui");
+			options.add(this.uiLocation.toString());
+		}
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		int code = CozyCli.runTogether(commands, options, this.projectDir, System.getenv("COZY_REPOSITORY"),
+				new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
+		return outcome(new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8)));
+	}
+
+	private static Outcome outcome(Result result) {
 		if (result.code() != CozyCli.OK) {
 			return new Outcome(false, List.of(), List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
 		}

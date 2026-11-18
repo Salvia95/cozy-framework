@@ -139,13 +139,13 @@ class AttachCommandTest {
 			attachRoot();
 
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "lable").err())
-				.contains("memoBodyCount에 없는 상태나 계산입니다: lable", "있는 것: length, limit, draft, label, over");
+				.contains("memoBodyCount에 없는 상태나 계산입니다: lable. label인가요?", "있는 것: length, limit, draft, label, over");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--on", "click:label").err())
 				.contains("memoBodyCount에 없는 동작입니다: label", "있는 것: count");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:6", "--model", "length").err())
 				.contains("x-model에 쓸 상태(text, bool)가 아닙니다: length", "있는 것: draft");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--data", "size=1").err())
-				.contains("data-size를 읽지 않습니다", "data-length, data-limit");
+				.contains("memoBodyCount에 없는 data-* 속성입니다: data-size", "data-length, data-limit");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "label.length").err())
 				.contains("값은 이름이나 이름('글자')입니다");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--data", "limit=1").err())
@@ -166,7 +166,7 @@ class AttachCommandTest {
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--on", "input:count").err())
 				.contains("그려질 때 다른 것으로 바뀌어");
 			assertThat(run("attach", "memoBodyCount", "--at", "memo/api/nope:1", "--on", "input:count").err())
-				.contains("templates/memo/api/nope.html가 없습니다");
+				.contains("없는 템플릿입니다: src/main/resources/templates/memo/api/nope.html");
 		}
 
 		@Test
@@ -175,10 +175,10 @@ class AttachCommandTest {
 			write("src/main/resources/templates/wiki/api/list.html", "<div></div>\n");
 
 			assertThat(run("attach", "cozyCopy", "--at", "memo/api/edit:5", "--on", "click:copy").err())
-				.contains("이미 memoBodyCount를 붙였습니다", "--detach");
+				.contains("이미 다른 컴포넌트를 붙였습니다: memoBodyCount", "--detach");
 			assertThat(run("attach", "memoBodyCount", "--at", "wiki/api/list:1", "--on", "input:count").err())
-				.contains("memo 템플릿(templates/memo/…)에만 붙입니다");
-			assertThat(run("attach", "memoNothing", "--at", "memo/api/edit:5").err()).contains("컴포넌트 memoNothing가 없습니다",
+				.contains("memo 템플릿(templates/memo/…)에만 붙입니다: memoBodyCount");
+			assertThat(run("attach", "memoNothing", "--at", "memo/api/edit:5").err()).contains("없는 컴포넌트입니다: memoNothing",
 					"cozy add behavior");
 		}
 
@@ -193,13 +193,13 @@ class AttachCommandTest {
 					          th:text="${title}" x-data="cozyCopy" th:data-copy-text="${title}" x-on:click="copy" x-cloak>제목</button>
 					""");
 			assertThat(run("attach", "cozyDisclosure", "--at", "memo/api/edit:4", "--on", "click:toggle").err())
-				.contains("toggle는 글자 인자 하나를 받습니다");
+				.contains("글자 인자 하나를 받는 이름입니다: toggle");
 			Result toggle = run("attach", "cozyDisclosure", "--at", "memo/api/edit:4", "--data", "disclosure-closed=filter", "--on",
 					"click:toggle('filter')", "--bind", "aria-expanded:isOpen('filter')");
 			assertThat(toggle.code()).as(toggle.err()).isZero();
 			assertThat(run("attach", "cozyCopy", "--at", "memo/api/edit:9", "--on", "click:copy('x')").err())
-				.contains("copy는 인자를 받지 않습니다");
-			assertThat(run("attach", "cozyNothing", "--at", "memo/api/edit:4").err()).contains("프레임워크 컴포넌트 cozyNothing가 없습니다",
+				.contains("인자를 받지 않는 이름입니다: copy");
+			assertThat(run("attach", "cozyNothing", "--at", "memo/api/edit:4").err()).contains("없는 프레임워크 컴포넌트입니다: cozyNothing",
 					"cozyCopy");
 			// 이 앱의 memoBodyCount는 아직 붙이지 않았다(C13). 프레임워크 컴포넌트의 이름은 R16이 보고 통과한다
 			Result check = run("check");
@@ -216,7 +216,7 @@ class AttachCommandTest {
 			Result check = run("check");
 
 			assertThat(check.code()).isNotZero();
-			assertThat(check.out()).contains("R16", "'lable'는 감싸는 컴포넌트 memoBodyCount에 없습니다");
+			assertThat(check.out()).contains("R16", "감싸는 컴포넌트 memoBodyCount에 없는 이름입니다: lable. label인가요?");
 		}
 	}
 
@@ -274,12 +274,12 @@ class AttachCommandTest {
 			Result used = run("remove", "behavior", "memo", "body-count", "--computed", "label");
 			Result unused = run("remove", "behavior", "memo", "body-count", "--state", "draft", "--computed", "over");
 
-			assertThat(used.err()).contains("label를 템플릿이 부릅니다(memo/api/edit.html:7)", "--detach");
+			assertThat(used.err()).contains("템플릿이 부르는 이름입니다: label (memo/api/edit.html:7)", "--detach");
 			assertThat(unused.code()).as(unused.err()).isZero();
 			assertThat(unused.out()).contains("상태 draft 지움", "계산 over 지움");
 			assertThat(read(SPEC)).contains("label:").doesNotContain("draft:", "over:");
 			assertThat(read(SCRIPT)).doesNotContain("get over()");
-			assertThat(run("remove", "behavior", "memo", "body-count", "--action", "nope").err()).contains("동작 'nope'이 없습니다");
+			assertThat(run("remove", "behavior", "memo", "body-count", "--action", "nope").err()).contains("없는 동작입니다: nope");
 			assertThat(run("remove", "behavior", "memo", "body-count", "--state", "limit").code()).as("계산 label이 limit을 쓴다").isEqualTo(2);
 			assertThat(read(SPEC)).contains("limit:");
 		}
@@ -296,7 +296,7 @@ class AttachCommandTest {
 			assertThat(read(TEMPLATE)).contains("x-data=\"memoBodyLength\"").doesNotContain("memoBodyCount");
 			Result check = run("check");
 			assertThat(check.code()).as(check.out()).isZero();
-			assertThat(run("rename", "behavior", "memo", "nope", "x").err()).contains("nope가 없습니다");
+			assertThat(run("rename", "behavior", "memo", "nope", "x").err()).contains("memo 모듈의 동작 명세에 없는 동작입니다: nope");
 		}
 	}
 

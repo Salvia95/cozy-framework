@@ -224,7 +224,7 @@ class MigrateBehaviorsTest {
 		write(FILE, noPurpose);
 		Result unknown = run("migrate", "behaviors", "--purpose", "memoNope=x");
 		assertThat(unknown.code()).isEqualTo(CozyCli.UNUSABLE);
-		assertThat(unknown.err()).contains("'memoNope'가 손으로 쓴 모듈 JS에 없습니다", "memoPanel");
+		assertThat(unknown.err()).contains("손으로 쓴 모듈 JS에 없는 컴포넌트입니다(--purpose): memoNope", "memoPanel");
 
 		Result given = run("migrate", "behaviors", "--purpose", "memoPanel=패널을 바꾼다");
 		assertThat(given.code()).as(given.err()).isZero();

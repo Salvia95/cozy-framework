@@ -267,7 +267,8 @@ cozy <동작> [옵션]
   | `name`, `label` | 구성 요소의 이름(`kind`)과 사람에게 보일 이름(`종류`) |
   | `required` | 꼭 있어야 하는가. 선택 요소는 끝에만 온다 |
   | `choices`, `choiceLabels` | 고를 값과 그 이름. 자유롭게 적으면 빈 목록 |
-  | `from` | 앱에서 가져오는 선택지. 구성 요소의 출처는 늘 그 값만 받는다 |
+  | `from` | 앱에서 가져오는 선택지나 제안하는 낱말 |
+  | `strict` | `from`의 값만 받는가. `false`면 그 값은 제안이고 다른 글도 받는다(동작의 상태 종류, 식, 단계). `from`이 없으면 `false` |
   | `flag` | 켜면 앞 요소 바로 뒤에 붙는 글자(`!`). 플래그가 아니면 `null` |
   | `example` | 예시 값. 플래그는 켜면 그 글자, 끄면 빈 글자 |
 
@@ -284,6 +285,17 @@ cozy <동작> [옵션]
   | `finders`, `facades` | 선택한 모듈의 조회·명령 인터페이스 | `modules[].finders[].type`, `facades[].type` |
   | `dtos` | 선택한 모듈의 DTO와 그 목록 `Record`, `list:Record` | `modules[].dtos[].type` |
   | `icons` | Tabler Icons의 외곽선 아이콘 이름 | (cozy-ui의 스프라이트) |
+  | `behavior-types` | 상태의 종류 | (`vocabulary`의 `type`) |
+  | `behavior-values` | 계산의 함수와 고치는 컴포넌트의 상태·계산 | (`vocabulary`의 `function`, `modules[].behaviors[]`) |
+  | `behavior-steps` | 동작의 단계, 이벤트 값과 고치는 컴포넌트의 상태·계산 | (`vocabulary`의 `step`, `event`, `modules[].behaviors[]`) |
+
+- **`vocabulary`**: `behavior` 레시피에만 있다. 동작 명세의 낱말 목록이고 원본은 JS를 만드는 코드의 목록(`BehaviorVocabulary`) 하나다. [ui.md](ui.md)의 동작 명세 표와 같은지 `BehaviorDocsTest`가 본다. 워크벤치가 낱말 표와 칸의 제안에 쓴다.
+
+  | 키 | 뜻 |
+  | --- | --- |
+  | `kind` | `type`(상태의 종류), `event`(이벤트 값), `function`(계산 함수), `step`(동작 단계) |
+  | `name`, `shape` | 이름(`gt`)과 적는 모양(`gt(a, b)`) |
+  | `text` | 한 줄 설명 |
 
 ## add, link, enable
 
@@ -530,6 +542,7 @@ cozy attach memoBodyCount --at memo/internal/fields:9 --detach
 - **다시 실행하기**: 같은 명령을 다시 실행하면 `그대로`다. 같은 속성에 다른 값을 주면 그 자리에서 바꾼다(`바꿈 data-limit: "5000" → "200"`). 새 속성은 마지막 속성 뒤에 `x-data`, `data-*`, `x-on:*`, `x-bind:*`, `x-show`, `x-text`, `x-model`, `x-cloak`의 순서로 붙인다.
 - **`--detach`**: 적은 옵션의 속성만 뗀다(값은 무엇이든 된다: `--data limit=x --detach`). 옵션 없이 쓰면 그 요소에서 그 컴포넌트의 것을 모두 뗀다. 컴포넌트의 자리에서 모두 떼려면 안쪽 요소의 것을 먼저 떼어야 한다(남아 있으면 그 줄을 보이며 실패한다).
 - **거절하는 경우**: 없는 컴포넌트, 컴포넌트에 없는 이름, 읽지 않는 `data-*`, 인자 수가 맞지 않는 메서드, 안쪽 요소의 `--data`, 줄에 요소가 없거나 둘 이상. 종료 코드 2이고 파일은 바뀌지 않는다.
+- **가까운 이름**: 없는 이름을 적으면 가장 가까운 이름 하나를 함께 보인다(`memoBodyCount에 없는 상태나 계산입니다: lable. label인가요? 있는 것: …`). 글자 하나를 넣고, 빼고, 바꾸고, 이웃한 두 글자를 맞바꾸는 것을 한 번으로 세어 이름 길이의 3분의 1 안의 것이다. `cozy add behavior`, `remove behavior`, `rename behavior`, R16도 같다. 오류의 이름은 조사를 붙이지 않고 `…입니다: 이름` 모양으로 끝에 둔다.
 - **출력**: `바꿈  {템플릿 파일}    붙임 <div class="form-hint">: x-text="label", x-cloak`. `--json`의 `recipe`는 `attach`이고 `slots`는 늘 비어 있다.
 - **검사**: 붙인 이름은 `cozy check`(R16)가 다시 본다. 손으로 고친 속성이 감싸는 컴포넌트에 없는 이름을 부르면 오류다([testing.md](testing.md)).
 
@@ -550,6 +563,14 @@ cozy rename behavior memo body-count body-length
 ```
 
 명세의 키를 바꾸고 JS를 다시 만들며, 모듈 템플릿의 `x-data="memoBodyCount"`를 모두 `x-data="memoBodyLength"`로 바꾼다. 새 이름이 이미 있으면 실패한다.
+
+## 명령 여럿을 한 계획으로 (워크벤치)
+
+워크벤치의 컴포넌트 고치기는 `add behavior`, `remove behavior`, `rename behavior`, `attach`를 여럿 묶어 한 계획으로 부른다(`CozyCli.runTogether(명령들, 공통 옵션, …)`. 공통 옵션은 `--project`, `--ui`, `--repository`, `--json`, `--dry-run`). 터미널 명령은 따로 없다.
+
+- 뒤의 명령은 앞의 명령이 계획한 내용을 읽는다. 하나라도 거절하면 아무 파일도 쓰지 않는다(종료 코드 2).
+- 결과 파일은 같은 명령을 터미널에서 같은 순서로 하나씩 실행한 것과 글자까지 같다(`BehaviorTogetherTest`, reference-app `WorkbenchBehaviorEditTest`).
+- `--json`의 `recipe`는 명령 이름을 쉼표로 이은 것이고(`add behavior, remove behavior`), 같은 파일은 계획에 한 번 나오며 `detail`을 `; `로 잇는다. `next`는 마지막 명령의 것이다.
 
 ## migrate alpine
 
