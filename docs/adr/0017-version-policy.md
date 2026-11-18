@@ -37,7 +37,7 @@
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
-| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261112 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
+| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261116 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
 | maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
 | maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
@@ -74,3 +74,4 @@
 - 2026-11-13(MSI): WiX Toolset 7.0.1(2026-10-26, NuGet `wix`)로 MSI를 만든다(ADR-0039). 7.0.0의 다음 GA다. GitHub Actions 러너는 `windows-2025`로 고정한다.
 - 2026-11-12(번들 JDK): Windows x64 번들에 Temurin JDK 25.0.5+8을 담는다(ADR-0025 보완). 빌드 PC의 JDK와 같은 판이다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 Adoptium API와 릴리스 자산의 `.sha256.txt`가 같다.
 - 2026-11-17(릴리스 2.0.0): 다시 확인했다. Maven 3.10.1(빌드 PC, 번들의 Maven 배포판, 릴리스 워크플로. SHA-512는 Maven Central과 archive.apache.org의 `.sha512`가 같다), Closure Compiler v20261112, actions/setup-java 6.3.0으로 올렸다. Tabler Icons 3.52.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, 다른 플러그인, Temurin 25.0.5+8, WiX 7.0.1, Tabler 1.7.5, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9, 다른 GitHub Actions). 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4와 `next` 태그의 htmx 4뿐이라 올리지 않는다.
+- 2026-11-18(릴리스 2.2.0): 다시 확인했다. Closure Compiler v20261116(2026-11-17 Maven Central)으로 올렸다. Tabler Icons 3.52.0은 화면이 바뀌는 변경이라 화면 확인(ADR-0030)을 하는 다음 마일스톤에서 올린다. 나머지는 바뀌지 않았다(Temurin 25.0.5+8, Maven 3.10.1, Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, 플러그인, GitHub Actions, WiX 7.0.1, Tabler 1.7.5, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4, 조기 접근판인 JDK 25.0.6, `next` 태그의 htmx 4뿐이라 올리지 않는다.
