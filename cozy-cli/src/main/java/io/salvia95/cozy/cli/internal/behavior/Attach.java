@@ -112,9 +112,33 @@ public final class Attach {
 		return new String[] { "x-bind:" + option.substring(0, at), option.substring(at + 1) };
 	}
 
-	public static Result apply(String text, String where, int line, Target target, Request request) {
+	/**
+	 * 그 줄의 요소와 지금 붙은 컴포넌트. 붙이기 전에 무엇을 고를 수 있는지 보는 데 쓴다.
+	 *
+	 * @param element 여는 태그를 짧게 ({@code <div class="form-hint">})
+	 * @param component 요소에 붙은 컴포넌트({@code x-data})나 감싸는 요소의 컴포넌트. 없으면 {@code null}
+	 * @param root 요소 자신에 {@code x-data}가 있는가
+	 */
+	public record Place(String element, String component, boolean root) {
+	}
+
+	/**
+	 * 그 줄의 요소. {@link #apply}가 거절하는 줄(요소가 없거나 둘 이상, 그려질 때 바뀌는 요소)이면 같은 오류로 실패한다.
+	 *
+	 * @param where 오류에 보일 템플릿 이름
+	 */
+	public static Place place(String text, String where, int line) {
 		List<Tag> tags = TemplateTags.read(text);
-		// 그 줄에서 시작하는 가장 바깥 요소 (버튼 안의 아이콘처럼 같은 줄에서 시작하는 안쪽 요소는 빼고)
+		Tag tag = element(tags, text, where, line);
+		Attr own = tag.attr("x-data");
+		if (own != null && own.value() != null) {
+			return new Place(open(text, tag), own.value(), true);
+		}
+		return new Place(open(text, tag), scope(tags, tag.parent()), false);
+	}
+
+	/** 그 줄에서 시작하는 가장 바깥 요소 하나 (버튼 안의 아이콘처럼 같은 줄에서 시작하는 안쪽 요소는 빼고) */
+	private static Tag element(List<Tag> tags, String text, String where, int line) {
 		List<Tag> starting = tags.stream()
 			.filter((t) -> t.line() == line && (t.parent() < 0 || tags.get(t.parent()).line() != line))
 			.toList();
@@ -127,6 +151,12 @@ public final class Attach {
 			throw new CliException(where + ":" + line + "의 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다: " + open(text, tag) + ". 감싸는 요소나 "
 					+ "그 안의 요소에 붙입니다.");
 		}
+		return tag;
+	}
+
+	public static Result apply(String text, String where, int line, Target target, Request request) {
+		List<Tag> tags = TemplateTags.read(text);
+		Tag tag = element(tags, text, where, line);
 		Attr own = tag.attr("x-data");
 		String scope = scope(tags, tag.parent());
 		boolean root;

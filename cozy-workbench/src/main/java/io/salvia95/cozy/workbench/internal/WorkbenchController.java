@@ -93,10 +93,13 @@ public class WorkbenchController {
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
 			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view,
 			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node,
-			@RequestParam(required = false) String module, @RequestParam(required = false) String template, Model model) {
+			@RequestParam(required = false) String module, @RequestParam(required = false) String template,
+			@RequestParam(required = false) String at, @RequestParam(required = false) String component, Model model) {
 		if (spec == null) {
 			return overview(model);
 		}
+		model.addAttribute("attachAt", at);
+		model.addAttribute("attachComponent", component);
 		model.addAttribute("compareOpen", compare);
 		model.addAttribute("node", node);
 		model.addAttribute("sourceModule", module);
@@ -173,8 +176,12 @@ public class WorkbenchController {
 				.stream()
 				.filter((s) -> s.template().equals(screen.template()))
 				.findFirst();
+			Map<String, BehaviorViews.Component> components = BehaviorViews.components(all.behaviors(), this.framework);
+			if (model.getAttribute("attachAt") instanceof String at) {
+				model.addAttribute("attachPlace", place(at, (String) model.getAttribute("attachComponent"), components));
+			}
 			if (described.isPresent()) {
-				elements = BehaviorViews.elements(described.get().bindings(), BehaviorViews.components(all.behaviors(), this.framework));
+				elements = BehaviorViews.elements(described.get().bindings(), components);
 				tree = BehaviorViews.attach(ScreenTree.of(described.get().outline(), this.manifest, templateFile), elements);
 				specFile = described.get().spec();
 				described.get().outline().forEach((n) -> addTemplate(screenTemplates, n.target()));
@@ -188,6 +195,9 @@ public class WorkbenchController {
 					}
 				}
 			}
+		}
+		if (model.getAttribute("attachAt") != null && !this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 템플릿을 고칠 수 있습니다");
 		}
 		model.addAttribute("screenTemplates", screenTemplates);
 		model.addAttribute("behaviorModules", behaviorModules);
@@ -724,7 +734,46 @@ public class WorkbenchController {
 	 * @param node 돌아가서 다시 고를 구조의 줄. 없으면 {@code null}
 	 */
 	public record AttachChange(String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome, Integer node,
-			String component, String template, int line, String option, String key, String value, boolean detach) {
+			String component, String template, int line, Map<String, String> data, String option, String key, String value,
+			boolean detach, boolean fromPlace) {
+	}
+
+	/** 미리보기에서 고른 요소의 위치 ({@code memo/internal/fields:9}). 앱 템플릿만 */
+	private static final java.util.regex.Pattern AT = java.util.regex.Pattern
+		.compile("((?!cozy/)[a-z0-9_-]+(?:/[a-z0-9_-]+)*):([1-9][0-9]{0,5})");
+
+	/** {@code data.이름}의 이름 */
+	private static final java.util.regex.Pattern DATA_NAME = java.util.regex.Pattern.compile("[a-z][a-z0-9-]*");
+
+	/** 고른 요소에 붙이기: 그 줄의 요소, 붙은 컴포넌트, 고를 수 있는 컴포넌트 */
+	private BehaviorViews.Place place(String at, String component, Map<String, BehaviorViews.Component> components) {
+		java.util.regex.Matcher m = AT.matcher(at);
+		if (!m.matches()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] at은 앱 템플릿:줄 모양입니다 (예: memo/internal/fields:9): " + at);
+		}
+		String text = this.engine.source("src/main/resources/templates/" + m.group(1) + ".html")
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 없는 템플릿입니다: " + m.group(1)));
+		return BehaviorViews.place(m.group(1), Integer.parseInt(m.group(2)), text, components, component);
+	}
+
+	/** 폼의 {@code data.이름}: 값을 적었고 지금 값({@code was.이름})과 다른 것만 */
+	static Map<String, String> attachData(Map<String, String[]> parameters) {
+		Map<String, String> data = new LinkedHashMap<>();
+		parameters.forEach((name, values) -> {
+			if (name.startsWith("data.") && values.length > 0) {
+				String key = name.substring("data.".length());
+				if (!DATA_NAME.matcher(key).matches()) {
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] data-* 이름은 소문자와 -입니다: " + key);
+				}
+				String value = values[values.length - 1].strip();
+				String[] was = parameters.get("was." + key);
+				String before = (was != null && was.length > 0) ? was[was.length - 1].strip() : "";
+				if (!value.isEmpty() && !value.equals(before)) {
+					data.put(key, value);
+				}
+			}
+		});
+		return data;
 	}
 
 	private static final Map<String, String> ATTACH_LABELS = Map.of("on", "이벤트", "text", "글자", "show", "보임", "bind", "속성", "model",
@@ -732,8 +781,22 @@ public class WorkbenchController {
 
 	/** 속성 패널의 붙이기·떼기를 {@code cozy attach}의 인자로 */
 	static List<String> attachArgs(String component, String template, int line, String option, String key, String value, boolean detach) {
+		return attachArgs(component, template, line, Map.of(), option, key, value, detach);
+	}
+
+	/**
+	 * 붙이기 폼을 {@code cozy attach}의 인자로.
+	 *
+	 * @param data {@code data-*} 이름 → 값 ({@code --data 이름=값})
+	 * @param option 붙일 것. 빈 문자열이면 {@code data-*}만 (새 자리면 {@code x-data}도)
+	 */
+	static List<String> attachArgs(String component, String template, int line, Map<String, String> data, String option, String key,
+			String value, boolean detach) {
 		List<String> args = new ArrayList<>(List.of("attach", component, "--at", template + ":" + line));
+		data.forEach((name, text) -> args.addAll(List.of("--data", name + "=" + text)));
 		switch (option) {
+			case "" -> {
+			}
 			case "on" -> args.addAll(List.of("--on", key + ":" + value));
 			case "bind" -> args.addAll(List.of("--bind", key + ":" + value));
 			case "data" -> args.addAll(List.of("--data", key + "=" + value));
@@ -755,11 +818,12 @@ public class WorkbenchController {
 			@RequestParam(required = false) Integer node, @RequestParam String component, @RequestParam String template,
 			@RequestParam int line, @RequestParam String option, @RequestParam(defaultValue = "") String key,
 			@RequestParam(defaultValue = "") String value, @RequestParam(defaultValue = "false") boolean detach,
-			@RequestParam String step, HttpServletRequest request, RedirectAttributes flash) {
+			@RequestParam(defaultValue = "false") boolean fromPlace, @RequestParam String step, HttpServletRequest request,
+			RedirectAttributes flash) {
 		if (!STEPS.contains(step)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
 		}
-		if (!BehaviorViews.OPTIONS.contains(option)) {
+		if (!option.isEmpty() && !BehaviorViews.OPTIONS.contains(option)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] option은 " + BehaviorViews.OPTIONS + " 가운데 하나입니다: " + option);
 		}
 		requireSameOrigin(request);
@@ -769,18 +833,33 @@ public class WorkbenchController {
 		if (this.screenSpecs.all().stream().noneMatch((s) -> s.screen().equals(spec))) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec);
 		}
-		List<String> args = attachArgs(component, template, line, option, key.strip(), value.strip(), detach);
+		Map<String, String> data = detach ? Map.of() : attachData(request.getParameterMap());
+		List<String> args = attachArgs(component, template, line, data, option, key.strip(), value.strip(), detach);
 		boolean dryRun = step.equals("plan");
 		WorkbenchEngine.Outcome outcome = this.engine.execute(args, dryRun);
-		String what = ATTACH_LABELS.get(option) + (key.isBlank() ? "" : " " + key.strip()) + (value.isBlank() ? "" : " " + value.strip());
-		flash.addFlashAttribute("attachChange", new AttachChange(component + " · " + what + (detach ? " 떼기" : ""), commandLine(args), dryRun,
-				outcome, node, component, template, line, option, key.strip(), value.strip(), detach));
+		List<String> what = new ArrayList<>();
+		if (!data.isEmpty()) {
+			what.add("넘기는 값 " + String.join(", ", data.keySet()));
+		}
+		if (!option.isEmpty()) {
+			what.add(ATTACH_LABELS.get(option) + (key.isBlank() ? "" : " " + key.strip()) + (value.isBlank() ? "" : " " + value.strip()));
+		}
+		if (what.isEmpty()) {
+			what.add("컴포넌트의 자리");
+		}
+		flash.addFlashAttribute("attachChange", new AttachChange(component + " · " + String.join(" · ", what) + (detach ? " 떼기" : ""),
+				commandLine(args), dryRun, outcome, node, component, template, line, data, option, key.strip(), value.strip(), detach,
+				fromPlace));
 		org.springframework.web.util.UriComponentsBuilder back = org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
 			.queryParam("spec", spec)
 			.queryParam("state", state)
 			.queryParam("w", WIDTHS.contains(w) ? w : "full");
 		if (node != null) {
 			back.queryParam("node", node);
+		}
+		if (fromPlace && outcome.error() != null) {
+			// 거절되면 붙이기 카드를 다시 열어 고쳐 보낸다
+			back.queryParam("at", template + ":" + line).queryParam("component", component);
 		}
 		return "redirect:" + back.build().encode().toUriString();
 	}
@@ -1008,8 +1087,20 @@ public class WorkbenchController {
 	static String commandLine(List<String> args) {
 		StringBuilder line = new StringBuilder("cozy");
 		for (String arg : args) {
-			boolean quote = arg.isEmpty() || arg.chars().anyMatch((c) -> Character.isWhitespace(c) || c == '"');
-			line.append(' ').append(quote ? '"' + arg.replace("\\", "\\\\").replace("\"", "\\\"") + '"' : arg);
+			// 셸이 펼치는 글자($, `)가 있으면 작은따옴표로 (Thymeleaf 식 ${…}을 그대로 넘긴다)
+			boolean expands = arg.indexOf('$') >= 0 || arg.indexOf('`') >= 0;
+			boolean quote = arg.isEmpty() || expands || arg.chars().anyMatch((c) -> Character.isWhitespace(c) || c == '"');
+			if (expands && arg.indexOf('\'') < 0) {
+				line.append(" '").append(arg).append('\'');
+			}
+			else if (quote) {
+				line.append(" \"")
+					.append(arg.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$").replace("`", "\\`"))
+					.append('"');
+			}
+			else {
+				line.append(' ').append(arg);
+			}
 		}
 		return line.toString();
 	}
