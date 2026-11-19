@@ -37,7 +37,7 @@
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
-| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261116 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
+| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261117 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
 | maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
 | maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
@@ -80,3 +80,4 @@
 - 2026-11-19(M53): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0). Thymeleaf 3.1.7은 Boot BOM이 관리하므로 Boot를 따른다. 더 새로운 것은 RC인 Boot 4.2.0-RC2·Modulith 2.2.0-RC1뿐이다.
 - 2026-11-19(M54): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0). 줄 비교는 cozy-cli 안의 짧은 코드(`LineDiff`)이고 라이브러리를 더하지 않았다.
 - 2026-11-19(M55): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0).
+- 2026-11-20(릴리스 2.3.0): 다시 확인했다. Closure Compiler v20261117(2026-11-18 Maven Central)으로 올렸다. Temurin의 새 GA jdk-25.0.5.1+2는 Linux·Alpine·macOS aarch64·s390x만 있고 Windows x64가 없어 번들 JDK는 25.0.5+8 그대로다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.1, 플러그인, GitHub Actions, WiX 7.0.1, Tabler 1.7.5, Tabler Icons 3.52.0, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). 더 새로운 것은 RC인 Boot 4.2.0-RC2·Modulith 2.2.0-RC1·Maven 4와 `next` 태그의 htmx 4.0.2뿐이라 올리지 않는다.

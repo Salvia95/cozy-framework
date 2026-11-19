@@ -1,7 +1,7 @@
 # 다음 릴리스의 채널 색인(cozy-channel.json) 내용. 릴리스 절차의 "버전 바꾸기"에서 함께 고친다.
 # 릴리스 워크플로가 cozy channel release로 읽는다. version이 태그의 판과 다르면 check-version.sh가 실패한다.
 # breaking(앱을 올릴 때 손이 가는 판)은 적지 않는다. 주 버전이 바뀐 판(x.0.0)이 breaking이다.
-version: 2.2.0
-summary: "화면 안의 동작을 동작 명세에서 만들고(cozy add behavior, cozy attach), 워크벤치와 describe가 요소마다 붙은 동작과 화면 이벤트를 보이며, C13이 붙이지 않은 동작을 막는다"
+version: 2.3.0
+summary: "워크벤치에서 화면 안의 동작을 보고, 고치고, 요소에 붙이고, 바뀐 줄을 확인하고, 검사의 C12·C13을 고친다. dev 실행은 템플릿과 static/을 소스에서 읽어 새로고침만으로 보인다"
 # 앱 폴더에서 돌릴 명령. 없으면 []
-appSteps: ["cozy sync agents", "cozy migrate behaviors"]
+appSteps: ["cozy sync agents"]
