@@ -79,3 +79,4 @@
 - 2026-11-19(M52): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Closure Compiler v20261116, Maven 3.10.1, Tabler 1.7.5, Tabler Icons 3.52.0, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). SnakeYAML 2.7은 Boot BOM이 2.6을 관리하므로 올리지 않는다. 더 새로운 것은 RC인 Boot 4.2·Modulith 2.2·Maven 4뿐이다.
 - 2026-11-19(M53): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0). Thymeleaf 3.1.7은 Boot BOM이 관리하므로 Boot를 따른다. 더 새로운 것은 RC인 Boot 4.2.0-RC2·Modulith 2.2.0-RC1뿐이다.
 - 2026-11-19(M54): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0). 줄 비교는 cozy-cli 안의 짧은 코드(`LineDiff`)이고 라이브러리를 더하지 않았다.
+- 2026-11-19(M55): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0).

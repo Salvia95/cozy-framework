@@ -513,6 +513,7 @@ cozy sync behaviors
 - 손으로 고친 JS는 명세에서 다시 만든 것으로 바뀐다. 명세가 없어진 모듈의 만든 JS는 지운다(`지움`).
 - 명세 폴더에 모듈 이름의 `.yml`이 아닌 파일이 있거나, 명세의 모듈이 없거나, 명세가 있는 모듈의 JS를 손으로 썼으면 아무것도 바꾸지 않고 실패한다.
 - `--force`는 받지 않는다(`sync agents`에만 쓴다).
+- 워크벤치의 검사 화면에서 C12 항목의 **변경 파일 확인**이 이 명령의 계획과 적용이다([workbench.md](workbench.md)).
 
 ## attach
 
@@ -635,6 +636,7 @@ cozy migrate behaviors --purpose "memoPanel=패널을 바꾼다"   # 목적 주�
 cozy check
 ```
 
+- 워크벤치의 검사 화면에서 C12 경고의 **변경 파일 확인**이 이 명령의 계획과 적용이다. 남은 일(`파일:줄`, 무엇이 낱말 밖인지, 그 코드)도 그 화면에 보인다([workbench.md](workbench.md)). 남은 일의 문구는 이름을 조사 없이 끝에 둔다(`두 번 받는 화면 이벤트입니다: memo:saved`).
 - **읽는 모양**: 옛 `cozy add behavior`가 만든 모양이다. 파일에는 `document.addEventListener('alpine:init', function () { … })`와 그 안의 `window.Alpine.data('이름', function () { var root = null; return { … }; })`만 둔다(화살표 함수도 읽는다). 등록 바로 위의 주석 첫 줄이 목적이다. 없으면 `--purpose 컴포넌트=목적`으로 준다.
 
 | JS | 명세 |

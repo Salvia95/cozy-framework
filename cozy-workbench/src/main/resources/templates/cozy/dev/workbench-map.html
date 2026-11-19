@@ -212,8 +212,9 @@
                 </tr>
               </th:block>
 
+              <tr class="cozy-workbench-props-section" id="module-screens"><th colspan="2" scope="colgroup">화면</th></tr>
+              <tr th:if="${m.screens.isEmpty()}"><td colspan="2" class="text-secondary">화면이 없습니다. 코드 생성의 화면이나 CRUD로 만듭니다.</td></tr>
               <th:block th:if="${!m.screens.isEmpty()}">
-                <tr class="cozy-workbench-props-section"><th colspan="2" scope="colgroup">화면</th></tr>
                 <tr>
                   <th scope="row" th:text="|화면 ${m.screens.size()}개|">화면 4개</th>
                   <td>

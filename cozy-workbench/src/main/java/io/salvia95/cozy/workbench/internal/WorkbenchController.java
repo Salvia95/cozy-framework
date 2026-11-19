@@ -457,8 +457,97 @@ public class WorkbenchController {
 
 	/**
 	 * 검사 화면의 줄 하나: 위반과, 화면 파일이면 그 소스 보기.
+	 *
+	 * @param fix 워크벤치가 계획하고 적용할 수 있는 고치는 명령({@link #CHECK_FIXES}의 키). 없으면 {@code null}
+	 * @param places 고치는 화면 (C13: 붙일 화면, 붙인 곳, 동작 고치기, 화면 이벤트)
 	 */
-	public record Finding(WorkbenchEngine.Violation violation, ScreenLink link) {
+	public record Finding(WorkbenchEngine.Violation violation, ScreenLink link, String fix, List<Place> places) {
+
+		Finding(WorkbenchEngine.Violation violation, ScreenLink link) {
+			this(violation, link, fixOf(violation), placesOf(violation));
+		}
+	}
+
+	/** 고치는 화면으로 가는 링크 하나 */
+	public record Place(String label, String url) {
+	}
+
+	/** 검사 항목의 계획 버튼이 부르는 명령: 키 → {@code cozy} 뒤의 인자 */
+	static final Map<String, List<String>> CHECK_FIXES = Map.of("sync-behaviors", List.of("sync", "behaviors"), "migrate-behaviors",
+			List.of("migrate", "behaviors"));
+
+	/** 위반의 고치는 명령이 워크벤치가 부를 수 있는 것이면 그 키 */
+	static String fixOf(WorkbenchEngine.Violation violation) {
+		if (violation.command() == null) {
+			return null;
+		}
+		return CHECK_FIXES.entrySet()
+			.stream()
+			.filter((e) -> violation.command().equals("cozy " + String.join(" ", e.getValue())))
+			.map(Map.Entry::getKey)
+			.findFirst()
+			.orElse(null);
+	}
+
+	private static final java.util.regex.Pattern BEHAVIOR_SPEC = java.util.regex.Pattern.compile("src/main/resources/behaviors/([a-z][a-z0-9]*)\\.yml");
+
+	/**
+	 * C13 항목을 고치는 화면. 대상({@code memoPanel}, {@code memoSelection.drop}, {@code memoSelection → memo:picked},
+	 * {@code memoSelection ← memo:archived})에 맞춰 고른다.
+	 */
+	static List<Place> placesOf(WorkbenchEngine.Violation violation) {
+		if (!"C13".equals(violation.id()) || violation.target() == null || violation.file() == null) {
+			return List.of();
+		}
+		java.util.regex.Matcher spec = BEHAVIOR_SPEC.matcher(violation.file());
+		if (!spec.matches()) {
+			return List.of();
+		}
+		String module = spec.group(1);
+		String target = violation.target();
+		String component = target.split("[ .]", 2)[0];
+		String map = PATH + "/map?module=" + module;
+		Place edit = new Place("동작 고치기", PATH + "/commands?recipe=behavior&edit=" + component);
+		if (target.contains(" → ") || target.contains(" ← ")) {
+			String event = target.substring(target.indexOf(' ', component.length() + 1) + 1);
+			return List.of(edit, new Place("화면 이벤트", map + "#ui-event-" + event.replace(':', '-')));
+		}
+		if (target.contains(".")) {
+			return List.of(new Place("붙인 곳", map + "#behavior-" + component), edit);
+		}
+		return List.of(new Place("붙일 화면", map + "#module-screens"), edit);
+	}
+
+	/**
+	 * 검사 항목의 고치는 명령의 변경 파일이나 적용 결과.
+	 *
+	 * @param name 사람에게 보일 이름 ({@code 동작 명세에서 JS 다시 만들기})
+	 */
+	public record CheckFix(String fix, String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome) {
+	}
+
+	private static final Map<String, String> CHECK_FIX_NAMES = Map.of("sync-behaviors", "동작 명세에서 JS 다시 만들기", "migrate-behaviors",
+			"손으로 쓴 모듈 JS를 동작 명세로 옮기기");
+
+	/**
+	 * 검사 항목의 고치는 명령({@code cozy sync behaviors}, {@code cozy migrate behaviors})을 계획하거나 적용한다. 결과는 검사 화면 위에 보인다.
+	 */
+	@PostMapping("/check")
+	String fix(@RequestParam String fix, @RequestParam String step, HttpServletRequest request, RedirectAttributes flash) {
+		if (!STEPS.contains(step)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		List<String> args = CHECK_FIXES.get(fix);
+		if (args == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] fix는 " + new java.util.TreeSet<>(CHECK_FIXES.keySet()) + " 가운데 하나입니다: " + fix);
+		}
+		requireSameOrigin(request);
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 고칠 수 있습니다");
+		}
+		boolean dryRun = step.equals("plan");
+		flash.addFlashAttribute("checkFix", new CheckFix(fix, CHECK_FIX_NAMES.get(fix), commandLine(args), dryRun, this.engine.execute(args, dryRun)));
+		return "redirect:" + PATH + "/check";
 	}
 
 	/** 검사 화면의 파일 하나 */

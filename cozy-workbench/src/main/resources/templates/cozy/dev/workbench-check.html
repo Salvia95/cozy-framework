@@ -2,6 +2,8 @@
 <!--/*
   워크벤치의 검사 (/cozy/dev/workbench/check). cozy check의 결과를 그대로 보인다: 파일마다 위반, 고치는 법, 고치는 명령.
   화면 템플릿이나 스펙의 위반은 워크벤치의 소스 보기 그 줄로 이어진다.
+  C12의 고치는 명령(cozy sync behaviors, cozy migrate behaviors)은 계획 버튼(POST /cozy/dev/workbench/check)으로 변경 파일과 남은 일을 보이고 적용한다.
+  C13 항목은 고치는 화면(붙일 화면, 붙인 곳, 동작 고치기, 화면 이벤트)으로 이어진다. findingActions는 개요도 쓴다.
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 검사', ~{::main})}">
 <body>
@@ -17,6 +19,53 @@
     <div th:replace="~{cozy/component/alert :: alert('critical', ${'검사를 실행할 수 없습니다. ' + check.failure})}"></div>
   </th:block>
 
+  <!--/* 고치는 명령의 변경 파일이나 적용 결과 */-->
+  <section class="card mb-4" th:if="${checkFix != null}" th:with="fix=${checkFix}, outcome=${checkFix.outcome}" aria-labelledby="check-fix-title">
+    <div class="card-header"><h3 class="card-title" id="check-fix-title" th:text="${fix.dryRun} ? |${fix.name} · 변경 파일| : |${fix.name} · 적용 결과|">동작 명세에서 JS 다시 만들기 · 변경 파일</h3></div>
+    <div class="card-body">
+      <th:block th:if="${outcome.error != null}">
+        <div th:replace="~{cozy/component/alert :: alert('critical', ${outcome.error})}"></div>
+        <p class="text-secondary small mb-2">파일은 변경되지 않았습니다.</p>
+      </th:block>
+      <th:block th:if="${outcome.error == null}">
+        <p class="mb-2">
+          <strong th:text="${outcome.changesNothing()} ? '변경 사항 없음' : (${fix.dryRun} ? '적용 전입니다' : '적용했습니다')">적용 전입니다</strong>
+          <span class="text-secondary" th:if="${!outcome.changesNothing() and fix.dryRun}">· 아직 파일이 변경되지 않았습니다.</span>
+        </p>
+        <ul class="list-unstyled mb-2">
+          <li class="d-flex align-items-baseline gap-2" th:each="file : ${outcome.changes}">
+            <span class="badge flex-shrink-0" th:classappend="${file.action == 'unchanged'} ? 'cozy-tone-neutral' : (${file.action == 'delete'} ? 'cozy-tone-warning' : 'cozy-tone-info')" th:text="${file.label()}">수정</span>
+            <div class="cozy-workbench-file flex-fill">
+              <code th:text="${file.file}">src/main/resources/static/memo/memo.js</code>
+              <span class="d-block text-secondary small" th:if="${file.detail != null}" th:text="${file.detail}">동작 명세에서 만듦</span>
+              <th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${file}, ${liveResources})}"></th:block>
+            </div>
+          </li>
+        </ul>
+        <th:block th:if="${!outcome.manual.isEmpty()}">
+          <h4 class="subheader mt-3 mb-2" th:text="|남은 일 ${outcome.manual.size()}곳|">남은 일 1곳</h4>
+          <div class="mb-3" th:each="todo : ${outcome.manual}">
+            <code class="cozy-workbench-command" th:text="${todo.file}">src/main/resources/static/memo/memo.js:12</code>
+            <div th:text="${todo.what}">낱말 밖인 것</div>
+            <pre class="cozy-workbench-context mt-1 mb-0" th:if="${!todo.snippet.isEmpty()}" th:text="${todo.snippet}">코드</pre>
+          </div>
+        </th:block>
+        <p class="text-secondary small mb-2" th:if="${outcome.visibility(liveResources) != null}"
+           th:text="${fix.dryRun} ? |적용하면: ${outcome.visibility(liveResources)}| : ${outcome.visibility(liveResources)}">바뀐 파일은 모두 새로고침하면 보입니다.</p>
+      </th:block>
+      <div class="d-flex align-items-start gap-2 mb-2">
+        <code class="cozy-workbench-command small flex-fill" th:text="${fix.command}">cozy sync behaviors</code>
+        <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${fix.command}">명령 복사</button>
+      </div>
+      <form method="post" th:action="@{/cozy/dev/workbench/check}" class="d-flex flex-wrap justify-content-end gap-2"
+            th:if="${fix.dryRun and outcome.error == null and !outcome.changesNothing()}">
+        <input type="hidden" name="fix" th:value="${fix.fix}">
+        <a class="btn" th:href="@{/cozy/dev/workbench/check}">취소</a>
+        <button type="submit" class="btn btn-primary" name="step" value="apply">적용</button>
+      </form>
+    </div>
+  </section>
+
   <th:block th:if="${engineAvailable and check.clean()}">
     <div class="card"><div class="card-body">
       <div th:replace="~{cozy/component/empty-state :: emptyState('circle-check', '위반 없음', '템플릿 규칙(R1~R16), 모듈 내부 구조(C8), 미구현 항목(C9), 동작 명세(C12), 화면 안의 동작(C13) 검사에서 위반이 없습니다. 컴파일, 렌더링, 스크립트 검사(C1, C3~C7, C10)는 mvn -o verify로 확인하세요.')}"></div>
@@ -26,7 +75,7 @@
   <th:block th:if="${engineAvailable and check.failure == null and !check.clean()}">
     <p class="mb-3">
       <strong th:text="|오류 ${check.errors}건|">오류 0건</strong><span th:if="${check.warnings > 0}" th:text="|, 경고 ${check.warnings}건|">, 경고 0건</span>
-      <span class="text-secondary">· 수정 명령이 있으면 복사해 터미널에서 실행하세요.</span>
+      <span class="text-secondary">· 계획 버튼이 있으면 여기서 고치고, 없으면 수정 명령을 복사해 터미널에서 실행하세요.</span>
     </p>
     <section class="card mb-4" th:each="group : ${groups}">
       <div class="card-header"><h3 class="card-title cozy-workbench-file"><code th:text="${group.file}">src/main/resources/templates/memo/api/list.html</code></h3></div>
@@ -54,7 +103,8 @@
                   <code class="cozy-workbench-command" th:text="${v.command}">cozy link dashboard --uses memo</code>
                   <button type="button" class="btn btn-sm cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${v.command}">복사</button>
                 </div>
-                <span class="text-secondary" th:if="${v.command == null}">직접 수정</span>
+                <th:block th:replace="~{cozy/dev/workbench-check :: findingActions(${finding})}"></th:block>
+                <span class="text-secondary" th:if="${v.command == null and finding.places.isEmpty()}">직접 수정</span>
               </td>
             </tr>
           </tbody>
@@ -64,5 +114,15 @@
   </th:block>
   </div>
 </main>
+
+<!--/* 위반 하나를 고치는 길: 계획 버튼(워크벤치가 부를 수 있는 명령), 고치는 화면 링크(C13) */-->
+<div class="btn-list mt-1" th:fragment="findingActions(cozyFinding)" th:if="${cozyFinding.fix != null or !cozyFinding.places.isEmpty()}">
+  <form method="post" th:action="@{/cozy/dev/workbench/check}" th:if="${cozyFinding.fix != null}">
+    <input type="hidden" name="fix" th:value="${cozyFinding.fix}">
+    <button type="submit" class="btn btn-sm" name="step" value="plan" th:aria-label="|${cozyFinding.violation.command} 변경 파일 확인|">변경 파일 확인</button>
+  </form>
+  <a class="btn btn-sm" th:each="place : ${cozyFinding.places}" th:href="${place.url}" th:text="${place.label}"
+     th:aria-label="|${cozyFinding.violation.target} ${place.label}|">동작 고치기</a>
+</div>
 </body>
 </html>

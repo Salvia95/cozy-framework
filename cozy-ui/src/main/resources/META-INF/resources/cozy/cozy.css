@@ -241,7 +241,7 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-findings td { vertical-align: top; }
 .cozy-workbench-findings th:nth-child(1), .cozy-workbench-findings td:nth-child(1) { width: 11rem; }
 .cozy-workbench-findings th:nth-child(2), .cozy-workbench-findings td:nth-child(2) { width: 4rem; }
-.cozy-workbench-findings th:nth-child(4), .cozy-workbench-findings td:nth-child(4) { width: 30%; }
+.cozy-workbench-findings th:nth-child(4), .cozy-workbench-findings td:nth-child(4) { width: 30%; min-width: 15rem; }
 .cozy-workbench-command { white-space: normal; overflow-wrap: anywhere; }
 .cozy-workbench-map dt { margin-top: .75rem; color: var(--tblr-secondary); font-size: var(--tblr-font-size-h5); font-weight: var(--tblr-font-weight-medium); }
 .cozy-workbench-map dt:first-child { margin-top: 0; }
