@@ -97,7 +97,7 @@
 - dev 실행에는 JDK가 필요하다(cozy-cli가 javac 파서를 쓴다).
 - **바로 보기**: 워크벤치가 켜지고 앱 프로젝트 폴더를 찾으면, 실행 중인 앱이 앱의 템플릿과 정적 자원을 소스 폴더에서 먼저 읽는다. 워크벤치로 적용한 템플릿, 동작 명세에서 만든 JS, 정적 파일이 다시 빌드하지 않고 새로고침만으로 미리보기와 앱 화면에 보인다.
   - 템플릿: `src/main/resources/templates/`를 먼저 보는 템플릿 해석기(`SourceTemplateResolver`, 캐시하지 않는다). 소스에 없는 템플릿(프레임워크 템플릿 `cozy/…`)은 빌드 결과에서 읽는다. 미리보기의 소스 위치(`data-cozy-src`)도 소스의 줄이다.
-  - 정적 자원: `spring.web.resources.static-locations`의 맨 앞에 `src/main/resources/static/`을 둔다. 앱 모듈의 컴포넌트 묶음(`/cozy/modules.js`)도 같은 곳을 먼저 읽는다([ui.md](ui.md)). 앱이 이 속성을 정했으면 그 값이 이긴다.
+  - 정적 자원: `spring.web.resources.static-locations`의 맨 앞에 `src/main/resources/static/`을 둔다. 앱 모듈의 컴포넌트 묶음(`/cozy/modules.js`)도 같은 곳을 먼저 읽는다(`cozy.ui.module-script-folders`, [ui.md](ui.md)). 앱이 이 속성을 정했으면 그 값이 이긴다.
   - Java, SQL, 설정은 지금처럼 다시 빌드하고 실행해야 한다. 확인 화면이 파일마다 알린다.
   - 배포 패키지와 dev 프로필이 아닌 테스트(렌더링 검사)는 워크벤치가 없으므로 빌드 결과만 읽는다. 끄려면 `cozy.dev.workbench.live-resources=false`다.
 

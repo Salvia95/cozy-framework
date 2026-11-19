@@ -65,7 +65,9 @@ public class CozyWorkbenchAutoConfiguration {
 		if (!live(engine, environment)) {
 			return new SourceLocationDialect();
 		}
-		return new SourceLocationDialect((template) -> engine.source("src/main/resources/templates/" + template + ".html"));
+		// 소스 해석기와 같이: 프레임워크 템플릿과 이름이 아닌 것(cozy-catalog:…)은 클래스패스에서 읽는다
+		return new SourceLocationDialect((template) -> (template.startsWith("cozy/") || template.contains(":") || template.contains(".."))
+				? java.util.Optional.empty() : engine.source("src/main/resources/templates/" + template + ".html"));
 	}
 
 	/**

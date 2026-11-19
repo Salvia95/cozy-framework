@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
  * <ul>
  * <li>바꾸거나 더한 행: {@code cozy add behavior <모듈> <동작> --state 이름:종류 …}. 바뀌지 않은 행은 넘기지 않는다.</li>
  * <li>지운 행(지금 있는데 폼에 없는 이름): {@code cozy remove behavior <모듈> <동작> --state 이름 …}.</li>
- * <li>두 명령은 한 계획이다({@link WorkbenchEngine#executeTogether}). 더하기가 먼저여서 지울 항목을 읽던 계산을 같은 폼에서 고칠 수 있다. 지운 이름을 다른
- * 칸에 다시 쓰면(상태 → 계산) 지우기가 먼저다.</li>
+ * <li>명령들은 한 계획이다({@link WorkbenchEngine#executeTogether}). 더하기가 먼저여서 지울 항목을 읽던 계산을 같은 폼에서 고칠 수 있다. 지운 이름을
+ * 다른 칸에 다시 쓰면(상태 → 계산) 그 이름만 더하기 앞에서 지운다(옮긴 이름의 지우기, 더하기, 나머지 지우기).</li>
  * </ul>
  * 폼의 이름은 {@link CommandForm}과 같다: {@code arg.모듈}, {@code arg.동작}, {@code opt.purpose}, {@code opt.state.0.name} 등.
  */
@@ -34,21 +34,7 @@ final class BehaviorEdit {
 
 	/** 동작 이름: 컴포넌트 이름에서 모듈을 뺀 카멜 표기를 소문자와 -로 ({@code memoBodyCount} → {@code body-count}) */
 	static String action(String module, String component) {
-		String key = component.substring(module.length());
-		StringBuilder kebab = new StringBuilder();
-		for (int i = 0; i < key.length(); i++) {
-			char c = key.charAt(i);
-			if (Character.isUpperCase(c)) {
-				if (i > 0) {
-					kebab.append('-');
-				}
-				kebab.append(Character.toLowerCase(c));
-			}
-			else {
-				kebab.append(c);
-			}
-		}
-		return kebab.toString();
+		return io.salvia95.cozy.cli.internal.recipe.Names.kebabOf(component.substring(module.length()));
 	}
 
 	/** 컴포넌트의 지금 항목으로 채운 폼 */
@@ -80,7 +66,8 @@ final class BehaviorEdit {
 		String module = behavior.module();
 		String action = action(module, behavior.name());
 		List<String> add = new ArrayList<>(List.of("add", "behavior", module, action));
-		List<String> remove = new ArrayList<>(List.of("remove", "behavior", module, action));
+		// 지운 행: 이름 → 옵션 (옮긴 이름은 더하기 앞에서 따로 지운다)
+		List<String[]> removals = new ArrayList<>();
 		String purpose = first(form, "opt.purpose");
 		if (!purpose.isEmpty() && !purpose.equals(behavior.purpose())) {
 			add.addAll(List.of("--purpose", purpose));
@@ -101,23 +88,25 @@ final class BehaviorEdit {
 			});
 			for (String name : now.keySet()) {
 				if (!sent.containsKey(name)) {
-					remove.addAll(List.of("--" + grid, name));
+					removals.add(new String[] { "--" + grid, name });
 					removed.add(name);
 				}
 			}
 		}
-		List<List<String>> commands = new ArrayList<>();
-		boolean adds = add.size() > 4;
-		boolean removes = remove.size() > 4;
-		boolean moved = added.stream().anyMatch(removed::contains);
-		if (removes && (moved || !adds)) {
-			commands.add(List.copyOf(remove));
+		List<String> first = new ArrayList<>(List.of("remove", "behavior", module, action));
+		List<String> last = new ArrayList<>(List.of("remove", "behavior", module, action));
+		for (String[] r : removals) {
+			(added.contains(r[1]) ? first : last).addAll(List.of(r[0], r[1]));
 		}
-		if (adds) {
+		List<List<String>> commands = new ArrayList<>();
+		if (first.size() > 4) {
+			commands.add(List.copyOf(first));
+		}
+		if (add.size() > 4) {
 			commands.add(List.copyOf(add));
 		}
-		if (removes && adds && !moved) {
-			commands.add(List.copyOf(remove));
+		if (last.size() > 4) {
+			commands.add(List.copyOf(last));
 		}
 		return List.copyOf(commands);
 	}

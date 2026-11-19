@@ -33,6 +33,9 @@ public class WorkbenchEnvironmentPostProcessor implements EnvironmentPostProcess
 
 	static final String STATIC_LOCATIONS = "spring.web.resources.static-locations";
 
+	/** cozy-ui의 모듈 JS 묶음이 먼저 읽는 폴더 ({@code CozyModuleScripts.FOLDERS}) */
+	static final String MODULE_SCRIPT_FOLDERS = "cozy.ui.module-script-folders";
+
 	/** Spring Boot의 기본 정적 위치 */
 	static final String DEFAULT_LOCATIONS = "classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/";
 
@@ -53,7 +56,10 @@ public class WorkbenchEnvironmentPostProcessor implements EnvironmentPostProcess
 		}
 	}
 
-	/** {@code spring.web.resources.static-locations}: 소스의 {@code static/}을 맨 앞에. 끄거나 앱 프로젝트 폴더가 아니면 값이 없다 */
+	/**
+	 * {@code spring.web.resources.static-locations}: 소스의 {@code static/}을 맨 앞에. {@code cozy.ui.module-script-folders}: 소스의
+	 * {@code static/} (모듈 JS 묶음). 끄거나 앱 프로젝트 폴더가 아니면 값이 없다
+	 */
 	static final class LiveStaticLocations extends PropertySource<Object> {
 
 		/** 출처 객체로 두지 않는다: 환경을 출처로 가진 속성 출처는 Spring Boot가 다시 펼쳐 본다 */
@@ -66,10 +72,11 @@ public class WorkbenchEnvironmentPostProcessor implements EnvironmentPostProcess
 
 		@Override
 		public Object getProperty(String name) {
-			if (!STATIC_LOCATIONS.equals(name) || !live(this.environment)) {
+			boolean locations = STATIC_LOCATIONS.equals(name);
+			if ((!locations && !MODULE_SCRIPT_FOLDERS.equals(name)) || !live(this.environment)) {
 				return null;
 			}
-			return sourceFolder(this.environment).map((resources) -> folder(resources.resolve("static")) + "," + DEFAULT_LOCATIONS)
+			return sourceFolder(this.environment).map((resources) -> folder(resources.resolve("static")) + (locations ? "," + DEFAULT_LOCATIONS : ""))
 				.orElse(null);
 		}
 	}

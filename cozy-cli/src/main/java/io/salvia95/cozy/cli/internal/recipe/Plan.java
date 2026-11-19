@@ -121,9 +121,10 @@ public final class Plan {
 		Change planned = this.changes.get(file);
 		Action action = (planned != null && planned.action() == Action.CREATE) ? Action.CREATE : Action.EDIT;
 		// 같은 계획에서 같은 파일을 다시 고치면 내용을 잇는다. 같은 내용은 한 번만 적는다
-		String merged = (planned != null && planned.detail() != null && action == Action.EDIT
-				&& !java.util.List.of(planned.detail().split("; ")).contains(detail)) ? planned.detail() + "; " + detail
-						: (planned != null && planned.detail() != null && action == Action.EDIT) ? planned.detail() : detail;
+		// 같은 계획에서 다시 고치면 내용을 잇는다 (같은 내용은 한 번만)
+		boolean again = planned != null && planned.detail() != null && action == Action.EDIT;
+		String merged = !again ? detail
+				: java.util.List.of(planned.detail().split("; ")).contains(detail) ? planned.detail() : planned.detail() + "; " + detail;
 		this.changes.put(file, new Change(action, file, merged, content));
 		return this;
 	}

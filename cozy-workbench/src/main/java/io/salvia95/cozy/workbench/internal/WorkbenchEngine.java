@@ -88,7 +88,14 @@ public class WorkbenchEngine {
 		if (this.projectDir == null) {
 			return Optional.empty();
 		}
-		Path path = this.projectDir.resolve(file).normalize();
+		Path path;
+		try {
+			path = this.projectDir.resolve(file).normalize();
+		}
+		catch (java.nio.file.InvalidPathException ex) {
+			// 경로가 아닌 이름 (Windows의 : | 등)
+			return Optional.empty();
+		}
 		if (!path.startsWith(this.projectDir) || !Files.isRegularFile(path)) {
 			return Optional.empty();
 		}
@@ -135,28 +142,32 @@ public class WorkbenchEngine {
 
 	/** 프로젝트가 필요 없는 명령({@code recipes}) */
 	private static Result runAnywhere(String... args) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ByteArrayOutputStream err = new ByteArrayOutputStream();
-		int code = CozyCli.run(args, Path.of(""), null, new PrintStream(out, true, StandardCharsets.UTF_8),
-				new PrintStream(err, true, StandardCharsets.UTF_8));
-		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
+		return capture((out, err) -> CozyCli.run(args, Path.of(""), null, out, err));
 	}
 
 	private Result run(List<String> args) {
+		List<String> all = new ArrayList<>(args);
+		all.addAll(projectOptions());
+		return capture((out, err) -> CozyCli.run(all.toArray(String[]::new), this.projectDir, System.getenv("COZY_REPOSITORY"), out, err));
+	}
+
+	/** 모든 명령에 붙이는 {@code --project}와 {@code --ui} (실행 중인 cozy-ui) */
+	private List<String> projectOptions() {
 		if (this.projectDir == null) {
 			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
-		List<String> all = new ArrayList<>(args);
-		all.add("--project");
-		all.add(this.projectDir.toString());
+		List<String> options = new ArrayList<>(List.of("--project", this.projectDir.toString()));
 		if (this.uiLocation != null) {
-			all.add("--ui");
-			all.add(this.uiLocation.toString());
+			options.addAll(List.of("--ui", this.uiLocation.toString()));
 		}
+		return options;
+	}
+
+	/** 명령 하나를 부르고 출력과 오류를 글로 받는다 */
+	private static Result capture(java.util.function.ToIntBiFunction<PrintStream, PrintStream> command) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		ByteArrayOutputStream err = new ByteArrayOutputStream();
-		int code = CozyCli.run(all.toArray(String[]::new), this.projectDir, System.getenv("COZY_REPOSITORY"),
-				new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
+		int code = command.applyAsInt(new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
 		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
 	}
 
@@ -466,7 +477,8 @@ public class WorkbenchEngine {
 
 		/**
 		 * 적용한 뒤 새로고침만으로 보이는가. 화면 명세와 동작 명세는 워크벤치가 소스에서 읽는다. 템플릿과 {@code static/}은 dev에서 소스를 먼저 읽을 때만
-		 * 그렇다({@code cozy.dev.workbench.live-resources}). 그 밖(Java, SQL, 설정, 테스트)은 다시 빌드하고 실행해야 한다.
+		 * 그렇고({@code cozy.dev.workbench.live-resources}), 지운 것은 빌드 결과에 남으므로 아니다. 그 밖(Java, SQL, 설정, 테스트)은 다시 빌드하고
+		 * 실행해야 한다.
 		 *
 		 * @param live 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가
 		 */
@@ -474,7 +486,9 @@ public class WorkbenchEngine {
 			if (this.file.startsWith("src/main/resources/specs/") || this.file.startsWith("src/main/resources/behaviors/")) {
 				return true;
 			}
-			return live && (this.file.startsWith("src/main/resources/templates/") || this.file.startsWith("src/main/resources/static/"));
+			// 지운 템플릿과 정적 파일은 빌드 결과의 것이 남아 계속 보인다
+			return live && !this.action.equals("delete")
+					&& (this.file.startsWith("src/main/resources/templates/") || this.file.startsWith("src/main/resources/static/"));
 		}
 
 		/** 화면에 보일 동작 이름 */
@@ -557,22 +571,13 @@ public class WorkbenchEngine {
 	 * @param commands 명령마다 {@code cozy} 뒤의 인자
 	 */
 	public Outcome executeTogether(List<List<String>> commands, boolean dryRun) {
-		if (this.projectDir == null) {
-			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
-		}
-		List<String> options = new ArrayList<>(List.of("--json", "--project", this.projectDir.toString()));
+		List<String> options = new ArrayList<>(List.of("--json"));
+		options.addAll(projectOptions());
 		if (dryRun) {
 			options.add("--dry-run");
 		}
-		if (this.uiLocation != null) {
-			options.add("--ui");
-			options.add(this.uiLocation.toString());
-		}
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ByteArrayOutputStream err = new ByteArrayOutputStream();
-		int code = CozyCli.runTogether(commands, options, this.projectDir, System.getenv("COZY_REPOSITORY"),
-				new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
-		return outcome(new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8)), this::current);
+		return outcome(capture((out, err) -> CozyCli.runTogether(commands, options, this.projectDir, System.getenv("COZY_REPOSITORY"), out, err)),
+				this::current);
 	}
 
 	/** 프로젝트 기준 파일의 지금 글. 없으면 빈 문자열 */

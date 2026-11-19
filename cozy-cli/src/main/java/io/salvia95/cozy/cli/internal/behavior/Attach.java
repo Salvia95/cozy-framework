@@ -131,7 +131,7 @@ public final class Attach {
 		List<Tag> tags = TemplateTags.read(text);
 		Tag tag = element(tags, text, where, line);
 		Attr own = tag.attr("x-data");
-		if (own != null && own.value() != null) {
+		if (own != null) {
 			return new Place(open(text, tag), own.value(), true);
 		}
 		return new Place(open(text, tag), scope(tags, tag.parent()), false);
@@ -150,6 +150,11 @@ public final class Attach {
 		if (tag.name().equals("th:block") || tag.attr("th:replace") != null || tag.attr("data-th-replace") != null) {
 			throw new CliException(where + ":" + line + "의 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다: " + open(text, tag) + ". 감싸는 요소나 "
 					+ "그 안의 요소에 붙입니다.");
+		}
+		Attr data = tag.attr("x-data");
+		if (data != null && (data.value() == null || data.value().isBlank())) {
+			throw new CliException(where + ":" + line + "의 요소에 이름 없는 x-data가 있습니다: " + open(text, tag) + ". 컴포넌트는 이름으로 붙입니다. "
+					+ "그 x-data를 지우거나 다른 요소에 붙입니다.");
 		}
 		return tag;
 	}

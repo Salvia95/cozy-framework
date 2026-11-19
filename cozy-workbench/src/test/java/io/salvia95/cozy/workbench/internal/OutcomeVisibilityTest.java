@@ -29,6 +29,9 @@ class OutcomeVisibilityTest {
 		assertThat(template.immediate(false)).isFalse();
 		assertThat(spec.immediate(false)).as("동작 명세와 화면 명세는 워크벤치가 소스에서 읽는다").isTrue();
 		assertThat(java.immediate(true)).isFalse();
+		assertThat(new WorkbenchEngine.Change("delete", "src/main/resources/static/memo/memo.js", null).immediate(true))
+			.as("지운 파일은 빌드 결과에 남아 계속 보인다")
+			.isFalse();
 	}
 
 	@Test

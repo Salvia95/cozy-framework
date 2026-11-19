@@ -43,4 +43,15 @@ class AttachPlaceTest {
 		assertThatThrownBy(() -> Attach.place(TEMPLATE, "memo/internal/fields", 8)).hasMessageContaining("시작하는 요소가 2개입니다");
 		assertThatThrownBy(() -> Attach.place(TEMPLATE, "memo/internal/fields", 10)).hasMessageContaining("시작하는 요소가 0개입니다");
 	}
+
+	@Test
+	void anXDataWithoutANameIsRefusedHereAndByTheCommand() {
+		String anonymous = "<div x-data>\n  <p>안</p>\n</div>\n";
+
+		assertThatThrownBy(() -> Attach.place(anonymous, "memo/api/list", 1)).hasMessageContaining("memo/api/list:1의 요소에 이름 없는 x-data가 있습니다");
+		assertThatThrownBy(() -> Attach.apply(anonymous, "memo/api/list", 1,
+				new Attach.Target("memoPanel", java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of()),
+				new Attach.Request(java.util.List.of(), java.util.List.of(), true, false)))
+			.hasMessageContaining("이름 없는 x-data");
+	}
 }

@@ -378,10 +378,11 @@ public class WorkbenchController {
 			entries.add(new WorkbenchSearch.Entry("생성 항목", recipe.title(), recipe.commandText(), recipe.group(), recipe.does(),
 					PATH + "/commands?recipe=" + recipe.name(), List.of(recipe.does(), recipe.name())));
 		}
+		Map<String, Object> described = this.engine.available() ? this.engine.describe() : Map.of();
 		if (this.engine.available()) {
-			entries.addAll(WorkbenchSearch.behaviors(this.engine.describe(), PATH + "/map?module="));
+			entries.addAll(WorkbenchSearch.behaviors(described, PATH + "/map?module="));
 		}
-		if (this.engine.available() && this.engine.describe().get("modules") instanceof List<?> modules) {
+		if (described.get("modules") instanceof List<?> modules) {
 			List<Map<String, Object>> list = new ArrayList<>();
 			modules.forEach((item) -> list.add((Map<String, Object>) item));
 			for (ModuleGraph.Node node : ModuleGraph.of(list, null).nodes()) {
@@ -510,7 +511,7 @@ public class WorkbenchController {
 		Place edit = new Place("동작 고치기", PATH + "/commands?recipe=behavior&edit=" + component);
 		if (target.contains(" → ") || target.contains(" ← ")) {
 			String event = target.substring(target.indexOf(' ', component.length() + 1) + 1);
-			return List.of(edit, new Place("화면 이벤트", map + "#ui-event-" + event.replace(':', '-')));
+			return List.of(edit, new Place("화면 이벤트", map + "#" + WorkbenchSearch.eventAnchor(event)));
 		}
 		if (target.contains(".")) {
 			return List.of(new Place("붙인 곳", map + "#behavior-" + component), edit);
@@ -1075,23 +1076,14 @@ public class WorkbenchController {
 		model.addAttribute("changed", outcome.changes().stream().filter((c) -> !c.action().equals("unchanged")).count());
 		if (editing != null && outcome.applied()) {
 			// 적용한 뒤에는 바뀐 명세로 폼을 다시 채운다. 지웠으면 새 동작을 만드는 폼이다
-			String now = change.equals("rename") ? editing.module() + camel(newName.strip()) : editing.name();
+			// 새 동작 이름(body-length)은 컴포넌트의 뒷부분(BodyLength)이 된다
+			String now = change.equals("rename") ? editing.module() + io.salvia95.cozy.cli.internal.recipe.Names.pascalOfKebab(newName.strip())
+					: editing.name();
 			WorkbenchEngine.Behavior after = change.equals("delete") ? null : behavior(now);
 			commandModel(recipe, (after == null) ? Map.of() : BehaviorEdit.values(after), null, after, model);
 			model.addAttribute("removedComponent", change.equals("delete") ? editing.name() : null);
 		}
 		return "cozy/dev/workbench-commands";
-	}
-
-	/** 소문자와 -의 동작 이름을 컴포넌트의 뒷부분으로 ({@code body-length} → {@code BodyLength}) */
-	private static String camel(String kebab) {
-		StringBuilder out = new StringBuilder();
-		for (String part : kebab.split("-")) {
-			if (!part.isEmpty()) {
-				out.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
-			}
-		}
-		return out.toString();
 	}
 
 	/** 주소의 {@code edit}: 고칠 컴포넌트. 없으면 {@code null} */

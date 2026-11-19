@@ -79,6 +79,23 @@ class BehaviorEditTest {
 	}
 
 	@Test
+	void onlyTheMovedNameIsRemovedBeforeTheAddAndTheRestAfter() {
+		Map<String, List<String>> form = filled();
+		form.remove("opt.state.1.name");
+		form.remove("opt.state.1.declaration");
+		form.put("opt.computed.0.expression", List.of("gt(length, 5000)"));
+		form.put("opt.computed.2.name", List.of("limit"));
+		form.put("opt.computed.2.expression", List.of("5000"));
+		form.put("opt.listen.0.action", List.of(""));
+		form.put("opt.listen.0.event", List.of(""));
+
+		assertThat(BehaviorEdit.commands(BODY_COUNT, form)).containsExactly(
+				List.of("remove", "behavior", "memo", "body-count", "--state", "limit"),
+				List.of("add", "behavior", "memo", "body-count", "--computed", "over:gt(length, 5000)", "--computed", "limit:5000"),
+				List.of("remove", "behavior", "memo", "body-count", "--listen", "memo:saved"));
+	}
+
+	@Test
 	void onlyRemovingRunsOnlyTheRemove() {
 		Map<String, List<String>> form = filled();
 		form.put("opt.listen.0.action", List.of(""));

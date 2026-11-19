@@ -186,15 +186,15 @@ public final class RecipeRunner {
 		}
 	}
 
+	/** 계획에 싣는 바뀐 뒤의 글의 최대 크기 (UTF-8 바이트) */
+	public static final int AFTER_LIMIT = 256 * 1024;
+
 	/**
 	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
 	 *
 	 * @param manual 명령이 고치지 못해 손으로 할 일
 	 * @param withSlots 바뀐 파일의 빈칸을 알리는가 (에이전트 문서는 빈칸 표시를 설명할 뿐이라 알리지 않는다)
 	 */
-	/** 계획에 싣는 바뀐 뒤의 글의 최대 크기 (UTF-8 바이트) */
-	public static final int AFTER_LIMIT = 256 * 1024;
-
 	private static void report(String recipe, Plan plan, List<Context.Manual> manual, String next, boolean withSlots,
 			boolean dryRun, boolean json, PrintStream out) {
 		if (!dryRun) {

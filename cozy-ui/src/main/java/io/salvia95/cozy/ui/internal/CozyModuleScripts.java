@@ -25,10 +25,13 @@ import org.springframework.core.io.support.ResourcePatternResolver;
  * <p>폴더 이름과 파일 이름이 다른 파일은 모듈 파일이 아니므로 넣지 않는다. 각 부분 앞에 원래 파일 이름을 주석으로 둔다(브라우저 오류의 줄
  * 번호는 묶음 기준이다). 파일이 빌드 결과 폴더에 있으면(개발 중) 부를 때마다 다시 읽고, jar 안이면 처음 한 번만 읽는다.
  *
- * <p>정적 위치({@code spring.web.resources.static-locations})에 파일 시스템 폴더({@code file:})가 있으면 그 폴더의 모듈 파일을 먼저 읽고,
- * 같은 모듈은 클래스패스의 것을 넣지 않는다. 브라우저가 받는 정적 파일과 같은 곳이다(워크벤치의 dev 실행은 소스 폴더를 맨 앞에 둔다).
+ * <p>{@value #FOLDERS}에 파일 시스템 폴더({@code file:})가 있으면 그 폴더의 모듈 파일을 먼저 읽고(부를 때마다 다시), 같은 모듈은 클래스패스의 것을
+ * 넣지 않는다. 워크벤치의 dev 실행이 소스의 {@code static/}을 넣는다. 정하지 않으면(운영) 지금처럼 클래스패스만 읽는다.
  */
 public final class CozyModuleScripts {
+
+	/** 모듈 파일을 먼저 읽는 파일 시스템 폴더 ({@code file:…/static/}, 쉼표로 여럿) */
+	public static final String FOLDERS = "cozy.ui.module-script-folders";
 
 	/** 묶음을 주는 경로 */
 	public static final String PATH = "/cozy/modules.js";
@@ -68,20 +71,20 @@ public final class CozyModuleScripts {
 		this(resources, List.of());
 	}
 
-	/** @param staticLocations 정적 위치. {@code file:}로 시작하는 것만 본다 */
-	public CozyModuleScripts(ResourcePatternResolver resources, List<String> staticLocations) {
+	/** @param folders 먼저 읽는 폴더({@value #FOLDERS}). {@code file:}로 시작하는 것만 본다 */
+	public CozyModuleScripts(ResourcePatternResolver resources, List<String> folders) {
 		this.resources = resources;
 		List<String> patterns = new java.util.ArrayList<>();
-		for (String location : staticLocations) {
+		for (String location : folders) {
 			String trimmed = location.strip();
 			if (trimmed.startsWith("file:")) {
 				patterns.add((trimmed.endsWith("/") ? trimmed : trimmed + "/") + "*/*.js");
 			}
 		}
-		boolean folders = !patterns.isEmpty();
+		boolean watched = !patterns.isEmpty();
 		patterns.add("classpath*:static/*/*.js");
 		this.patterns = List.copyOf(patterns);
-		this.reload = folders || inBuildFolder(resources);
+		this.reload = watched || inBuildFolder(resources);
 		this.bundle = read();
 	}
 
