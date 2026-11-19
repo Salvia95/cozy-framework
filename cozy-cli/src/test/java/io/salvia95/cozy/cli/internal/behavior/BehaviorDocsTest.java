@@ -34,6 +34,22 @@ class BehaviorDocsTest {
 	}
 
 	@Test
+	void theVocabularyIsWhatTheSpecReadsAndTheScriptChecks() {
+		assertThat(BehaviorVocabulary.names(BehaviorVocabulary.TYPE)).isEqualTo(KINDS);
+		assertThat(KINDS).allSatisfy((k) -> assertThat(BehaviorSpec.Type.of(k)).as(k).isNotNull());
+		assertThat(BehaviorVocabulary.of(BehaviorVocabulary.EVENT).stream().map((w) -> w.shape().replace("이름", ""))).isEqualTo(EVENT_VALUES);
+		for (BehaviorVocabulary.Word w : BehaviorVocabulary.of(BehaviorVocabulary.EVENT)) {
+			assertThat(Expr.parse(w.shape().replace("이름", "id"), "낱말")).as(w.shape()).isInstanceOf(Expr.EventRef.class);
+		}
+		assertThat(BehaviorScript.VALUES.keySet()).containsExactlyElementsOf(BehaviorVocabulary.names(BehaviorVocabulary.FUNCTION));
+		assertThat(BehaviorScript.STEPS).containsExactlyElementsOf(BehaviorVocabulary.names(BehaviorVocabulary.STEP));
+		assertThat(BehaviorVocabulary.WORDS).allSatisfy((w) -> {
+			assertThat(w.shape()).as(w.name()).startsWith(w.name());
+			assertThat(w.text()).as(w.name()).isNotBlank();
+		});
+	}
+
+	@Test
 	void theAddBehaviorPlaybookListsTheSameVocabulary() throws IOException {
 		String section = section("agents/skills/cozy-helper/references/add-behavior/PLAYBOOK.md", "## Syntax");
 

@@ -62,8 +62,9 @@ cozy attach memoBodyCount --at memo/internal/fields:9 --text label --cloak
 | Message contains | Action |
 | --- | --- |
 | `--purpose로 목적 한 문장` | Add `--purpose` with one sentence for the new behavior. |
-| `를 모릅니다` | Use only the functions, steps, and event values listed in Syntax; if the behavior cannot be written with them, tell the user that it needs a new `cozy` component. |
-| `이름 '` and `이 없습니다` | Declare the state or computed entry first, in the same command or an earlier one. |
+| `모르는 함수` or `모르는 이벤트 값` or `모르는 종류` | Use only the functions, steps, and event values listed in Syntax; if the behavior cannot be written with them, tell the user that it needs a new `cozy` component. |
+| `없는 이름입니다` or `없는 상태입니다` | Declare the state or computed entry first, in the same command or an earlier one. |
+| `인가요?` | The command names the closest existing name; use it when it is the name you meant, otherwise pick one from the printed list. |
 | `손으로 쓴 컴포넌트 파일입니다` | Tell the user that the module has a hand-written script, and do not delete it yourself. |
 | `[C12]` | Run `cozy sync behaviors` exactly as printed. |
 | `[C13]` | Attach the component and connect each action in the same task, as the message prints. |

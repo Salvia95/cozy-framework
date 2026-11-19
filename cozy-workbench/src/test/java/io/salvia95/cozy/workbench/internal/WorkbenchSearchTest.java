@@ -3,6 +3,7 @@ package io.salvia95.cozy.workbench.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -66,5 +67,30 @@ class WorkbenchSearchTest {
 		assertThat(WorkbenchSearch.search("  - / ", ENTRIES).groups()).isEmpty();
 		assertThat(WorkbenchSearch.search(null, ENTRIES).groups()).isEmpty();
 		assertThat(WorkbenchSearch.terms("x".repeat(500))).singleElement().asString().hasSize(WorkbenchSearch.MAX_QUERY);
+	}
+
+	@Test
+	void behaviorsAndScreenEventsAreFoundByNamePurposeAndEntries() {
+		Map<String, Object> describe = Map.of("modules",
+				List.of(Map.of("name", "memo", "behaviors",
+						List.of(Map.of("name", "memoBodyCount", "purpose", "본문을 쓰는 동안 글자 수와 한도를 보인다", "state",
+								List.of(Map.of("name", "length")), "computed", List.of(Map.of("name", "over")), "actions",
+								List.of(Map.of("name", "count")))))),
+				"uiEvents", List.of(Map.of("event", "memo:archived", "module", "memo", "emittedBy", List.of(Map.of("kind", "server")),
+						"receivedBy", List.of())));
+		List<Entry> entries = WorkbenchSearch.behaviors(describe, "/m?module=");
+
+		assertThat(entries).extracting(Entry::kind, Entry::label, Entry::href)
+			.containsExactly(org.assertj.core.groups.Tuple.tuple("화면 안의 동작", "memoBodyCount", "/m?module=memo#behavior-memoBodyCount"),
+					org.assertj.core.groups.Tuple.tuple("화면 이벤트", "memo:archived", "/m?module=memo#ui-event-memo-archived"));
+		assertThat(entries.get(1).context()).isEqualTo("memo · 내는 곳 1 · 받는 곳 0");
+		assertThat(ids(WorkbenchSearch.search("memoBodyCount", entries))).containsExactly("memoBodyCount");
+		assertThat(ids(WorkbenchSearch.search("body-count", entries))).as("명세의 키").containsExactly("memoBodyCount");
+		WorkbenchSearch.Result purpose = WorkbenchSearch.search("글자 수", entries);
+		assertThat(ids(purpose)).as("목적은 설명으로 찾는다").containsExactly("memoBodyCount");
+		assertThat(purpose.descriptions()).isTrue();
+		assertThat(ids(WorkbenchSearch.search("archived", entries))).containsExactly("memo:archived");
+		assertThat(WorkbenchSearch.search("memo", entries).groups()).extracting(Group::kind).as("묶음 순서")
+			.containsExactly("화면 안의 동작", "화면 이벤트");
 	}
 }

@@ -19,8 +19,9 @@
           <span class="cozy-workbench-text">
             <button type="button" class="cozy-workbench-label" x-on:click.prevent="selectNode" th:text="${item.label}">목록 탐색</button>
             <code class="cozy-workbench-id" th:if="${!item.detail.isEmpty()}" th:text="${item.detail}">list-with-filter</code>
-            <span class="cozy-workbench-behaviors" th:if="${!item.behaviors.isEmpty()}" th:title="|동작 ${item.behaviors.size()}|"><svg
-                th:replace="~{cozy/icon/tabler :: icon('bolt')}"></svg><span class="cozy-workbench-behaviors-count" th:text="|동작 ${item.behaviors.size()}|">동작 2</span></span>
+            <span class="cozy-workbench-behaviors" th:if="${!item.behaviors.isEmpty()}" th:title="|화면 안의 동작이 붙은 요소 ${item.behaviors.size()}개|"><svg
+                th:replace="~{cozy/icon/tabler :: icon('bolt')}"></svg><span class="cozy-workbench-behaviors-count" th:text="|동작 ${item.behaviors.size()}|">동작 2</span><span
+                class="visually-hidden">(화면 안의 동작이 붙은 요소 수)</span></span>
           </span>
           <a class="cozy-workbench-line small" th:text="${item.line}" th:aria-label="|${item.location} 소스 보기|"
              th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template')} + '#L' + ${item.line}">7</a>

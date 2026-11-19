@@ -147,6 +147,8 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .cozy-workbench-pane > .cozy-workbench-toolbar { flex: none; padding: .5rem 1rem; row-gap: .5rem; }
 .cozy-workbench-scroll > .card-body { flex: none; }
+/* 소스 위의 띠(경로와 안내, 볼 템플릿·모듈)는 내용만큼. 남는 높이는 소스의 스크롤 영역이 갖는다 */
+.cozy-workbench-source-files, .cozy-workbench-source-path { flex: none; }
 .cozy-workbench-group { display: flex; text-transform: none; font-size: var(--tblr-font-size-h5); }
 .cozy-workbench-screens .list-group-item { padding-top: .5rem; padding-bottom: .5rem; }
 @media (max-width: 1199.98px) {
@@ -195,6 +197,9 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-behavior-row { display: flex; align-items: flex-start; gap: .5rem; }
 .cozy-workbench-behavior-text { flex: 1 1 auto; min-width: 0; }
 .cozy-workbench-behavior-spec summary { cursor: pointer; }
+/* 코드 생성 폼의 낱말 표: 접어 두고, 모양과 한 줄 설명을 두 칸으로 */
+.cozy-workbench-words > summary { cursor: pointer; font-size: var(--tblr-font-size-h5); color: var(--tblr-secondary); }
+.cozy-workbench-words-table th { width: 40%; font-weight: var(--tblr-font-weight-normal); }
 .cozy-workbench-canvas { position: relative; margin: 0 auto; }
 .cozy-workbench-box { position: absolute; pointer-events: none; border-radius: 2px; }
 .cozy-workbench-box-hover { outline: 1px dashed var(--tblr-primary); }
@@ -236,7 +241,7 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-findings td { vertical-align: top; }
 .cozy-workbench-findings th:nth-child(1), .cozy-workbench-findings td:nth-child(1) { width: 11rem; }
 .cozy-workbench-findings th:nth-child(2), .cozy-workbench-findings td:nth-child(2) { width: 4rem; }
-.cozy-workbench-findings th:nth-child(4), .cozy-workbench-findings td:nth-child(4) { width: 30%; }
+.cozy-workbench-findings th:nth-child(4), .cozy-workbench-findings td:nth-child(4) { width: 30%; min-width: 15rem; }
 .cozy-workbench-command { white-space: normal; overflow-wrap: anywhere; }
 .cozy-workbench-map dt { margin-top: .75rem; color: var(--tblr-secondary); font-size: var(--tblr-font-size-h5); font-weight: var(--tblr-font-weight-medium); }
 .cozy-workbench-map dt:first-child { margin-top: 0; }
@@ -280,6 +285,24 @@ html.cozy-fit, html.cozy-fit body, html.cozy-fit .page { height: auto; min-heigh
 .cozy-workbench-change .badge { flex: none; min-width: 3.75rem; }
 .cozy-workbench-change-file { padding: 0; background: transparent; color: var(--tblr-body-color); font-size: var(--tblr-font-size-h4); overflow-wrap: anywhere; }
 .cozy-workbench-change-same .cozy-workbench-change-file { color: var(--tblr-secondary); }
+/* 변경 파일의 바뀐 줄: 지운 줄은 −와 critical 배경, 더한 줄은 +와 success 배경. 표시 글자가 있어 색만으로 나누지 않는다 */
+.cozy-workbench-change-more { padding-left: 4.5rem; }
+.cozy-workbench-when { color: var(--tblr-secondary); }
+.cozy-workbench-diff > summary { cursor: pointer; color: var(--tblr-secondary); }
+/* 변경 파일 트리 안에서는 트리의 접기 표시가 붙는다: 글자를 그 표시 오른쪽으로 */
+.cozy-workbench-nodes .cozy-workbench-diff > summary { padding-left: 1rem; cursor: pointer; }
+.cozy-workbench-nodes .cozy-workbench-diff > summary::before { top: .5rem; }
+.cozy-workbench-nodes .cozy-workbench-diff[open] > summary::before { top: .375rem; }
+.cozy-workbench-diff-body { margin-top: .25rem; max-height: 24rem; overflow: auto; border: var(--tblr-border-width) solid var(--tblr-border-color); border-radius: var(--tblr-border-radius); }
+.cozy-workbench-diff-table { width: 100%; border-collapse: collapse; font-family: var(--tblr-font-monospace); font-size: var(--tblr-font-size-h4); }
+.cozy-workbench-diff-table td { padding: 0 .375rem; vertical-align: top; }
+.cozy-workbench-diff-no { width: 1%; text-align: right; white-space: nowrap; color: var(--tblr-secondary); user-select: none; }
+.cozy-workbench-diff-mark { display: inline-block; width: 1.25ch; user-select: none; }
+.cozy-workbench-diff-text { display: inline; margin: 0; padding: 0; border: 0; background: transparent; color: var(--tblr-body-color); font-size: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cozy-workbench-diff-add { background: var(--cozy-success-bg); }
+.cozy-workbench-diff-del { background: var(--cozy-critical-bg); }
+.cozy-workbench-diff-add .cozy-workbench-diff-no, .cozy-workbench-diff-del .cozy-workbench-diff-no { color: var(--tblr-body-color); }
+.cozy-workbench-diff-gap td { color: var(--tblr-secondary); text-align: center; }
 /* 속성 패널의 매개변수 수정 */
 .cozy-workbench-props .cozy-workbench-arg-form .form-control, .cozy-workbench-props .cozy-workbench-arg-form .form-select { font-size: var(--tblr-font-size-h4); }
 .cozy-workbench-arg-result .alert { margin-bottom: .5rem; }

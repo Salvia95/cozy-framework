@@ -13,6 +13,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import io.salvia95.cozy.cli.CozyCli;
+import io.salvia95.cozy.cli.internal.LineDiff;
 
 /**
  * 워크벤치의 엔진. 에이전트가 쓰는 것과 같은 cozy 명령을 같은 프로세스에서 부르고 {@code --json} 출력을 읽는다. 워크벤치는 따로 앱을 읽거나 고치지
@@ -52,6 +53,18 @@ public class WorkbenchEngine {
 		return new WorkbenchEngine(project ? dir : null, uiLocation, true);
 	}
 
+	/**
+	 * 앱 프로젝트 폴더: {@code projectDir}이 있으면 그 폴더만, 없으면 {@code start}에서 위로 올라가며 찾는다.
+	 *
+	 * @param projectDir 정한 폴더. 비었으면 찾는다
+	 */
+	public static Optional<Path> locate(String projectDir, Path start) {
+		if (projectDir != null && !projectDir.isBlank()) {
+			return at(Path.of(projectDir), null).projectDir();
+		}
+		return Optional.ofNullable(find(start.toAbsolutePath().normalize()));
+	}
+
 	private static Path find(Path start) {
 		for (Path dir = start; dir != null; dir = dir.getParent()) {
 			if (Files.isRegularFile(dir.resolve("pom.xml")) && Files.isDirectory(dir.resolve("src/main/java"))) {
@@ -75,7 +88,14 @@ public class WorkbenchEngine {
 		if (this.projectDir == null) {
 			return Optional.empty();
 		}
-		Path path = this.projectDir.resolve(file).normalize();
+		Path path;
+		try {
+			path = this.projectDir.resolve(file).normalize();
+		}
+		catch (java.nio.file.InvalidPathException ex) {
+			// 경로가 아닌 이름 (Windows의 : | 등)
+			return Optional.empty();
+		}
 		if (!path.startsWith(this.projectDir) || !Files.isRegularFile(path)) {
 			return Optional.empty();
 		}
@@ -122,28 +142,32 @@ public class WorkbenchEngine {
 
 	/** 프로젝트가 필요 없는 명령({@code recipes}) */
 	private static Result runAnywhere(String... args) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		ByteArrayOutputStream err = new ByteArrayOutputStream();
-		int code = CozyCli.run(args, Path.of(""), null, new PrintStream(out, true, StandardCharsets.UTF_8),
-				new PrintStream(err, true, StandardCharsets.UTF_8));
-		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
+		return capture((out, err) -> CozyCli.run(args, Path.of(""), null, out, err));
 	}
 
 	private Result run(List<String> args) {
+		List<String> all = new ArrayList<>(args);
+		all.addAll(projectOptions());
+		return capture((out, err) -> CozyCli.run(all.toArray(String[]::new), this.projectDir, System.getenv("COZY_REPOSITORY"), out, err));
+	}
+
+	/** 모든 명령에 붙이는 {@code --project}와 {@code --ui} (실행 중인 cozy-ui) */
+	private List<String> projectOptions() {
 		if (this.projectDir == null) {
 			throw new IllegalStateException("[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
-		List<String> all = new ArrayList<>(args);
-		all.add("--project");
-		all.add(this.projectDir.toString());
+		List<String> options = new ArrayList<>(List.of("--project", this.projectDir.toString()));
 		if (this.uiLocation != null) {
-			all.add("--ui");
-			all.add(this.uiLocation.toString());
+			options.addAll(List.of("--ui", this.uiLocation.toString()));
 		}
+		return options;
+	}
+
+	/** 명령 하나를 부르고 출력과 오류를 글로 받는다 */
+	private static Result capture(java.util.function.ToIntBiFunction<PrintStream, PrintStream> command) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		ByteArrayOutputStream err = new ByteArrayOutputStream();
-		int code = CozyCli.run(all.toArray(String[]::new), this.projectDir, System.getenv("COZY_REPOSITORY"),
-				new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
+		int code = command.applyAsInt(new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
 		return new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8));
 	}
 
@@ -339,9 +363,19 @@ public class WorkbenchEngine {
 	 * 값의 구성 요소 하나 ({@code params[].parts[]}).
 	 *
 	 * @param flag 켜면 앞 요소 뒤에 붙는 글자({@code !}). 플래그가 아니면 {@code null}
+	 * @param strict {@code from}의 값만 받는가. 거짓이면 그 값은 제안이고 다른 글도 받는다(동작의 식)
 	 */
 	public record Part(String name, String label, boolean required, List<String> choices, java.util.Map<String, String> choiceLabels,
-			String from, String flag, String example) {
+			String from, String flag, String example, boolean strict) {
+	}
+
+	/**
+	 * 동작 명세의 낱말 하나 ({@code recipes[].vocabulary[]}).
+	 *
+	 * @param kind {@code type}(상태의 종류), {@code event}(이벤트 값), {@code function}(계산 함수), {@code step}(동작 단계)
+	 * @param shape 적는 모양 ({@code gt(a, b)})
+	 */
+	public record Word(String kind, String name, String shape, String text) {
 	}
 
 	/**
@@ -350,9 +384,10 @@ public class WorkbenchEngine {
 	 * @param title 목록에 보일 제목 ({@code CRUD 화면})
 	 * @param group 목록에서 묶는 분류 ({@code 화면})
 	 * @param command {@code cozy} 뒤에 오는 동작 ({@code [add, crud]})
+	 * @param vocabulary 동작 명세의 낱말. 동작 레시피가 아니면 빈 목록
 	 */
 	public record Recipe(String name, int stage, String title, String group, String usage, String does, String slots,
-			List<String> command, List<Param> params) {
+			List<String> command, List<Param> params, List<Word> vocabulary) {
 
 		/** 화면에 보일 명령 ({@code cozy add crud}) */
 		public String commandText() {
@@ -377,16 +412,21 @@ public class WorkbenchEngine {
 				for (JsonNode part : p.path("parts")) {
 					parts.add(new Part(part.path("name").asString(), part.path("label").asString(), part.path("required").asBoolean(),
 							strings(part.path("choices")), labels(part.path("choiceLabels")), text(part, "from"), text(part, "flag"),
-							part.path("example").asString("")));
+							part.path("example").asString(""), part.path("strict").asBoolean(true)));
 				}
 				params.add(new Param(p.path("name").asString(), p.path("label").asString(), p.path("option").asBoolean(),
 						p.path("required").asBoolean(), p.path("repeatable").asBoolean(), strings(p.path("choices")),
 						p.path("example").asString(""), labels(p.path("choiceLabels")), text(p, "from"), text(p, "separator"),
 						List.copyOf(parts), p.path("strict").asBoolean(true)));
 			}
+			List<Word> words = new ArrayList<>();
+			for (JsonNode w : r.path("vocabulary")) {
+				words.add(new Word(w.path("kind").asString(), w.path("name").asString(), w.path("shape").asString(), w.path("text").asString("")));
+			}
 			recipes.add(new Recipe(r.path("name").asString(), r.path("stage").asInt(), r.path("title").asString(),
 					r.path("group").asString(), r.path("usage").asString(),
-					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params)));
+					r.path("does").asString(), r.path("slots").asString(), strings(r.path("command")), List.copyOf(params),
+					List.copyOf(words)));
 		}
 		return recipes;
 	}
@@ -416,8 +456,40 @@ public class WorkbenchEngine {
 	 * 계획의 파일 하나.
 	 *
 	 * @param action {@code create}, {@code edit}, {@code delete}, {@code unchanged}
+	 * @param diff 지금 파일과 바뀐 뒤의 글을 견준 덩어리 (계획일 때만. 적용한 뒤나 지우는 파일이면 빈 목록)
+	 * @param diffOmitted 파일이 커서 계획이 바뀐 뒤의 글을 싣지 않았는가
 	 */
-	public record Change(String action, String file, String detail) {
+	public record Change(String action, String file, String detail, List<LineDiff.Hunk> diff, boolean diffOmitted) {
+
+		public Change(String action, String file, String detail) {
+			this(action, file, detail, List.of(), false);
+		}
+
+		/** 더한 줄 수 */
+		public long added() {
+			return this.diff.stream().flatMap((h) -> h.lines().stream()).filter(LineDiff.Line::added).count();
+		}
+
+		/** 지운 줄 수 */
+		public long removed() {
+			return this.diff.stream().flatMap((h) -> h.lines().stream()).filter(LineDiff.Line::removed).count();
+		}
+
+		/**
+		 * 적용한 뒤 새로고침만으로 보이는가. 화면 명세와 동작 명세는 워크벤치가 소스에서 읽는다. 템플릿과 {@code static/}은 dev에서 소스를 먼저 읽을 때만
+		 * 그렇고({@code cozy.dev.workbench.live-resources}), 지운 것은 빌드 결과에 남으므로 아니다. 그 밖(Java, SQL, 설정, 테스트)은 다시 빌드하고
+		 * 실행해야 한다.
+		 *
+		 * @param live 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가
+		 */
+		public boolean immediate(boolean live) {
+			if (this.file.startsWith("src/main/resources/specs/") || this.file.startsWith("src/main/resources/behaviors/")) {
+				return true;
+			}
+			// 지운 템플릿과 정적 파일은 빌드 결과의 것이 남아 계속 보인다
+			return live && !this.action.equals("delete")
+					&& (this.file.startsWith("src/main/resources/templates/") || this.file.startsWith("src/main/resources/static/"));
+		}
 
 		/** 화면에 보일 동작 이름 */
 		public String label() {
@@ -454,6 +526,27 @@ public class WorkbenchEngine {
 		public boolean changesNothing() {
 			return this.error == null && this.changes.stream().allMatch((c) -> c.action().equals("unchanged"));
 		}
+
+		/**
+		 * 바뀐 파일이 언제 보이는지 한 줄. 바뀐 파일이 없으면 {@code null}.
+		 *
+		 * @param live 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가
+		 */
+		public String visibility(boolean live) {
+			List<Change> changed = this.changes.stream().filter((c) -> !c.action().equals("unchanged")).toList();
+			if (this.error != null || changed.isEmpty()) {
+				return null;
+			}
+			long now = changed.stream().filter((c) -> c.immediate(live)).count();
+			long later = changed.size() - now;
+			if (later == 0) {
+				return "바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.";
+			}
+			if (now == 0) {
+				return "바뀐 파일은 앱을 다시 빌드하고 실행한 뒤 보입니다.";
+			}
+			return "바뀐 파일 " + now + "개는 새로고침하면 보이고, " + later + "개는 앱을 다시 빌드하고 실행한 뒤 보입니다.";
+		}
 	}
 
 	/**
@@ -468,14 +561,42 @@ public class WorkbenchEngine {
 		if (dryRun) {
 			all.add("--dry-run");
 		}
-		Result result = run(all);
+		return outcome(run(all), this::current);
+	}
+
+	/**
+	 * 화면 안의 동작 명령 여럿을 한 계획으로 실행한다({@link CozyCli#runTogether}). 하나라도 거절하면 아무 파일도 쓰지 않는다. 같은 명령을 터미널에서
+	 * 차례로 실행한 것과 같은 파일이 된다.
+	 *
+	 * @param commands 명령마다 {@code cozy} 뒤의 인자
+	 */
+	public Outcome executeTogether(List<List<String>> commands, boolean dryRun) {
+		List<String> options = new ArrayList<>(List.of("--json"));
+		options.addAll(projectOptions());
+		if (dryRun) {
+			options.add("--dry-run");
+		}
+		return outcome(capture((out, err) -> CozyCli.runTogether(commands, options, this.projectDir, System.getenv("COZY_REPOSITORY"), out, err)),
+				this::current);
+	}
+
+	/** 프로젝트 기준 파일의 지금 글. 없으면 빈 문자열 */
+	private String current(String file) {
+		return source(file).orElse("");
+	}
+
+	/** @param current 파일의 지금 글 (계획이 바뀐 뒤의 글과 견준다) */
+	static Outcome outcome(Result result, java.util.function.Function<String, String> current) {
 		if (result.code() != CozyCli.OK) {
 			return new Outcome(false, List.of(), List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
 		}
 		JsonNode root = JSON.readTree(result.out());
 		List<Change> changes = new ArrayList<>();
 		for (JsonNode c : root.path("plan")) {
-			changes.add(new Change(c.path("action").asString(), c.path("file").asString(), text(c, "detail")));
+			String after = text(c, "after");
+			List<LineDiff.Hunk> diff = (after != null) ? LineDiff.of(current.apply(c.path("file").asString()), after) : List.of();
+			changes.add(new Change(c.path("action").asString(), c.path("file").asString(), text(c, "detail"), diff,
+					c.path("afterOmitted").asBoolean(false)));
 		}
 		List<Slot> slots = new ArrayList<>();
 		for (JsonNode s : root.path("slots")) {

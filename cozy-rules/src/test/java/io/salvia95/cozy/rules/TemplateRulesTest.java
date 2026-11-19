@@ -812,9 +812,9 @@ class TemplateRulesTest {
 					  <button x-on:click="pik">오타</button>
 					</div>""");
 			assertThat(f.check()).extracting(Violation::line).containsExactly(4, 5, 6);
-			assertThat(f.check().get(0).format()).contains("'label'는 감싸는 컴포넌트 memoPicker에 없습니다", "있는 이름: clear, ids, none, pick");
-			assertThat(f.check().get(1).format()).contains("memoCount에 없습니다");
-			assertThat(f.check().get(2).format()).contains("'pik'");
+			assertThat(f.check().get(0).format()).contains("감싸는 컴포넌트 memoPicker에 없는 이름입니다: label", "있는 이름: clear, ids, none, pick");
+			assertThat(f.check().get(1).format()).contains("memoCount에 없는 이름입니다: none");
+			assertThat(f.check().get(2).format()).contains("없는 이름입니다: pik. pick인가요?");
 		}
 
 		@Test

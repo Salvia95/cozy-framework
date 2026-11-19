@@ -71,24 +71,28 @@ class BehaviorScriptTest {
 
 	@ParameterizedTest(name = "{0}")
 	@CsvSource(delimiter = '|', quoteCharacter = '`', textBlock = """
-			모르는 함수            | computed: { x: "sum(a, b)" }                                | 함수 sum(…)를 모릅니다
-			없는 이름              | computed: { x: "not(missing)" }                             | 이름 'missing'이 없습니다
-			종류가 다름            | state: { n: "number" }, computed: { x: "not(n)" }           | not(…)는 bool를 받는데 number를 받았습니다
+			모르는 함수            | computed: { x: "sum(a, b)" }                                | 모르는 함수입니다: sum(…)
+			없는 이름              | computed: { x: "not(missing)" }                             | 없는 이름입니다: missing
+			종류가 다름            | state: { n: "number" }, computed: { x: "not(n)" }           | 받는 종류: bool, 받은 종류: number
 			계산이 돈다            | computed: { a: "not(b)", b: "not(a)" }                      | 계산이 돌고 돌아 자기 자신을 씁니다
 			계산의 이벤트 값       | computed: { x: "empty(event.value)" }                       | 이벤트 값(event.value)은 동작에서만 씁니다
-			계산은 바꿀 수 없음    | computed: { x: "not(true)" }, actions: { a: "toggle(x)" }   | 'x'은 계산이라 바꿀 수 없습니다
+			계산은 바꿀 수 없음    | computed: { x: "not(true)" }, actions: { a: "toggle(x)" }   | 계산은 바꿀 수 없습니다: x
 			단계가 아닌 것         | state: { n: "number" }, actions: { a: "gt(n, 1)" }          | 단계는 set, toggle
-			값 자리의 단계         | state: { n: "bool" }, computed: { x: "toggle(n)" }          | toggle(…)는 동작의 단계라 값으로 쓸 수 없습니다
+			값 자리의 단계         | state: { n: "bool" }, computed: { x: "toggle(n)" }          | 동작의 단계는 값으로 쓸 수 없습니다: toggle(…)
 			set의 종류             | state: { n: "number" }, actions: { a: "set(n, event.value)" } | number(…)를 씁니다
 			다른 모듈의 이벤트     | state: { n: "bool" }, actions: { a: "emit('memo:x')" }      | 이 모듈의 이름으로 시작
-			없는 동작을 받음       | listens: { "demo:x": "missing" }                            | 동작 'missing'이 없습니다
-			format의 모르는 이름   | computed: { x: "format('{nope}')" }                         | 이름 'nope'이 없습니다
+			없는 동작을 받음       | listens: { "demo:x": "missing" }                            | 없는 동작입니다: missing
+			format의 모르는 이름   | computed: { x: "format('{nope}')" }                         | 없는 이름입니다: nope
 			format의 홀로 중괄호   | computed: { x: "format('a { b')" }                          | 중괄호 글자는 {{, }}로 적습니다
-			쓸 수 없는 이름        | state: { init: "bool" }                                     | 'init'은 쓸 수 없는 이름입니다
+			쓸 수 없는 이름        | state: { init: "bool" }                                     | 쓸 수 없는 이름입니다(Alpine과 JavaScript가 쓰는 이름): init
 			두 칸의 같은 이름      | state: { x: "bool" }, computed: { x: "not(x)" }             | 같은 이름이 상태, 계산, 동작 가운데 둘 이상에 있습니다
-			모르는 종류            | state: { x: "date" }                                        | 종류 'date'을 모릅니다
+			모르는 종류            | state: { x: "date" }                                        | 모르는 종류입니다: date
 			닫히지 않은 글자       | computed: { x: "format('a)" }                               | 작은따옴표(')가 없습니다
-			모르는 이벤트 값       | state: { x: "text" }, actions: { a: "set(x, event.key)" }   | 이벤트 값 'event.key'을 모릅니다
+			모르는 이벤트 값       | state: { x: "text" }, actions: { a: "set(x, event.key)" }   | 모르는 이벤트 값입니다: event.key
+			가까운 이름           | state: { length: "number" }, computed: { x: "gt(lenght, 1)" } | 없는 이름입니다: lenght. length인가요?
+			가까운 함수           | computed: { x: "lenght('a')" }                            | 모르는 함수입니다: lenght(…). length인가요?
+			가까운 단계           | state: { n: "bool" }, actions: { a: "toogle(n)" }         | toggle인가요?
+			가까운 상태           | state: { open: "bool" }, actions: { a: "toggle(opne)" }   | 없는 상태입니다: opne. open인가요?
 			""")
 	void specsOutsideTheVocabularyAreRefused(String what, String body, String message) {
 		String yaml = "components:\n  thing:\n    purpose: \"" + what + "\"\n    " + body.strip().replace("}, ", "}\n    ") + "\n";

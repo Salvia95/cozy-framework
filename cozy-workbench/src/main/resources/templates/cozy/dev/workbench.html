@@ -91,6 +91,14 @@
               <a class="nav-link" th:classappend="${view == 'spec'} ? 'active'"
                  th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='spec')}">화면 명세</a>
             </li>
+            <li class="nav-item" th:if="${!behaviorModules.isEmpty()}">
+              <a class="nav-link" th:classappend="${view == 'behavior'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='behavior')}">동작 명세</a>
+            </li>
+            <li class="nav-item" th:if="${!behaviorModules.isEmpty()}">
+              <a class="nav-link" th:classappend="${view == 'script'} ? 'active'"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='script')}">만든 JS</a>
+            </li>
           </ul>
           <!--/* 좌우 칸을 접어 가운데를 넓힌다. 접은 상태는 브라우저가 기억한다(cozyDisclosure) */-->
           <div class="btn-list ms-auto flex-nowrap">
@@ -155,23 +163,21 @@
           </div>
         </th:block>
 
-        <th:block th:if="${view == 'template' or view == 'spec'}">
-          <div class="card-body" th:if="${sourceFile == null or sourceLines.isEmpty()}">
-            <p class="text-secondary mb-0">소스를 읽을 수 없습니다.</p>
-          </div>
-          <th:block th:if="${sourceFile != null and !sourceLines.isEmpty()}">
-            <div class="card-body border-bottom py-2"><code class="small" th:text="${sourceFile}">src/main/resources/templates/memo/api/list.html</code></div>
-            <div class="table-responsive cozy-workbench-scroll">
-              <table class="table table-sm table-borderless cozy-workbench-source mb-0">
-                <tbody>
-                  <tr th:each="line : ${sourceLines}" th:id="|L${line.number}|">
-                    <td class="cozy-workbench-source-number text-secondary" th:text="${line.number}">1</td>
-                    <td><pre class="cozy-workbench-source-text" th:text="${line.text}">소스</pre></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </th:block>
+        <th:block th:if="${view == 'template' or view == 'spec' or view == 'behavior' or view == 'script'}">
+          <!--/* 화면이 넣는 다른 앱 템플릿, 화면이 쓰는 컴포넌트의 다른 모듈 */-->
+          <nav class="card-body border-bottom py-2 cozy-workbench-source-files" aria-label="볼 템플릿"
+               th:if="${view == 'template' and screenTemplates.size() > 1}">
+            <a class="btn btn-sm" th:each="t : ${screenTemplates}" th:classappend="${t == shownTemplate} ? 'active'"
+               th:aria-current="${t == shownTemplate} ? 'true'" th:text="${t}"
+               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template',template=${t})}">memo/internal/fields</a>
+          </nav>
+          <nav class="card-body border-bottom py-2 cozy-workbench-source-files" aria-label="볼 모듈"
+               th:if="${(view == 'behavior' or view == 'script') and behaviorModules.size() > 1}">
+            <a class="btn btn-sm" th:each="m : ${behaviorModules}" th:classappend="${m == shownModule} ? 'active'"
+               th:aria-current="${m == shownModule} ? 'true'" th:text="${m}"
+               th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view=${view},module=${m})}">memo</a>
+          </nav>
+          <th:block th:replace="~{cozy/dev/workbench-source :: sourceLines(${sourceFile}, ${sourceLines}, ${sourceNote})}"></th:block>
         </th:block>
       </section>
 
@@ -213,13 +219,16 @@
               <ul class="list-unstyled mb-2">
                 <li class="d-flex align-items-baseline gap-2" th:each="file : ${outcome.changes}">
                   <span class="badge flex-shrink-0" th:classappend="${file.action == 'unchanged'} ? 'cozy-tone-neutral' : 'cozy-tone-info'" th:text="${file.label()}">수정</span>
-                  <span class="cozy-workbench-file">
+                  <div class="cozy-workbench-file flex-fill">
                     <code th:text="${file.file}">src/main/resources/templates/memo/api/list.html</code>
                     <span class="d-block text-secondary small" th:if="${file.detail != null}" th:text="${file.detail}">badge(…) 2번째 인자</span>
-                  </span>
+                    <th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${file}, ${liveResources})}"></th:block>
+                  </div>
                 </li>
               </ul>
             </th:block>
+            <p class="text-secondary small mb-2" th:if="${change.dryRun and outcome.visibility(liveResources) != null}"
+               th:text="|적용하면: ${outcome.visibility(liveResources)}|">적용하면: 바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.</p>
             <div class="d-flex align-items-start gap-2 mb-2">
               <code class="cozy-workbench-command small flex-fill" th:text="${change.command}">cozy set arg …</code>
               <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${change.command}">명령 복사</button>
@@ -242,7 +251,7 @@
               <button type="submit" class="btn btn-sm btn-primary" name="step" value="apply">적용</button>
             </form>
             <th:block th:if="${!change.dryRun and outcome.error == null and !outcome.changesNothing()}">
-              <div th:replace="~{cozy/component/alert :: alert('info', '템플릿을 바꿨습니다. 구조와 속성에는 바로 보이고, 미리보기에는 앱을 다시 빌드하고 실행한 뒤 보입니다.')}"></div>
+              <div th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
             </th:block>
           </section>
           <!--/* 속성 패널에서 붙이거나 뗀 화면 안의 동작: cozy attach의 변경 파일이나 적용 결과 */-->
@@ -263,13 +272,16 @@
               <ul class="list-unstyled mb-2">
                 <li class="d-flex align-items-baseline gap-2" th:each="file : ${outcome.changes}">
                   <span class="badge flex-shrink-0" th:classappend="${file.action == 'unchanged'} ? 'cozy-tone-neutral' : 'cozy-tone-info'" th:text="${file.label()}">수정</span>
-                  <span class="cozy-workbench-file">
+                  <div class="cozy-workbench-file flex-fill">
                     <code th:text="${file.file}">src/main/resources/templates/memo/internal/fields.html</code>
                     <span class="d-block text-secondary small" th:if="${file.detail != null}" th:text="${file.detail}">붙임 &lt;div&gt;: x-show="over"</span>
-                  </span>
+                    <th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${file}, ${liveResources})}"></th:block>
+                  </div>
                 </li>
               </ul>
             </th:block>
+            <p class="text-secondary small mb-2" th:if="${change.dryRun and outcome.visibility(liveResources) != null}"
+               th:text="|적용하면: ${outcome.visibility(liveResources)}|">적용하면: 바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.</p>
             <div class="d-flex align-items-start gap-2 mb-2">
               <code class="cozy-workbench-command small flex-fill" th:text="${change.command}">cozy attach …</code>
               <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${change.command}">명령 복사</button>
@@ -284,17 +296,73 @@
               <input type="hidden" name="component" th:value="${change.component}">
               <input type="hidden" name="template" th:value="${change.template}">
               <input type="hidden" name="line" th:value="${change.line}">
+              <input type="hidden" th:each="d : ${change.data}" th:name="|data.${d.key}|" th:value="${d.value}">
               <input type="hidden" name="option" th:value="${change.option}">
               <input type="hidden" name="key" th:value="${change.key}">
               <input type="hidden" name="value" th:value="${change.value}">
               <input type="hidden" name="detach" th:value="${change.detach}">
-              <a class="btn btn-sm" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.node})}"
-                 th:hx-get="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.node})}"
+              <input type="hidden" name="fromPlace" value="true" th:if="${change.fromPlace}">
+              <a class="btn btn-sm" th:with="back=${change.fromPlace} ? @{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},at=|${change.template}:${change.line}|,component=${change.component})} : @{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},node=${change.node})}"
+                 th:href="${back}" th:hx-get="${back}"
                  hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">취소</a>
               <button type="submit" class="btn btn-sm btn-primary" name="step" value="apply">적용</button>
             </form>
             <th:block th:if="${!change.dryRun and outcome.error == null and !outcome.changesNothing()}">
-              <div th:replace="~{cozy/component/alert :: alert('info', '템플릿을 바꿨습니다. 구조와 속성에는 바로 보이고, 미리보기에는 앱을 다시 빌드하고 실행한 뒤 보입니다.')}"></div>
+              <div th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
+            </th:block>
+          </section>
+          <!--/* 미리보기에서 고른 요소에 붙이기(?at=템플릿:줄): 붙은 컴포넌트나 감싸는 컴포넌트에, 없으면 고른 컴포넌트의 자리로 */-->
+          <section class="card-body border-bottom" th:if="${attachPlace != null}" tabindex="-1" x-ref="attachPlace" th:with="place=${attachPlace}"
+                   aria-labelledby="attach-place-title">
+            <div class="d-flex align-items-baseline gap-2 mb-2">
+              <h4 class="subheader mb-0 flex-fill" id="attach-place-title">요소에 붙이기</h4>
+              <a class="btn btn-sm" th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}"
+                 th:hx-get="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}"
+                 hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">닫기</a>
+            </div>
+            <p class="mb-1" th:if="${!place.element.isEmpty()}"><code th:text="${place.element}">&lt;div class="form-hint"&gt;</code></p>
+            <p class="mb-2">
+              <a th:if="${screenTemplates.contains(place.template)}" th:aria-label="|${place.location()} 소스 보기|"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w},view='template',template=${place.template})} + '#L' + ${place.line}"><code
+                 th:text="${place.location()}">templates/memo/internal/fields.html:9</code></a>
+              <code th:if="${!screenTemplates.contains(place.template)}" th:text="${place.location()}">templates/memo/internal/fields.html:9</code>
+            </p>
+            <th:block th:if="${place.refusal != null}">
+              <div th:replace="~{cozy/component/alert :: alert('critical', ${place.refusal})}"></div>
+              <p class="text-secondary small mb-0">이 요소에는 붙일 수 없습니다. 미리보기에서 감싸는 요소나 안쪽 요소를 고릅니다.</p>
+            </th:block>
+            <th:block th:if="${place.refusal == null and place.fixed != null}">
+              <p class="text-secondary small mb-2" th:text="${place.root} ? |${place.fixed.name}의 자리(x-data)입니다. 넘기는 값과 이벤트, 묶인 값을 더합니다.| : |${place.fixed.name}의 안쪽 요소입니다. 이벤트와 묶인 값을 더합니다.|">memoBodyCount의 안쪽 요소입니다.</p>
+              <form th:replace="~{cozy/dev/workbench-behaviors :: attachForm(${place.fixed}, ${place.template}, ${place.line}, ${place.takesData()}, ${place.currentData()}, null, true)}"></form>
+            </th:block>
+            <th:block th:if="${place.refusal == null and place.fixed == null}">
+              <form method="get" th:action="@{/cozy/dev/workbench}" class="mb-2"
+                    th:hx-get="@{/cozy/dev/workbench}" hx-trigger="change, submit" hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">
+                <input type="hidden" name="spec" th:value="${screen.screen}">
+                <input type="hidden" name="state" th:value="${state}">
+                <input type="hidden" name="w" th:value="${w}">
+                <input type="hidden" name="at" th:value="${place.at()}">
+                <label class="form-label small mb-1" for="attach-place-component">붙일 컴포넌트</label>
+                <select class="form-select form-select-sm" id="attach-place-component" name="component">
+                  <option value="" th:selected="${place.chosen == null}">고르지 않음</option>
+                  <optgroup th:label="|${place.module()} 모듈의 컴포넌트|" th:if="${!place.appChoices().isEmpty()}">
+                    <option th:each="c : ${place.appChoices()}" th:value="${c.name}" th:selected="${place.chosen != null and place.chosen.name == c.name}"
+                            th:text="${c.name}">memoBodyCount</option>
+                  </optgroup>
+                  <optgroup label="프레임워크 컴포넌트" th:if="${!place.frameworkChoices().isEmpty()}">
+                    <option th:each="c : ${place.frameworkChoices()}" th:value="${c.name}" th:selected="${place.chosen != null and place.chosen.name == c.name}"
+                            th:text="${c.name}">cozyCopy</option>
+                  </optgroup>
+                </select>
+                <button type="submit" class="btn btn-sm mt-1">컴포넌트 고르기</button>
+              </form>
+              <p class="text-secondary small mb-2" th:if="${place.appChoices().isEmpty()}"
+                 th:text="|${place.module()} 모듈에는 컴포넌트가 없습니다. 코드 생성의 화면 동작에서 만듭니다.|">memo 모듈에는 컴포넌트가 없습니다.</p>
+              <th:block th:if="${place.chosen != null}">
+                <p class="mb-1" th:text="${place.chosen.purpose}">본문을 쓰는 동안 글자 수와 한도를 보인다</p>
+                <p class="text-secondary small mb-2" th:text="|이 요소가 ${place.chosen.name}의 자리가 됩니다(x-data). 컴포넌트가 읽는 값과 처음 붙일 것을 적습니다.|">이 요소가 memoBodyCount의 자리가 됩니다.</p>
+                <form th:replace="~{cozy/dev/workbench-behaviors :: attachForm(${place.chosen}, ${place.template}, ${place.line}, true, ${place.currentData()}, null, true)}"></form>
+              </th:block>
             </th:block>
           </section>
           <!--/* 선택한 것이 없을 때: 화면의 속성. 선택하면 스크립트가 그 마디의 표로 바꾼다 */-->
@@ -320,6 +388,10 @@
             <p class="cozy-workbench-chain text-secondary small mb-2" x-ref="chain"
                data-left="미리보기에서 다른 화면으로 이동할 수 없어 처음 화면으로 되돌렸습니다. 다른 화면은 화면 목록에서 선택하거나 새 창에서 확인하세요."></p>
             <div class="btn-list justify-content-end">
+              <!--/* 앱 템플릿의 요소를 고르면 스크립트가 at(템플릿:줄)을 붙여 보인다 */-->
+              <a class="btn btn-sm" hidden x-ref="attachHere" th:data-base="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}"
+                 th:href="@{/cozy/dev/workbench(spec=${screen.screen},state=${state},w=${w})}"
+                 hx-target="#workbench-inspector" hx-select="#workbench-inspector" hx-swap="outerHTML" hx-select-oob="#workbench-side,#workbench-flash,#workbench-errors" hx-push-url="true">요소에 붙이기</a>
               <button type="button" class="btn btn-sm cozy-workbench-copy" disabled x-on:click="copyPicked('location')" x-bind:disabled="!canCopy">경로 복사</button>
               <button type="button" class="btn btn-sm cozy-workbench-copy" disabled x-on:click="copyPicked('context')" x-bind:disabled="!canCopy">에이전트용 복사</button>
             </div>

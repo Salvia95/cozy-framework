@@ -82,7 +82,7 @@ class WorkbenchOverviewTest {
 		for (String path : List.of("", "?spec=memo-list", "/map", "/check", "/commands")) {
 			assertThat(page(path)).as(path)
 				.contains("action=\"/cozy/dev/workbench/search\"")
-				.contains("aria-label=\"화면, 컴포넌트, 생성 항목, 모듈 검색\"")
+				.contains("aria-label=\"화면, 화면 안의 동작, 컴포넌트, 생성 항목, 모듈 검색\"")
 				.contains("aria-keyshortcuts=\"/\"");
 		}
 	}

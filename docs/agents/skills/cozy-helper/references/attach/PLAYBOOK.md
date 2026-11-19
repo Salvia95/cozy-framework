@@ -50,11 +50,12 @@ cozy attach cozyCopy --at memo/api/detail:21 --data 'copy-text=${memo.body}' --o
 
 | Message contains | Action |
 | --- | --- |
-| `에 상태나 계산` or `에 동작` and `가 없습니다` | Use a name from the printed list, or add the entry first with `cozy add behavior`. |
+| `에 없는 상태나 계산` or `에 없는 동작` or `x-model에 쓸 상태` | Use a name from the printed list, or add the entry first with `cozy add behavior`. |
 | `시작하는 요소가` | Pick the line where exactly one element starts. |
 | `그려질 때 다른 것으로 바뀌어` | Attach to the surrounding element or to an element inside the fragment's own template. |
-| `이미` and `를 붙였습니다` | Attach to another element, or detach the other component first as printed. |
-| `를 읽지 않습니다` | Use only the printed `data-*` names. |
+| `이미 다른 컴포넌트를 붙였습니다` | Attach to another element, or detach the other component first as printed. |
+| `에 없는 data-* 속성` | Use only the printed `data-*` names. |
+| `인가요?` | The command names the closest existing name; use it when it is the name you meant, otherwise pick one from the printed list. |
 | `--data는 컴포넌트를 붙인 요소` | Put `--data` on the root element that has `x-data`. |
 | `안쪽 요소에 붙인 것이 남아 있습니다` | Detach the printed inner lines first, then the root. |
 | `R16` and `감싸는 컴포넌트` | Run `cozy attach` with a name from the printed list instead of the hand-written attribute. |

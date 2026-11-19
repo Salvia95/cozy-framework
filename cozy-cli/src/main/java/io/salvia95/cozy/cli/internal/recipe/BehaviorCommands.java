@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.salvia95.cozy.cli.internal.CliException;
+import io.salvia95.cozy.rules.Closest;
 import io.salvia95.cozy.cli.internal.behavior.Attach;
 import io.salvia95.cozy.cli.internal.behavior.Attach.Target;
 import io.salvia95.cozy.cli.internal.behavior.BehaviorSpec;
@@ -59,7 +60,7 @@ public final class BehaviorCommands {
 		String file = TEMPLATES + template + ".html";
 		String text = ctx.plan().current(file);
 		if (text == null) {
-			throw new CliException("템플릿 " + file + "가 없습니다.");
+			throw new CliException("없는 템플릿입니다: " + file + ".");
 		}
 		Target target = target(ctx, name, template);
 		List<String[]> data = new ArrayList<>();
@@ -99,7 +100,7 @@ public final class BehaviorCommands {
 		BehaviorSpec spec = spec(ctx, module);
 		Component component = spec.components().get(key);
 		if (component == null) {
-			throw new CliException(module + " 모듈의 동작 명세에 " + key + "가 없습니다. 있는 것: " + spec.components().keySet());
+			throw missing(module, spec, key);
 		}
 		String name = component.name(module);
 		Target target = Target.of(module, component);
@@ -119,13 +120,13 @@ public final class BehaviorCommands {
 			}
 			BehaviorSpec next = new BehaviorSpec(module, components);
 			if (components.isEmpty()) {
-				ctx.plan().delete(BehaviorRecipe.specFile(module), "마지막 컴포넌트 " + name + "를 지움");
+				ctx.plan().delete(BehaviorRecipe.specFile(module), "마지막 컴포넌트를 지움: " + name);
 				if (ctx.plan().current(BehaviorRecipe.scriptFile(module)) != null) {
 					ctx.plan().delete(BehaviorRecipe.scriptFile(module), "동작 명세가 없음");
 				}
 			}
 			else {
-				BehaviorRecipe.write(ctx.plan(), next, "컴포넌트 " + name + "를 지움");
+				BehaviorRecipe.write(ctx.plan(), next, "컴포넌트를 지움: " + name);
 			}
 			return "cozy check, 그다음 mvn verify로 확인합니다";
 		}
@@ -143,8 +144,8 @@ public final class BehaviorCommands {
 			}
 		}
 		if (!used.isEmpty()) {
-			throw new CliException(String.join(", ", names) + "를 템플릿이 부릅니다(" + String.join(", ", used) + "). 그 요소에서 먼저 뗍니다 (cozy attach "
-					+ name + " --at <템플릿>:<줄> --detach).");
+			throw new CliException("템플릿이 부르는 이름입니다: " + String.join(", ", names) + " (" + String.join(", ", used)
+					+ "). 그 요소에서 먼저 뗍니다 (cozy attach " + name + " --at <템플릿>:<줄> --detach).");
 		}
 		components.put(key, edited);
 		BehaviorRecipe.write(ctx.plan(), new BehaviorSpec(module, components), "컴포넌트 " + name + ": " + String.join(", ", changes));
@@ -164,10 +165,10 @@ public final class BehaviorCommands {
 		BehaviorSpec spec = spec(ctx, module);
 		Component component = spec.components().get(from);
 		if (component == null) {
-			throw new CliException(module + " 모듈의 동작 명세에 " + from + "가 없습니다. 있는 것: " + spec.components().keySet());
+			throw missing(module, spec, from);
 		}
 		if (spec.components().containsKey(to)) {
-			throw new CliException(module + " 모듈에 " + to + "가 이미 있습니다.");
+			throw new CliException(module + " 모듈에 이미 있는 동작입니다: " + to + ".");
 		}
 		Map<String, Component> components = new LinkedHashMap<>();
 		spec.components().forEach((k, c) -> components.put(k.equals(from) ? to
@@ -194,8 +195,8 @@ public final class BehaviorCommands {
 			}
 			FrameworkBehaviors.Component component = FrameworkBehaviors.read(text, "cozy/behaviors.yml").components().get(name);
 			if (component == null) {
-				throw new CliException("프레임워크 컴포넌트 " + name + "가 없습니다. 있는 것: "
-						+ FrameworkBehaviors.read(text, "cozy/behaviors.yml").components().keySet());
+				java.util.Set<String> known = FrameworkBehaviors.read(text, "cozy/behaviors.yml").components().keySet();
+				throw new CliException("없는 프레임워크 컴포넌트입니다: " + name + "." + Closest.hint(name, known) + " 있는 것: " + known);
 			}
 			return Target.of(component);
 		}
@@ -207,13 +208,22 @@ public final class BehaviorCommands {
 					continue;
 				}
 				if (!template.startsWith(module + "/")) {
-					throw new CliException(name + "는 " + module + " 모듈의 컴포넌트라 " + module + " 템플릿(templates/" + module + "/…)에만 붙입니다.");
+					throw new CliException(module + " 모듈의 컴포넌트는 " + module + " 템플릿(templates/" + module + "/…)에만 붙입니다: " + name + ".");
 				}
 				return Target.of(module, component);
 			}
 		}
-		throw new CliException("컴포넌트 " + name + "가 없습니다. 앱 컴포넌트는 cozy add behavior <모듈> <동작>으로 먼저 선언하고, 프레임워크 컴포넌트는 "
-				+ "이름이 cozy로 시작합니다.");
+		List<String> known = new ArrayList<>();
+		for (String module : ctx.project().modules().keySet()) {
+			spec(ctx, module).components().values().forEach((c) -> known.add(c.name(module)));
+		}
+		throw new CliException("없는 컴포넌트입니다: " + name + "." + Closest.hint(name, known) + " 앱 컴포넌트는 cozy add behavior <모듈> <동작>으로 "
+				+ "먼저 선언하고, 프레임워크 컴포넌트는 이름이 cozy로 시작합니다.");
+	}
+
+	private static CliException missing(String module, BehaviorSpec spec, String key) {
+		return new CliException(module + " 모듈의 동작 명세에 없는 동작입니다: " + key + "." + Closest.hint(key, spec.components().keySet()) + " 있는 것: "
+				+ spec.components().keySet());
 	}
 
 	private static BehaviorSpec spec(Context ctx, String module) {
@@ -241,7 +251,8 @@ public final class BehaviorCommands {
 	private static <T> void drop(Map<String, T> section, List<String> names, String label, List<String> changes) {
 		for (String name : names) {
 			if (section.remove(name) == null) {
-				throw new CliException(label + " '" + name + "'이 없습니다. 있는 것: " + section.keySet());
+				String what = label.equals("받는 이벤트") ? "받지 않는 화면 이벤트입니다: " : "없는 " + label + "입니다: ";
+				throw new CliException(what + name + "." + Closest.hint(name, section.keySet()) + " 있는 것: " + section.keySet());
 			}
 			changes.add(label + " " + name + " 지움");
 		}
@@ -250,7 +261,7 @@ public final class BehaviorCommands {
 	private static List<String> single(Args args, String option) {
 		List<String> values = args.all(option);
 		if (values.size() > 1) {
-			throw new CliException("--" + option + "는 한 번만 씁니다.");
+			throw new CliException("한 번만 쓰는 옵션입니다: --" + option + ".");
 		}
 		return values;
 	}

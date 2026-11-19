@@ -127,7 +127,7 @@ String create(@Valid @ModelAttribute("form") MemoForm form, BindingResult errors
 | `component/modal` | `modal('id', '제목', ~{::#body})` | `data-bs-target="#id"`로 연다. 삭제 확인은 `deleteConfirm`. 확인 창은 모두 같은 구조다: Tabler의 `modal modal-blur fade`(바탕 흐림, 페이드), `role="dialog"`, 제목 `h2.modal-title`(id는 `{id}-title`), `aria-labelledby`가 제목을 가리킨다 |
 | `component/toast` | `toast('success', '복사했습니다')` | 사소한 확인만. 중립 바탕, critical만 빨강. 스크립트는 `Cozy.toast(message, kind)` |
 | `component/loading` | `loading()` | `htmx-indicator` |
-| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.51.0 전체 (외곽선 5,233개, 채운 1,054개) |
+| `icon/tabler` | `icon('plus')`, `iconFilled('star')` | Tabler Icons 3.52.0 전체 (외곽선 5,490개, 채운 1,054개) |
 
 ## 매니페스트 `cozy/fragments.yml`
 
@@ -220,10 +220,11 @@ fragments:
 
 ### 앱 컴포넌트
 
-- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고(지우기는 `cozy remove behavior`, 이름 바꾸기는 `cozy rename behavior`), 템플릿에는 `cozy attach`로 붙인다. JS를 손으로 고치면 C12가, 선언한 컴포넌트를 붙이지 않았거나 동작을 부르는 곳이나 화면 이벤트를 내고 받는 곳이 없으면 C13이 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)). 2.2.0 전에 손으로 쓴 모듈 JS는 C12 경고이고 `cozy migrate behaviors`가 명세로 옮긴다.
+- **자리**: 모듈마다 `src/main/resources/static/{모듈}/{모듈}.js` 하나다. 이름은 모듈 이름으로 시작한다(`memoBodyCount`). 이 파일은 모듈의 동작 명세(`behaviors/{모듈}.yml`, 아래 "동작 명세")에서 cozy가 만든다. `cozy add behavior`가 명세와 파일을 함께 쓰고(지우기는 `cozy remove behavior`, 이름 바꾸기는 `cozy rename behavior`), 템플릿에는 `cozy attach`로 붙인다. JS를 손으로 고치면 C12가, 선언한 컴포넌트를 붙이지 않았거나 동작을 부르는 곳이나 화면 이벤트를 내고 받는 곳이 없으면 C13이 빌드를 실패시킨다([cli.md](cli.md), [testing.md](testing.md)). 2.2.0 전에 손으로 쓴 모듈 JS는 C12 경고이고 `cozy migrate behaviors`가 명세로 옮긴다. 개발자는 워크벤치에서 같은 일을 한다: 동작 고치기(명세), 요소에 붙이기(`cozy attach`), 검사 화면의 계획 버튼(`sync`·`migrate behaviors`)과 C13 항목의 고치는 화면([workbench.md](workbench.md)).
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.
+  - **소스 폴더**: `cozy.ui.module-script-folders`에 파일 시스템 폴더(`file:`)가 있으면 그 폴더의 `{모듈}/{모듈}.js`를 먼저 읽고(부를 때마다 다시), 같은 모듈의 클래스패스 파일은 넣지 않는다. 워크벤치가 켜진 dev 실행이 `src/main/resources/static/`을 넣으므로 명세를 고친 JS가 다시 빌드하지 않아도 보인다([workbench.md](workbench.md)의 바로 보기). 정하지 않으면(운영) 클래스패스만 처음 한 번 읽는다.
   - **오류**: 각 부분 앞에 `/* static/memo/memo.js */` 주석을, 끝에 `;` 한 줄을 둔다(다음 파일과 이어 읽히지 않게). 한 파일의 문법 오류는 묶음 전체를 멈춰 모든 모듈의 컴포넌트가 없어진다.
     - **빌드에서 막는다**: `mvn verify`의 C10이 모듈마다 그 파일의 문법을 읽어 본다([testing.md](testing.md)).
     - **실행 중에 알린다**: 스크립트의 `data-cozy-parts`(`static/memo/memo.js:2;…`, 파일과 묶음에서의 첫 줄)로 `cozy.js`가 브라우저 오류의 묶음 줄을 원래 파일의 줄로 바꿔 콘솔에 낸다(`[cozy] static/memo/memo.js 7줄: …`). 문법 오류면 "화면 동작을 불러오지 못했습니다" 토스트도 띄운다.
@@ -269,6 +270,8 @@ components:
 
 - 상태, 계산, 동작의 이름은 한 컴포넌트 안에서 겹치지 않는다(템플릿이 이름 하나로 부른다). `init`, `destroy`, `root`, `event`와 JavaScript 예약어는 쓰지 않는다.
 - 모르는 키, 형식이 틀린 값, 낱말 밖의 함수, 없는 이름, 종류가 맞지 않는 인자, 돌고 도는 계산은 실패로 닫는다. 명령은 아무 파일도 바꾸지 않는다.
+- 낱말(아래 값, 계산 함수, 동작 단계, 상태의 종류)의 원본은 cozy-cli의 목록 하나(`BehaviorVocabulary`)다. `cozy recipes --json`의 `behavior` 레시피가 `vocabulary`로 내고, 워크벤치의 낱말 표와 칸의 제안이 그것을 보인다. 이 문서의 표와 같은지 `BehaviorDocsTest`가 본다.
+- 없는 이름이나 낱말을 적으면 오류가 가까운 이름 하나를 함께 보인다(`없는 이름입니다: lenght. length인가요?`).
 - 값은 큰따옴표로 감싼다(`: `나 `#`가 있는 식을 YAML이 다르게 읽지 않게). cozy가 쓰는 명세는 늘 그렇다.
 
 **값**
@@ -323,11 +326,12 @@ components:
 
 - **화면 스펙의 원천 (`ScreenSpecs`)**: 카탈로그는 화면 미리보기를 그릴 때마다 `ScreenSpecs` 빈에 스펙을 묻는다. 기본 빈은 클래스패스의 `specs/*.yml`을 기동할 때 한 번 읽는다. 다른 `ScreenSpecs` 빈을 등록하면 그것을 쓴다(워크벤치는 소스 폴더에서 읽는다, [workbench.md](workbench.md)).
 - **`ScreenSpec.verify()`**: 모든 상태의 fixture를 모델 타입으로 바꿔 본다. 렌더링할 때와 같은 변환이고, 맞지 않으면 상태와 모델 이름을 담아 실패한다.
+| `cozy.ui.module-script-folders` | 없음 (워크벤치가 켜진 dev 실행은 소스의 `static/`) | 앱 모듈의 컴포넌트 묶음(`/cozy/modules.js`)이 먼저 읽는 파일 시스템 폴더. 앱이 정하는 값이 아니다 |
 | `cozy.ui.view-module-check` | `warn` (cozy-test가 있는 테스트에서는 `fail`) | 컨트롤러의 모듈과 뷰 이름의 첫 경로가 다르면 경고하거나(`warn`) 요청을 실패시킨다(`fail`). 검사 C7 |
 
-- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.51.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
+- **자산 경로**: 모든 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. Tabler 1.7.5, Tabler Icons 3.52.0(스프라이트 2개, 약 2.9MB), htmx 2.0.11, Alpine.js CSP 빌드 3.17.5(`alpinejs-csp`), Pretendard 1.3.9이고, 폴더마다 LICENSE가 있다.
 - **스크립트 순서**: layout은 Tabler → htmx → `cozy.js` → 앱 모듈의 컴포넌트 묶음(`/cozy/modules.js`) → 화면의 `cozyScripts` → Alpine 순서로 `defer`로 싣는다. `cozy.js`가 `alpine:init`에서 컴포넌트를 등록하고 Alpine이 마지막에 시작한다.
-- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
+- **아이콘 방식**: `<svg><use href="/cozy/vendor/tabler-icons/3.52.0/tabler-sprite.svg#tabler-plus">`. 같은 출처의 스프라이트를 한 번 받아 캐시하므로 CSP를 바꾸지 않는다. Java에서 이름을 확인할 때는 `CozyIcons.outline()`, `CozyIcons.filled()`, `CozyIcons.requireOutline(name)`을 쓴다.
 - **아이콘 목록**: `/cozy/dev/catalog/icons`(카탈로그가 켜진 앱)에서 이름으로 찾고, 칸을 누르면 `icon('이름')`이 복사된다.
 - **자산 버전 바꾸기**: `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한다. 그다음 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
 - **app-shell의 앱 메뉴**: 사이드 내비 아래에 "진단 내보내기"와 "종료"가 내비 항목 모양으로 있다. 런타임의 `POST /cozy/diagnostics`, `POST /cozy/shutdown`을 부른다([runtime.md](runtime.md)).

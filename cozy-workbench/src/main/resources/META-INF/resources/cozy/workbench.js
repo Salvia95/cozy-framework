@@ -315,6 +315,26 @@
       self.canCopy = true;
     }
 
+    /** "요소에 붙이기": 앱 템플릿이 그린 요소면 그 위치(템플릿:줄)로 가는 링크를 보인다. 프레임워크 템플릿의 요소나 구조의 줄이면 숨긴다 */
+    function offerAttach(source) {
+      var link = refs().attachHere;
+      if (!link) {
+        return;
+      }
+      if (!source || source.template.indexOf('cozy/') === 0) {
+        link.hidden = true;
+        return;
+      }
+      var url = link.dataset.base + '&at=' + encodeURIComponent(source.template + ':' + source.line);
+      link.setAttribute('href', url);
+      link.setAttribute('hx-get', url);
+      link.setAttribute('aria-label', '요소에 붙이기: templates/' + source.template + '.html:' + source.line);
+      link.hidden = false;
+      if (window.htmx) {
+        window.htmx.process(link);
+      }
+    }
+
     function selectElement(element) {
       var all = rows();
       var screenTemplate = template();
@@ -327,6 +347,7 @@
       if (!own) {
         return;
       }
+      offerAttach(own.source);
       if (own.source.template === screenTemplate) {
         show(all, [own.element], own.source.line, enclosing(all, own.source.line), null, describe(element), false);
         return;
@@ -357,6 +378,7 @@
     }
 
     function selectRow(row) {
+      offerAttach(null);
       var all = rows();
       var elements = elementsOf(row);
       show(all, elements, number(row, 'cozyLine'), enclosingRow(all, row), null, elements.length ? describe(elements[0]) : '', false);
@@ -388,6 +410,7 @@
       r.context.textContent = '요소를 선택하면 여기에 표시됩니다.';
       copies = { location: '', context: '' };
       self.canCopy = false;
+      offerAttach(null);
     }
 
     function previewPath() {
@@ -419,7 +442,7 @@
 
     /** 고친 결과(매개변수나 화면 안의 동작의 변경 파일, 적용 결과)가 있으면 보이게 하고 포커스를 옮긴다. 칸이 세로로 쌓인 좁은 화면에서는 아래에 있다 */
     function revealResult() {
-      var result = refs().argResult || refs().attachResult;
+      var result = refs().argResult || refs().attachResult || refs().attachPlace;
       if (result) {
         result.scrollIntoView({ block: 'start' });
         result.focus({ preventScroll: true });
@@ -569,8 +592,8 @@
 
       restoreScroll: function () {
         var scroll = inspectorScroll();
-        // 고친 결과(변경 파일, 적용 결과)가 있으면 지킨 위치가 아니라 그 결과를 보인다
-        if (refs().argResult || refs().attachResult) {
+        // 고친 결과(변경 파일, 적용 결과)나 붙이기 카드가 있으면 지킨 위치가 아니라 그것을 보인다
+        if (refs().argResult || refs().attachResult || refs().attachPlace) {
           keptScroll = null;
           revealResult();
           return;

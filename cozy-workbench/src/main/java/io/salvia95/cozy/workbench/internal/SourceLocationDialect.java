@@ -3,7 +3,9 @@ package io.salvia95.cozy.workbench.internal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.context.IWebContext;
@@ -36,20 +38,33 @@ public class SourceLocationDialect extends AbstractProcessorDialect {
 	/** 표준 처리기(th:*)가 끝난 뒤에 돈다 */
 	private static final int PRECEDENCE = 100_000;
 
+	private final Function<String, Optional<String>> source;
+
 	public SourceLocationDialect() {
+		this((template) -> Optional.empty());
+	}
+
+	/**
+	 * @param source 템플릿 이름 → 소스 폴더의 글. 템플릿을 소스에서 읽는 dev 실행이면 그 글로 줄을 맞춘다. 없으면 클래스패스의 템플릿이다
+	 */
+	public SourceLocationDialect(Function<String, Optional<String>> source) {
 		super("Cozy workbench source locations", "cozysrc", PRECEDENCE);
+		this.source = source;
 	}
 
 	@Override
 	public Set<IProcessor> getProcessors(String dialectPrefix) {
-		return Set.of(new Processor(dialectPrefix));
+		return Set.of(new Processor(dialectPrefix, this.source));
 	}
 
 	/** 모든 요소에 맞는다 */
 	private static final class Processor extends AbstractElementTagProcessor {
 
-		Processor(String dialectPrefix) {
+		private final Function<String, Optional<String>> source;
+
+		Processor(String dialectPrefix, Function<String, Optional<String>> source) {
 			super(TemplateMode.HTML, dialectPrefix, null, false, null, false, PRECEDENCE);
+			this.source = source;
 		}
 
 		@Override
@@ -57,17 +72,17 @@ public class SourceLocationDialect extends AbstractProcessorDialect {
 			if (tag.getTemplateName() == null || tag.getLine() < 1 || !asked(context)) {
 				return;
 			}
-			handler.setAttribute(ATTRIBUTE, tag.getTemplateName() + ":" + lines(context, tag.getTemplateName()).actual(tag.getLine()));
+			handler.setAttribute(ATTRIBUTE, tag.getTemplateName() + ":" + lines(context, tag.getTemplateName(), this.source).actual(tag.getLine()));
 		}
 
 		/** 템플릿의 줄 보정. 요청 하나 동안만 기억한다 (dev에서는 템플릿이 바뀔 수 있다) */
-		private static SourceLines lines(ITemplateContext context, String template) {
+		private static SourceLines lines(ITemplateContext context, String template, Function<String, Optional<String>> source) {
 			IWebExchange exchange = ((IWebContext) context).getExchange();
 			String key = SourceLines.class.getName() + "." + template;
 			if (exchange.getAttributeValue(key) instanceof SourceLines known) {
 				return known;
 			}
-			SourceLines lines = SourceLines.of(read(template));
+			SourceLines lines = SourceLines.of(source.apply(template).orElseGet(() -> read(template)));
 			exchange.setAttributeValue(key, lines);
 			return lines;
 		}

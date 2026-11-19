@@ -53,7 +53,7 @@ class UiScreensTest {
 		assertThat(assets).containsExactlyInAnyOrder("/cozy/vendor/pretendard/1.3.9/pretendardvariable.css",
 				"/cozy/vendor/tabler/1.7.5/css/tabler.min.css", "/cozy/cozy.css", "/cozy/vendor/tabler/1.7.5/js/tabler.min.js",
 				"/cozy/vendor/htmx/2.0.11/htmx.min.js", "/cozy/cozy.js", "/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js",
-				"/cozy/vendor/tabler-icons/3.51.0/tabler-sprite.svg", "/cozy/favicon.svg", "/cozy/modules.js");
+				"/cozy/vendor/tabler-icons/3.52.0/tabler-sprite.svg", "/cozy/favicon.svg", "/cozy/modules.js");
 		// Alpine은 컴포넌트를 등록하는 cozy.js 뒤에 시작한다 (모두 defer라 문서 순서대로 실행된다)
 		assertThat(html.indexOf("/cozy/cozy.js")).isLessThan(html.indexOf("/cozy/vendor/alpinejs-csp/3.17.5/cdn.min.js"));
 		assertThat(html).doesNotContainPattern("(?:href|src)=\"(?:https?:)?//");

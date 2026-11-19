@@ -82,7 +82,7 @@ class BehaviorRecipeTest {
 		// 선언만 하고 붙이지 않았으면 C13이다. 붙이면 통과한다
 		Result check = run("check");
 		assertThat(check.code()).isEqualTo(CozyCli.VIOLATIONS);
-		assertThat(check.out()).contains("[C13] src/main/resources/behaviors/memo.yml:3 → memoBodyCount — 컴포넌트 memoBodyCount을 어느 템플릿에도 붙이지 않았습니다");
+		assertThat(check.out()).contains("[C13] src/main/resources/behaviors/memo.yml:3 → memoBodyCount — 어느 템플릿에도 붙이지 않은 컴포넌트입니다: memoBodyCount");
 		write(AttachCommandTest.TEMPLATE, AttachCommandTest.EDIT);
 		assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--on", "input:count").code()).isZero();
 		assertThat(run("attach", "memoBodyCount", "--at", "memo/api/edit:7", "--text", "label").code()).isZero();
@@ -109,6 +109,8 @@ class BehaviorRecipeTest {
 
 		assertThat(result.code()).as(result.err()).isZero();
 		assertThat(result.out()).contains("상태 limit", "계산 바꿈 label", "계산 over");
+		// 이미 있는 컴포넌트를 고치면 붙이라고 하지 않는다
+		assertThat(result.out()).contains("다음: 이미 붙인 곳은 그대로 새 명세를 씁니다").doesNotContain("붙이기 전에는");
 		assertThat(read(SPEC)).contains("purpose: \"본문을 쓰는 동안 글자 수를 보인다\"", "limit: \"number=5000@data-limit\"",
 				"label: \"format('{length} / {limit}자', 'ko-KR')\"", "over: \"gt(length, limit)\"");
 		assertThat(read(FILE)).contains("get over() {");
@@ -141,7 +143,7 @@ class BehaviorRecipeTest {
 		assertThat(sync.code()).as(sync.err()).isZero();
 		assertThat(sync.out()).contains("바꿈  " + FILE);
 		assertThat(read(FILE)).isEqualTo(made);
-		assertThat(run("check").out()).doesNotContain("[C12]").contains("[C13]", "을 어느 템플릿에도 붙이지 않았습니다");
+		assertThat(run("check").out()).doesNotContain("[C12]").contains("[C13]", "어느 템플릿에도 붙이지 않은 컴포넌트입니다: ");
 	}
 
 	@Test

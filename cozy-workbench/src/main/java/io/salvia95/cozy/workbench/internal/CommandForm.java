@@ -40,7 +40,7 @@ final class CommandForm {
 	/**
 	 * 입력 하나.
 	 *
-	 * @param control {@code text}, {@code select}, {@code suggest}(앱의 값을 제안하는 글자 칸), {@code checks}(여럿 고르기),
+	 * @param control {@code text}, {@code select}, {@code suggest}(앱의 값이나 낱말을 제안하는 글자 칸), {@code checks}(여럿 고르기),
 	 *     {@code icon}, {@code flag}(체크박스)
 	 * @param values 고른 값. 하나만 고르는 입력이면 많아야 하나
 	 * @param groups 선택지 ({@code select}, {@code checks}, {@code icon})
@@ -279,6 +279,10 @@ final class CommandForm {
 			for (WorkbenchEngine.Part part : param.parts()) {
 				List<Group> groups = groups(part.choices(), part.choiceLabels(), part.from(), sources);
 				String control = (part.flag() != null) ? "flag" : control(part.from(), groups);
+				if (control.equals("select") && part.from() != null && !part.strict()) {
+					// 낱말과 이름은 제안이고, 칸에는 식을 적는다
+					control = "suggest";
+				}
 				String value = sentRow.getOrDefault(part.name(), "").strip();
 				if (value.isEmpty() && control.equals("select") && !sentRow.containsKey(part.name())) {
 					value = first(groups);
@@ -315,7 +319,7 @@ final class CommandForm {
 	/** 글을 적는 칸이 모두 비면 빈 행이다. 선택 칸과 체크박스는 기본값이 있어 보지 않는다 */
 	private static boolean blank(List<Input> cells) {
 		return cells.stream()
-			.filter((cell) -> cell.control().equals("text") || cell.control().equals("icon"))
+			.filter((cell) -> cell.control().equals("text") || cell.control().equals("icon") || cell.control().equals("suggest"))
 			.allMatch((cell) -> cell.value().isEmpty());
 	}
 
@@ -396,6 +400,41 @@ final class CommandForm {
 			groups.addAll(sources.getOrDefault(from, List.of()));
 		}
 		return List.copyOf(groups);
+	}
+
+	/** 동작 레시피의 칸이 제안하는 것: 상태의 종류, 계산의 함수, 동작의 단계와 이벤트 값 ({@code cozy recipes --json}의 {@code sources}) */
+	static final List<String> BEHAVIOR_SOURCES = List.of("behavior-types", "behavior-values", "behavior-steps");
+
+	/**
+	 * 앱의 선택지와 동작 명세의 낱말.
+	 *
+	 * @param vocabulary 동작 레시피의 낱말 ({@link WorkbenchEngine.Recipe#vocabulary()})
+	 * @param editing 고치는 컴포넌트. 그 상태와 계산의 이름을 식 칸이 제안한다. 새로 만들면 {@code null}
+	 */
+	static Map<String, List<Group>> sources(Map<String, Object> describe, Collection<String> icons, List<WorkbenchEngine.Word> vocabulary,
+			WorkbenchEngine.Behavior editing) {
+		Map<String, List<Group>> sources = new LinkedHashMap<>(sources(describe, icons));
+		List<Option> names = new ArrayList<>();
+		if (editing != null) {
+			editing.state().forEach((e) -> names.add(new Option(e.name(), e.name() + " — 상태 " + e.text())));
+			editing.computed().forEach((e) -> names.add(new Option(e.name(), e.name() + " — 계산")));
+		}
+		Group own = new Group("이 컴포넌트의 이름", "", List.copyOf(names));
+		sources.put("behavior-types", groups(List.of(words(vocabulary, "type", "상태의 종류"))));
+		sources.put("behavior-values", groups(List.of(own, words(vocabulary, "function", "계산 함수"))));
+		sources.put("behavior-steps", groups(List.of(own, words(vocabulary, "step", "동작 단계"), words(vocabulary, "event", "이벤트 값"))));
+		return sources;
+	}
+
+	private static Group words(List<WorkbenchEngine.Word> vocabulary, String kind, String label) {
+		return new Group(label, "", vocabulary.stream()
+			.filter((w) -> w.kind().equals(kind))
+			.map((w) -> new Option(w.shape(), w.shape() + " — " + w.text()))
+			.toList());
+	}
+
+	private static List<Group> groups(List<Group> groups) {
+		return groups.stream().filter((g) -> !g.options().isEmpty()).toList();
 	}
 
 	/**

@@ -4,6 +4,10 @@
   폼의 값으로 cozy 명령을 만들어 변경 파일(--dry-run)을 보인 뒤 적용한다. 파일은 cozy 명령이 쓴다.
   레시피는 주소의 recipe다(폼과 행 버튼도 그 주소로 보낸다). 폼은 CommandForm이 만든다: 통째로 적는 인자는 속성 표, 구성이 있는 인자(--field 이름:종류[!][:라벨])는 그리드다.
   그리드의 행 버튼(name="row")은 명령을 부르지 않고 행만 고친 폼을 다시 보인다.
+  컴포넌트 고치기(editing, 주소의 edit): 화면 동작 폼을 그 컴포넌트의 지금 항목으로 채운다. 바꾸거나 더한 행은 cozy add behavior, 지운 행은 cozy remove behavior이고
+  둘은 한 계획이다(commandLines가 둘). 이름 바꾸기와 지우기는 따로 된 폼(behavior-rename, behavior-delete)이고 지우기는 확인 창을 거친다.
+  specHash는 폼을 연 때의 동작 명세 지문이다. 다르면 명령을 부르지 않고 다시 열라고 한다(stale).
+  동작 폼의 그리드 아래에는 낱말 표(vocabulary)를 접어 두고, 식 칸은 낱말과 이 컴포넌트의 이름을 제안한다(suggest).
   선택지의 data-cozy-module은 그 모듈을 골랐을 때만 보인다(workbenchCommand가 거른다. 모듈 칸은 data-module-choice).
 */-->
 <html th:replace="~{cozy/layout/base :: base('워크벤치 코드 생성', ~{::main})}">
@@ -45,8 +49,9 @@
         <section class="card mb-3">
           <div class="card-header">
             <div>
-              <h3 class="card-title" th:text="${selected.title}">CRUD 화면</h3>
-              <code class="cozy-workbench-command small" th:text="${selected.usage}">cozy add crud …</code>
+              <h3 class="card-title" th:text="${editing != null} ? '동작 고치기' : ${selected.title}">CRUD 화면</h3>
+              <code class="cozy-workbench-command small" th:if="${editing == null}" th:text="${selected.usage}">cozy add crud …</code>
+              <code class="cozy-workbench-command small" th:if="${editing != null}" th:text="|cozy add behavior ${editing.module} ${editAction} · cozy remove behavior ${editing.module} ${editAction}|">cozy add behavior memo body-count</code>
             </div>
           </div>
           <!--/* htmx는 폼과 결과(workbench-command)만 바꾼다. 주소는 그대로다(스크립트가 없을 때와 같다) */-->
@@ -55,10 +60,27 @@
                 x-ref="form" x-on:input="edited" x-on:change="edited">
             <!--/* 칸에서 Enter를 누르면 행 버튼이 아니라 변경 파일 확인이다 */-->
             <button type="submit" class="d-none" tabindex="-1" aria-hidden="true" name="step" value="plan" th:disabled="${!engineAvailable}">변경 파일 확인</button>
-            <p class="mb-3">
+            <th:block th:if="${editing != null}">
+              <input type="hidden" name="edit" th:value="${editing.name}">
+              <input type="hidden" name="specHash" th:value="${specHash}">
+            </th:block>
+            <p class="mb-3" th:if="${editing == null}">
               <span th:text="${selected.does}">무엇을 만드는지</span>
               <span class="text-secondary" th:text="|· 미구현 항목: ${selected.slots}|">· 미구현 항목: 없음</span>
             </p>
+            <p class="mb-3" th:if="${editing != null}">지금 항목으로 채웠습니다. 바꾸거나 더한 행은 <code>cozy add behavior</code>, 지운 행은 <code>cozy remove behavior</code>로 한 계획에 넣습니다.</p>
+            <th:block th:if="${removedComponent != null}">
+              <div th:replace="~{cozy/component/alert :: alert('success', ${'컴포넌트를 지웠습니다: ' + removedComponent})}"></div>
+            </th:block>
+            <th:block th:if="${stale == true}">
+              <div class="alert alert-warning" role="alert">
+                <div>폼을 연 뒤 동작 명세가 바뀌었습니다. 명령을 실행하지 않았습니다.
+                  <a th:href="@{/cozy/dev/workbench/commands(recipe='behavior',edit=${editing.name})}">지금 내용으로 다시 열기</a></div>
+              </div>
+            </th:block>
+            <th:block th:if="${unchanged == true}">
+              <div th:replace="~{cozy/component/alert :: alert('info', '바뀐 항목이 없습니다. 행을 고치거나 더하거나 지운 뒤 변경 파일을 확인합니다.')}"></div>
+            </th:block>
             <th:block th:if="${!missing.isEmpty()}">
               <div th:replace="~{cozy/component/alert :: alert('critical', ${'필수 항목을 입력하세요: ' + #strings.listJoin(missing, ', ')})}"></div>
             </th:block>
@@ -68,7 +90,16 @@
             <table class="table table-sm cozy-workbench-props cozy-workbench-command-props" th:if="${!form.fields.isEmpty()}">
               <colgroup><col class="cozy-workbench-props-name"><col></colgroup>
               <tbody>
-                <tr th:each="field : ${form.fields}" th:with="input=${field.input}">
+                <tr th:if="${editing != null}">
+                  <th scope="row"><span class="cozy-workbench-command-name">컴포넌트 <code class="cozy-workbench-id">&lt;모듈&gt; &lt;동작&gt;</code></span></th>
+                  <td>
+                    <code th:text="${editing.name}">memoBodyCount</code>
+                    <span class="text-secondary" th:text="|${editing.module} 모듈 · 동작 이름 ${editAction}|">memo 모듈 · 동작 이름 body-count</span>
+                    <input type="hidden" name="arg.모듈" th:value="${editing.module}">
+                    <input type="hidden" name="arg.동작" th:value="${editAction}">
+                  </td>
+                </tr>
+                <tr th:each="field : ${form.fields}" th:with="input=${field.input}" th:if="${editing == null or (field.input.name != 'arg.모듈' and field.input.name != 'arg.동작')}">
                   <th scope="row">
                     <label class="cozy-workbench-command-name" th:for="${input.id}" th:if="${input.control != 'checks'}">
                       <span th:text="${field.label}">엔티티 이름</span><span class="cozy-workbench-required" th:if="${field.required}" aria-hidden="true">*</span>
@@ -138,6 +169,14 @@
                   예: <code th:text="|${grid.identifier} ${grid.example}|">--field title:text!:제목</code>
                 </small>
               </div>
+              <th:block th:if="${vocabulary != null and !vocabulary.isEmpty()}">
+                <th:block th:if="${grid.field == 'opt.state'}"><th:block th:replace="~{cozy/dev/workbench-commands :: words(${vocabulary['type']}, '상태의 종류')}"></th:block></th:block>
+                <th:block th:if="${grid.field == 'opt.computed'}"><th:block th:replace="~{cozy/dev/workbench-commands :: words(${vocabulary['function']}, '계산 함수')}"></th:block></th:block>
+                <th:block th:if="${grid.field == 'opt.action'}">
+                  <th:block th:replace="~{cozy/dev/workbench-commands :: words(${vocabulary['step']}, '동작 단계')}"></th:block>
+                  <th:block th:replace="~{cozy/dev/workbench-commands :: words(${vocabulary['event']}, '이벤트 값')}"></th:block>
+                </th:block>
+              </th:block>
             </section>
 
             <datalist id="command-icons" th:if="${form.usesIcons()}">
@@ -149,11 +188,68 @@
           </form>
         </section>
 
+        <!--/* 컴포넌트 전체: 이름 바꾸기와 지우기. 붙인 곳의 x-data도 함께 바뀐다. 일반 POST(확인 창이 있어 htmx로 바꾸지 않는다) */-->
+        <section class="card mb-3" th:if="${editing != null}" aria-labelledby="behavior-whole-title">
+          <div class="card-header"><h3 class="card-title" id="behavior-whole-title">컴포넌트 전체</h3></div>
+          <div class="card-body">
+            <form id="behavior-rename" class="row g-2 align-items-end mb-3" method="post"
+                  th:action="@{/cozy/dev/workbench/commands(recipe='behavior')} + '#command-result'">
+              <input type="hidden" name="edit" th:value="${editing.name}">
+              <input type="hidden" name="specHash" th:value="${specHash}">
+              <input type="hidden" name="change" value="rename">
+              <div class="col-sm">
+                <label class="form-label" for="behavior-new-name">새 동작 이름 <code class="cozy-workbench-id">cozy rename behavior</code></label>
+                <input class="form-control form-control-sm cozy-workbench-input" id="behavior-new-name" name="newName" type="text" autocomplete="off"
+                       th:value="${change == 'rename' and dryRun == true} ? ${newName} : ''" placeholder="예: body-length" aria-describedby="behavior-new-name-hint">
+                <small class="form-hint" id="behavior-new-name-hint">소문자와 -로 적습니다. 컴포넌트 이름은 모듈 이름 + 동작이고, 붙인 곳의 x-data도 바뀝니다.</small>
+              </div>
+              <div class="col-sm-auto">
+                <button type="submit" class="btn btn-sm" name="step" value="plan" th:disabled="${!engineAvailable}">변경 파일 확인</button>
+              </div>
+            </form>
+            <form id="behavior-delete" method="post" th:action="@{/cozy/dev/workbench/commands(recipe='behavior')} + '#command-result'">
+              <input type="hidden" name="edit" th:value="${editing.name}">
+              <input type="hidden" name="specHash" th:value="${specHash}">
+              <input type="hidden" name="change" value="delete">
+            </form>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <button type="button" class="btn btn-sm cozy-btn-critical" data-bs-toggle="modal" data-bs-target="#behavior-delete-confirm" th:disabled="${!engineAvailable}">
+                <svg th:replace="~{cozy/icon/tabler :: icon('trash')}"></svg>컴포넌트 지우기
+              </button>
+              <small class="text-secondary">동작 명세에서 지우고, 붙인 곳의 x-data와 속성을 뗍니다 (<code>cozy remove behavior</code>).</small>
+            </div>
+          </div>
+          <div class="modal modal-blur fade" id="behavior-delete-confirm" tabindex="-1" role="dialog" aria-hidden="true" aria-labelledby="behavior-delete-confirm-title">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h2 class="modal-title" id="behavior-delete-confirm-title">컴포넌트 삭제</h2>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="mb-2">지울 컴포넌트: <strong th:text="${editing.name}">memoBodyCount</strong></p>
+                  <p class="text-secondary mb-0">동작 명세에서 지우고, 붙인 곳의 x-data와 속성을 뗍니다. 다음 화면에서 변경 파일을 확인한 뒤 적용합니다.</p>
+                </div>
+                <div class="modal-footer">
+                  <div class="btn-list justify-content-end">
+                    <button type="button" class="btn" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn cozy-btn-critical-fill" form="behavior-delete" name="step" value="plan">변경 파일 확인</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="card cozy-workbench-result" th:if="${outcome != null}" id="command-result" x-ref="result">
           <div class="card-header"><h3 class="card-title" th:text="${dryRun} ? '변경 파일' : '적용 결과'">변경 파일</h3></div>
           <div class="card-body border-bottom d-flex align-items-start gap-3">
-            <code class="cozy-workbench-command flex-fill" th:text="${commandLine}">cozy add module voc</code>
-            <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${commandLine}">명령 복사</button>
+            <div class="flex-fill">
+              <p class="text-secondary small mb-1" th:if="${commandLines.size() > 1}" th:text="|명령 ${commandLines.size()}개를 차례로 한 계획에 넣습니다. 하나라도 거절하면 아무 파일도 바뀌지 않습니다.|">명령 2개를 차례로 한 계획에 넣습니다.</p>
+              <code class="cozy-workbench-command d-block" th:each="line : ${commandLines}" th:text="${line}">cozy add module voc</code>
+            </div>
+            <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak
+                    th:data-copy-text="${commandText}">명령 복사</button>
           </div>
 
           <div class="card-body" th:if="${outcome.error != null}">
@@ -207,6 +303,7 @@
                                   <span class="visually-hidden" th:text="${change.file}">src/main/java/…</span>
                                 </span>
                               </div>
+                              <div class="cozy-workbench-change-more"><th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${change}, ${liveResources})}"></th:block></div>
                             </li>
                           </ul>
                         </details>
@@ -233,14 +330,15 @@
             </div>
             <div class="card-body">
               <p class="mb-0"><span class="text-secondary">다음 단계:</span> <span th:text="${outcome.next}">다음 할 일</span></p>
-              <th:block th:if="${needsRestart}">
-                <div class="mt-3" th:replace="~{cozy/component/alert :: alert('info', '소스가 변경되었습니다. 앱을 다시 빌드하고 실행해야 워크벤치와 앱 화면에 반영됩니다.')}"></div>
+              <th:block th:if="${outcome.visibility(liveResources) != null}">
+                <div class="mt-3" th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
               </th:block>
             </div>
             <div class="card-footer" th:if="${dryRun and !outcome.changesNothing()}">
               <div class="d-flex flex-wrap align-items-center justify-content-end gap-3">
                 <span class="text-secondary" th:text="|적용하면 파일 ${changed}개가 생성되거나 수정됩니다.|">적용하면 파일 1개가 생성되거나 수정됩니다.</span>
-                <button type="submit" class="btn btn-primary" form="command-form" name="step" value="apply">적용</button>
+                <button type="submit" class="btn btn-primary" name="step" value="apply"
+                        th:form="${change == 'rename'} ? 'behavior-rename' : (${change == 'delete'} ? 'behavior-delete' : 'command-form')">적용</button>
               </div>
             </div>
           </th:block>
@@ -250,6 +348,21 @@
   </div>
   </div>
 </main>
+
+<!--/* 낱말 표 하나: 접어 둔다. 모양과 한 줄 설명 (cozy recipes --json의 vocabulary) */-->
+<details class="cozy-workbench-words mt-2" th:fragment="words(cozyWords, cozyTitle)" th:if="${cozyWords != null and !cozyWords.isEmpty()}">
+  <summary><span th:text="|낱말 표: ${cozyTitle}|">낱말 표: 계산 함수</span> <span class="cozy-workbench-id" th:text="|${cozyWords.size()}개|">16개</span></summary>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 cozy-workbench-words-table">
+      <tbody>
+        <tr th:each="word : ${cozyWords}">
+          <th scope="row"><code th:text="${word.shape}">gt(a, b)</code></th>
+          <td th:text="${word.text}">a가 b보다 큰가</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</details>
 
 <!--/*
   입력 하나 (CommandForm.Input). cell이면 그리드의 칸이라 이름표가 없어 aria-label을 단다.
@@ -275,7 +388,8 @@
            th:aria-label="${cell} ? ${input.label}" th:aria-required="${input.required} ? 'true'"
            th:data-module-choice="${input.name == 'arg.모듈'} ? 'true'">
     <datalist th:id="|${input.id}-list|">
-      <th:block th:each="group : ${input.groups}"><option th:each="option : ${group.options}" th:value="${option.value}"></option></th:block>
+      <th:block th:each="group : ${input.groups}"><option th:each="option : ${group.options}" th:value="${option.value}"
+                th:label="${option.text != option.value} ? ${option.text}"></option></th:block>
     </datalist>
   </th:block>
   <div class="cozy-workbench-checks" th:case="'checks'" role="group" th:aria-labelledby="|${input.id}-label|">

@@ -117,6 +117,7 @@
                      th:text="|${v.file}:${v.line}|">src/main/resources/templates/memo/api/list.html:9</a>
                   <code th:unless="${finding.link != null and v.line > 0}" th:text="${v.line > 0} ? |${v.file}:${v.line}| : ${v.file}">파일</code>
                 </div>
+                <th:block th:replace="~{cozy/dev/workbench-check :: findingActions(${finding})}"></th:block>
               </li>
             </ul>
             <div class="card-footer text-secondary small" th:if="${findingCount > findings.size()}"

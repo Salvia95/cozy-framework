@@ -8,8 +8,8 @@ def recipes = new File(basedir, "recipes.log").getText("UTF-8")
 assert !recipes.contains("[C9]") : "add behavior는 빈칸을 남기지 않습니다"
 assert recipes.contains("[C12] src/main/resources/behaviors/task.yml → task — 동작 명세를 고친 뒤") : "손으로 고친 명세는 C12여야 합니다"
 assert recipes.contains("[R16] templates/task/api/detail.html") && recipes.contains("note 모듈의 컴포넌트입니다") : "다른 모듈의 컴포넌트는 R16이어야 합니다"
-assert recipes.contains("[C13] src/main/resources/behaviors/task.yml:3 → taskTitleCount — 컴포넌트 taskTitleCount을 어느 템플릿에도 붙이지 않았습니다") : "붙이기 전에는 C13이어야 합니다"
-assert recipes.contains("[C13] src/main/resources/behaviors/note.yml:3 → notePicker — 컴포넌트 notePicker을 어느 템플릿에도 붙이지 않았습니다") : "붙이지 않은 컴포넌트는 C13이어야 합니다"
+assert recipes.contains("[C13] src/main/resources/behaviors/task.yml:3 → taskTitleCount — 어느 템플릿에도 붙이지 않은 컴포넌트입니다: taskTitleCount") : "붙이기 전에는 C13이어야 합니다"
+assert recipes.contains("[C13] src/main/resources/behaviors/note.yml:3 → notePicker — 어느 템플릿에도 붙이지 않은 컴포넌트입니다: notePicker") : "붙이지 않은 컴포넌트는 C13이어야 합니다"
 assert !new File(basedir, "src/main/resources/behaviors/note.yml").exists() && !new File(basedir, "src/main/resources/static/note/note.js").exists() : "remove behavior가 마지막 컴포넌트와 함께 명세와 JS를 지웁니다"
 def task = new File(basedir, "src/main/resources/static/task/task.js").getText("UTF-8")
 assert task.contains("window.Alpine.data('taskTitleCount'") && task.contains("cozy:behaviors spec=") && !task.contains("cozy:slot")

@@ -112,9 +112,33 @@ public final class Attach {
 		return new String[] { "x-bind:" + option.substring(0, at), option.substring(at + 1) };
 	}
 
-	public static Result apply(String text, String where, int line, Target target, Request request) {
+	/**
+	 * 그 줄의 요소와 지금 붙은 컴포넌트. 붙이기 전에 무엇을 고를 수 있는지 보는 데 쓴다.
+	 *
+	 * @param element 여는 태그를 짧게 ({@code <div class="form-hint">})
+	 * @param component 요소에 붙은 컴포넌트({@code x-data})나 감싸는 요소의 컴포넌트. 없으면 {@code null}
+	 * @param root 요소 자신에 {@code x-data}가 있는가
+	 */
+	public record Place(String element, String component, boolean root) {
+	}
+
+	/**
+	 * 그 줄의 요소. {@link #apply}가 거절하는 줄(요소가 없거나 둘 이상, 그려질 때 바뀌는 요소)이면 같은 오류로 실패한다.
+	 *
+	 * @param where 오류에 보일 템플릿 이름
+	 */
+	public static Place place(String text, String where, int line) {
 		List<Tag> tags = TemplateTags.read(text);
-		// 그 줄에서 시작하는 가장 바깥 요소 (버튼 안의 아이콘처럼 같은 줄에서 시작하는 안쪽 요소는 빼고)
+		Tag tag = element(tags, text, where, line);
+		Attr own = tag.attr("x-data");
+		if (own != null) {
+			return new Place(open(text, tag), own.value(), true);
+		}
+		return new Place(open(text, tag), scope(tags, tag.parent()), false);
+	}
+
+	/** 그 줄에서 시작하는 가장 바깥 요소 하나 (버튼 안의 아이콘처럼 같은 줄에서 시작하는 안쪽 요소는 빼고) */
+	private static Tag element(List<Tag> tags, String text, String where, int line) {
 		List<Tag> starting = tags.stream()
 			.filter((t) -> t.line() == line && (t.parent() < 0 || tags.get(t.parent()).line() != line))
 			.toList();
@@ -124,15 +148,26 @@ public final class Attach {
 		}
 		Tag tag = starting.get(0);
 		if (tag.name().equals("th:block") || tag.attr("th:replace") != null || tag.attr("data-th-replace") != null) {
-			throw new CliException(where + ":" + line + "의 " + open(text, tag) + "는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다. 감싸는 요소나 "
+			throw new CliException(where + ":" + line + "의 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않습니다: " + open(text, tag) + ". 감싸는 요소나 "
 					+ "그 안의 요소에 붙입니다.");
 		}
+		Attr data = tag.attr("x-data");
+		if (data != null && (data.value() == null || data.value().isBlank())) {
+			throw new CliException(where + ":" + line + "의 요소에 이름 없는 x-data가 있습니다: " + open(text, tag) + ". 컴포넌트는 이름으로 붙입니다. "
+					+ "그 x-data를 지우거나 다른 요소에 붙입니다.");
+		}
+		return tag;
+	}
+
+	public static Result apply(String text, String where, int line, Target target, Request request) {
+		List<Tag> tags = TemplateTags.read(text);
+		Tag tag = element(tags, text, where, line);
 		Attr own = tag.attr("x-data");
 		String scope = scope(tags, tag.parent());
 		boolean root;
 		if (own != null) {
 			if (!target.name().equals(own.value())) {
-				throw new CliException(where + ":" + line + "의 요소에는 이미 " + own.value() + "를 붙였습니다. 다른 요소에 붙이거나 먼저 떼어 냅니다"
+				throw new CliException(where + ":" + line + "의 요소에는 이미 다른 컴포넌트를 붙였습니다: " + own.value() + ". 다른 요소에 붙이거나 먼저 떼어 냅니다"
 						+ " (cozy attach " + own.value() + " --at " + where + ":" + line + " --detach).");
 			}
 			root = true;
@@ -163,7 +198,7 @@ public final class Attach {
 		}
 		for (String[] pair : request.data()) {
 			if (!target.data().contains(pair[0])) {
-				throw new CliException(target.name() + "는 data-" + pair[0] + "를 읽지 않습니다. 읽는 것: "
+				throw new CliException(target.name() + "에 없는 data-* 속성입니다: data-" + pair[0] + "." + io.salvia95.cozy.rules.Closest.hint(pair[0], target.data()) + " 읽는 것: "
 						+ (target.data().isEmpty() ? "없음" : "data-" + String.join(", data-", target.data())));
 			}
 			boolean server = THYMELEAF.matcher(pair[1]).find();
@@ -241,14 +276,15 @@ public final class Attach {
 		boolean model = attribute.equals("x-model");
 		java.util.Set<String> allowed = handler ? target.handlers() : model ? target.models() : target.values();
 		if (!allowed.contains(name)) {
-			String what = handler ? "동작" : model ? "x-model에 쓸 상태(text, bool)" : "상태나 계산";
-			throw new CliException(target.name() + "에 " + what + " '" + name + "'가 없습니다. 있는 것: "
+			String missing = model ? target.name() + "의 x-model에 쓸 상태(text, bool)가 아닙니다: " + name
+					: target.name() + "에 없는 " + (handler ? "동작" : "상태나 계산") + "입니다: " + name;
+			throw new CliException(missing + "." + io.salvia95.cozy.rules.Closest.hint(name, allowed) + " 있는 것: "
 					+ (allowed.isEmpty() ? "없음" : String.join(", ", allowed)) + ". 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.");
 		}
 		boolean argument = m.group(2) != null;
 		if (target.withArgument().contains(name) != argument) {
-			throw new CliException(target.withArgument().contains(name) ? name + "는 글자 인자 하나를 받습니다 (예: " + name + "('filter'))."
-					: name + "는 인자를 받지 않습니다. 이름만 씁니다.");
+			throw new CliException(target.withArgument().contains(name) ? "글자 인자 하나를 받는 이름입니다: " + name + " (예: " + name + "('filter'))."
+					: "인자를 받지 않는 이름입니다: " + name + ". 이름만 씁니다.");
 		}
 	}
 

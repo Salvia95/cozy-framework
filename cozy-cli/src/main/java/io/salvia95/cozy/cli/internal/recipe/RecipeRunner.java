@@ -107,6 +107,39 @@ public final class RecipeRunner {
 		report(name, ctx.plan(), List.of(), next, false, dryRun, json, out);
 	}
 
+	/** 한 계획으로 묶을 수 있는 명령 */
+	public static final List<String> TOGETHER = List.of("add behavior", "remove behavior", "rename behavior", "attach");
+
+	/**
+	 * 화면 안의 동작 명령 여럿({@link #TOGETHER})을 한 계획으로 실행한다. 뒤의 명령은 앞의 명령이 계획한 내용을 읽고, 하나라도 거절하면 아무 파일도
+	 * 쓰지 않는다. 같은 명령을 터미널에서 차례로 실행한 것과 같은 파일이 된다. 다음 할 일은 마지막 명령의 것이다.
+	 *
+	 * @param commands 명령마다 {@code cozy} 뒤의 인자 ({@code [remove, behavior, memo, body-count, --state, limit]})
+	 */
+	public static void together(List<List<String>> commands, AppProject project, Supplier<FrameworkJar> framework,
+			LocalDateTime now, boolean dryRun, boolean json, PrintStream out) {
+		if (commands.isEmpty()) {
+			throw new CliException("한 계획으로 묶을 명령이 없습니다.");
+		}
+		Context ctx = new Context(project, framework, now);
+		List<String> names = new ArrayList<>();
+		String next = "";
+		for (List<String> command : commands) {
+			String action = command.isEmpty() ? "" : command.getFirst();
+			List<String> rest = command.subList(Math.min(1, command.size()), command.size());
+			String what = (action.equals("attach") || rest.isEmpty()) ? action : action + " " + rest.getFirst();
+			next = switch (what) {
+				case "add behavior" -> BehaviorRecipe.run(ctx, Args.parse(rest.subList(1, rest.size()))).replaceFirst("^다음: ", "");
+				case "remove behavior" -> BehaviorCommands.remove(ctx, rest);
+				case "rename behavior" -> BehaviorCommands.rename(ctx, rest);
+				case "attach" -> BehaviorCommands.attach(ctx, rest);
+				default -> throw new CliException("한 계획으로 묶는 명령은 " + String.join(", ", TOGETHER) + "입니다: " + String.join(" ", command));
+			};
+			names.add(what);
+		}
+		report(String.join(", ", names), ctx.plan(), List.of(), next, false, dryRun, json, out);
+	}
+
 	/** {@code cozy set arg …}: 템플릿의 fragment 호출 인자 가운데 문자열 하나를 바꾼다 */
 	public static void set(List<String> rest, AppProject project, Supplier<FrameworkJar> framework, boolean dryRun, boolean json,
 			PrintStream out) {
@@ -153,6 +186,9 @@ public final class RecipeRunner {
 		}
 	}
 
+	/** 계획에 싣는 바뀐 뒤의 글의 최대 크기 (UTF-8 바이트) */
+	public static final int AFTER_LIMIT = 256 * 1024;
+
 	/**
 	 * 계획을 보여 주고, {@code --dry-run}이 아니면 적용한 뒤 남은 빈칸과 다음 할 일을 알린다.
 	 *
@@ -171,8 +207,21 @@ public final class RecipeRunner {
 		String nextLine = slots.isEmpty() ? next : "빈칸을 채우고 cozy check, 그다음 mvn verify. " + next;
 		if (json) {
 			List<Object> changes = new ArrayList<>();
-			plan.changes().forEach((c) -> changes.add(Describe.ordered("action", c.action().name().toLowerCase(), "file", c.file(),
-					"detail", c.detail())));
+			for (Plan.Change c : plan.changes()) {
+				Map<String, Object> change = Describe.ordered("action", c.action().name().toLowerCase(), "file", c.file(), "detail",
+						c.detail());
+				// 계획이면 바뀐 뒤의 글을 싣는다 (화면이 지금 파일과 견준다). 너무 크면 싣지 않는다
+				boolean written = c.action() == Plan.Action.CREATE || c.action() == Plan.Action.EDIT;
+				if (dryRun && written && c.content() != null) {
+					if (c.content().getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= AFTER_LIMIT) {
+						change.put("after", c.content());
+					}
+					else {
+						change.put("afterOmitted", true);
+					}
+				}
+				changes.add(change);
+			}
 			List<Object> slotList = new ArrayList<>();
 			slots.forEach((s) -> slotList.add(Describe.ordered("slot", s.reference().replace(SlotRules.MARKER, "").strip(), "file",
 					s.location(), "line", s.line(), "what", s.message())));

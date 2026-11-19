@@ -88,7 +88,7 @@ cozy-ui의 레이아웃·패턴·컴포넌트를 새로 만들거나 시그니�
 
 ## 벤더 자산
 
-- 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. 지금은 Tabler 1.7.5, Tabler Icons 3.51.0, htmx 2.0.11, Alpine.js CSP 빌드 3.17.5, Pretendard 1.3.9이고 폴더마다 LICENSE가 있다.
+- 자산은 `/cozy/vendor/{이름}/{버전}/`에서 서빙된다. 지금은 Tabler 1.7.5, Tabler Icons 3.52.0, htmx 2.0.11, Alpine.js CSP 빌드 3.17.5, Pretendard 1.3.9이고 폴더마다 LICENSE가 있다.
 - 버전을 바꾸려면 `distribution/vendor-assets/assets.conf`를 고치고 `fetch.sh`를 실행한 뒤 `base.html`의 경로를 맞춘다. 빌드가 `cozy-ui/vendor.lock`과 대조한다.
 - 새 자산(라이브러리, 글꼴, 아이콘 세트)은 `docs/adr/0017-version-policy.md` 표에 없으면 더하지 않는다. 필요하면 이유, 라이선스, 폐쇄망 반입 영향을 적어 제안한다.
 - Polaris, Cloudscape, KRDS에서는 원칙과 명칭만 가져온다. 코드, 토큰 값, 아이콘, 문서 문장을 가져오지 않는다.

@@ -499,7 +499,7 @@ public final class LegacyScript {
 		private void expect(String value) {
 			Token t = next();
 			if (!t.is(value)) {
-				throw unsupported(t, "'" + value + "'가 와야 합니다");
+				throw unsupported(t, "여기에 와야 하는 글자: " + value);
 			}
 		}
 
@@ -557,7 +557,7 @@ public final class LegacyScript {
 			this.start = this.parser.peek();
 			if (!this.name.startsWith(this.module) || this.name.length() <= this.module.length()
 					|| !Character.isUpperCase(this.name.charAt(this.module.length()))) {
-				throw new Unsupported(this.start.line(), this.module + " 모듈의 컴포넌트 이름은 " + this.module + "로 시작합니다(" + this.name + ")",
+				throw new Unsupported(this.start.line(), this.module + " 모듈의 컴포넌트 이름은 모듈 이름으로 시작합니다: " + this.name,
 						code(this.source, this.start.start()));
 			}
 			String key = Character.toLowerCase(this.name.charAt(this.module.length())) + this.name.substring(this.module.length() + 1);
@@ -729,7 +729,7 @@ public final class LegacyScript {
 		void expect(String value) {
 			Token t = next();
 			if (!t.is(value) || t.kind() == Kind.STRING) {
-				throw unsupported(t, "'" + value + "'가 와야 합니다");
+				throw unsupported(t, "여기에 와야 하는 글자: " + value);
 			}
 		}
 
@@ -766,7 +766,7 @@ public final class LegacyScript {
 			List<Stmt> body = new ArrayList<>();
 			while (!peek().is("}")) {
 				if (peek().kind() == Kind.END) {
-					throw unsupported(peek(), "'}'가 와야 합니다");
+					throw unsupported(peek(), "여기에 와야 하는 글자: }");
 				}
 				body.add(statement());
 			}
@@ -1092,7 +1092,7 @@ public final class LegacyScript {
 			this.methods.forEach((n, f) -> actions.put(n, action(f)));
 			for (Map.Entry<String, String> listen : listens.entrySet()) {
 				if (!actions.containsKey(listen.getValue())) {
-					throw new Unsupported(this.init.line(), "받는 화면 이벤트 " + listen.getKey() + "가 부르는 '" + listen.getValue() + "'는 동작이 아닙니다",
+					throw new Unsupported(this.init.line(), "받는 화면 이벤트가 부르는 이름이 동작이 아닙니다: " + listen.getKey() + " → " + listen.getValue(),
 							code(this.init));
 				}
 			}
@@ -1119,7 +1119,7 @@ public final class LegacyScript {
 				if (s instanceof SExpr e && e.expr() instanceof JAssign a && a.op().equals("=") && a.target() instanceof JMember m
 						&& m.object() instanceof JThis) {
 					if (reads.put(m.name(), a.value()) != null) {
-						throw fail(a, "init에서 " + m.name() + "을 두 번 정합니다");
+						throw fail(a, "init에서 두 번 정하는 상태입니다: " + m.name());
 					}
 					continue;
 				}
@@ -1150,7 +1150,7 @@ public final class LegacyScript {
 				throw fail(call, "받는 화면 이벤트에서는 동작 하나만 부릅니다: function (event) { self.동작(event); }");
 			}
 			if (listens.put(event.value(), method.name()) != null) {
-				throw fail(call, "화면 이벤트 " + event.value() + "를 두 번 받습니다");
+				throw fail(call, "두 번 받는 화면 이벤트입니다: " + event.value());
 			}
 			return true;
 		}
@@ -1168,7 +1168,7 @@ public final class LegacyScript {
 				Object[] r = reader(read);
 				Type readType = (Type) r[0];
 				if (type != null && type != readType) {
-					throw fail(read, "상태 " + n + "의 처음 값은 " + type.word() + "인데 " + readType.word() + "로 읽습니다");
+					throw fail(read, "처음 값과 읽는 종류가 다른 상태입니다: " + n + " (처음 값 " + type.word() + ", 읽는 종류 " + readType.word() + ")");
 				}
 				type = readType;
 				data = (String) r[1];

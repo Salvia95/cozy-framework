@@ -117,7 +117,9 @@ class WorkbenchArgTest {
 		assertThat(new CozyHtmlValidator().validate(plan).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
 
 		String applied = after(arg("apply", BADGE, "badge", 2, "neutral", "info"));
-		assertThat(applied).contains("매개변수 적용 결과").contains("적용했습니다").contains("앱을 다시 빌드하고 실행한 뒤");
+		assertThat(applied).contains("매개변수 적용 결과").contains("적용했습니다")
+			.as("dev는 템플릿을 소스에서 읽으므로 새로고침하면 보인다")
+			.contains("바로 보임", "바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.");
 		assertThat(list()).as("그 인자만 바뀐다").isEqualTo(before.replace("badge('고정', 'neutral')", "badge('고정', 'info')"));
 		assertThat(applied).as("구조와 속성은 소스를 읽으므로 바로 바뀐다").contains("<option value=\"info\" selected=\"selected\">정보 (info)</option>");
 

@@ -58,7 +58,7 @@ class BehaviorWiringTest {
 		assertThat(check()).singleElement().satisfies((v) -> {
 			assertThat(v.ruleId()).isEqualTo("C13");
 			assertThat(v.isError()).isTrue();
-			assertThat(v.format()).startsWith("[C13] src/main/resources/behaviors/memo.yml:2 → memoBodyCount — 컴포넌트 memoBodyCount을 어느 템플릿에도 붙이지 않았습니다")
+			assertThat(v.format()).startsWith("[C13] src/main/resources/behaviors/memo.yml:2 → memoBodyCount — 어느 템플릿에도 붙이지 않은 컴포넌트입니다: memoBodyCount")
 				.contains("cozy attach memoBodyCount --at <템플릿>:<줄>")
 				.contains("cozy remove behavior memo body-count");
 			assertThat(v.command()).isNull();
@@ -79,7 +79,7 @@ class BehaviorWiringTest {
 
 		assertThat(check()).singleElement().satisfies((v) -> {
 			assertThat(v.reference()).isEqualTo("memoSelection.clear");
-			assertThat(v.message()).startsWith("동작 clear을 부르는 요소가 없습니다")
+			assertThat(v.message()).startsWith("부르는 요소가 없는 동작입니다: clear")
 				.contains("--on <이벤트>:clear")
 				.contains("cozy add behavior memo selection --listen clear:<모듈>:<이벤트>")
 				.contains("cozy remove behavior memo selection --action clear");
@@ -109,7 +109,7 @@ class BehaviorWiringTest {
 
 		assertThat(check()).singleElement().satisfies((v) -> {
 			assertThat(v.reference()).isEqualTo("memoSelection → memo:selection-changed");
-			assertThat(v.message()).startsWith("화면 이벤트 memo:selection-changed를 받는 곳이 없습니다")
+			assertThat(v.message()).startsWith("받는 곳이 없는 화면 이벤트입니다: memo:selection-changed")
 				.contains("hx-trigger=\"memo:selection-changed from:window\"");
 		});
 	}
@@ -145,7 +145,7 @@ class BehaviorWiringTest {
 
 		assertThat(check()).singleElement().satisfies((v) -> {
 			assertThat(v.reference()).isEqualTo("memoSelection ← memo:saved");
-			assertThat(v.message()).startsWith("화면 이벤트 memo:saved를 내는 곳이 없습니다")
+			assertThat(v.message()).startsWith("내는 곳이 없는 화면 이벤트입니다: memo:saved")
 				.contains("HX-Trigger의 값에 이름을 글자 그대로(\"memo:saved\")")
 				.contains("cozy remove behavior memo selection --listen memo:saved");
 		});

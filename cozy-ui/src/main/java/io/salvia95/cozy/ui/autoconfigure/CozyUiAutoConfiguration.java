@@ -61,8 +61,9 @@ public class CozyUiAutoConfiguration {
 	}
 
 	@Bean
-	CozyModuleScripts cozyModuleScripts(ResourceLoader resourceLoader) {
-		return new CozyModuleScripts(ResourcePatternUtils.getResourcePatternResolver(resourceLoader));
+	CozyModuleScripts cozyModuleScripts(ResourceLoader resourceLoader, org.springframework.core.env.Environment environment) {
+		return new CozyModuleScripts(ResourcePatternUtils.getResourcePatternResolver(resourceLoader),
+				java.util.List.of(environment.getProperty(CozyModuleScripts.FOLDERS, String[].class, new String[0])));
 	}
 
 	@Bean

@@ -53,7 +53,7 @@ public class WorkbenchController {
 	/** 미리보기 폭. {@code full}은 칸 전체 */
 	static final List<String> WIDTHS = List.of("full", "1024", "768", "390");
 
-	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec");
+	static final List<String> VIEWS = List.of("preview", "fixture", "template", "spec", "behavior", "script");
 
 	/** 상태 비교에서 한 번에 고를 수 있는 상태 수. 상태마다 미리보기를 하나씩 그린다 */
 	static final int COMPARE_LIMIT = 4;
@@ -67,10 +67,24 @@ public class WorkbenchController {
 	/** cozy-ui의 프레임워크 컴포넌트 명세 (실행 중에는 바뀌지 않는다) */
 	private final io.salvia95.cozy.cli.internal.behavior.FrameworkBehaviors framework = BehaviorViews.framework();
 
+	/** 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가 (적용한 것이 새로고침만으로 보이는가) */
+	private final boolean live;
+
 	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
+		this(manifest, specs, engine, false);
+	}
+
+	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine, boolean live) {
 		this.manifest = manifest;
 		this.screenSpecs = specs;
 		this.engine = engine;
+		this.live = live;
+	}
+
+	/** 화면마다: 바뀐 파일이 언제 보이는지 알리는 데 쓴다 */
+	@org.springframework.web.bind.annotation.ModelAttribute("liveResources")
+	boolean liveResources() {
+		return this.live;
 	}
 
 	/** 번호가 붙은 소스 한 줄 */
@@ -92,12 +106,18 @@ public class WorkbenchController {
 	@GetMapping
 	String workbench(@RequestParam(required = false) String spec, @RequestParam(required = false) String state,
 			@RequestParam(defaultValue = "full") String w, @RequestParam(defaultValue = "preview") String view,
-			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node, Model model) {
+			@RequestParam(defaultValue = "false") boolean compare, @RequestParam(required = false) Integer node,
+			@RequestParam(required = false) String module, @RequestParam(required = false) String template,
+			@RequestParam(required = false) String at, @RequestParam(required = false) String component, Model model) {
 		if (spec == null) {
 			return overview(model);
 		}
+		model.addAttribute("attachAt", at);
+		model.addAttribute("attachComponent", component);
 		model.addAttribute("compareOpen", compare);
 		model.addAttribute("node", node);
+		model.addAttribute("sourceModule", module);
+		model.addAttribute("sourceTemplate", template);
 		return screen(spec, state, w, view, model);
 	}
 
@@ -161,18 +181,40 @@ public class WorkbenchController {
 		List<ScreenTree.Item> tree = List.of();
 		List<BehaviorViews.Element> elements = List.of();
 		String specFile = null;
+		// 소스 탭: 화면이 넣는 앱 템플릿, 화면이 쓰는 앱 컴포넌트의 모듈
+		List<String> screenTemplates = new ArrayList<>(List.of(screen.template()));
+		List<String> behaviorModules = new ArrayList<>();
 		if (this.engine.available()) {
 			WorkbenchEngine.Described all = this.engine.described();
 			Optional<WorkbenchEngine.Screen> described = all.screens()
 				.stream()
 				.filter((s) -> s.template().equals(screen.template()))
 				.findFirst();
+			Map<String, BehaviorViews.Component> components = BehaviorViews.components(all.behaviors(), this.framework);
+			if (model.getAttribute("attachAt") instanceof String at) {
+				model.addAttribute("attachPlace", place(at, (String) model.getAttribute("attachComponent"), components));
+			}
 			if (described.isPresent()) {
-				elements = BehaviorViews.elements(described.get().bindings(), BehaviorViews.components(all.behaviors(), this.framework));
+				elements = BehaviorViews.elements(described.get().bindings(), components);
 				tree = BehaviorViews.attach(ScreenTree.of(described.get().outline(), this.manifest, templateFile), elements);
 				specFile = described.get().spec();
+				described.get().outline().forEach((n) -> addTemplate(screenTemplates, n.target()));
+				Map<String, String> owners = new LinkedHashMap<>();
+				all.behaviors().forEach((b) -> owners.put(b.name(), b.module()));
+				for (WorkbenchEngine.Binding b : described.get().bindings()) {
+					addTemplate(screenTemplates, b.template());
+					String owner = (b.component() == null) ? null : owners.get(b.component());
+					if (owner != null && !behaviorModules.contains(owner)) {
+						behaviorModules.add(owner);
+					}
+				}
 			}
 		}
+		if (model.getAttribute("attachAt") != null && !this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 템플릿을 고칠 수 있습니다");
+		}
+		model.addAttribute("screenTemplates", screenTemplates);
+		model.addAttribute("behaviorModules", behaviorModules);
 		model.addAttribute("screenBehaviors", elements);
 		model.addAttribute("tree", tree);
 		model.addAttribute("nodes", ScreenTree.nest(tree));
@@ -189,13 +231,32 @@ public class WorkbenchController {
 				model.addAttribute("fixtureSections", FixtureForm.of(text, selectedState, screen.model(), draft, this::docs));
 			}
 		}
+		String shownTemplate = (model.getAttribute("sourceTemplate") instanceof String t) ? t : screen.template();
+		if (view.equals("template") && !screenTemplates.contains(shownTemplate)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"[cozy] 화면 " + screen.screen() + "이 넣는 앱 템플릿이 아닙니다: " + shownTemplate + ". 있는 것: " + String.join(", ", screenTemplates));
+		}
+		model.addAttribute("shownTemplate", shownTemplate);
+		String shownModule = null;
+		if (view.equals("behavior") || view.equals("script")) {
+			shownModule = (model.getAttribute("sourceModule") instanceof String m) ? m
+					: behaviorModules.isEmpty() ? null : behaviorModules.getFirst();
+			if (shownModule == null || !behaviorModules.contains(shownModule)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 " + screen.screen() + "이 쓰는 앱 컴포넌트의 모듈이 아닙니다: "
+						+ shownModule + ". 있는 것: " + (behaviorModules.isEmpty() ? "없음" : String.join(", ", behaviorModules)));
+			}
+		}
+		model.addAttribute("shownModule", shownModule);
 		String sourceFile = switch (view) {
-			case "template" -> "src/main/resources/" + templateFile;
+			case "template" -> "src/main/resources/templates/" + shownTemplate + ".html";
 			case "spec" -> specFile;
+			case "behavior" -> behaviorSpec(shownModule);
+			case "script" -> behaviorScript(shownModule);
 			default -> null;
 		};
 		model.addAttribute("sourceFile", sourceFile);
 		model.addAttribute("sourceLines", (sourceFile != null) ? lines(sourceFile) : List.of());
+		model.addAttribute("sourceNote", sourceNote(view));
 		return "cozy/dev/workbench";
 	}
 
@@ -292,7 +353,7 @@ public class WorkbenchController {
 		return "cozy/dev/workbench-overview";
 	}
 
-	// ── 검색: 화면, 컴포넌트, 생성 항목, 모듈 ─────────────────────────────────────
+	// ── 검색: 화면, 화면 안의 동작, 화면 이벤트, 컴포넌트, 생성 항목, 모듈 ─────────────────────────────────────
 
 	/** 카탈로그의 묶음 이름 (패턴 카탈로그와 같다) */
 	private static final Map<String, String> CATALOG_GROUPS = Map.of("pattern", "패턴", "component", "컴포넌트", "icon", "아이콘", "layout",
@@ -317,7 +378,11 @@ public class WorkbenchController {
 			entries.add(new WorkbenchSearch.Entry("생성 항목", recipe.title(), recipe.commandText(), recipe.group(), recipe.does(),
 					PATH + "/commands?recipe=" + recipe.name(), List.of(recipe.does(), recipe.name())));
 		}
-		if (this.engine.available() && this.engine.describe().get("modules") instanceof List<?> modules) {
+		Map<String, Object> described = this.engine.available() ? this.engine.describe() : Map.of();
+		if (this.engine.available()) {
+			entries.addAll(WorkbenchSearch.behaviors(described, PATH + "/map?module="));
+		}
+		if (described.get("modules") instanceof List<?> modules) {
 			List<Map<String, Object>> list = new ArrayList<>();
 			modules.forEach((item) -> list.add((Map<String, Object>) item));
 			for (ModuleGraph.Node node : ModuleGraph.of(list, null).nodes()) {
@@ -393,8 +458,97 @@ public class WorkbenchController {
 
 	/**
 	 * 검사 화면의 줄 하나: 위반과, 화면 파일이면 그 소스 보기.
+	 *
+	 * @param fix 워크벤치가 계획하고 적용할 수 있는 고치는 명령({@link #CHECK_FIXES}의 키). 없으면 {@code null}
+	 * @param places 고치는 화면 (C13: 붙일 화면, 붙인 곳, 동작 고치기, 화면 이벤트)
 	 */
-	public record Finding(WorkbenchEngine.Violation violation, ScreenLink link) {
+	public record Finding(WorkbenchEngine.Violation violation, ScreenLink link, String fix, List<Place> places) {
+
+		Finding(WorkbenchEngine.Violation violation, ScreenLink link) {
+			this(violation, link, fixOf(violation), placesOf(violation));
+		}
+	}
+
+	/** 고치는 화면으로 가는 링크 하나 */
+	public record Place(String label, String url) {
+	}
+
+	/** 검사 항목의 계획 버튼이 부르는 명령: 키 → {@code cozy} 뒤의 인자 */
+	static final Map<String, List<String>> CHECK_FIXES = Map.of("sync-behaviors", List.of("sync", "behaviors"), "migrate-behaviors",
+			List.of("migrate", "behaviors"));
+
+	/** 위반의 고치는 명령이 워크벤치가 부를 수 있는 것이면 그 키 */
+	static String fixOf(WorkbenchEngine.Violation violation) {
+		if (violation.command() == null) {
+			return null;
+		}
+		return CHECK_FIXES.entrySet()
+			.stream()
+			.filter((e) -> violation.command().equals("cozy " + String.join(" ", e.getValue())))
+			.map(Map.Entry::getKey)
+			.findFirst()
+			.orElse(null);
+	}
+
+	private static final java.util.regex.Pattern BEHAVIOR_SPEC = java.util.regex.Pattern.compile("src/main/resources/behaviors/([a-z][a-z0-9]*)\\.yml");
+
+	/**
+	 * C13 항목을 고치는 화면. 대상({@code memoPanel}, {@code memoSelection.drop}, {@code memoSelection → memo:picked},
+	 * {@code memoSelection ← memo:archived})에 맞춰 고른다.
+	 */
+	static List<Place> placesOf(WorkbenchEngine.Violation violation) {
+		if (!"C13".equals(violation.id()) || violation.target() == null || violation.file() == null) {
+			return List.of();
+		}
+		java.util.regex.Matcher spec = BEHAVIOR_SPEC.matcher(violation.file());
+		if (!spec.matches()) {
+			return List.of();
+		}
+		String module = spec.group(1);
+		String target = violation.target();
+		String component = target.split("[ .]", 2)[0];
+		String map = PATH + "/map?module=" + module;
+		Place edit = new Place("동작 고치기", PATH + "/commands?recipe=behavior&edit=" + component);
+		if (target.contains(" → ") || target.contains(" ← ")) {
+			String event = target.substring(target.indexOf(' ', component.length() + 1) + 1);
+			return List.of(edit, new Place("화면 이벤트", map + "#" + WorkbenchSearch.eventAnchor(event)));
+		}
+		if (target.contains(".")) {
+			return List.of(new Place("붙인 곳", map + "#behavior-" + component), edit);
+		}
+		return List.of(new Place("붙일 화면", map + "#module-screens"), edit);
+	}
+
+	/**
+	 * 검사 항목의 고치는 명령의 변경 파일이나 적용 결과.
+	 *
+	 * @param name 사람에게 보일 이름 ({@code 동작 명세에서 JS 다시 만들기})
+	 */
+	public record CheckFix(String fix, String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome) {
+	}
+
+	private static final Map<String, String> CHECK_FIX_NAMES = Map.of("sync-behaviors", "동작 명세에서 JS 다시 만들기", "migrate-behaviors",
+			"손으로 쓴 모듈 JS를 동작 명세로 옮기기");
+
+	/**
+	 * 검사 항목의 고치는 명령({@code cozy sync behaviors}, {@code cozy migrate behaviors})을 계획하거나 적용한다. 결과는 검사 화면 위에 보인다.
+	 */
+	@PostMapping("/check")
+	String fix(@RequestParam String fix, @RequestParam String step, HttpServletRequest request, RedirectAttributes flash) {
+		if (!STEPS.contains(step)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		List<String> args = CHECK_FIXES.get(fix);
+		if (args == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] fix는 " + new java.util.TreeSet<>(CHECK_FIXES.keySet()) + " 가운데 하나입니다: " + fix);
+		}
+		requireSameOrigin(request);
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 고칠 수 있습니다");
+		}
+		boolean dryRun = step.equals("plan");
+		flash.addFlashAttribute("checkFix", new CheckFix(fix, CHECK_FIX_NAMES.get(fix), commandLine(args), dryRun, this.engine.execute(args, dryRun)));
+		return "redirect:" + PATH + "/check";
 	}
 
 	/** 검사 화면의 파일 하나 */
@@ -684,7 +838,46 @@ public class WorkbenchController {
 	 * @param node 돌아가서 다시 고를 구조의 줄. 없으면 {@code null}
 	 */
 	public record AttachChange(String name, String command, boolean dryRun, WorkbenchEngine.Outcome outcome, Integer node,
-			String component, String template, int line, String option, String key, String value, boolean detach) {
+			String component, String template, int line, Map<String, String> data, String option, String key, String value,
+			boolean detach, boolean fromPlace) {
+	}
+
+	/** 미리보기에서 고른 요소의 위치 ({@code memo/internal/fields:9}). 앱 템플릿만 */
+	private static final java.util.regex.Pattern AT = java.util.regex.Pattern
+		.compile("((?!cozy/)[a-z0-9_-]+(?:/[a-z0-9_-]+)*):([1-9][0-9]{0,5})");
+
+	/** {@code data.이름}의 이름 */
+	private static final java.util.regex.Pattern DATA_NAME = java.util.regex.Pattern.compile("[a-z][a-z0-9-]*");
+
+	/** 고른 요소에 붙이기: 그 줄의 요소, 붙은 컴포넌트, 고를 수 있는 컴포넌트 */
+	private BehaviorViews.Place place(String at, String component, Map<String, BehaviorViews.Component> components) {
+		java.util.regex.Matcher m = AT.matcher(at);
+		if (!m.matches()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] at은 앱 템플릿:줄 모양입니다 (예: memo/internal/fields:9): " + at);
+		}
+		String text = this.engine.source("src/main/resources/templates/" + m.group(1) + ".html")
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 없는 템플릿입니다: " + m.group(1)));
+		return BehaviorViews.place(m.group(1), Integer.parseInt(m.group(2)), text, components, component);
+	}
+
+	/** 폼의 {@code data.이름}: 값을 적었고 지금 값({@code was.이름})과 다른 것만 */
+	static Map<String, String> attachData(Map<String, String[]> parameters) {
+		Map<String, String> data = new LinkedHashMap<>();
+		parameters.forEach((name, values) -> {
+			if (name.startsWith("data.") && values.length > 0) {
+				String key = name.substring("data.".length());
+				if (!DATA_NAME.matcher(key).matches()) {
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] data-* 이름은 소문자와 -입니다: " + key);
+				}
+				String value = values[values.length - 1].strip();
+				String[] was = parameters.get("was." + key);
+				String before = (was != null && was.length > 0) ? was[was.length - 1].strip() : "";
+				if (!value.isEmpty() && !value.equals(before)) {
+					data.put(key, value);
+				}
+			}
+		});
+		return data;
 	}
 
 	private static final Map<String, String> ATTACH_LABELS = Map.of("on", "이벤트", "text", "글자", "show", "보임", "bind", "속성", "model",
@@ -692,8 +885,22 @@ public class WorkbenchController {
 
 	/** 속성 패널의 붙이기·떼기를 {@code cozy attach}의 인자로 */
 	static List<String> attachArgs(String component, String template, int line, String option, String key, String value, boolean detach) {
+		return attachArgs(component, template, line, Map.of(), option, key, value, detach);
+	}
+
+	/**
+	 * 붙이기 폼을 {@code cozy attach}의 인자로.
+	 *
+	 * @param data {@code data-*} 이름 → 값 ({@code --data 이름=값})
+	 * @param option 붙일 것. 빈 문자열이면 {@code data-*}만 (새 자리면 {@code x-data}도)
+	 */
+	static List<String> attachArgs(String component, String template, int line, Map<String, String> data, String option, String key,
+			String value, boolean detach) {
 		List<String> args = new ArrayList<>(List.of("attach", component, "--at", template + ":" + line));
+		data.forEach((name, text) -> args.addAll(List.of("--data", name + "=" + text)));
 		switch (option) {
+			case "" -> {
+			}
 			case "on" -> args.addAll(List.of("--on", key + ":" + value));
 			case "bind" -> args.addAll(List.of("--bind", key + ":" + value));
 			case "data" -> args.addAll(List.of("--data", key + "=" + value));
@@ -715,11 +922,12 @@ public class WorkbenchController {
 			@RequestParam(required = false) Integer node, @RequestParam String component, @RequestParam String template,
 			@RequestParam int line, @RequestParam String option, @RequestParam(defaultValue = "") String key,
 			@RequestParam(defaultValue = "") String value, @RequestParam(defaultValue = "false") boolean detach,
-			@RequestParam String step, HttpServletRequest request, RedirectAttributes flash) {
+			@RequestParam(defaultValue = "false") boolean fromPlace, @RequestParam String step, HttpServletRequest request,
+			RedirectAttributes flash) {
 		if (!STEPS.contains(step)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
 		}
-		if (!BehaviorViews.OPTIONS.contains(option)) {
+		if (!option.isEmpty() && !BehaviorViews.OPTIONS.contains(option)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] option은 " + BehaviorViews.OPTIONS + " 가운데 하나입니다: " + option);
 		}
 		requireSameOrigin(request);
@@ -729,18 +937,33 @@ public class WorkbenchController {
 		if (this.screenSpecs.all().stream().noneMatch((s) -> s.screen().equals(spec))) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 화면 스펙이 없습니다: " + spec);
 		}
-		List<String> args = attachArgs(component, template, line, option, key.strip(), value.strip(), detach);
+		Map<String, String> data = detach ? Map.of() : attachData(request.getParameterMap());
+		List<String> args = attachArgs(component, template, line, data, option, key.strip(), value.strip(), detach);
 		boolean dryRun = step.equals("plan");
 		WorkbenchEngine.Outcome outcome = this.engine.execute(args, dryRun);
-		String what = ATTACH_LABELS.get(option) + (key.isBlank() ? "" : " " + key.strip()) + (value.isBlank() ? "" : " " + value.strip());
-		flash.addFlashAttribute("attachChange", new AttachChange(component + " · " + what + (detach ? " 떼기" : ""), commandLine(args), dryRun,
-				outcome, node, component, template, line, option, key.strip(), value.strip(), detach));
+		List<String> what = new ArrayList<>();
+		if (!data.isEmpty()) {
+			what.add("넘기는 값 " + String.join(", ", data.keySet()));
+		}
+		if (!option.isEmpty()) {
+			what.add(ATTACH_LABELS.get(option) + (key.isBlank() ? "" : " " + key.strip()) + (value.isBlank() ? "" : " " + value.strip()));
+		}
+		if (what.isEmpty()) {
+			what.add("컴포넌트의 자리");
+		}
+		flash.addFlashAttribute("attachChange", new AttachChange(component + " · " + String.join(" · ", what) + (detach ? " 떼기" : ""),
+				commandLine(args), dryRun, outcome, node, component, template, line, data, option, key.strip(), value.strip(), detach,
+				fromPlace));
 		org.springframework.web.util.UriComponentsBuilder back = org.springframework.web.util.UriComponentsBuilder.fromPath(PATH)
 			.queryParam("spec", spec)
 			.queryParam("state", state)
 			.queryParam("w", WIDTHS.contains(w) ? w : "full");
 		if (node != null) {
 			back.queryParam("node", node);
+		}
+		if (fromPlace && outcome.error() != null) {
+			// 거절되면 붙이기 카드를 다시 열어 고쳐 보낸다
+			back.queryParam("at", template + ":" + line).queryParam("component", component);
 		}
 		return "redirect:" + back.build().encode().toUriString();
 	}
@@ -751,55 +974,146 @@ public class WorkbenchController {
 	static final List<String> STEPS = List.of("plan", "apply");
 
 	@GetMapping("/commands")
-	String commands(@RequestParam(required = false) String recipe, Model model) {
-		commandModel(recipe, Map.of(), null, model);
+	String commands(@RequestParam(required = false) String recipe, @RequestParam(required = false) String edit, Model model) {
+		WorkbenchEngine.Behavior editing = editing(recipe, edit);
+		commandModel(recipe, (editing == null) ? Map.of() : BehaviorEdit.values(editing), null, editing, model);
 		return "cozy/dev/workbench-commands";
 	}
+
+	/** 컴포넌트를 고치는 폼에서 하는 일: 항목 고치기, 이름 바꾸기, 지우기 */
+	static final List<String> CHANGES = List.of("edit", "rename", "delete");
 
 	/**
 	 * 폼의 값으로 cozy 명령을 만들어 계획하거나({@code step=plan}) 적용한다({@code step=apply}). 인자는 폼의 값뿐이고, 쓰는 경로는 cozy 명령의
 	 * 계획이 정한다. 그리드의 행 버튼({@code row=add:opt.field} 등)은 명령을 부르지 않고 행만 고친 폼을 다시 보인다.
+	 *
+	 * <p>
+	 * 컴포넌트를 고치는 폼({@code edit}): 바꾸거나 더한 행은 {@code cozy add behavior}, 지운 행은 {@code cozy remove behavior}이고 둘은 한
+	 * 계획이다({@link BehaviorEdit}). {@code change=rename}은 {@code cozy rename behavior}, {@code change=delete}는 {@code cozy remove
+	 * behavior}(컴포넌트 전체)다. 폼을 연 뒤 동작 명세가 바뀌었으면({@code specHash}) 명령을 부르지 않고 다시 열라고 한다.
 	 */
 	@PostMapping("/commands")
 	String execute(@RequestParam String recipe, @RequestParam(required = false) String step,
-			@RequestParam(required = false) String row, @RequestParam MultiValueMap<String, String> form, HttpServletRequest request,
+			@RequestParam(required = false) String row, @RequestParam(required = false) String edit,
+			@RequestParam(defaultValue = "") String specHash, @RequestParam(defaultValue = "edit") String change,
+			@RequestParam(defaultValue = "") String newName, @RequestParam MultiValueMap<String, String> form, HttpServletRequest request,
 			Model model) {
 		if (row == null && !STEPS.contains(step)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] step은 " + STEPS + " 가운데 하나입니다: " + step);
+		}
+		if (!CHANGES.contains(change)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] change는 " + CHANGES + " 가운데 하나입니다: " + change);
 		}
 		requireSameOrigin(request);
 		if (row == null && !this.engine.available()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 cozy 명령을 쓸 수 있습니다");
 		}
+		WorkbenchEngine.Behavior editing = editing(recipe, edit);
 		Map<String, List<String>> values = new LinkedHashMap<>();
 		form.forEach((name, list) -> {
 			if (name.startsWith("arg.") || name.startsWith("opt.")) {
 				values.put(name, List.copyOf(list));
 			}
 		});
-		CommandForm built = commandModel(recipe, values, row, model);
+		if (editing != null) {
+			// 고치는 컴포넌트는 주소가 정한다. 폼의 모듈과 동작 칸은 보이지 않는다
+			BehaviorEdit.values(editing).entrySet()
+				.stream()
+				.filter((e) -> e.getKey().startsWith("arg."))
+				.forEach((e) -> values.put(e.getKey(), e.getValue()));
+		}
+		CommandForm built = commandModel(recipe, values, row, editing, model);
 		if (row != null) {
+			model.addAttribute("specHash", specHash);
 			return "cozy/dev/workbench-commands";
 		}
-		model.addAttribute("missing", built.missing());
-		if (!built.missing().isEmpty()) {
+		if (editing != null && !specHash.equals(model.getAttribute("specHash"))) {
+			model.addAttribute("specHash", specHash);
+			model.addAttribute("stale", true);
 			return "cozy/dev/workbench-commands";
 		}
 		boolean dryRun = step.equals("plan");
-		WorkbenchEngine.Outcome outcome = this.engine.execute(built.args(), dryRun);
-		model.addAttribute("commandLine", commandLine(built.args()));
+		List<List<String>> commands;
+		if (editing == null) {
+			model.addAttribute("missing", built.missing());
+			if (!built.missing().isEmpty()) {
+				return "cozy/dev/workbench-commands";
+			}
+			commands = List.of(built.args());
+		}
+		else {
+			String module = editing.module();
+			String action = BehaviorEdit.action(module, editing.name());
+			model.addAttribute("change", change);
+			model.addAttribute("newName", newName.strip());
+			commands = switch (change) {
+				case "rename" -> newName.isBlank() ? List.of() : List.of(List.of("rename", "behavior", module, action, newName.strip()));
+				case "delete" -> List.of(List.of("remove", "behavior", module, action));
+				default -> built.missing().isEmpty() ? BehaviorEdit.commands(editing, values) : List.of();
+			};
+			if (change.equals("edit") && !built.missing().isEmpty()) {
+				model.addAttribute("missing", built.missing());
+				return "cozy/dev/workbench-commands";
+			}
+			if (change.equals("rename") && newName.isBlank()) {
+				model.addAttribute("missing", List.of("새 이름"));
+				return "cozy/dev/workbench-commands";
+			}
+			if (commands.isEmpty()) {
+				model.addAttribute("unchanged", true);
+				return "cozy/dev/workbench-commands";
+			}
+		}
+		WorkbenchEngine.Outcome outcome = (editing == null) ? this.engine.execute(commands.getFirst(), dryRun)
+				: this.engine.executeTogether(commands, dryRun);
+		List<String> lines = commands.stream().map(WorkbenchController::commandLine).toList();
+		model.addAttribute("commandLines", lines);
+		model.addAttribute("commandText", String.join("\n", lines));
 		model.addAttribute("outcome", outcome);
 		model.addAttribute("dryRun", dryRun);
 		Map<String, Object> described = this.engine.describe();
 		model.addAttribute("changeTree", ChangeTree.of(outcome.changes(), basePackage(described), eventModules(described)));
 		model.addAttribute("changed", outcome.changes().stream().filter((c) -> !c.action().equals("unchanged")).count());
-		model.addAttribute("needsRestart", outcome.applied()
-				&& outcome.changes().stream().anyMatch((c) -> !c.action().equals("unchanged")));
+		if (editing != null && outcome.applied()) {
+			// 적용한 뒤에는 바뀐 명세로 폼을 다시 채운다. 지웠으면 새 동작을 만드는 폼이다
+			// 새 동작 이름(body-length)은 컴포넌트의 뒷부분(BodyLength)이 된다
+			String now = change.equals("rename") ? editing.module() + io.salvia95.cozy.cli.internal.recipe.Names.pascalOfKebab(newName.strip())
+					: editing.name();
+			WorkbenchEngine.Behavior after = change.equals("delete") ? null : behavior(now);
+			commandModel(recipe, (after == null) ? Map.of() : BehaviorEdit.values(after), null, after, model);
+			model.addAttribute("removedComponent", change.equals("delete") ? editing.name() : null);
+		}
 		return "cozy/dev/workbench-commands";
 	}
 
-	/** @return 고른 레시피의 폼. 고르지 않았으면 {@code null} */
-	private CommandForm commandModel(String recipe, Map<String, List<String>> values, String row, Model model) {
+	/** 주소의 {@code edit}: 고칠 컴포넌트. 없으면 {@code null} */
+	private WorkbenchEngine.Behavior editing(String recipe, String edit) {
+		if (edit == null) {
+			return null;
+		}
+		if (!"behavior".equals(recipe)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] edit는 화면 동작(recipe=behavior)에만 씁니다: " + recipe);
+		}
+		if (!this.engine.available()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "[cozy] 앱 프로젝트 폴더에서 실행할 때만 동작을 고칠 수 있습니다");
+		}
+		WorkbenchEngine.Behavior found = behavior(edit);
+		if (found == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 동작 명세에 없는 컴포넌트입니다: " + edit);
+		}
+		return found;
+	}
+
+	private WorkbenchEngine.Behavior behavior(String name) {
+		return this.engine.described().behaviors().stream().filter((b) -> b.name().equals(name)).findFirst().orElse(null);
+	}
+
+	/**
+	 * @param editing 고치는 컴포넌트. 새로 만들면 {@code null}
+	 * @return 고른 레시피의 폼. 고르지 않았으면 {@code null}
+	 */
+	private CommandForm commandModel(String recipe, Map<String, List<String>> values, String row, WorkbenchEngine.Behavior editing,
+			Model model) {
 		List<WorkbenchEngine.Recipe> recipes = this.engine.recipes();
 		WorkbenchEngine.Recipe selected = (recipe == null) ? null
 				: recipes.stream()
@@ -816,13 +1130,21 @@ public class WorkbenchController {
 		model.addAttribute("recipeGroups", groups);
 		model.addAttribute("selected", selected);
 		model.addAttribute("missing", List.of());
+		model.addAttribute("editing", editing);
+		if (editing != null) {
+			model.addAttribute("editAction", BehaviorEdit.action(editing.module(), editing.name()));
+			model.addAttribute("specHash", hash(this.engine.source(behaviorSpec(editing.module())).orElse("")));
+		}
 		if (selected == null) {
 			return null;
 		}
+		Map<String, List<WorkbenchEngine.Word>> words = new LinkedHashMap<>();
+		selected.vocabulary().forEach((w) -> words.computeIfAbsent(w.kind(), (k) -> new ArrayList<>()).add(w));
+		model.addAttribute("vocabulary", words);
 		CommandForm built;
 		try {
-			built = CommandForm.of(selected, values,
-					CommandForm.sources(this.engine.available() ? this.engine.describe() : Map.of(), CozyIcons.outline()), row);
+			built = CommandForm.of(selected, values, CommandForm.sources(this.engine.available() ? this.engine.describe() : Map.of(),
+					CozyIcons.outline(), selected.vocabulary(), editing), row);
 		}
 		catch (IllegalArgumentException ex) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -858,8 +1180,20 @@ public class WorkbenchController {
 	static String commandLine(List<String> args) {
 		StringBuilder line = new StringBuilder("cozy");
 		for (String arg : args) {
-			boolean quote = arg.isEmpty() || arg.chars().anyMatch((c) -> Character.isWhitespace(c) || c == '"');
-			line.append(' ').append(quote ? '"' + arg.replace("\\", "\\\\").replace("\"", "\\\"") + '"' : arg);
+			// 셸이 펼치는 글자($, `)가 있으면 작은따옴표로 (Thymeleaf 식 ${…}을 그대로 넘긴다)
+			boolean expands = arg.indexOf('$') >= 0 || arg.indexOf('`') >= 0;
+			boolean quote = arg.isEmpty() || expands || arg.chars().anyMatch((c) -> Character.isWhitespace(c) || c == '"');
+			if (expands && arg.indexOf('\'') < 0) {
+				line.append(" '").append(arg).append('\'');
+			}
+			else if (quote) {
+				line.append(" \"")
+					.append(arg.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$").replace("`", "\\`"))
+					.append('"');
+			}
+			else {
+				line.append(' ').append(arg);
+			}
 		}
 		return line.toString();
 	}
@@ -880,6 +1214,9 @@ public class WorkbenchController {
 
 	private static final List<String> MAP_VIEWS = List.of("diagram", "table");
 
+	/** 모듈 화면에서 여는 소스: 동작 명세, 만든 JS */
+	private static final List<String> SOURCES = List.of("behavior", "script");
+
 	/**
 	 * 모듈 화면: 의존성 다이어그램(또는 표)과 선택한 모듈의 속성.
 	 *
@@ -888,7 +1225,8 @@ public class WorkbenchController {
 	 */
 	@GetMapping("/map")
 	@SuppressWarnings("unchecked")
-	String map(@RequestParam(required = false) String module, @RequestParam(defaultValue = "diagram") String view, Model model) {
+	String map(@RequestParam(required = false) String module, @RequestParam(defaultValue = "diagram") String view,
+			@RequestParam(required = false) String source, Model model) {
 		if (!MAP_VIEWS.contains(view)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] view는 " + MAP_VIEWS + " 가운데 하나입니다: " + view);
 		}
@@ -919,6 +1257,19 @@ public class WorkbenchController {
 		if (ModuleGraph.EVENTS.equals(module)) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 					"[cozy] events는 이벤트 계약 모듈이라 모듈 의존성에 그리지 않습니다. 이벤트는 주인 모듈을 선택하면 보입니다.");
+		}
+		if (source != null) {
+			if (!SOURCES.contains(source)) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "[cozy] source는 " + SOURCES + " 가운데 하나입니다: " + source);
+			}
+			if (selected == null || !(selected.get("behaviors") instanceof List<?> declared) || declared.isEmpty()) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "[cozy] 동작 명세가 있는 모듈을 고르세요: " + module);
+			}
+			String file = source.equals("behavior") ? behaviorSpec(module) : behaviorScript(module);
+			model.addAttribute("source", source);
+			model.addAttribute("sourceFile", file);
+			model.addAttribute("sourceLines", lines(file));
+			model.addAttribute("sourceNote", sourceNote(source));
 		}
 		ModuleGraph graph = ModuleGraph.of(modules, module);
 		model.addAttribute("graph", graph);
@@ -967,6 +1318,7 @@ public class WorkbenchController {
 			}
 		}
 		model.addAttribute("behaviorScreens", behaviorScreens);
+		model.addAttribute("behaviorLines", (module != null) ? componentLines(module) : Map.of());
 		List<UiEventRow> uiEvents = new ArrayList<>();
 		if (selected != null && map.get("uiEvents") instanceof List<?> events) {
 			for (Object item : events) {
@@ -1007,6 +1359,48 @@ public class WorkbenchController {
 			case "server" -> w.get("file") + " (서버)";
 			default -> w.get("template") + ":" + w.get("line") + " (" + w.get("kind") + ")";
 		};
+	}
+
+	/** 동작 명세의 컴포넌트 줄: 이름({@code memoBodyCount}) → 그 키({@code   bodyCount:})의 줄. 명세가 없으면 빈 맵 */
+	Map<String, Integer> componentLines(String module) {
+		Map<String, Integer> found = new LinkedHashMap<>();
+		String[] lines = this.engine.source(behaviorSpec(module)).orElse("").split("\\R", -1);
+		for (int i = 0; i < lines.length; i++) {
+			java.util.regex.Matcher m = COMPONENT_KEY.matcher(lines[i]);
+			if (m.matches()) {
+				found.put(module + Character.toUpperCase(m.group(1).charAt(0)) + m.group(1).substring(1), i + 1);
+			}
+		}
+		return found;
+	}
+
+	/** 동작 명세에서 컴포넌트를 여는 줄 ({@code components:} 바로 아래, 들여쓰기 두 칸) */
+	private static final java.util.regex.Pattern COMPONENT_KEY = java.util.regex.Pattern.compile("  ([a-z][A-Za-z0-9]*):\\s*");
+
+	/** 소스 위에 보일 안내: 동작 명세와 만든 JS는 고치는 길을 알린다 */
+	static String sourceNote(String source) {
+		return switch (source) {
+			case "behavior" -> "동작 명세가 원본입니다. cozy add behavior가 고치고, 손으로 고쳤으면 cozy sync behaviors가 정리하고 JS를 다시 만듭니다.";
+			case "script" -> "cozy가 동작 명세에서 만든 파일입니다. 손으로 고치지 않습니다(C12). 동작을 바꾸려면 동작 명세를 고칩니다.";
+			default -> "";
+		};
+	}
+
+	/** 모듈의 동작 명세 ({@code src/main/resources/behaviors/memo.yml}) */
+	static String behaviorSpec(String module) {
+		return "src/main/resources/behaviors/" + module + ".yml";
+	}
+
+	/** 동작 명세에서 만든 JS ({@code src/main/resources/static/memo/memo.js}) */
+	static String behaviorScript(String module) {
+		return "src/main/resources/static/" + module + "/" + module + ".js";
+	}
+
+	/** 앱 템플릿이면(프레임워크 템플릿과 이름 없는 대상은 빼고) 한 번만 더한다 */
+	private static void addTemplate(List<String> templates, String template) {
+		if (template != null && !template.isEmpty() && !template.startsWith("cozy/") && !templates.contains(template)) {
+			templates.add(template);
+		}
 	}
 
 	private List<Line> lines(String file) {

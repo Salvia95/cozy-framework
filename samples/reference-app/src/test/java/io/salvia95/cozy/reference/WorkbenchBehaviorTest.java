@@ -93,7 +93,7 @@ class WorkbenchBehaviorTest {
 	void theTreeRowShowsHowManyBoundElementsItHasAndThePropertiesListThem() throws Exception {
 		String html = page("/cozy/dev/workbench?spec=memo-form");
 		// 넣은 fragment(memoFields)의 두 요소는 화면에서 넣은 줄의 마디에 붙는다
-		assertThat(html).contains("title=\"동작 2\"")
+		assertThat(html).contains("title=\"화면 안의 동작이 붙은 요소 2개\"")
 			.contains("<span class=\"cozy-workbench-behaviors-count\">동작 2</span>")
 			.as("속성 표의 구획과 요소")
 			.contains("화면 안의 동작")
@@ -151,7 +151,7 @@ class WorkbenchBehaviorTest {
 	void namesTheComponentDoesNotHaveAreRefusedAndWriteNothing() throws Exception {
 		String before = fields();
 		String refused = after(attach("apply", "text", "", "nothing", false));
-		assertThat(refused).contains("memoBodyCount에 상태나 계산 &#39;nothing&#39;가 없습니다").contains("파일은 변경되지 않았습니다");
+		assertThat(refused).contains("memoBodyCount에 없는 상태나 계산입니다: nothing").contains("파일은 변경되지 않았습니다");
 		assertThat(fields()).isEqualTo(before);
 	}
 
@@ -178,5 +178,72 @@ class WorkbenchBehaviorTest {
 			.contains("화면 이벤트")
 			.contains("화면 이벤트가 없습니다");
 		assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+	}
+
+	@Test
+	void theScreenOpensTheBehaviorSpecTheMadeScriptAndTheIncludedTemplates() throws Exception {
+		String preview = page("/cozy/dev/workbench?spec=memo-form");
+		assertThat(preview).as("화면이 앱 컴포넌트를 쓰면 소스 탭이 둘 더 있다")
+			.contains(">동작 명세</a>")
+			.contains(">만든 JS</a>")
+			.as("요소의 위치는 넣은 템플릿의 그 줄로 간다")
+			.contains("href=\"/cozy/dev/workbench?spec=memo-form&amp;state=default&amp;w=full&amp;view=template&amp;template=memo/internal/fields#L7\"")
+			.as("구조 트리의 표시가 무엇을 세는지 알린다")
+			.contains("title=\"화면 안의 동작이 붙은 요소 2개\"");
+
+		String spec = page("/cozy/dev/workbench?spec=memo-form&view=behavior");
+		assertThat(spec).contains("src/main/resources/behaviors/memo.yml")
+			.contains("동작 명세가 원본입니다")
+			.contains("<pre class=\"cozy-workbench-source-text\">  bodyCount:</pre>");
+		String script = page("/cozy/dev/workbench?spec=memo-form&view=script");
+		assertThat(script).contains("src/main/resources/static/memo/memo.js")
+			.contains("cozy가 동작 명세에서 만든 파일입니다")
+			.contains("window.Alpine.data(&#39;memoBodyCount&#39;");
+		String fields = page("/cozy/dev/workbench?spec=memo-form&view=template&template=memo/internal/fields");
+		assertThat(fields).contains("<code class=\"small\">src/main/resources/templates/memo/internal/fields.html</code>")
+			.as("화면이 넣는 앱 템플릿을 고른다")
+			.contains("aria-label=\"볼 템플릿\"")
+			.contains(">memo/api/form</a>");
+		for (String html : java.util.List.of(spec, script, fields)) {
+			assertThat(new CozyHtmlValidator().validate(html).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+		}
+	}
+
+	@Test
+	void sourcesOutsideTheScreenAreRefused() throws Exception {
+		assertThat(page("/cozy/dev/workbench?spec=memo-detail")).as("앱 컴포넌트를 쓰지 않는 화면").doesNotContain(">동작 명세</a>");
+		this.mvc.perform(get("/cozy/dev/workbench?spec=memo-detail&view=behavior")).andExpect(status().isNotFound());
+		this.mvc.perform(get("/cozy/dev/workbench?spec=memo-form&view=template&template=dashboard/api/home")).andExpect(status().isNotFound());
+		this.mvc.perform(get("/cozy/dev/workbench?spec=memo-form&view=template&template=../../../pom")).andExpect(status().isNotFound());
+		this.mvc.perform(get("/cozy/dev/workbench/map?module=memo&source=nothing")).andExpect(status().isBadRequest());
+		this.mvc.perform(get("/cozy/dev/workbench/map?module=dashboard&source=behavior")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void theModulePageOpensTheSpecAtTheComponentAndTheScript() throws Exception {
+		String module = page("/cozy/dev/workbench/map?module=memo");
+		assertThat(module).contains("id=\"behavior-memoBodyCount\"")
+			.contains("href=\"/cozy/dev/workbench/map?module=memo&amp;source=behavior#L3\"")
+			.contains("href=\"/cozy/dev/workbench/map?module=memo&amp;source=script\"")
+			.doesNotContain("aria-label=\"동작 소스\"");
+		String spec = page("/cozy/dev/workbench/map?module=memo&source=behavior");
+		assertThat(spec).contains("aria-label=\"동작 소스\"").contains("src/main/resources/behaviors/memo.yml").contains("<tr id=\"L3\">");
+		String script = page("/cozy/dev/workbench/map?module=memo&source=script");
+		assertThat(script).contains("src/main/resources/static/memo/memo.js").contains("손으로 고치지 않습니다(C12)");
+		assertThat(new CozyHtmlValidator().validate(spec).stream().filter(CozyHtmlValidator.Message::isError)).isEmpty();
+	}
+
+	@Test
+	void searchFindsTheComponentByNameAndByPurpose() throws Exception {
+		String byName = page("/cozy/dev/workbench/search?q=memoBodyCount");
+		assertThat(byName).contains("화면 안의 동작").contains("href=\"/cozy/dev/workbench/map?module=memo#behavior-memoBodyCount\"");
+		String byPurpose = this.mvc.perform(get("/cozy/dev/workbench/search").param("q", "글자 수"))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		assertThat(byPurpose)
+			.contains("memoBodyCount")
+			.contains("본문을 쓰는 동안 글자 수와 한도를 보인다");
 	}
 }

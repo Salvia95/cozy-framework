@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.salvia95.cozy.cli.internal.CliException;
+import io.salvia95.cozy.rules.Closest;
 import io.salvia95.cozy.cli.internal.behavior.BehaviorSpec.Component;
 import io.salvia95.cozy.cli.internal.behavior.BehaviorSpec.State;
 import io.salvia95.cozy.cli.internal.behavior.BehaviorSpec.Type;
@@ -32,13 +33,11 @@ import io.salvia95.cozy.rules.ComponentContract;
  */
 public final class BehaviorScript {
 
-	/** 계산과 동작의 값에 쓰는 함수 → 인자 수(-1은 둘 이상) */
-	static final Map<String, Integer> VALUES = ordered("not", 1, "and", -1, "or", -1, "eq", 2, "ne", 2, "gt", 2, "lt", 2, "ge", 2,
-			"le", 2, "empty", 1, "count", 1, "length", 1, "includes", 2, "number", 1, "format", -1, "if", 3);
+	/** 계산과 동작의 값에 쓰는 함수 → 인자 수(-1은 둘 이상). 낱말은 {@link BehaviorVocabulary} */
+	static final Map<String, Integer> VALUES = functions();
 
 	/** 동작의 단계 */
-	static final List<String> STEPS = List.of("set", "toggle", "increment", "decrement", "addItem", "removeItem", "toggleItem",
-			"reset", "emit", "when", "within");
+	static final List<String> STEPS = BehaviorVocabulary.names(BehaviorVocabulary.STEP);
 
 	/** 컴포넌트 객체에서 쓰지 않는 이름 */
 	static final Set<String> RESERVED = Set.of("init", "destroy", "root", "initial", "listeners", "constructor", "toString",
@@ -123,7 +122,7 @@ public final class BehaviorScript {
 						throw fail(section + " " + name, "이름은 영문 소문자로 시작하는 카멜 표기입니다");
 					}
 					if (RESERVED.contains(name)) {
-						throw fail(section + " " + name, "'" + name + "'은 쓸 수 없는 이름입니다(Alpine과 JavaScript가 쓰는 이름)");
+						throw fail(section + " " + name, "쓸 수 없는 이름입니다(Alpine과 JavaScript가 쓰는 이름): " + name);
 					}
 					if (!seen.add(name)) {
 						throw fail(section + " " + name, "같은 이름이 상태, 계산, 동작 가운데 둘 이상에 있습니다. 템플릿이 이름 하나로 부르므로 이름을 나눕니다");
@@ -143,7 +142,8 @@ public final class BehaviorScript {
 					throw fail("listens " + event, "화면 이벤트의 이름은 모듈:이름 모양입니다 (예: memo:saved)");
 				}
 				if (!this.component.actions().containsKey(action)) {
-					throw fail("listens " + event, "동작 '" + action + "'이 없습니다. 있는 동작: " + this.component.actions().keySet());
+					throw fail("listens " + event, "없는 동작입니다: " + action + "." + Closest.hint(action, this.component.actions().keySet())
+							+ " 있는 동작: " + this.component.actions().keySet());
 				}
 			});
 		}
@@ -192,30 +192,33 @@ public final class BehaviorScript {
 				return computedType(name);
 			}
 			if (this.component.actions().containsKey(name)) {
-				throw fail(what, "'" + name + "'은 동작이라 값으로 읽을 수 없습니다");
+				throw fail(what, "동작은 값으로 읽을 수 없습니다: " + name);
 			}
-			throw fail(what, "이름 '" + name + "'이 없습니다. 상태: " + this.component.state().keySet() + ", 계산: "
+			List<String> known = new ArrayList<>(this.component.state().keySet());
+			known.addAll(this.component.computed().keySet());
+			throw fail(what, "없는 이름입니다: " + name + "." + Closest.hint(name, known) + " 상태: " + this.component.state().keySet() + ", 계산: "
 					+ this.component.computed().keySet());
 		}
 
 		private Type call(Call c, String what, boolean inAction) {
 			String f = c.function();
 			if (STEPS.contains(f)) {
-				throw fail(what, f + "(…)는 동작의 단계라 값으로 쓸 수 없습니다");
+				throw fail(what, "동작의 단계는 값으로 쓸 수 없습니다: " + f + "(…)");
 			}
 			Integer arity = VALUES.get(f);
 			if (arity == null) {
-				throw fail(what, "함수 " + f + "(…)를 모릅니다. 값: " + String.join(", ", VALUES.keySet()) + ". 단계: " + String.join(", ", STEPS));
+				throw fail(what, "모르는 함수입니다: " + f + "(…)." + Closest.hint(f, VALUES.keySet()) + " 값: " + String.join(", ", VALUES.keySet())
+						+ ". 단계: " + String.join(", ", STEPS));
 			}
 			List<Expr> args = c.args();
 			if (f.equals("format")) {
 				return format(c, what);
 			}
 			if (arity >= 0 && args.size() != arity) {
-				throw fail(what, f + "(…)는 인자 " + arity + "개를 받습니다: " + c.print());
+				throw fail(what, "인자 " + arity + "개를 받는 함수입니다: " + c.print());
 			}
 			if (arity < 0 && args.size() < 2) {
-				throw fail(what, f + "(…)는 인자 둘 이상을 받습니다: " + c.print());
+				throw fail(what, "인자 둘 이상을 받는 함수입니다: " + c.print());
 			}
 			List<Type> types = new ArrayList<>();
 			for (Expr arg : args) {
@@ -233,7 +236,7 @@ public final class BehaviorScript {
 				}
 				case "empty" -> {
 					if (types.get(0) != Type.TEXT && types.get(0) != Type.LIST && types.get(0) != Type.ANY) {
-						throw fail(what, "empty(…)는 text나 list를 받습니다: " + c.print());
+						throw fail(what, "text나 list를 받는 함수입니다: " + c.print());
 					}
 					yield Type.BOOL;
 				}
@@ -284,13 +287,14 @@ public final class BehaviorScript {
 
 		private void expect(Type actual, Type expected, String what, Call c) {
 			if (actual != expected && actual != Type.ANY) {
-				throw fail(what, c.function() + "(…)는 " + expected.word() + "를 받는데 " + actual.word() + "를 받았습니다: " + c.print());
+				throw fail(what, "인자의 종류가 다릅니다. 받는 종류: " + expected.word() + ", 받은 종류: " + actual.word() + ": " + c.print());
 			}
 		}
 
 		private void step(Expr step, String what) {
 			if (!(step instanceof Call c) || !STEPS.contains(c.function())) {
-				throw fail(what, "단계는 " + String.join(", ", STEPS) + " 가운데 하나입니다: " + step.print());
+				throw fail(what, "단계는 " + String.join(", ", STEPS) + " 가운데 하나입니다: " + step.print() + "."
+						+ ((step instanceof Call wrong) ? Closest.hint(wrong.function(), STEPS) : ""));
 			}
 			List<Expr> args = c.args();
 			switch (c.function()) {
@@ -299,7 +303,7 @@ public final class BehaviorScript {
 					Type target = target(args.get(0), what, null);
 					Type value = value(args.get(1), what, true);
 					if (value != target && value != Type.ANY) {
-						throw fail(what, "set(" + args.get(0).print() + ", …)의 값은 " + target.word() + "입니다(" + value.word() + "를 받음). 글자를 숫자로 "
+						throw fail(what, "set(" + args.get(0).print() + ", …)의 값은 " + target.word() + "입니다(받은 값: " + value.word() + "). 글자를 숫자로 "
 								+ "바꿀 때는 number(…)를 씁니다");
 					}
 				}
@@ -368,7 +372,7 @@ public final class BehaviorScript {
 
 		private void arity(Call c, int count, String what) {
 			if (c.args().size() != count) {
-				throw fail(what, c.function() + "(…)는 인자 " + count + "개를 받습니다: " + c.print());
+				throw fail(what, "인자 " + count + "개를 받는 단계입니다: " + c.print());
 			}
 		}
 
@@ -380,11 +384,12 @@ public final class BehaviorScript {
 			State state = this.component.state().get(n.name());
 			if (state == null) {
 				String section = this.component.sectionOf(n.name());
-				throw fail(what, (section != null) ? "'" + n.name() + "'은 " + section + "이라 바꿀 수 없습니다. 바꿀 수 있는 것은 상태입니다"
-						: "상태 '" + n.name() + "'이 없습니다. 있는 상태: " + this.component.state().keySet());
+				throw fail(what, (section != null) ? section + "은 바꿀 수 없습니다: " + n.name() + ". 바꿀 수 있는 것은 상태입니다"
+						: "없는 상태입니다: " + n.name() + "." + Closest.hint(n.name(), this.component.state().keySet()) + " 있는 상태: "
+								+ this.component.state().keySet());
 			}
 			if (expected != null && state.type() != expected) {
-				throw fail(what, "상태 '" + n.name() + "'은 " + state.type().word() + "입니다. 이 단계는 " + expected.word() + " 상태를 바꿉니다");
+				throw fail(what, "이 단계는 " + expected.word() + " 상태를 바꿉니다. " + state.type().word() + " 상태입니다: " + n.name());
 			}
 			return state.type();
 		}
@@ -709,12 +714,11 @@ public final class BehaviorScript {
 		return " ".repeat(depth);
 	}
 
-	private static Map<String, Integer> ordered(Object... pairs) {
+	/** 함수 → 인자 수 ({@link BehaviorVocabulary}의 계산 함수) */
+	private static Map<String, Integer> functions() {
 		Map<String, Integer> map = new LinkedHashMap<>();
-		for (int i = 0; i < pairs.length; i += 2) {
-			map.put((String) pairs[i], (Integer) pairs[i + 1]);
-		}
-		return map;
+		BehaviorVocabulary.of(BehaviorVocabulary.FUNCTION).forEach((w) -> map.put(w.name(), w.arity()));
+		return java.util.Collections.unmodifiableMap(map);
 	}
 
 	/** 만든 JS가 쓰는 작은 함수들. 쓰는 것만 정해 둔 순서로 넣는다 */

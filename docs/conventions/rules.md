@@ -100,7 +100,7 @@
 [R6] templates/memo/api/form.html:14 → cozy/component/badge :: badge(1개 인자) — badge(text, color)는 파라미터가 2개인데 1개를 넘겼습니다. 선언과 같은 개수로 넘기세요.
 [R16] templates/memo/api/detail.html:2 → @click="copy" — 줄임 표기는 쓰지 않습니다. x-on:click처럼 긴 이름으로 쓰세요.
 [R16] templates/memo/api/list.html:4 → x-data="cozyDisclosur" — 등록된 컴포넌트 'cozyDisclosur'가 없습니다. 비슷한 이름: cozyDisclosure. 새 컴포넌트는 static/memo/memo.js에 Alpine.data('cozyDisclosur', …)로 등록합니다.
-[R16] templates/memo/internal/fields.html:9 → x-text="lable" — 'lable'는 감싸는 컴포넌트 memoBodyCount에 없습니다. 있는 이름: count, label, length, limit, over, text. 붙이는 이름은 cozy attach가 확인하고, 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.
+[R16] templates/memo/internal/fields.html:9 → x-text="lable" — 감싸는 컴포넌트 memoBodyCount에 없는 이름입니다: lable. label인가요? 있는 이름: count, label, length, limit, over, text. 붙이는 이름은 cozy attach가 확인하고, 앱 컴포넌트의 이름은 cozy add behavior로 더합니다.
 [R16] static/app.js:2 → memoEditor — 앱 컴포넌트는 모듈 폴더 static/{모듈}/{모듈}.js에 둡니다. 모듈 이름(memo)의 폴더로 옮기세요.
 [R7 경고] templates/memo/api/list.html:3 → th:include="..." — th:include는 Thymeleaf 3에서 권장하지 않습니다. th:replace나 th:insert를 쓰세요.
 ```
