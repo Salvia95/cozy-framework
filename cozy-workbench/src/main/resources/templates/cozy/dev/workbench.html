@@ -219,13 +219,16 @@
               <ul class="list-unstyled mb-2">
                 <li class="d-flex align-items-baseline gap-2" th:each="file : ${outcome.changes}">
                   <span class="badge flex-shrink-0" th:classappend="${file.action == 'unchanged'} ? 'cozy-tone-neutral' : 'cozy-tone-info'" th:text="${file.label()}">수정</span>
-                  <span class="cozy-workbench-file">
+                  <div class="cozy-workbench-file flex-fill">
                     <code th:text="${file.file}">src/main/resources/templates/memo/api/list.html</code>
                     <span class="d-block text-secondary small" th:if="${file.detail != null}" th:text="${file.detail}">badge(…) 2번째 인자</span>
-                  </span>
+                    <th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${file}, ${liveResources})}"></th:block>
+                  </div>
                 </li>
               </ul>
             </th:block>
+            <p class="text-secondary small mb-2" th:if="${change.dryRun and outcome.visibility(liveResources) != null}"
+               th:text="|적용하면: ${outcome.visibility(liveResources)}|">적용하면: 바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.</p>
             <div class="d-flex align-items-start gap-2 mb-2">
               <code class="cozy-workbench-command small flex-fill" th:text="${change.command}">cozy set arg …</code>
               <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${change.command}">명령 복사</button>
@@ -248,7 +251,7 @@
               <button type="submit" class="btn btn-sm btn-primary" name="step" value="apply">적용</button>
             </form>
             <th:block th:if="${!change.dryRun and outcome.error == null and !outcome.changesNothing()}">
-              <div th:replace="~{cozy/component/alert :: alert('info', '템플릿을 바꿨습니다. 구조와 속성에는 바로 보이고, 미리보기에는 앱을 다시 빌드하고 실행한 뒤 보입니다.')}"></div>
+              <div th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
             </th:block>
           </section>
           <!--/* 속성 패널에서 붙이거나 뗀 화면 안의 동작: cozy attach의 변경 파일이나 적용 결과 */-->
@@ -269,13 +272,16 @@
               <ul class="list-unstyled mb-2">
                 <li class="d-flex align-items-baseline gap-2" th:each="file : ${outcome.changes}">
                   <span class="badge flex-shrink-0" th:classappend="${file.action == 'unchanged'} ? 'cozy-tone-neutral' : 'cozy-tone-info'" th:text="${file.label()}">수정</span>
-                  <span class="cozy-workbench-file">
+                  <div class="cozy-workbench-file flex-fill">
                     <code th:text="${file.file}">src/main/resources/templates/memo/internal/fields.html</code>
                     <span class="d-block text-secondary small" th:if="${file.detail != null}" th:text="${file.detail}">붙임 &lt;div&gt;: x-show="over"</span>
-                  </span>
+                    <th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${file}, ${liveResources})}"></th:block>
+                  </div>
                 </li>
               </ul>
             </th:block>
+            <p class="text-secondary small mb-2" th:if="${change.dryRun and outcome.visibility(liveResources) != null}"
+               th:text="|적용하면: ${outcome.visibility(liveResources)}|">적용하면: 바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.</p>
             <div class="d-flex align-items-start gap-2 mb-2">
               <code class="cozy-workbench-command small flex-fill" th:text="${change.command}">cozy attach …</code>
               <button type="button" class="btn btn-sm flex-shrink-0 cozy-workbench-copy" x-data="cozyCopy" x-on:click="copy" x-cloak th:data-copy-text="${change.command}">명령 복사</button>
@@ -302,7 +308,7 @@
               <button type="submit" class="btn btn-sm btn-primary" name="step" value="apply">적용</button>
             </form>
             <th:block th:if="${!change.dryRun and outcome.error == null and !outcome.changesNothing()}">
-              <div th:replace="~{cozy/component/alert :: alert('info', '템플릿을 바꿨습니다. 구조와 속성에는 바로 보이고, 미리보기에는 앱을 다시 빌드하고 실행한 뒤 보입니다.')}"></div>
+              <div th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
             </th:block>
           </section>
           <!--/* 미리보기에서 고른 요소에 붙이기(?at=템플릿:줄): 붙은 컴포넌트나 감싸는 컴포넌트에, 없으면 고른 컴포넌트의 자리로 */-->

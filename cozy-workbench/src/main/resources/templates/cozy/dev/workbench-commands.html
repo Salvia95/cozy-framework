@@ -303,6 +303,7 @@
                                   <span class="visually-hidden" th:text="${change.file}">src/main/java/…</span>
                                 </span>
                               </div>
+                              <div class="cozy-workbench-change-more"><th:block th:replace="~{cozy/dev/workbench-source :: changeDiff(${change}, ${liveResources})}"></th:block></div>
                             </li>
                           </ul>
                         </details>
@@ -329,8 +330,8 @@
             </div>
             <div class="card-body">
               <p class="mb-0"><span class="text-secondary">다음 단계:</span> <span th:text="${outcome.next}">다음 할 일</span></p>
-              <th:block th:if="${needsRestart}">
-                <div class="mt-3" th:replace="~{cozy/component/alert :: alert('info', '소스가 변경되었습니다. 앱을 다시 빌드하고 실행해야 워크벤치와 앱 화면에 반영됩니다.')}"></div>
+              <th:block th:if="${outcome.visibility(liveResources) != null}">
+                <div class="mt-3" th:replace="~{cozy/component/alert :: alert('info', ${outcome.visibility(liveResources)})}"></div>
               </th:block>
             </div>
             <div class="card-footer" th:if="${dryRun and !outcome.changesNothing()}">

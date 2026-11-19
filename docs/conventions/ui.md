@@ -224,6 +224,7 @@ fragments:
 - **싣는 법**: `base` 레이아웃이 `cozy.js` 다음, Alpine 앞에 모든 모듈의 파일을 모듈 이름 순서로 이은 묶음 하나를 싣는다(`cozyModuleScript`). 주소는 `/cozy/modules.js?v={내용의 SHA-256 앞 12자}`다. 모듈 파일이 없으면 싣지 않는다.
   - **캐시**: `v`가 지금 내용과 같으면 `Cache-Control: public, max-age=31536000, immutable`, 다르거나 없으면 `no-cache`다. 앱을 업데이트해 내용이 바뀌면 주소가 바뀌므로 옛 파일이 남지 않는다.
   - **개발 중**: 파일이 빌드 결과 폴더(`target/classes`)에 있으면 화면을 그릴 때마다 다시 읽는다. 다시 빌드한 JS가 앱을 다시 시작하지 않아도 보인다.
+  - **소스 폴더**: 정적 위치(`spring.web.resources.static-locations`)에 파일 시스템 폴더(`file:`)가 있으면 그 폴더의 `{모듈}/{모듈}.js`를 먼저 읽고, 같은 모듈의 클래스패스 파일은 넣지 않는다. 브라우저가 받는 정적 파일과 같은 곳이다. 워크벤치가 켜진 dev 실행은 `src/main/resources/static/`을 맨 앞에 두므로 명세를 고친 JS가 다시 빌드하지 않아도 보인다([workbench.md](workbench.md)의 바로 보기).
   - **오류**: 각 부분 앞에 `/* static/memo/memo.js */` 주석을, 끝에 `;` 한 줄을 둔다(다음 파일과 이어 읽히지 않게). 한 파일의 문법 오류는 묶음 전체를 멈춰 모든 모듈의 컴포넌트가 없어진다.
     - **빌드에서 막는다**: `mvn verify`의 C10이 모듈마다 그 파일의 문법을 읽어 본다([testing.md](testing.md)).
     - **실행 중에 알린다**: 스크립트의 `data-cozy-parts`(`static/memo/memo.js:2;…`, 파일과 묶음에서의 첫 줄)로 `cozy.js`가 브라우저 오류의 묶음 줄을 원래 파일의 줄로 바꿔 콘솔에 낸다(`[cozy] static/memo/memo.js 7줄: …`). 문법 오류면 "화면 동작을 불러오지 못했습니다" 토스트도 띄운다.

@@ -449,7 +449,8 @@ cozy enable workbench
 | 키 | 값 |
 | --- | --- |
 | `applied` | 파일을 하나라도 썼으면 `true`. `--dry-run`이거나 바뀐 것이 없으면 `false` |
-| `plan[].action` | `create`, `edit`, `unchanged` |
+| `plan[].action` | `create`, `edit`, `delete`, `unchanged` |
+| `plan[].after` | `--dry-run`일 때만: 만들거나 바꾸는 파일의 바뀐 뒤 글 전체. 256KB(UTF-8)가 넘으면 없고 `plan[].afterOmitted`가 `true`다. 워크벤치가 지금 파일과 줄 단위로 견준다 |
 | `slots[]` | 이 명령이 만들거나 바꾼 파일에 남은 빈칸(앞서 남긴 것 포함). 앱 전체의 빈칸은 `cozy check`가 본다 |
 | `manual[]` | 명령이 고치지 못해 손으로 할 일: `file`, `what`, `snippet`(넣을 내용). 없으면 빈 목록 |
 

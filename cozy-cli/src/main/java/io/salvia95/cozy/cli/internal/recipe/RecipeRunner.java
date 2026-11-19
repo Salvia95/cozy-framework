@@ -192,6 +192,9 @@ public final class RecipeRunner {
 	 * @param manual 명령이 고치지 못해 손으로 할 일
 	 * @param withSlots 바뀐 파일의 빈칸을 알리는가 (에이전트 문서는 빈칸 표시를 설명할 뿐이라 알리지 않는다)
 	 */
+	/** 계획에 싣는 바뀐 뒤의 글의 최대 크기 (UTF-8 바이트) */
+	public static final int AFTER_LIMIT = 256 * 1024;
+
 	private static void report(String recipe, Plan plan, List<Context.Manual> manual, String next, boolean withSlots,
 			boolean dryRun, boolean json, PrintStream out) {
 		if (!dryRun) {
@@ -204,8 +207,21 @@ public final class RecipeRunner {
 		String nextLine = slots.isEmpty() ? next : "빈칸을 채우고 cozy check, 그다음 mvn verify. " + next;
 		if (json) {
 			List<Object> changes = new ArrayList<>();
-			plan.changes().forEach((c) -> changes.add(Describe.ordered("action", c.action().name().toLowerCase(), "file", c.file(),
-					"detail", c.detail())));
+			for (Plan.Change c : plan.changes()) {
+				Map<String, Object> change = Describe.ordered("action", c.action().name().toLowerCase(), "file", c.file(), "detail",
+						c.detail());
+				// 계획이면 바뀐 뒤의 글을 싣는다 (화면이 지금 파일과 견준다). 너무 크면 싣지 않는다
+				boolean written = c.action() == Plan.Action.CREATE || c.action() == Plan.Action.EDIT;
+				if (dryRun && written && c.content() != null) {
+					if (c.content().getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= AFTER_LIMIT) {
+						change.put("after", c.content());
+					}
+					else {
+						change.put("afterOmitted", true);
+					}
+				}
+				changes.add(change);
+			}
 			List<Object> slotList = new ArrayList<>();
 			slots.forEach((s) -> slotList.add(Describe.ordered("slot", s.reference().replace(SlotRules.MARKER, "").strip(), "file",
 					s.location(), "line", s.line(), "what", s.message())));

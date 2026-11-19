@@ -13,6 +13,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import io.salvia95.cozy.cli.CozyCli;
+import io.salvia95.cozy.cli.internal.LineDiff;
 
 /**
  * 워크벤치의 엔진. 에이전트가 쓰는 것과 같은 cozy 명령을 같은 프로세스에서 부르고 {@code --json} 출력을 읽는다. 워크벤치는 따로 앱을 읽거나 고치지
@@ -50,6 +51,18 @@ public class WorkbenchEngine {
 		Path dir = projectDir.toAbsolutePath().normalize();
 		boolean project = Files.isRegularFile(dir.resolve("pom.xml")) && Files.isDirectory(dir.resolve("src/main/java"));
 		return new WorkbenchEngine(project ? dir : null, uiLocation, true);
+	}
+
+	/**
+	 * 앱 프로젝트 폴더: {@code projectDir}이 있으면 그 폴더만, 없으면 {@code start}에서 위로 올라가며 찾는다.
+	 *
+	 * @param projectDir 정한 폴더. 비었으면 찾는다
+	 */
+	public static Optional<Path> locate(String projectDir, Path start) {
+		if (projectDir != null && !projectDir.isBlank()) {
+			return at(Path.of(projectDir), null).projectDir();
+		}
+		return Optional.ofNullable(find(start.toAbsolutePath().normalize()));
 	}
 
 	private static Path find(Path start) {
@@ -432,8 +445,37 @@ public class WorkbenchEngine {
 	 * 계획의 파일 하나.
 	 *
 	 * @param action {@code create}, {@code edit}, {@code delete}, {@code unchanged}
+	 * @param diff 지금 파일과 바뀐 뒤의 글을 견준 덩어리 (계획일 때만. 적용한 뒤나 지우는 파일이면 빈 목록)
+	 * @param diffOmitted 파일이 커서 계획이 바뀐 뒤의 글을 싣지 않았는가
 	 */
-	public record Change(String action, String file, String detail) {
+	public record Change(String action, String file, String detail, List<LineDiff.Hunk> diff, boolean diffOmitted) {
+
+		public Change(String action, String file, String detail) {
+			this(action, file, detail, List.of(), false);
+		}
+
+		/** 더한 줄 수 */
+		public long added() {
+			return this.diff.stream().flatMap((h) -> h.lines().stream()).filter(LineDiff.Line::added).count();
+		}
+
+		/** 지운 줄 수 */
+		public long removed() {
+			return this.diff.stream().flatMap((h) -> h.lines().stream()).filter(LineDiff.Line::removed).count();
+		}
+
+		/**
+		 * 적용한 뒤 새로고침만으로 보이는가. 화면 명세와 동작 명세는 워크벤치가 소스에서 읽는다. 템플릿과 {@code static/}은 dev에서 소스를 먼저 읽을 때만
+		 * 그렇다({@code cozy.dev.workbench.live-resources}). 그 밖(Java, SQL, 설정, 테스트)은 다시 빌드하고 실행해야 한다.
+		 *
+		 * @param live 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가
+		 */
+		public boolean immediate(boolean live) {
+			if (this.file.startsWith("src/main/resources/specs/") || this.file.startsWith("src/main/resources/behaviors/")) {
+				return true;
+			}
+			return live && (this.file.startsWith("src/main/resources/templates/") || this.file.startsWith("src/main/resources/static/"));
+		}
 
 		/** 화면에 보일 동작 이름 */
 		public String label() {
@@ -470,6 +512,27 @@ public class WorkbenchEngine {
 		public boolean changesNothing() {
 			return this.error == null && this.changes.stream().allMatch((c) -> c.action().equals("unchanged"));
 		}
+
+		/**
+		 * 바뀐 파일이 언제 보이는지 한 줄. 바뀐 파일이 없으면 {@code null}.
+		 *
+		 * @param live 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가
+		 */
+		public String visibility(boolean live) {
+			List<Change> changed = this.changes.stream().filter((c) -> !c.action().equals("unchanged")).toList();
+			if (this.error != null || changed.isEmpty()) {
+				return null;
+			}
+			long now = changed.stream().filter((c) -> c.immediate(live)).count();
+			long later = changed.size() - now;
+			if (later == 0) {
+				return "바뀐 파일은 모두 새로고침하면 미리보기와 화면에 보입니다.";
+			}
+			if (now == 0) {
+				return "바뀐 파일은 앱을 다시 빌드하고 실행한 뒤 보입니다.";
+			}
+			return "바뀐 파일 " + now + "개는 새로고침하면 보이고, " + later + "개는 앱을 다시 빌드하고 실행한 뒤 보입니다.";
+		}
 	}
 
 	/**
@@ -484,7 +547,7 @@ public class WorkbenchEngine {
 		if (dryRun) {
 			all.add("--dry-run");
 		}
-		return outcome(run(all));
+		return outcome(run(all), this::current);
 	}
 
 	/**
@@ -509,17 +572,26 @@ public class WorkbenchEngine {
 		ByteArrayOutputStream err = new ByteArrayOutputStream();
 		int code = CozyCli.runTogether(commands, options, this.projectDir, System.getenv("COZY_REPOSITORY"),
 				new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
-		return outcome(new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8)));
+		return outcome(new Result(code, out.toString(StandardCharsets.UTF_8), err.toString(StandardCharsets.UTF_8)), this::current);
 	}
 
-	private static Outcome outcome(Result result) {
+	/** 프로젝트 기준 파일의 지금 글. 없으면 빈 문자열 */
+	private String current(String file) {
+		return source(file).orElse("");
+	}
+
+	/** @param current 파일의 지금 글 (계획이 바뀐 뒤의 글과 견준다) */
+	static Outcome outcome(Result result, java.util.function.Function<String, String> current) {
 		if (result.code() != CozyCli.OK) {
 			return new Outcome(false, List.of(), List.of(), List.of(), "", result.err().strip().replaceFirst("^\\[cozy\\] ", ""));
 		}
 		JsonNode root = JSON.readTree(result.out());
 		List<Change> changes = new ArrayList<>();
 		for (JsonNode c : root.path("plan")) {
-			changes.add(new Change(c.path("action").asString(), c.path("file").asString(), text(c, "detail")));
+			String after = text(c, "after");
+			List<LineDiff.Hunk> diff = (after != null) ? LineDiff.of(current.apply(c.path("file").asString()), after) : List.of();
+			changes.add(new Change(c.path("action").asString(), c.path("file").asString(), text(c, "detail"), diff,
+					c.path("afterOmitted").asBoolean(false)));
 		}
 		List<Slot> slots = new ArrayList<>();
 		for (JsonNode s : root.path("slots")) {

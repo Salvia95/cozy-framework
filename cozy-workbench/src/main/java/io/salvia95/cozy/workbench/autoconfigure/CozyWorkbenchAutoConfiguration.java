@@ -16,6 +16,7 @@ import io.salvia95.cozy.ui.catalog.FragmentManifest;
 import io.salvia95.cozy.ui.catalog.ScreenSpec;
 import io.salvia95.cozy.workbench.internal.SourceLocationDialect;
 import io.salvia95.cozy.workbench.internal.SourceScreenSpecs;
+import io.salvia95.cozy.workbench.internal.SourceTemplateResolver;
 import io.salvia95.cozy.workbench.internal.WorkbenchController;
 import io.salvia95.cozy.workbench.internal.WorkbenchEngine;
 import io.salvia95.cozy.workbench.internal.WorkbenchEnvironmentPostProcessor;
@@ -56,10 +57,30 @@ public class CozyWorkbenchAutoConfiguration {
 		}
 	}
 
-	/** 미리보기의 요소에 소스 위치를 싣는다. Thymeleaf 자동 설정이 이 빈을 템플릿 엔진에 더한다 */
+	/**
+	 * 미리보기의 요소에 소스 위치를 싣는다. Thymeleaf 자동 설정이 이 빈을 템플릿 엔진에 더한다. 템플릿을 소스에서 읽으면 줄도 소스의 글로 맞춘다
+	 */
 	@Bean
-	SourceLocationDialect cozyWorkbenchSourceLocationDialect() {
-		return new SourceLocationDialect();
+	SourceLocationDialect cozyWorkbenchSourceLocationDialect(WorkbenchEngine engine, Environment environment) {
+		if (!live(engine, environment)) {
+			return new SourceLocationDialect();
+		}
+		return new SourceLocationDialect((template) -> engine.source("src/main/resources/templates/" + template + ".html"));
+	}
+
+	/**
+	 * 앱의 템플릿을 소스 폴더에서 먼저 읽는다(캐시하지 않는다). {@code cozy.dev.workbench.live-resources=false}면 없다. 정적 자원은
+	 * {@link WorkbenchEnvironmentPostProcessor}가 맡는다
+	 */
+	@Bean
+	@ConditionalOnProperty(name = WorkbenchEnvironmentPostProcessor.LIVE_RESOURCES, havingValue = "true", matchIfMissing = true)
+	SourceTemplateResolver cozyWorkbenchSourceTemplateResolver(WorkbenchEngine engine) {
+		return new SourceTemplateResolver(engine.projectDir().map((dir) -> dir.resolve("src/main/resources/templates")).orElse(null));
+	}
+
+	/** 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가 */
+	static boolean live(WorkbenchEngine engine, Environment environment) {
+		return engine.available() && environment.getProperty(WorkbenchEnvironmentPostProcessor.LIVE_RESOURCES, Boolean.class, true);
 	}
 
 	/** 화면 스펙을 소스 폴더에서 읽는다. 패턴 카탈로그의 미리보기도 이것을 쓴다 */
@@ -70,7 +91,8 @@ public class CozyWorkbenchAutoConfiguration {
 	}
 
 	@Bean
-	WorkbenchController cozyWorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
-		return new WorkbenchController(manifest, specs, engine);
+	WorkbenchController cozyWorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine,
+			Environment environment) {
+		return new WorkbenchController(manifest, specs, engine, live(engine, environment));
 	}
 }

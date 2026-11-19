@@ -67,10 +67,24 @@ public class WorkbenchController {
 	/** cozy-ui의 프레임워크 컴포넌트 명세 (실행 중에는 바뀌지 않는다) */
 	private final io.salvia95.cozy.cli.internal.behavior.FrameworkBehaviors framework = BehaviorViews.framework();
 
+	/** 앱이 템플릿과 {@code static/}을 소스 폴더에서 읽는가 (적용한 것이 새로고침만으로 보이는가) */
+	private final boolean live;
+
 	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine) {
+		this(manifest, specs, engine, false);
+	}
+
+	public WorkbenchController(FragmentManifest manifest, SourceScreenSpecs specs, WorkbenchEngine engine, boolean live) {
 		this.manifest = manifest;
 		this.screenSpecs = specs;
 		this.engine = engine;
+		this.live = live;
+	}
+
+	/** 화면마다: 바뀐 파일이 언제 보이는지 알리는 데 쓴다 */
+	@org.springframework.web.bind.annotation.ModelAttribute("liveResources")
+	boolean liveResources() {
+		return this.live;
 	}
 
 	/** 번호가 붙은 소스 한 줄 */
@@ -970,8 +984,6 @@ public class WorkbenchController {
 		Map<String, Object> described = this.engine.describe();
 		model.addAttribute("changeTree", ChangeTree.of(outcome.changes(), basePackage(described), eventModules(described)));
 		model.addAttribute("changed", outcome.changes().stream().filter((c) -> !c.action().equals("unchanged")).count());
-		model.addAttribute("needsRestart", outcome.applied()
-				&& outcome.changes().stream().anyMatch((c) -> !c.action().equals("unchanged")));
 		if (editing != null && outcome.applied()) {
 			// 적용한 뒤에는 바뀐 명세로 폼을 다시 채운다. 지웠으면 새 동작을 만드는 폼이다
 			String now = change.equals("rename") ? editing.module() + camel(newName.strip()) : editing.name();

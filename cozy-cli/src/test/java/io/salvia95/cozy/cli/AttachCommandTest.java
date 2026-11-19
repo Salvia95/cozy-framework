@@ -135,6 +135,20 @@ class AttachCommandTest {
 		}
 
 		@Test
+		void aJsonPlanCarriesTheTextAfterTheChangeAndTheAppliedReportDoesNot() throws IOException {
+			Result plan = run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--on", "input:count", "--dry-run", "--json");
+
+			assertThat(plan.code()).as(plan.err()).isZero();
+			String after = EDIT.replace("  <div>\n", "  <div x-data=\"memoBodyCount\" x-on:input=\"count\">\n");
+			assertThat(plan.out()).as("파일마다 바뀐 뒤의 글 전체")
+				.contains("\"file\": \"" + TEMPLATE + "\"", "\"after\": " + io.salvia95.cozy.cli.internal.Json.write(after));
+			assertThat(read(TEMPLATE)).isEqualTo(EDIT);
+
+			Result applied = run("attach", "memoBodyCount", "--at", "memo/api/edit:5", "--on", "input:count", "--json");
+			assertThat(applied.out()).doesNotContain("\"after\"");
+		}
+
+		@Test
 		void namesTheComponentDoesNotHaveAreRefused() throws IOException {
 			attachRoot();
 
