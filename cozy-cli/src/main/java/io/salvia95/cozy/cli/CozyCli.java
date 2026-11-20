@@ -51,7 +51,7 @@ import io.salvia95.cozy.rules.Violation;
  * 마이그레이션을 만든다 ({@code --dry-run})</li>
  * <li>{@code migrate behaviors}: 손으로 쓴 모듈 JS의 컴포넌트를 동작 명세로 옮기고 JS를 다시 만든다 ({@code --dry-run})</li>
  * <li>{@code channel set|show|add|release}: 개발 도구의 업데이트 채널</li>
- * <li>{@code update [--json]}: 채널의 새 판을 보인다. 아무것도 바꾸지 않는다</li>
+ * <li>{@code upgrade --check [--to 판] [--json]}: 채널의 새 판을 보인다. 아무것도 바꾸지 않는다({@code update}는 2.x 동안의 별칭)</li>
  * <li>{@code upgrade [--to 판]}: 채널에서 판을 받아 확인하고, cozy 명령이 끝난 뒤에 설치한다</li>
  * </ul>
  * 채널을 정했으면 앱에 쓰는 명령 뒤에 하루에 한 번 새 판을 확인하고, 있으면 오류 출력에 한 줄을 보인다. {@code cozy upgrade}로 맡긴
@@ -91,8 +91,8 @@ public final class CozyCli {
 			  cozy channel show [--json]   정한 채널 보기 (환경 변수 COZY_CHANNEL이 설정 파일보다 앞선다)
 			  cozy channel add <채널 폴더> <릴리스 폴더>   (관리자) 받은 릴리스를 채널 폴더에 더하기
 			  cozy channel release <릴리스 폴더> <channel.yml>   (릴리스 워크플로) 릴리스 하나의 cozy-channel.json 만들기
-			  cozy update [--json]     채널의 새 판, 요약, 호환 깨짐, 앱에서 돌릴 명령 보기 (아무것도 바꾸지 않는다)
-			  cozy upgrade [--to <판>]   채널의 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치하기 (MSI나 zip, 설치한 모양대로)
+			  cozy upgrade --check [--to <version>] [--json]   채널의 새 판, 요약, 호환 깨짐, 앱에서 돌릴 명령 보기 (아무것도 바꾸지 않는다)
+			  cozy upgrade [--to <version>]   채널의 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치하기 (MSI나 zip, 설치한 모양대로)
 			                           주 버전이 같은 가장 새 판으로 올린다. 호환이 깨지는 판은 --to로 적는다. 낮은 판으로는 가지 않는다
 
 			옵션
@@ -109,6 +109,9 @@ public final class CozyCli {
 
 			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
 			""";
+
+	/** 사용법에 적지 않지만 받는 옛 동작 이름 ({@code update}: {@code upgrade --check}, 3.0.0에서 없앤다) */
+	static final Set<String> ALIASES = Set.of("update");
 
 	/** 이 명령 뒤에 새 판 알림을 보인다. 채널과 업데이트 명령, 도움말 뒤에는 보이지 않는다 */
 	private static final Set<String> NOTICE_ACTIONS = Set.of("describe", "check", "recipes", "add", "link", "enable", "sync",
@@ -259,19 +262,21 @@ public final class CozyCli {
 					ChannelCommands.run(rest.subList(1, rest.size()), env, windows(), now().toLocalDate(), dryRun, json, out);
 					yield OK;
 				}
-				case "update" -> {
-					UpdateCommands.update(rest.subList(1, rest.size()), env, windows(), now().toLocalDate(), json,
-							ChannelClient.forThisPc(windows(), UPDATE_CONNECT, UPDATE_REQUEST), out);
-					yield OK;
-				}
-				case "upgrade" -> {
-					if (json || dryRun) {
-						throw new CliException("cozy upgrade에는 " + (json ? "--json" : "--dry-run") + "이 없습니다. 올릴 판과 바뀌는 것은 "
-								+ "cozy update로 봅니다.");
+				case "upgrade", "update" -> {
+					boolean alias = action.equals("update");
+					UpgradeCommands.Request request = UpgradeCommands.Request.parse(rest.subList(1, rest.size()), alias || dryRun, json);
+					if (alias) {
+						err.println("[cozy] cozy update는 cozy upgrade --check로 바뀌었습니다. 3.0.0에서 없어집니다.");
 					}
-					UpgradeCommands.upgrade(rest.subList(1, rest.size()), env, windows(), Instant.now(),
-							ChannelClient.forThisPc(windows(), UPDATE_CONNECT, UPDATE_REQUEST), UpgradeCommands.detached(windows()),
-							UpgradeCommands.waitFor(windows()), out);
+					if (request.check()) {
+						UpdateCommands.check(request.to(), env, windows(), now().toLocalDate(), json,
+								ChannelClient.forThisPc(windows(), UPDATE_CONNECT, UPDATE_REQUEST), out);
+					}
+					else {
+						UpgradeCommands.upgrade(request.to(), env, windows(), Instant.now(),
+								ChannelClient.forThisPc(windows(), UPDATE_CONNECT, UPDATE_REQUEST), UpgradeCommands.detached(windows()),
+								UpgradeCommands.waitFor(windows()), out);
+					}
 					yield OK;
 				}
 				case "help", "--help", "-h" -> {

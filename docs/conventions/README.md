@@ -19,6 +19,6 @@
 | [getting-started.md](getting-started.md) | 새 앱 만들기: 아키타입 옵션(`appId`, `appName`, `persistence`, `events`), 생성 구조, 오프라인 번들 | M7 |
 | [../agents/](../agents/AGENTS.md) | 생성 앱에 들어가는 코딩 에이전트 문서(영어): 가벼운 `AGENTS.md`(Cozy 앱이라는 것, 아키타입, 약속)와 `cozy-helper` 스킬(`SKILL.md`, 명령마다 `references/<명령>/PLAYBOOK.md`). ADR-0034 | M7, M11, ADR-0034 |
 | [performance.md](performance.md) | 비기능 목표(PRD §11) 측정: 기동 시간(AOT 유무), 힙, app-image 크기, 오프라인 빌드 | M7 |
-| [channel.md](channel.md) | 개발 도구 업데이트 채널: 채널 주소(파일 서버, 웹 서버, GitLab, GitHub), `cozy channel set·show·add·release`, `cozy update`, `cozy upgrade`, 사용자 설정 파일, 색인 형식 `cozy-channel.json` | ADR-0042 |
+| [channel.md](channel.md) | 개발 도구 업데이트 채널: 채널 주소(파일 서버, 웹 서버, GitLab, GitHub), `cozy channel set·show·add·release`, `cozy upgrade`(`--check`, 별칭 `cozy update`), 사용자 설정 파일, 색인 형식 `cozy-channel.json` | ADR-0042 |
 | [install-and-update.md](install-and-update.md) | 개발 도구 설치와 업데이트: 설치한 것이 놓이는 곳, 채널 정하기, `cozy upgrade`와 올리지 못했을 때, 앱을 새 판으로 옮기기, 지우기, 관리자의 채널 만들기(릴리스 들여오기, 파일 서버, 웹 서버, GitLab) | ADR-0042 |
 | [release.md](release.md) | 프레임워크 릴리스 절차, 버전 바꾸기, 릴리스 워크플로, 번들 라이선스 목록과 예외 목록 형식 | 릴리스 |

@@ -81,3 +81,13 @@ cozy channel release <릴리스 폴더> distribution/release/channel.yml --previ
 - **바뀐 이름**: 2.x에서 `cozy update`를 쓰는 스크립트와 습관은 별칭으로 계속 돈다. 3.0.0의 올리는 절차에 없어진다고 적는다.
 - **이전 릴리스의 경로**: GitHub의 자산 주소 모양(`releases/download/v{판}/{파일}`)에 기댄다. 모양이 바뀌면 이전 판으로 `--to`를 적을 때만 실패하고(SHA-256과 404는 실패로 닫는다), 최신 판으로 올리는 것은 영향이 없다.
 - **워크벤치의 영어 설명**: 한국어 화면에 레시피 설명만 영어로 보인다. 명령 형식과 같은 줄에 있어 읽기는 오히려 낫다고 본다. 화면 확인에서 다시 본다.
+
+## M56 (2026-11-21, 사용자 지시 "응 개정안 쓰고 진행해줘")
+
+- 시작할 때 최신 GA를 확인해 Spring Boot 4.2.0과 Modulith 2.2.0으로 올렸다(ADR-0017). 이벤트 계약 테스트가 Modulith 2.2의 포기한 발행(`ABANDONED`) 메서드를 잡아 SQLite 저장소에 구현했다.
+- `cozy upgrade --check [--to <version>] [--json]`과 `--dry-run`. `--to`가 있으면 그 판까지의 새 판과 올리는 명령(`cozy upgrade --to <판>`)을 보이고, 낮은 판과 채널에 없는 판은 `cozy upgrade`와 같이 거절한다. `--json`에 `target`을 더했다.
+- `cozy update`는 같은 인자로 `cozy upgrade --check`를 하고 오류 출력에 바뀐 이름 한 줄을 보인다. 번들 스크립트는 그대로 cozy-cli에 넘긴다(사용법에 없는 옛 이름은 `CozyCli.ALIASES`).
+- 거절은 `cozy upgrade [--check] [--to <version>] [--json]로 씁니다(받은 인자: …). 새 판은 cozy upgrade --check로 봅니다.` 하나다. 판 형식이 틀린 `--to`도 같다.
+- `cozy channel release --previous <폴더>`: 이전 색인들의 릴리스를 판마다 하나씩 잇고 경로를 `../../download/v{판}/{파일}`로 바꾼다. 같은 판을 다르게 적은 색인, 없는 폴더는 실패로 닫는다. `cozy channel add`는 맨 앞 릴리스만 더하고 이전 릴리스는 알리기만 한다.
+- 릴리스 워크플로가 `cozy-channel.json`이 있는 게시 릴리스마다 색인을 받아 `--previous`로 준다(자산 목록에 있는데 받지 못하면 실패한다).
+- 문서: channel.md, cli.md, install-and-update.md, windows-verification.md, 번들 README, 업그레이드 플레이북, MSI 검증 스크립트.

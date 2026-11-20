@@ -17,8 +17,8 @@ import io.salvia95.cozy.cli.internal.Json;
 import io.salvia95.cozy.cli.internal.channel.ChannelIndex.Release;
 
 /**
- * {@code cozy update}: 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 그리고 다른 cozy 명령 뒤에 하루에 한 번
- * 하는 새 판 알림.
+ * {@code cozy upgrade --check}(별칭 {@code cozy update}): 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다.
+ * 그리고 다른 cozy 명령 뒤에 하루에 한 번 하는 새 판 알림.
  */
 public final class UpdateCommands {
 
@@ -55,16 +55,26 @@ public final class UpdateCommands {
 		}
 	}
 
-	public static void update(List<String> args, Map<String, String> env, boolean windows, LocalDate today, boolean json,
+	/**
+	 * @param to 적은 판({@code --to}). 있으면 그 판까지의 새 판과 그 판으로 올리는 명령을 보인다. 낮은 판이나 채널에 없는 판은
+	 * {@code cozy upgrade}처럼 거절한다
+	 */
+	public static void check(Version to, Map<String, String> env, boolean windows, LocalDate today, boolean json,
 			ChannelClient client, PrintStream out) {
-		if (!args.isEmpty()) {
-			throw new CliException("cozy update는 인자를 받지 않습니다(" + String.join(" ", args) + "). 올리는 것은 cozy upgrade입니다.");
-		}
 		Path config = UserConfig.file(env, windows);
 		ChannelSettings settings = settings(env, config);
 		Version current = Installed.require(env).release();
 		ChannelIndex index = client.index(settings);
 		Plan plan = Plan.of(current, index);
+		if (to != null) {
+			if (to.equals(current)) {
+				out.println("[cozy] 지금 판입니다: " + current + ".");
+				return;
+			}
+			Release target = UpgradeCommands.target(current, to, index, out);
+			List<Release> upTo = plan.newer().stream().filter((release) -> release.version().compareTo(target.version()) <= 0).toList();
+			plan = new Plan(current, plan.latest(), upTo, plan.upgrade());
+		}
 		try {
 			record(config, today, plan.latest());
 		}
@@ -72,7 +82,7 @@ public final class UpdateCommands {
 			// 확인한 날을 적지 못하면 다음 명령의 알림이 한 번 더 확인할 뿐이다
 		}
 		if (json) {
-			out.print(Json.write(json(plan, settings)));
+			out.print(Json.write(json(plan, settings, (to != null) ? to : plan.upgrade())));
 			return;
 		}
 		out.println("지금 판:  " + current);
@@ -96,6 +106,10 @@ public final class UpdateCommands {
 		out.println("새 판 " + plan.newer().size() + "개");
 		releaseLines(plan.newer(), out);
 		out.println();
+		if (to != null) {
+			out.println("[cozy] 이 판으로 올리는 명령: cozy upgrade --to " + to);
+			return;
+		}
 		if (plan.upgrade() != null) {
 			out.println("[cozy] cozy upgrade로 " + plan.upgrade() + "까지 올립니다.");
 		}
@@ -126,7 +140,7 @@ public final class UpdateCommands {
 		}
 	}
 
-	private static Map<String, Object> json(Plan plan, ChannelSettings settings) {
+	private static Map<String, Object> json(Plan plan, ChannelSettings settings, Version target) {
 		List<Object> releases = new ArrayList<>();
 		for (Release release : plan.newer()) {
 			Map<String, Object> map = new LinkedHashMap<>();
@@ -144,6 +158,7 @@ public final class UpdateCommands {
 		root.put("upToDate", plan.newer().isEmpty());
 		root.put("upgrade", (plan.upgrade() == null) ? null : plan.upgrade().toString());
 		root.put("breaking", (plan.breakingLatest() == null) ? null : plan.breakingLatest().toString());
+		root.put("target", (target == null) ? null : target.toString());
 		root.put("releases", releases);
 		return root;
 	}
@@ -184,11 +199,11 @@ public final class UpdateCommands {
 			Plan plan = Plan.of(current, fetch.get(client.requestTimeout().toMillis() + 1000, TimeUnit.MILLISECONDS));
 			record(config, today, plan.latest());
 			if (plan.upgrade() != null) {
-				err.println("[cozy] 새 버전이 있습니다: " + plan.upgrade() + ". cozy upgrade로 올립니다 (바뀌는 것: cozy update)");
+				err.println("[cozy] 새 버전이 있습니다: " + plan.upgrade() + ". cozy upgrade로 올립니다 (바뀌는 것: cozy upgrade --check)");
 			}
 			else if (plan.breakingLatest() != null) {
-				err.println("[cozy] 호환이 깨지는 새 버전이 있습니다: " + plan.breakingLatest() + ". 바뀌는 것과 앱에서 돌릴 명령은 cozy update로 "
-						+ "봅니다");
+				err.println("[cozy] 호환이 깨지는 새 버전이 있습니다: " + plan.breakingLatest() + ". 바뀌는 것과 앱에서 돌릴 명령은 cozy upgrade "
+						+ "--check로 봅니다");
 			}
 		}
 		catch (Exception ex) {
@@ -203,6 +218,6 @@ public final class UpdateCommands {
 		if (latest != null) {
 			state.setProperty("latest", latest.toString());
 		}
-		UserConfig.write(stateFile, state, "cozy update와 새 판 알림이 마지막으로 채널을 확인한 날");
+		UserConfig.write(stateFile, state, "cozy upgrade --check와 새 판 알림이 마지막으로 채널을 확인한 날");
 	}
 }

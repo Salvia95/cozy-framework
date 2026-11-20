@@ -39,7 +39,7 @@
 ```powershell
 cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
 cozy channel show
-cozy update
+cozy upgrade --check
 ```
 
 - 인증이 필요한 웹 서버나 GitLab이면 머리 이름을 함께 정하고, 토큰은 사용자 환경 변수 `COZY_CHANNEL_TOKEN`에 둔다(새로 연 터미널부터 보인다).
@@ -50,15 +50,16 @@ cozy update
   ```
 
 - **여러 PC에 같은 채널**: 사용자 환경 변수 `COZY_CHANNEL`에 주소를 둔다(로그온 스크립트, 그룹 정책). 설정 파일보다 앞선다.
-- **인터넷이 되는 PC**: GitHub Releases를 바로 채널로 쓸 수 있다: `cozy channel set https://github.com/Salvia95/cozy-framework/releases/latest/download/cozy-channel.json`. 최신 릴리스 하나만 보이므로 그 사이 판의 요약과 앱에서 돌릴 명령은 릴리스 노트에서 본다.
+- **인터넷이 되는 PC**: GitHub Releases를 바로 채널로 쓸 수 있다: `cozy channel set https://github.com/Salvia95/cozy-framework/releases/latest/download/cozy-channel.json`. 2.4.0부터 색인에 게시한 이전 릴리스(2.1.0부터)도 들어 있어, 판을 건너뛰어도 사이 판들의 요약과 앱에서 돌릴 명령이 보인다.
 - 채널을 정하면 cozy 명령이 하루에 한 번 새 판을 확인해 마지막에 한 줄로 알린다. 자동으로 설치하지 않는다.
 
 ## 판 올리기
 
 ```powershell
-cozy update               # 새 판, 요약, 호환이 깨지는 판, 앱에서 돌릴 명령. 아무것도 바꾸지 않는다
-cozy upgrade              # 주 버전이 같은 가장 새 판으로 올린다
-cozy upgrade --to 3.0.0   # 호환이 깨지는 판은 판을 적는다
+cozy upgrade --check               # 새 판, 요약, 호환이 깨지는 판, 앱에서 돌릴 명령. 아무것도 바꾸지 않는다
+cozy upgrade --check --to 3.0.0    # 그 판까지 바뀌는 것과 앱에서 돌릴 명령
+cozy upgrade                       # 주 버전이 같은 가장 새 판으로 올린다
+cozy upgrade --to 3.0.0            # 호환이 깨지는 판은 판을 적는다
 ```
 
 1. `cozy upgrade`가 받은 파일의 크기와 SHA-256을 확인하고 설치를 맡긴 뒤 끝난다.
@@ -68,6 +69,7 @@ cozy upgrade --to 3.0.0   # 호환이 깨지는 판은 판을 적는다
 - 설치한 모양대로 올린다. MSI로 설치했으면 받은 MSI를, zip으로 설치했으면 받은 번들의 `cozy install`을 같은 설치 폴더에 돌린다.
 - 앱은 바뀌지 않는다. 앱은 자기 `pom.xml`의 cozy-parent 판으로 계속 빌드된다.
 - **MSI를 더블클릭해 올리지 않는다.** MSI는 이전 판의 파일을 지운다. 이전 판을 쓰는 앱이 있으면 `cozy upgrade`로 올린다. `cozy upgrade`는 설치하기 전의 저장소를 떠 두었다가 이전 판에만 있던 파일을 사용자 저장소로 옮긴다.
+- **`cozy update`**: 2.3.0까지의 새 판 보기 명령이다. 2.x 동안 `cozy upgrade --check`의 별칭으로 남고 3.0.0에서 없어진다.
 - **2.0.0에서 처음 올릴 때**: 2.0.0에는 `cozy channel`, `cozy update`, `cozy upgrade`가 없다. 2.1.0 이후의 첫 판은 MSI나 `cozy install`로 설치하고, 그다음부터 `cozy upgrade`를 쓴다. 2.1.0을 MSI로 설치하면 2.0.0 판의 cozy 모듈이 지워지므로, 2.0.0을 쓰던 앱은 cozy-parent 판을 올린다(zip의 `cozy install`은 옮긴다).
 
 ### 올리지 못했을 때
@@ -89,14 +91,14 @@ cozy upgrade --to 3.0.0   # 호환이 깨지는 판은 판을 적는다
 
 ```powershell
 cozy version                 # 설치한 판. pom.xml의 cozy-parent 판을 이 판으로 바꾼다
-# 그 사이 판들의 "앱에서 돌릴 명령"을 판 순서대로 돌린다(cozy update, cozy upgrade 출력, 릴리스 노트)
+# 그 사이 판들의 "앱에서 돌릴 명령"을 판 순서대로 돌린다(cozy upgrade --check, cozy upgrade 출력, 릴리스 노트)
 cozy sync agents             # AGENTS.md와 cozy-helper 스킬을 설치한 판의 것으로
 cozy check
 mvn -o clean verify
 ```
 
 - 설치한 판보다 높은 판은 적지 않는다. 그 판의 cozy 모듈이 저장소에 없어 오프라인 빌드가 실패한다.
-- 앱에서 돌릴 명령은 `cozy update`와 `cozy upgrade`가 판마다 보인다. 올린 뒤에는 채널 색인의 `appSteps`나 릴리스 노트에서 본다. 1.x에서 2.0.0으로 옮기는 절차는 [release.md](release.md)의 "앱을 2.0.0으로 올리기"에 있다.
+- 앱에서 돌릴 명령은 `cozy upgrade --check`와 `cozy upgrade`가 판마다 보인다. 올린 뒤에는 채널 색인의 `appSteps`나 릴리스 노트에서 본다. 1.x에서 2.0.0으로 옮기는 절차는 [release.md](release.md)의 "앱을 2.0.0으로 올리기"에 있다.
 - 옮기지 않은 앱은 그대로 빌드된다. 이전 판의 파일이 사용자 저장소에 있다.
 
 ## 지우기
@@ -133,7 +135,7 @@ mvn -o clean verify
    cozy channel add '\\fileserver\share\cozy' .\cozy-2.1.0
    ```
 
-4. PC 하나에서 `cozy update`로 새 판이 보이는지 확인한 뒤 사용자에게 알린다.
+4. PC 하나에서 `cozy upgrade --check`로 새 판이 보이는지 확인한 뒤 사용자에게 알린다.
 
 - 판 폴더의 파일을 먼저 두고 색인을 마지막에 바꾼다. 읽는 PC가 없는 파일을 가리키는 색인을 보지 않게 하기 위해서다. `cozy channel add`는 이 순서를 지킨다. 웹 서버와 GitLab에 손으로 올릴 때도 이 순서를 지킨다.
 - 게시한 판의 파일은 바꾸지 않는다. 같은 판을 다른 파일로 다시 더하면 거부한다. 고칠 것이 있으면 새 판으로 낸다.
@@ -216,7 +218,7 @@ Generic Package Registry에 올린다. 패키지 이름은 `cozy` 하나이고, 
    ```
 
 3. PC의 채널 주소: `https://gitlab.example/api/v4/projects/42/packages/generic/cozy/index/cozy-channel.json`.
-4. PC 하나에서 `cozy update`로 새 판이 보이는지 확인한다.
+4. PC 하나에서 `cozy upgrade --check`로 새 판이 보이는지 확인한다.
 
 - **올리는 토큰**: `api` 범위의 개인 토큰이나 프로젝트 토큰(Developer 이상), 또는 `write_package_registry` 범위의 배포 토큰. CI 작업이면 `JOB-TOKEN: $CI_JOB_TOKEN`.
 - **읽는 토큰**: PC마다 개인 토큰을 만들지 않고, `read_package_registry` 범위의 배포 토큰 하나를 나눠 쓰는 것을 권한다. 읽기만 할 수 있다.
@@ -228,6 +230,6 @@ Generic Package Registry에 올린다. 패키지 이름은 `cozy` 하나이고, 
 
   개인 토큰이면 `--header PRIVATE-TOKEN`이다.
 - **색인 다시 올리기**: 판을 더할 때마다 `index/cozy-channel.json`을 같은 이름으로 다시 올린다. 프로젝트 설정(Settings > Packages and registries > Duplicate packages)에서 Generic 패키지의 중복을 막았다면 예외에 `index`를 더한다.
-- **올린 뒤 확인**: GitLab의 판과 설정에 따라 패키지 판 이름이나 같은 이름의 파일을 다루는 방식이 다를 수 있다. 4번의 `cozy update`가 새 판을 보여야 끝난 것이다. 보이지 않으면 `curl --header "DEPLOY-TOKEN: …" <채널 주소>`로 받은 색인이 올린 파일과 같은지 본다.
+- **올린 뒤 확인**: GitLab의 판과 설정에 따라 패키지 판 이름이나 같은 이름의 파일을 다루는 방식이 다를 수 있다. 4번의 `cozy upgrade --check`가 새 판을 보여야 끝난 것이다. 보이지 않으면 `curl --header "DEPLOY-TOKEN: …" <채널 주소>`로 받은 색인이 올린 파일과 같은지 본다.
 - GitLab이 파일을 객체 저장소로 넘겨주면 토큰 없이 받는다(토큰은 GitLab 서버에만 보낸다). 넘겨받는 주소는 GitLab이 서명한 주소라 따로 인증하지 않는다.
 - GitLab Releases(릴리스 페이지의 자산 링크)는 채널로 쓰지 않는다. 판마다 주소가 달라 색인의 상대 경로가 맞지 않는다.

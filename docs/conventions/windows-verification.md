@@ -266,16 +266,16 @@ mvn -o -Pdist package
 
 ## 업데이트 채널 (ADR-0042)
 
-CI의 Windows 러너는 파일 채널의 `cozy update --json`(`verify-msi.ps1`)과, 판만 다른 MSI 두 개로 `cozy upgrade`(`verify-msi-upgrade.ps1`: 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄)를 확인한다. 사내 서버, 인증서, 프록시, 회사 PC 정책, 사람이 쓰는 창은 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
+CI의 Windows 러너는 파일 채널의 `cozy upgrade --check --json`(`verify-msi.ps1`)과, 판만 다른 MSI 두 개로 `cozy upgrade`(`verify-msi-upgrade.ps1`: 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄)를 확인한다. 사내 서버, 인증서, 프록시, 회사 PC 정책, 사람이 쓰는 창은 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
 
 ```powershell
 cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
 cozy channel show
-cozy update
+cozy upgrade --check
 cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
 ```
 
-- [ ] 공유 폴더(UNC)와 연결한 드라이브(`Z:\cozy\index\cozy-channel.json`)의 채널을 `cozy update`가 읽는다. 공유 폴더에 연결하지 않았으면 "채널 색인 …이 없습니다"로 끝난다.
+- [ ] 공유 폴더(UNC)와 연결한 드라이브(`Z:\cozy\index\cozy-channel.json`)의 채널을 `cozy upgrade --check`가 읽는다. 공유 폴더에 연결하지 않았으면 "채널 색인 …이 없습니다"로 끝난다.
 - [ ] 사내 CA로 서명한 `https` 채널을 따로 설정하지 않고 읽는다(그 CA가 Windows 인증서 저장소에 있다). 인증서 오류면 메시지에 호스트가 보인다.
 - [ ] 프록시를 거쳐야 하는 PC에서 인터넷 옵션의 프록시로 채널을 읽는다.
 - [ ] GitLab 채널: `--header PRIVATE-TOKEN`과 `$env:COZY_CHANNEL_TOKEN`으로 읽고, 토큰 없이는 "요청을 거부했습니다(HTTP 401)"로 끝난다. 출력 어디에도 토큰이 보이지 않는다.

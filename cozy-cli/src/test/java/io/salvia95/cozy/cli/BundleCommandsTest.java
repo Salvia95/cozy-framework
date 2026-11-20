@@ -32,9 +32,9 @@ class BundleCommandsTest {
 
 	static final Path BUNDLE = Path.of("../distribution/offline-bundle");
 
-	/** 사용법에 적힌 동작: {@code cozy <동작>} */
+	/** 사용법에 적힌 동작({@code cozy <동작>})과 옛 이름 */
 	static Set<String> cliActions() {
-		Set<String> actions = new TreeSet<>();
+		Set<String> actions = new TreeSet<>(CozyCli.ALIASES);
 		Matcher m = Pattern.compile("(?m)^\\s+cozy ([a-z]+)").matcher(CozyCli.USAGE);
 		while (m.find()) {
 			actions.add(m.group(1));
@@ -293,15 +293,15 @@ class BundleCommandsTest {
 					+ ":" + dest.resolve("repository"));
 		}
 
-		/** cozy update는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */
+		/** cozy upgrade --check는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */
 		@Test
-		void cozyUpdateTellsTheCliWhereCozyIsInstalled() throws Exception {
+		void cozyUpgradeCheckTellsTheCliWhereCozyIsInstalled() throws Exception {
 			Path dest = this.temp.resolve("installed");
 			assertThat(run(this.bundle.resolve("cozy"), "install", dest.toString()).code()).isZero();
 
-			Result update = run(dest.resolve("bin/cozy"), "update", "--json");
+			Result update = run(dest.resolve("bin/cozy"), "upgrade", "--check", "--json");
 
-			assertThat(update.output()).contains(" update --json ").contains("COZY_HOME=" + dest);
+			assertThat(update.output()).contains(" upgrade --check --json ").contains("COZY_HOME=" + dest);
 			assertThat(dest.resolve("COZY_VERSION")).isRegularFile();
 		}
 

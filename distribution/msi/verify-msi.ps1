@@ -61,7 +61,7 @@ Check ((& cozy version) -eq $version) "cozy version = $version"
 $mvnVersion = (& mvn -v) -join "`n"
 Check ($LASTEXITCODE -eq 0 -and $mvnVersion.Contains("runtime: $dir\jdk")) "mvn -v의 runtime이 $dir\jdk"
 
-# cozy update: 설치 폴더의 판을 파일 채널과 비교한다. 출력은 --json으로 본다(영어 Windows의 콘솔은 한글을 바꾼다)
+# cozy upgrade --check: 설치 폴더의 판을 파일 채널과 비교한다. 출력은 --json으로 본다(영어 Windows의 콘솔은 한글을 바꾼다)
 $channel = Join-Path $Work 'channel\index'
 New-Item -ItemType Directory -Force -Path $channel | Out-Null
 $channelFile = Join-Path $channel 'cozy-channel.json'
@@ -69,12 +69,12 @@ $sha = 'a' * 64
 $release = if ($version -match '^\d+\.\d+\.\d+$') { $version } else { '1.0.0' }
 Set-Content -Encoding ASCII -Path $channelFile -Value ('{"schema": 1, "releases": [{"version": "' + $release + '", "date": "2026-11-17", "breaking": false, "summary": "check", "appSteps": [], "files": [{"kind": "msi", "path": "../' + $release + '/cozy.msi", "sha256": "' + $sha + '", "size": 1}]}]}')
 $env:COZY_CHANNEL = $channelFile
-$update = (& cozy update --json) -join "`n"
+$update = (& cozy upgrade --check --json) -join "`n"
 if ($release -eq $version) {
-  Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upToDate": true') -and $update.Contains('"current": "' + $version + '"')) "cozy update가 설치 폴더의 판 ${version}을 채널과 비교한다"
+  Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upToDate": true') -and $update.Contains('"current": "' + $version + '"')) "cozy upgrade --check가 설치 폴더의 판 ${version}을 채널과 비교한다"
 }
 else {
-  Check ($LASTEXITCODE -eq 2) "개발 판 ${version}의 cozy update는 비교하지 않고 종료 코드 2 (지금 $LASTEXITCODE)"
+  Check ($LASTEXITCODE -eq 2) "개발 판 ${version}의 cozy upgrade --check는 비교하지 않고 종료 코드 2 (지금 $LASTEXITCODE)"
 }
 Remove-Item Env:COZY_CHANNEL
 

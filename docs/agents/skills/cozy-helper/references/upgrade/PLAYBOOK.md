@@ -15,12 +15,12 @@ Steps for a new Cozy release: the user upgrades the installed development tool, 
 ## Syntax
 
 ```text
-cozy update [--json]
-cozy upgrade [--to <판>]
+cozy upgrade --check [--to <version>] [--json]
+cozy upgrade [--to <version>]
 cozy version
 ```
 
-- `cozy update` reads the update channel, shows newer releases with the commands each one needs in the app, and changes nothing.
+- `cozy upgrade --check` reads the update channel, shows newer releases with the commands each one needs in the app, and changes nothing; `--dry-run` does the same, and `cozy update` is its old name.
 - `cozy upgrade` downloads a release, ends, and installs it in the background for one or two minutes; the next `cozy` command prints the result on its first line.
 - `cozy version` prints the installed release.
 - Neither command changes the app, so the app keeps building with the cozy-parent version in its `pom.xml`.
@@ -35,7 +35,7 @@ cozy version
 | 4 | Run `cozy sync agents`, then read `.agents/skills/cozy-helper/SKILL.md` again. |
 | 5 | Run `cozy check`, then `mvn -o clean verify`. |
 
-- `cozy update` lists the commands before the upgrade, and `cozy upgrade` prints them after `[cozy] 앱을 이 판으로 올릴 때 앱 폴더에서 돌릴 명령:`.
+- `cozy upgrade --check` lists the commands before the upgrade, and `cozy upgrade` prints them after `[cozy] 앱을 이 판으로 올릴 때 앱 폴더에서 돌릴 명령:`.
 - After the upgrade, ask the user for the release notes when you need the commands of releases that the output no longer shows.
 
 ## Slots

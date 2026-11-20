@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events|behaviors`, `channel set|show|add|release`, `update`, `upgrade`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events|behaviors`, `channel set|show|add|release`, `upgrade`(`--check`, 별칭 `update`)
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `attach`, `remove`, `rename` 등을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -667,24 +667,25 @@ cozy check
 | `cozy channel set <주소> [--header <이름>]` | 채널 주소(`cozy-channel.json`)를 사용자 설정 파일에 둔다. 형식(UNC, 절대 경로, `file:`, `http:`, `https:`)과 이름만 본다 |
 | `cozy channel show [--json]` | 채널, 출처(`COZY_CHANNEL`이나 설정 파일), 머리 이름, 토큰이 있는지. 토큰은 보이지 않는다 |
 | `cozy channel add <채널 폴더> <릴리스 폴더> [--dry-run]` | (관리자) 받은 릴리스의 파일을 SHA-256으로 확인하고 `<채널 폴더>/{판}/`에 복사한 뒤 `index/cozy-channel.json`에 더한다 |
-| `cozy channel release <릴리스 폴더> <channel.yml>` | (릴리스 워크플로) 릴리스 하나의 `cozy-channel.json`을 만든다 |
+| `cozy channel release <릴리스 폴더> <channel.yml> [--previous <폴더>]` | (릴리스 워크플로) 그 릴리스와 게시한 이전 릴리스들의 `cozy-channel.json`을 만든다 |
 
 - 판단할 수 없으면(모르는 주소 형식, 읽을 수 없는 색인, SHA-256이 다른 파일, 같은 판의 다른 파일) 아무것도 바꾸지 않고 종료 코드 2로 끝낸다.
 
-## update
+## upgrade --check
 
-`cozy update [--json]`은 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 지금 판은 번들의 cozy 명령이 알려 주는 설치 폴더(`COZY_HOME`)의 `COZY_VERSION`이다. 출력, `--json`의 키, 웹 서버의 인증과 인증서는 [channel.md](channel.md#cozy-update와-새-판-알림)에 있다.
+`cozy upgrade --check [--to <version>] [--json]`은 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. `--dry-run`도 같다. 지금 판은 번들의 cozy 명령이 알려 주는 설치 폴더(`COZY_HOME`)의 `COZY_VERSION`이다. 출력, `--json`의 키, 웹 서버의 인증과 인증서는 [channel.md](channel.md#cozy-upgrade---check와-새-판-알림)에 있다.
 
+- `cozy update`는 2.x 동안 이것의 별칭이다(같은 인자와 출력, 오류 출력에 바뀐 이름 한 줄). 3.0.0에서 없어진다.
 - 채널을 정하지 않았거나, 지금 판을 모르거나(설치 폴더 밖의 cozy-cli jar, 개발 판), 색인을 읽을 수 없으면 종료 코드 2로 끝낸다.
 - **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인하고, 새 판이 있으면 오류 출력에 한 줄을 보인다. `--json` 출력 뒤에는 하지 않는다. 명령의 출력과 종료 코드는 바뀌지 않는다.
 
 ## upgrade
 
-`cozy upgrade [--to <판>]`은 채널에서 판을 받아 크기와 SHA-256을 확인하고, 이 명령이 끝난 뒤에 도는 설치 스크립트에 설치를 맡긴다. 설치 방법은 설치한 모양을 따른다(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`). 올릴 판, 받을 파일, 이전 판의 파일, 결과를 보이는 방법은 [channel.md](channel.md#cozy-upgrade)에 있다.
+`cozy upgrade [--to <version>]`은 채널에서 판을 받아 크기와 SHA-256을 확인하고, 이 명령이 끝난 뒤에 도는 설치 스크립트에 설치를 맡긴다. 설치 방법은 설치한 모양을 따른다(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`). 올릴 판, 받을 파일, 이전 판의 파일, 결과를 보이는 방법은 [channel.md](channel.md#cozy-upgrade)에 있다.
 
 - 올릴 판은 주 버전이 같은 가장 새 판이다. 호환이 깨지는 판은 `--to`로 적는다. 낮은 판으로는 가지 않는다.
 - 맡긴 설치의 결과는 다음 cozy-cli 명령이 처음에 오류 출력에 한 번 보인다(`[cozy] 판을 올렸습니다: 2.1.0 → 2.1.1.`). 명령의 출력과 종료 코드는 바뀌지 않는다.
-- 판단할 수 없으면(채널이나 지금 판을 모름, 크기나 SHA-256이 다른 파일, 맞는 파일이 없음, 설치하는 중) 아무것도 설치하지 않고 종료 코드 2로 끝낸다. `--json`과 `--dry-run`은 없다.
+- 판단할 수 없으면(채널이나 지금 판을 모름, 크기나 SHA-256이 다른 파일, 맞는 파일이 없음, 설치하는 중) 아무것도 설치하지 않고 종료 코드 2로 끝낸다. 사용법(`cozy upgrade [--check] [--to <version>] [--json]`)에 없는 인자와 `--check` 없는 `--json`도 사용법 전체를 보이고 종료 코드 2로 끝낸다.
 
 ## 의존
 

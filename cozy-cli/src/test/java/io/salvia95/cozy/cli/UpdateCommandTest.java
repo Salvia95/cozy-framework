@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * {@code cozy update}: 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 채널은 파일(경로, {@code file:})과
+ * {@code cozy upgrade --check}(별칭 {@code cozy update}): 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 채널은 파일(경로, {@code file:})과
  * 로컬 HTTP 서버로 확인한다. 하루에 한 번 하는 새 판 알림은 명령의 결과를 바꾸지 않는다.
  */
 class UpdateCommandTest {
@@ -150,6 +150,77 @@ class UpdateCommandTest {
 	}
 
 	@Nested
+	class OneCommand {
+
+		@BeforeEach
+		void channel() throws IOException {
+			useChannel(channelFolder(index(release("3.1.0", "2027-02-01", "셋째 주 버전의 다음 판"),
+					release("3.0.0", "2027-01-10", "새 주 버전", "cozy migrate events"), release("2.1.0", "2026-12-01", "첫째 판",
+							"cozy sync agents"))).toString());
+		}
+
+		@Test
+		void theOldNameStillChecksAndSaysTheNewOne() {
+			Result check = run("upgrade", "--check");
+			Result old = run("update");
+
+			assertThat(old.code()).as(old.err()).isZero();
+			assertThat(old.out()).isEqualTo(check.out());
+			assertThat(old.err()).contains("[cozy] cozy update는 cozy upgrade --check로 바뀌었습니다. 3.0.0에서 없어집니다.");
+			assertThat(check.err()).isEmpty();
+			assertThat(run("update", "--json").out()).isEqualTo(run("upgrade", "--check", "--json").out());
+			assertThat(run("update", "--to", "3.0.0").out()).isEqualTo(run("upgrade", "--check", "--to", "3.0.0").out());
+		}
+
+		@Test
+		void theOldNameWithCheckIsStillACheck() {
+			assertThat(run("update", "--check").out()).isEqualTo(run("upgrade", "--check").out());
+		}
+
+		@Test
+		void dryRunIsTheSameAsCheck() {
+			assertThat(run("upgrade", "--dry-run").out()).isEqualTo(run("upgrade", "--check").out());
+			assertThat(run("upgrade", "--dry-run", "--json").out()).isEqualTo(run("upgrade", "--check", "--json").out());
+		}
+
+		@Test
+		void checkingAVersionShowsTheReleasesUpToItAndHowToUpgrade() {
+			Result result = run("upgrade", "--check", "--to", "3.0.0");
+
+			assertThat(result.code()).as(result.err()).isZero();
+			assertThat(result.out()).contains("3.0.0 (2027-01-10)  [호환 깨짐] 새 주 버전")
+				.contains("앱에서 돌릴 명령: cozy migrate events")
+				.contains("2.1.0 (2026-12-01)  첫째 판")
+				.doesNotContain("셋째 주 버전의 다음 판")
+				.contains("[cozy] 이 판으로 올리는 명령: cozy upgrade --to 3.0.0");
+			assertThat(run("upgrade", "--check", "--to", "3.0.0", "--json").out()).contains("\"target\": \"3.0.0\"")
+				.contains("\"version\": \"2.1.0\"")
+				.doesNotContain("\"version\": \"3.1.0\"");
+			assertThat(run("upgrade", "--check", "--json").out()).contains("\"target\": \"2.1.0\"");
+		}
+
+		@Test
+		void checkingAVersionRefusesWhatTheUpgradeWouldRefuse() {
+			assertThat(run("upgrade", "--check", "--to", "1.0.0").err()).contains("낮은 판으로는 가지 않습니다");
+			assertThat(run("upgrade", "--check", "--to", "2.5.0").err()).contains("채널에 판(2.5.0)이 없습니다");
+			assertThat(run("upgrade", "--check", "--to", "2.0.0").out()).contains("지금 판입니다: 2.0.0");
+		}
+
+		@Test
+		void anythingElseIsRefusedWithTheWholeUsage() {
+			for (List<String> args : List.of(List.of("upgrade", "--to"), List.of("upgrade", "--check", "now"), List.of("upgrade", "--json"),
+					List.of("upgrade", "--latest"), List.of("update", "--now"), List.of("upgrade", "--to", "3.0"))) {
+				Result result = run(args.toArray(String[]::new));
+
+				assertThat(result.code()).as(args.toString()).isEqualTo(CozyCli.UNUSABLE);
+				assertThat(result.err()).as(args.toString())
+					.contains("cozy upgrade [--check] [--to <version>] [--json]")
+					.contains("새 판은 cozy upgrade --check로 봅니다");
+			}
+		}
+	}
+
+	@Nested
 	class FromAFileChannel {
 
 		@Test
@@ -158,7 +229,7 @@ class UpdateCommandTest {
 					release("1.9.0", "2026-10-01", "옛 판")));
 			useChannel(channel.toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("지금 판:  2.0.0")
@@ -176,7 +247,7 @@ class UpdateCommandTest {
 			Path channel = channelFolder(index(release("2.1.0", "2026-12-01", "첫째 판")));
 			useChannel(channel.toUri().toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("최신 판:  2.1.0");
@@ -188,7 +259,7 @@ class UpdateCommandTest {
 					release("2.1.0", "2026-12-01", "첫째 판")));
 			useChannel(channel.toString());
 
-			Result result = run("update", "--json");
+			Result result = run("upgrade", "--check", "--json");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("\"current\": \"2.0.0\"")
@@ -204,7 +275,7 @@ class UpdateCommandTest {
 		void anUpToDateInstallSaysSo() throws IOException {
 			useChannel(channelFolder(index(release("2.0.0", "2026-11-17", "지금 판"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("최신 판입니다").doesNotContain("cozy upgrade로");
@@ -215,7 +286,7 @@ class UpdateCommandTest {
 			useChannel(channelFolder(index(release("3.0.0", "2027-01-10", "새 주 버전", "cozy migrate events"),
 					release("2.1.0", "2026-12-01", "첫째 판"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("3.0.0 (2027-01-10)  [호환 깨짐] 새 주 버전")
@@ -228,7 +299,7 @@ class UpdateCommandTest {
 		void onlyABreakingReleaseMeansNothingIsUpgradedWithoutTo() throws IOException {
 			useChannel(channelFolder(index(release("3.0.0", "2027-01-10", "새 주 버전", "cozy migrate events"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).doesNotContain("까지 올립니다").contains("cozy upgrade --to 3.0.0");
@@ -238,7 +309,7 @@ class UpdateCommandTest {
 		void aChannelBehindTheInstallIsReportedAndNotFollowed() throws IOException {
 			useChannel(channelFolder(index(release("1.9.0", "2026-10-01", "옛 판"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("채널의 최신 판(1.9.0)이 지금 판(2.0.0)보다 낮습니다").contains("낮은 판으로는 올리지 않습니다");
@@ -248,7 +319,7 @@ class UpdateCommandTest {
 		void anIndexThatCannotBeReadFailsClosed() throws IOException {
 			useChannel(channelFolder("{\"schema\": 2, \"releases\": []}").toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("schema가 1이 아닙니다");
@@ -258,7 +329,7 @@ class UpdateCommandTest {
 		void aMissingIndexFailsClosed() {
 			useChannel(UpdateCommandTest.this.temp.resolve("nowhere/index/cozy-channel.json").toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("채널 색인").contains("nowhere");
@@ -270,7 +341,7 @@ class UpdateCommandTest {
 
 		@Test
 		void withoutAChannelItSaysHowToSetOne() {
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("채널을 정하지 않았습니다").contains("cozy channel set");
@@ -281,7 +352,7 @@ class UpdateCommandTest {
 			UpdateCommandTest.this.env.remove("COZY_HOME");
 			useChannel(channelFolder(index(release("2.1.0", "2026-12-01", "첫째 판"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("설치한 cozy 명령");
@@ -292,7 +363,7 @@ class UpdateCommandTest {
 			installed("2.1.0-SNAPSHOT");
 			useChannel(channelFolder(index(release("2.1.0", "2026-12-01", "첫째 판"))).toString());
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("2.1.0-SNAPSHOT").contains("릴리스 판이 아니라");
@@ -309,7 +380,7 @@ class UpdateCommandTest {
 			useChannel(base + "/cozy/index/cozy-channel.json");
 			UpdateCommandTest.this.env.put("COZY_CHANNEL_TOKEN", "s3cret-token");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(result.out()).contains("최신 판:  2.1.0").doesNotContain("s3cret-token");
@@ -325,7 +396,7 @@ class UpdateCommandTest {
 			Files.writeString(UpdateCommandTest.this.temp.resolve("config/cozy/cozy.properties"), "channel.token=glpat-123\n",
 					java.nio.file.StandardOpenOption.APPEND);
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(recorded.headers.getFirst().get("Private-token")).containsExactly("glpat-123");
@@ -339,7 +410,7 @@ class UpdateCommandTest {
 			assertThat(run("channel", "set", base + "/cozy/index/cozy-channel.json", "--header", "Authorization: Basic").code()).isZero();
 			UpdateCommandTest.this.env.put("COZY_CHANNEL_TOKEN", "ZGV2OnMzY3JldA==");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(recorded.headers.getFirst().get("Authorization")).containsExactly("Basic ZGV2OnMzY3JldA==");
@@ -352,7 +423,7 @@ class UpdateCommandTest {
 			useChannel(base + "/cozy/index/cozy-channel.json");
 			UpdateCommandTest.this.env.put("COZY_CHANNEL_TOKEN", "s3cret-token");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("401").contains("COZY_CHANNEL_TOKEN").doesNotContain("s3cret-token");
@@ -363,7 +434,7 @@ class UpdateCommandTest {
 			String base = serve(new Recorded(), exchange -> respond(exchange, 404, "not found"));
 			useChannel(base + "/cozy/index/cozy-channel.json");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("404").contains("채널 주소");
@@ -383,7 +454,7 @@ class UpdateCommandTest {
 			useChannel(firstBase + "/latest/cozy-channel.json");
 			UpdateCommandTest.this.env.put("COZY_CHANNEL_TOKEN", "s3cret-token");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).as(result.err()).isZero();
 			assertThat(first.headers).hasSize(2);
@@ -400,7 +471,7 @@ class UpdateCommandTest {
 			});
 			useChannel(base + "/cozy-channel.json");
 
-			Result result = run("update");
+			Result result = run("upgrade", "--check");
 
 			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
 			assertThat(result.err()).contains("넘겨주기");
@@ -417,6 +488,13 @@ class UpdateCommandTest {
 				.isEqualTo("https://gitlab.example/api/v4/projects/42/packages/generic/cozy/2.1.0/cozy-2.1.0-windows-x64.msi");
 			assertThat(ChannelClient.resolve("https://github.com/o/r/releases/latest/download/cozy-channel.json", "cozy-2.1.0.zip"))
 				.isEqualTo("https://github.com/o/r/releases/latest/download/cozy-2.1.0.zip");
+			// GitHub 색인의 이전 릴리스: latest에서 읽든 넘겨받은 그 판의 주소에서 읽든 그 릴리스의 자산
+			assertThat(ChannelClient.resolve("https://github.com/o/r/releases/latest/download/cozy-channel.json",
+					"../../download/v2.3.0/cozy-2.3.0.zip"))
+				.isEqualTo("https://github.com/o/r/releases/download/v2.3.0/cozy-2.3.0.zip");
+			assertThat(ChannelClient.resolve("https://github.com/o/r/releases/download/v2.4.0/cozy-channel.json",
+					"../../download/v2.3.0/cozy-2.3.0.zip"))
+				.isEqualTo("https://github.com/o/r/releases/download/v2.3.0/cozy-2.3.0.zip");
 			assertThat(ChannelClient.resolve("file:///mnt/share/cozy/index/cozy-channel.json", "../2.1.0/a.zip"))
 				.isEqualTo("file:///mnt/share/cozy/2.1.0/a.zip");
 			assertThat(ChannelClient.resolve("/mnt/share/cozy/index/cozy-channel.json", "../2.1.0/a.zip"))
@@ -489,7 +567,7 @@ class UpdateCommandTest {
 			String base = serve(recorded, exchange -> respond(exchange, 200, index(release("2.1.0", "2026-12-01", "첫째 판"))));
 			useChannel(base + "/cozy-channel.json");
 
-			assertThat(notice("check")).isEqualTo("[cozy] 새 버전이 있습니다: 2.1.0. cozy upgrade로 올립니다 (바뀌는 것: cozy update)\n"
+			assertThat(notice("check")).isEqualTo("[cozy] 새 버전이 있습니다: 2.1.0. cozy upgrade로 올립니다 (바뀌는 것: cozy upgrade --check)\n"
 					.replace("\n", System.lineSeparator()));
 			assertThat(notice("describe")).isEmpty();
 			assertThat(recorded.hits.get()).isEqualTo(1);
@@ -514,7 +592,7 @@ class UpdateCommandTest {
 		void aBreakingReleaseIsAnnouncedWithoutAnUpgradeCommand() throws IOException {
 			useChannel(channelFolder(index(release("3.0.0", "2027-01-10", "새 주 버전"))).toString());
 
-			assertThat(notice("check")).contains("호환이 깨지는 새 버전이 있습니다: 3.0.0").contains("cozy update");
+			assertThat(notice("check")).contains("호환이 깨지는 새 버전이 있습니다: 3.0.0").contains("cozy upgrade --check");
 		}
 
 		@Test
@@ -563,7 +641,7 @@ class UpdateCommandTest {
 			useChannel(base + "/cozy-channel.json");
 			System.setProperty("cozy.cli.now", "202612020900");
 			try {
-				assertThat(run("update").code()).isZero();
+				assertThat(run("upgrade", "--check").code()).isZero();
 			}
 			finally {
 				System.clearProperty("cozy.cli.now");
