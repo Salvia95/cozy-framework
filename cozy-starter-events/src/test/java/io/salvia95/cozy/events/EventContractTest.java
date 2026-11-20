@@ -206,6 +206,38 @@ class EventContractTest {
 	}
 
 	@Test
+	void anAbandonedPublicationIsNeitherRetriedNorCountedAsCompleted() {
+		SampleListener.FAIL.set(true);
+		ConfigurableApplicationContext first = start();
+		first.getBean(SampleService.class).order("포기", false);
+		EventPublicationRepository repository = first.getBean(EventPublicationRepository.class);
+		await(() -> repository.countByStatus(Status.FAILED) == 1);
+		java.util.UUID id = repository.findByStatus(Status.FAILED).getFirst().getIdentifier();
+
+		assertThat(repository.markAbandoned(id, java.time.Instant.now(), Status.COMPLETED)).as("다른 상태면 바꾸지 않는다").isFalse();
+		first.getBean(org.springframework.modulith.events.FailedEventPublications.class).applyAbandonPolicy((p) -> org.springframework.modulith.events.AbandonPolicy.Decision.ABANDON);
+
+		assertThat(repository.countByStatus(Status.ABANDONED)).isEqualTo(1);
+		assertThat(repository.findAbandonedPublications()).extracting((p) -> p.getIdentifier()).containsExactly(id);
+		assertThat(repository.findIncompletePublications()).isEmpty();
+		assertThat(repository.findCompletedPublications()).isEmpty();
+		repository.deleteCompletedPublications();
+		assertThat(repository.countByStatus(Status.ABANDONED)).as("완료 기록을 지워도 남는다").isEqualTo(1);
+		first.close();
+
+		SampleListener.FAIL.set(false);
+		SampleListener.BODY_RUNS.set(0);
+		ConfigurableApplicationContext second = start();
+		EventPublicationRepository again = second.getBean(EventPublicationRepository.class);
+		second.getBean(SampleService.class).order("다음", false);
+		await(() -> again.countByStatus(Status.COMPLETED) == 1);
+		assertThat(SampleListener.BODY_RUNS.get()).as("포기한 발행은 다시 시작해도 돌리지 않는다").isEqualTo(1);
+		assertThat(again.countByStatus(Status.ABANDONED)).isEqualTo(1);
+		again.deleteAbandonedPublicationsBefore(java.time.Instant.now().plusSeconds(1));
+		assertThat(again.countByStatus(Status.ABANDONED)).isZero();
+	}
+
+	@Test
 	void sameEventDeliveredTwiceRunsBodyOnce() throws Exception {
 		ConfigurableApplicationContext context = start();
 		SampleListener listener = context.getBean(SampleListener.class);

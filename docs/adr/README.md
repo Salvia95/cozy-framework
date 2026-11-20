@@ -48,3 +48,4 @@
 | [0042](0042-update-channel.md) | 개발 도구 업데이트 채널: 직접 정하는 업데이트 서버(파일 서버, 웹 서버, GitLab, GitHub)의 색인 `cozy-channel.json`, `cozy update`·`cozy upgrade`·`cozy channel`, 사용자 저장소와 읽기 전용 꼬리 저장소 (0025·0028·0039 개정) | 사용자 요청 |
 | [0043](0043-declared-behaviors.md) | 화면 안의 동작을 선언으로: 모듈의 동작 명세 `behaviors/{모듈}.yml`이 원본이고 JS는 cozy가 만든다. `cozy attach`, describe·워크벤치의 바인딩과 화면 이벤트, C12·C13 (0032·0040 개정) | 사용자 요청 |
 | [0044](0044-workbench-behavior-editing.md) | 워크벤치에서 화면 안의 동작을 보고 고치기: 명세·만든 JS 소스 보기, 지금 내용으로 채운 고치기 폼(`add`·`remove`·`rename behavior`), 낱말 안내, 새 요소에 붙이기, 앞뒤 비교, dev의 바로 보기, 검사에서 `sync`·`migrate behaviors` (0043 §4, 0036 §1 범위 개정) | 사용자 요청 |
+| [0045](0045-upgrade-command-and-english-help.md) | 판 올리기는 `cozy upgrade` 하나로(`--check`, `cozy update`는 2.x 별칭), GitHub 채널 색인에 이전 릴리스, `cozy help`·`cozy recipes`의 명령 설명은 영어 (0042 §2·§4 개정) | 사용자 지적 |

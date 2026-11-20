@@ -197,10 +197,20 @@ jobs:
           sha256sum -c "cozy-$VERSION-windows-x64.msi.sha256"
           cat "cozy-$VERSION-windows-x64.msi.sha256" >> SHA256SUMS
           rm "cozy-$VERSION-windows-x64.msi.sha256"
-          # 채널 색인: 이 릴리스 하나. releases/latest/download/cozy-channel.json이 그대로 채널이 된다
+          # 채널 색인: 이 릴리스와 게시한 이전 릴리스들. releases/latest/download/cozy-channel.json이 그대로 채널이 된다
+          # 이전 색인은 그 릴리스에 cozy-channel.json이 있을 때만 받는다(2.1.0부터). 받지 못하면 실패한다
+          mkdir -p "$RUNNER_TEMP/previous"
+          gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 200 --json tagName --jq '.[].tagName' |
+            while read -r previous; do
+              [ "$previous" = "$TAG" ] && continue
+              if gh release view "$previous" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qx cozy-channel.json; then
+                gh release download "$previous" --repo "$GITHUB_REPOSITORY" --pattern cozy-channel.json \
+                  --output "$RUNNER_TEMP/previous/$previous.json"
+              fi
+            done
           unzip -q "cozy-offline-bundle-$VERSION.zip" "cozy-offline-bundle-$VERSION/lib/cli/*" -d "$RUNNER_TEMP/cli"
           java -jar "$RUNNER_TEMP/cli/cozy-offline-bundle-$VERSION/lib/cli/cozy-cli.jar" channel release . \
-            "$GITHUB_WORKSPACE/distribution/release/channel.yml"
+            "$GITHUB_WORKSPACE/distribution/release/channel.yml" --previous "$RUNNER_TEMP/previous"
           "$GITHUB_WORKSPACE/distribution/release/release-notes.sh" "$VERSION" . > RELEASE-NOTES.md
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
             --title "Cozy $VERSION" --notes-file RELEASE-NOTES.md \
