@@ -1,19 +1,17 @@
-﻿# Cozy 명령 (오프라인 번들, Windows). 형식: cozy <동작> [인자...]
+﻿# Cozy command (offline bundle, Windows). Usage: cozy <action> [args...]
 #
-#   .\cozy.cmd install [설치 폴더]   번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: %USERPROFILE%\cozy)
-#   cozy new ["-D이름=값" ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
-#   cozy add <레시피> ...             앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version)
-#   cozy link <모듈> --uses <모듈>    모듈 의존 선언. 그 밖에 cozy describe | check | recipes | enable events | sync agents | sync behaviors | set arg | migrate alpine | migrate events | migrate behaviors | attach | remove behavior | rename behavior | channel | update | upgrade (자세히: cozy recipes, AGENTS.md)
-#   cozy version                     프레임워크 버전
-#   cozy help                        이 도움말
+#   .\cozy.cmd install [folder]        Install the bundle on this PC. Run it in the bundle folder (default: %USERPROFILE%\cozy)
+#   cozy new ["-D<name>=<value>" ...]   Create a new app under the current folder. Answer the prompts or pass -D values
+#   cozy version                       Print the framework version
+#   cozy help                          Print this help, then the app commands of cozy-cli
 #
-# 설치하면 <설치 폴더>\bin에 cozy.cmd와 mvn.cmd가 생긴다. PATH에 <설치 폴더>\bin을 더하면 어디서나 cozy와 번들의 Maven을 쓴다.
-# 번들에 JDK(jdk\)가 있으면 cozy와 그 mvn은 그 JDK로 돈다. 없으면 시스템의 JDK 25(JAVA_HOME, PATH)를 쓴다.
-# PowerShell에서는 -D 인수를 따옴표로 감싼다. 감싸지 않으면 점(.)에서 인수가 나뉜다.
+# Installing puts cozy.cmd and mvn.cmd in <folder>\bin. Add <folder>\bin to PATH to use cozy and the bundled Maven anywhere.
+# With a bundled JDK (jdk\), cozy and its mvn run on it. Otherwise they use the system JDK 25 (JAVA_HOME, PATH).
+# In PowerShell, quote each -D argument. Without quotes PowerShell splits it at the dots.
 #   cozy new "-DgroupId=com.example" "-DartifactId=voc-assistant" "-Dpackage=com.example.voc" `
 #            "-DappName=VOC 도우미" "-Dpersistence=true" "-Devents=false" "-DinteractiveMode=false"
-# new의 옵션: groupId, artifactId, package, appId(기본 artifactId), appName(한글 가능), persistence(기본 true),
-# events(기본 false, persistence 필요).
+# Options of new: groupId, artifactId, package, appId (default: artifactId), appName (may be Korean), persistence (default: true),
+# events (default: false, needs persistence).
 $ErrorActionPreference = 'Stop'
 
 # 번들 폴더는 cozy.ps1 옆에 COZY_VERSION이 있고, 설치 폴더는 lib\cozy.ps1의 한 단계 위에 있다
@@ -35,8 +33,20 @@ if (Test-Path (Join-Path $BundledJdk 'bin\java.exe')) {
   $env:Path = (Join-Path $BundledJdk 'bin') + ';' + $env:Path
 }
 
+# 머리의 # 줄들, 그리고 cozy-cli를 실행할 수 있으면 그 도움말(앱 명령)
 function Show-Usage {
-  Get-Content -Encoding UTF8 $PSCommandPath | Select-Object -First 16 | ForEach-Object { $_ -replace '^# ?', '' }
+  foreach ($line in (Get-Content -Encoding UTF8 $PSCommandPath)) {
+    $text = $line.TrimStart([char]0xFEFF)
+    if (-not $text.StartsWith('#')) { break }
+    $text -replace '^# ?', ''
+  }
+  $jar = Join-Path $Root 'lib\cli\cozy-cli.jar'
+  if ((Test-Path $jar) -and (Get-Command java -ErrorAction SilentlyContinue)) {
+    ''
+    $ErrorActionPreference = 'Continue'
+    & java -jar $jar help 2>$null
+    $ErrorActionPreference = 'Stop'
+  }
 }
 
 function Assert-Java {

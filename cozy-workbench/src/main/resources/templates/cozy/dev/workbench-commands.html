@@ -66,7 +66,7 @@
             </th:block>
             <p class="mb-3" th:if="${editing == null}">
               <span th:text="${selected.does}">무엇을 만드는지</span>
-              <span class="text-secondary" th:text="|· 미구현 항목: ${selected.slots}|">· 미구현 항목: 없음</span>
+              <span class="text-secondary" th:text="|· 미구현 항목: ${selected.slotsText()}|">· 미구현 항목: 없음</span>
             </p>
             <p class="mb-3" th:if="${editing != null}">지금 항목으로 채웠습니다. 바꾸거나 더한 행은 <code>cozy add behavior</code>, 지운 행은 <code>cozy remove behavior</code>로 한 계획에 넣습니다.</p>
             <th:block th:if="${removedComponent != null}">

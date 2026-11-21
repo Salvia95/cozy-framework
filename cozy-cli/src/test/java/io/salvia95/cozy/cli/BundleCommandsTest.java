@@ -32,14 +32,45 @@ class BundleCommandsTest {
 
 	static final Path BUNDLE = Path.of("../distribution/offline-bundle");
 
-	/** 사용법에 적힌 동작: {@code cozy <동작>} */
+	/** 사용법에 적힌 동작({@code cozy <동작>})과 옛 이름 */
 	static Set<String> cliActions() {
-		Set<String> actions = new TreeSet<>();
+		Set<String> actions = new TreeSet<>(CozyCli.ALIASES);
 		Matcher m = Pattern.compile("(?m)^\\s+cozy ([a-z]+)").matcher(CozyCli.USAGE);
 		while (m.find()) {
 			actions.add(m.group(1));
 		}
 		return actions;
+	}
+
+	/** 스크립트 머리의 도움말(맨 위의 # 줄들). 큰따옴표 안의 예시 값만 한글을 쓸 수 있다 */
+	static List<String> helpLines(Path script) throws IOException {
+		List<String> help = new ArrayList<>();
+		for (String line : Files.readAllLines(script, StandardCharsets.UTF_8)) {
+			String text = line.replace("\uFEFF", "");
+			if (text.startsWith("#!")) {
+				continue;
+			}
+			if (!text.startsWith("#")) {
+				break;
+			}
+			help.add(text);
+		}
+		return help;
+	}
+
+	@Test
+	void theBundleHelpIsEnglish() throws IOException {
+		for (String name : List.of("cozy", "cozy.ps1")) {
+			List<String> help = helpLines(BUNDLE.resolve(name));
+			assertThat(String.join("\n", help)).as(name)
+				.contains("Install the bundle on this PC")
+				.contains("cozy new")
+				.contains("cozy version")
+				.contains("cozy help");
+			assertThat(help).as(name).noneMatch((line) -> line.replaceAll("\"[^\"]*\"", "").matches(".*\\p{IsHangul}.*"));
+		}
+		assertThat(Files.readString(BUNDLE.resolve("cozy.ps1"), StandardCharsets.UTF_8)).as("cozy.ps1의 도움말이 cozy-cli의 도움말을 잇는다")
+			.contains("java -jar $jar help");
 	}
 
 	@Test
@@ -293,15 +324,24 @@ class BundleCommandsTest {
 					+ ":" + dest.resolve("repository"));
 		}
 
-		/** cozy update는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */
 		@Test
-		void cozyUpdateTellsTheCliWhereCozyIsInstalled() throws Exception {
+		void helpShowsTheBundleCommandsAndThenTheCliHelp() throws Exception {
+			Result help = run(this.bundle.resolve("cozy"), "help");
+
+			assertThat(help.code()).as(help.output()).isZero();
+			assertThat(help.output()).contains("Install the bundle on this PC")
+				.contains("bundled-java -jar " + this.bundle.resolve("lib/cli/cozy-cli.jar") + " help");
+		}
+
+		/** cozy upgrade --check는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */
+		@Test
+		void cozyUpgradeCheckTellsTheCliWhereCozyIsInstalled() throws Exception {
 			Path dest = this.temp.resolve("installed");
 			assertThat(run(this.bundle.resolve("cozy"), "install", dest.toString()).code()).isZero();
 
-			Result update = run(dest.resolve("bin/cozy"), "update", "--json");
+			Result update = run(dest.resolve("bin/cozy"), "upgrade", "--check", "--json");
 
-			assertThat(update.output()).contains(" update --json ").contains("COZY_HOME=" + dest);
+			assertThat(update.output()).contains(" upgrade --check --json ").contains("COZY_HOME=" + dest);
 			assertThat(dest.resolve("COZY_VERSION")).isRegularFile();
 		}
 

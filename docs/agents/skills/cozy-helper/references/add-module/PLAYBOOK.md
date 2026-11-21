@@ -13,7 +13,7 @@ Creates an empty feature module that uses no other module.
 ## Syntax
 
 ```text
-cozy add module <모듈> [--label 라벨]
+cozy add module <module> [--label <label>]
 ```
 
 - The module name is lowercase letters and digits starting with a letter (`memo`, `voc2`).

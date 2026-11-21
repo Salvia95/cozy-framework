@@ -64,6 +64,7 @@ class MemoCreatedListener {
 | 프로세스가 리스너 실행 중에 강제 종료됨 | 리스너 트랜잭션은 커밋되지 않았으므로, 재시작 뒤 처음부터 다시 처리한다 |
 | 같은 이벤트가 두 번 전달됨 | 인박스(`cozy_inbox`, 기본키 (이벤트 id, 리스너 id))에 이미 행이 있으므로 본문을 건너뛰고 정상 완료로 처리한다 |
 | 리스너는 커밋했지만 완료 기록 전에 종료됨 | 재시작 뒤 다시 발행되지만 인박스가 본문을 건너뛴다 |
+| 실패한 발행을 포기함(Modulith의 `AbandonPolicy`나 `FailedEventPublications.applyAbandonPolicy`) | 발행 기록이 `ABANDONED`가 되고 포기한 때가 완료 날짜 자리에 적힌다. 다시 시작해도 다시 발행하지 않고, 보관 정리도 지우지 않는다(`AbandonedEventPublications`로 지운다). 기본값은 포기하지 않는 것이다 |
 
 - **리스너 id**: `클래스 FQN#메서드명(파라미터 타입 FQN)`이다. 리스너 메서드의 이름이나 위치를 바꾸면 다른 리스너로 본다.
 - **실패한 발행 다시 보내기**: 운영 중에 실패한 발행을 다시 보내려면 Modulith의 `IncompleteEventPublications.resubmitIncompletePublications(...)`를 쓴다.
@@ -100,7 +101,7 @@ class MemoCreatedListener {
 4. 가장 높은 버전의 샘플이 현재 클래스의 모든 필드를 가진다. 필드를 추가했는데 새 버전 샘플이 없으면 실패한다.
 5. 샘플 폴더마다 같은 이름의 CozyEvent 구현이 있다. 이로써 클래스 이름 변경을 잡는다.
 
-필드를 추가하는 순서는 다음과 같다. 1~3은 `cozy add event-version <모듈> <이벤트> --field 이름:종류 …`가 한 번에 한다([cli.md](cli.md#add-link-enable)).
+필드를 추가하는 순서는 다음과 같다. 1~3은 `cozy add event-version <module> <event> --field <name>:<type> …`가 한 번에 한다([cli.md](cli.md#add-link-enable)).
 
 1. record에 필드를 추가한다.
 2. `of()`의 schemaVersion을 올린다.

@@ -9,7 +9,7 @@ Adds a read method to a Finder together with its implementation, mapper method, 
 ## Syntax
 
 ```text
-cozy add query <모듈> <이름> [--param 이름:종류 …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]
+cozy add query <module> <name> [--param <name>:<type> …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]
 ```
 
 - The name is a camelCase method name (`recent`, `countPinned`), and a parameter is `name:kind` with a field kind.

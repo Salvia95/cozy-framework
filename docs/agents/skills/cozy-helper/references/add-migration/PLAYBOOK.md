@@ -13,7 +13,7 @@ Creates an empty Flyway migration with a correctly ordered file name.
 ## Syntax
 
 ```text
-cozy add migration <모듈> <설명>
+cozy add migration <module> <description>
 ```
 
 - The description is lowercase snake_case (`create_activity`, `add_due_on`).

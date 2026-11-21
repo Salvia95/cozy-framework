@@ -14,7 +14,7 @@ Removes a module component, or some of its entries, from the behavior spec, and 
 ## Syntax
 
 ```text
-cozy remove behavior <모듈> <동작> [--state 이름 …] [--computed 이름 …] [--action 이름 …] [--listen 모듈:이벤트 …]
+cozy remove behavior <module> <behavior> [--state <name> …] [--computed <name> …] [--action <name> …] [--listen <module>:<event> …]
 ```
 
 - Without entry options, the whole component goes, together with its `x-data`, its `data-*`, and the bindings inside it in every template of the module.

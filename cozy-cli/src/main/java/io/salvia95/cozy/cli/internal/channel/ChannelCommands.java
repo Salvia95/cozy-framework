@@ -26,7 +26,7 @@ import org.yaml.snakeyaml.error.YAMLException;
 
 /**
  * {@code cozy channel}: 업데이트 채널을 정하고 보고({@code set}, {@code show}), 관리자가 채널 폴더를 만든다({@code add}).
- * {@code release}는 릴리스 워크플로가 릴리스 하나의 색인을 만들 때 쓴다. 이 명령들은 네트워크를 쓰지 않는다.
+ * {@code release}는 릴리스 워크플로가 릴리스의 색인(그 릴리스와 게시한 이전 릴리스들)을 만들 때 쓴다. 이 명령들은 네트워크를 쓰지 않는다.
  */
 public final class ChannelCommands {
 
@@ -39,8 +39,8 @@ public final class ChannelCommands {
 	/** 머리 이름을 정하지 않았을 때: {@code Authorization: Bearer <토큰>} */
 	public static final String DEFAULT_HEADER = "Authorization: Bearer";
 
-	static final String USAGE = "cozy channel set <주소> [--header <이름>] | show [--json] | add <채널 폴더> <릴리스 폴더> [--dry-run]"
-			+ " | release <릴리스 폴더> <channel.yml>";
+	static final String USAGE = "cozy channel set <address> [--header <name>] | show [--json] | add <channel-folder> <release-folder> "
+			+ "[--dry-run] | release <release-folder> <channel.yml> [--previous <folder>]";
 
 	/** 채널 폴더 안에서 색인을 두는 폴더. 판 폴더와 나란하다 */
 	public static final String INDEX_DIR = "index";
@@ -171,11 +171,18 @@ public final class ChannelCommands {
 					+ "를 다른 파일과 함께 받습니다(2.1.0부터 있습니다).");
 		}
 		ChannelIndex releaseIndex = ChannelIndex.read(releaseIndexFile);
-		if (releaseIndex.releases().size() != 1) {
-			throw new CliException(releaseIndexFile + "에 릴리스가 하나가 아닙니다(" + releaseIndex.releases().size()
-					+ "개). 릴리스 자산의 색인은 그 릴리스 하나만 적습니다.");
+		if (releaseIndex.releases().isEmpty()) {
+			throw new CliException(releaseIndexFile + "에 릴리스가 없습니다.");
 		}
+		// 맨 앞이 이 폴더의 릴리스다. 뒤의 것은 게시한 이전 릴리스로, 각자의 릴리스 폴더로 더한다
 		Release release = releaseIndex.releases().getFirst();
+		List<Release> earlier = releaseIndex.releases().subList(1, releaseIndex.releases().size());
+		for (ChannelFile file : release.files()) {
+			if (file.path().contains("/")) {
+				throw new CliException(releaseIndexFile + "의 맨 앞 릴리스(" + release.version() + ")의 파일(" + file.path()
+						+ ")이 이 폴더 안의 이름이 아닙니다. 릴리스에서 받은 폴더의 " + ChannelIndex.FILE_NAME + "를 씁니다.");
+			}
+		}
 		for (ChannelFile file : release.files()) {
 			Path source = releaseDir.resolve(file.name());
 			verify(source, file, releaseIndexFile.toString());
@@ -224,6 +231,10 @@ public final class ChannelCommands {
 		files.forEach(file -> out.println("  " + version + "/" + file.name()));
 		out.println("  " + INDEX_DIR + "/" + ChannelIndex.FILE_NAME);
 		out.println("  채널 주소: " + channelIndexFile);
+		if (!earlier.isEmpty()) {
+			out.println("  이전 릴리스 " + earlier.size() + "개(" + String.join(", ", earlier.stream().map((r) -> r.version().toString()).toList())
+					+ ")는 더하지 않았습니다. 필요하면 그 릴리스의 폴더로 cozy channel add를 합니다.");
+		}
 		out.println("  웹 서버나 GitLab이면 이 폴더를 같은 모양으로 올립니다. 색인(" + INDEX_DIR + "/" + ChannelIndex.FILE_NAME
 				+ ")은 파일을 다 올린 뒤에 올립니다.");
 	}
@@ -246,13 +257,28 @@ public final class ChannelCommands {
 		}
 	}
 
-	/** 릴리스 폴더의 세 파일로 릴리스 하나의 색인을 만든다. 파일은 색인 옆에 있다(GitHub Release의 자산) */
+	/**
+	 * 릴리스 폴더의 세 파일로 릴리스의 색인을 만든다. 파일은 색인 옆에 있다(GitHub Release의 자산). {@code --previous}의 폴더에 게시한
+	 * 릴리스들의 색인({@code *.json})이 있으면 그 릴리스들을 뒤에 잇고, 파일 경로는 그 릴리스의 자산을 가리키게 바꾼다
+	 * ({@code ../../download/v{판}/{파일}}: {@code releases/latest/download/}에서도 {@code releases/download/v{판}/}에서도 같다).
+	 */
 	private static void release(List<String> args, LocalDate today, PrintStream out) {
-		if (args.size() != 2) {
-			throw new CliException("cozy channel release <릴리스 폴더> <channel.yml>로 적습니다.");
+		List<String> positional = new ArrayList<>();
+		Path previousDir = null;
+		for (int i = 0; i < args.size(); i++) {
+			if (args.get(i).equals("--previous") && previousDir == null && i + 1 < args.size()) {
+				previousDir = Path.of(args.get(++i));
+			}
+			else {
+				positional.add(args.get(i));
+			}
 		}
-		Path dir = Path.of(args.get(0));
-		Path notesFile = Path.of(args.get(1));
+		if (positional.size() != 2) {
+			throw new CliException("cozy channel release <릴리스 폴더> <channel.yml> [--previous <폴더>]로 적습니다.");
+		}
+		Path dir = Path.of(positional.get(0));
+		Path notesFile = Path.of(positional.get(1));
+		List<Release> previous = (previousDir == null) ? List.of() : previous(previousDir);
 		Map<?, ?> notes = notes(notesFile);
 		Version version = Version.parse(String.valueOf(notes.get("version")), notesFile.toString());
 		Map<String, String> sums = sums(dir.resolve("SHA256SUMS"));
@@ -285,14 +311,54 @@ public final class ChannelCommands {
 		}
 		List<String> appSteps = steps.stream().map(String.class::cast).toList();
 		Release release = new Release(version, today, version.breaking(), summary.strip(), appSteps, List.copyOf(files));
+		ChannelIndex all = new ChannelIndex(List.of(release));
+		for (Release earlier : previous) {
+			if (!earlier.version().equals(version)) {
+				all = all.with(earlier);
+			}
+		}
 		Path index = dir.resolve(ChannelIndex.FILE_NAME);
 		try {
-			Files.writeString(index, new ChannelIndex(List.of(release)).toJson());
+			Files.writeString(index, all.toJson());
 		}
 		catch (IOException ex) {
 			throw new CliException(index + "에 쓰지 못했습니다: " + ex.getMessage());
 		}
 		out.println("[cozy] 릴리스 색인을 만들었습니다: " + index + " (" + version + (version.breaking() ? ", 호환 깨짐" : "") + ")");
+		if (all.releases().size() > 1) {
+			out.println("  이전 릴리스 " + (all.releases().size() - 1) + "개: " + String.join(", ",
+					all.releases().subList(1, all.releases().size()).stream().map((r) -> r.version().toString()).toList()));
+		}
+	}
+
+	/** 게시한 릴리스들의 색인에서 릴리스를 판마다 하나씩. 같은 판이 서로 다르면(파일의 SHA-256) 판단할 수 없으므로 실패한다 */
+	private static List<Release> previous(Path dir) {
+		if (!Files.isDirectory(dir)) {
+			throw new CliException("--previous의 폴더(" + dir + ")가 없습니다. 게시한 릴리스들의 " + ChannelIndex.FILE_NAME + "를 둔 폴더입니다.");
+		}
+		Map<Version, Release> releases = new LinkedHashMap<>();
+		List<Path> files;
+		try (java.util.stream.Stream<Path> list = Files.list(dir)) {
+			files = list.filter((file) -> file.getFileName().toString().endsWith(".json")).sorted().toList();
+		}
+		catch (IOException ex) {
+			throw new CliException(dir + "을 읽지 못했습니다: " + ex.getMessage());
+		}
+		for (Path file : files) {
+			for (Release release : ChannelIndex.read(file).releases()) {
+				List<ChannelFile> assets = release.files()
+					.stream()
+					.map((f) -> new ChannelFile(f.kind(), "../../download/v" + release.version() + "/" + f.name(), f.sha256(), f.size()))
+					.toList();
+				Release moved = release.withFiles(assets);
+				Release seen = releases.putIfAbsent(release.version(), moved);
+				if (seen != null && !sameFiles(seen, moved)) {
+					throw new CliException("이전 릴리스의 색인들이 판(" + release.version() + ")의 파일을 서로 다르게 적었습니다(" + file
+							+ "). 판단할 수 없어 색인을 만들지 않습니다.");
+				}
+			}
+		}
+		return List.copyOf(releases.values());
 	}
 
 	private static Map<?, ?> notes(Path file) {

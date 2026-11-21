@@ -190,6 +190,67 @@ class ChannelCommandTest {
 			assertThat(index).containsPattern("\"date\": \"\\d{4}-\\d{2}-\\d{2}\"");
 		}
 
+		/** 게시한 이전 릴리스의 색인: 그 릴리스 자산 옆의 이름(바로 앞 판)과 이미 바꾼 경로(그 앞 판들) */
+		Path previous(String version, String index) throws IOException {
+			Path dir = Files.createDirectories(ChannelCommandTest.this.temp.resolve("previous"));
+			return Files.writeString(dir.resolve("v" + version + ".json"), index);
+		}
+
+		static String entry(String version, String path, String sha) {
+			return """
+					{"version": "%s", "date": "2026-11-20", "breaking": false, "summary": "%s 요약", "appSteps": ["cozy sync agents"],
+					 "files": [{"kind": "msi", "path": "%s", "sha256": "%s", "size": 10}]}
+					""".formatted(version, version, path, sha);
+		}
+
+		@Test
+		void theReleaseIndexCarriesThePublishedReleasesWithPathsToTheirOwnAssets() throws IOException {
+			Path dir = release("2.4.0");
+			previous("2.3.0", "{\"schema\": 1, \"releases\": [" + entry("2.3.0", "cozy-2.3.0-windows-x64.msi", "b".repeat(64)) + ","
+					+ entry("2.2.0", "../../download/v2.2.0/cozy-2.2.0-windows-x64.msi", "c".repeat(64)) + "]}");
+			Path previous = previous("2.2.0", "{\"schema\": 1, \"releases\": [" + entry("2.2.0", "cozy-2.2.0-windows-x64.msi",
+					"c".repeat(64)) + "]}").getParent();
+
+			Result result = run("channel", "release", dir.toString(), notes("2.4.0", "[]").toString(), "--previous", previous.toString());
+
+			assertThat(result.code()).as(result.err()).isZero();
+			assertThat(result.out()).contains("이전 릴리스 2개");
+			io.salvia95.cozy.cli.internal.channel.ChannelIndex index = io.salvia95.cozy.cli.internal.channel.ChannelIndex
+				.read(dir.resolve("cozy-channel.json"));
+			assertThat(index.releases()).extracting((r) -> r.version().toString()).containsExactly("2.4.0", "2.3.0", "2.2.0");
+			assertThat(index.releases().get(0).files()).extracting((f) -> f.path()).contains("cozy-2.4.0-windows-x64.msi");
+			assertThat(index.releases().get(1).files()).extracting((f) -> f.path())
+				.containsExactly("../../download/v2.3.0/cozy-2.3.0-windows-x64.msi");
+			assertThat(index.releases().get(2).files()).extracting((f) -> f.path())
+				.containsExactly("../../download/v2.2.0/cozy-2.2.0-windows-x64.msi");
+			assertThat(index.releases().get(2).appSteps()).containsExactly("cozy sync agents");
+		}
+
+		@Test
+		void previousIndexesThatDisagreeAboutAReleaseAreRefused() throws IOException {
+			Path dir = release("2.4.0");
+			previous("2.3.0", "{\"schema\": 1, \"releases\": [" + entry("2.2.0", "x.msi", "b".repeat(64)) + "]}");
+			Path previous = previous("2.2.0", "{\"schema\": 1, \"releases\": [" + entry("2.2.0", "x.msi", "c".repeat(64)) + "]}")
+				.getParent();
+
+			Result result = run("channel", "release", dir.toString(), notes("2.4.0", "[]").toString(), "--previous", previous.toString());
+
+			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
+			assertThat(result.err()).contains("2.2.0").contains("서로 다르게 적었습니다");
+			assertThat(dir.resolve("cozy-channel.json")).doesNotExist();
+		}
+
+		@Test
+		void aMissingPreviousFolderIsRefused() throws IOException {
+			Path dir = release("2.4.0");
+
+			Result result = run("channel", "release", dir.toString(), notes("2.4.0", "[]").toString(), "--previous",
+					ChannelCommandTest.this.temp.resolve("none").toString());
+
+			assertThat(result.code()).isEqualTo(CozyCli.UNUSABLE);
+			assertThat(result.err()).contains("--previous");
+		}
+
 		@Test
 		void aMajorVersionBreaksApps() throws IOException {
 			Path dir = release("3.0.0");
@@ -245,6 +306,26 @@ class ChannelCommandTest {
 			Result result = run("channel", "release", dir.toString(), notes(version, "[]").toString());
 			assertThat(result.code()).as(result.err()).isZero();
 			return dir;
+		}
+
+		@Test
+		void aReleaseIndexWithEarlierReleasesAddsOnlyItsOwnRelease() throws IOException {
+			Path channel = ChannelCommandTest.this.temp.resolve("channel");
+			Path dir = release("2.4.0");
+			Path previous = Files.createDirectories(ChannelCommandTest.this.temp.resolve("previous"));
+			Files.writeString(previous.resolve("v2.3.0.json"), "{\"schema\": 1, \"releases\": [{\"version\": \"2.3.0\", \"date\": "
+					+ "\"2026-11-20\", \"breaking\": false, \"summary\": \"앞 판\", \"appSteps\": [], \"files\": [{\"kind\": \"msi\", "
+					+ "\"path\": \"cozy-2.3.0-windows-x64.msi\", \"sha256\": \"" + "b".repeat(64) + "\", \"size\": 10}]}]}");
+			assertThat(run("channel", "release", dir.toString(), notes("2.4.0", "[]").toString(), "--previous", previous.toString())
+				.code()).isZero();
+
+			Result result = run("channel", "add", channel.toString(), dir.toString());
+
+			assertThat(result.code()).as(result.err()).isZero();
+			assertThat(result.out()).contains("판(2.4.0)을 채널에 더했습니다").contains("이전 릴리스 1개(2.3.0)는 더하지 않았습니다");
+			String index = Files.readString(channel.resolve("index/cozy-channel.json"));
+			assertThat(index).contains("\"version\": \"2.4.0\"").doesNotContain("2.3.0");
+			assertThat(channel.resolve("2.3.0")).doesNotExist();
 		}
 
 		@Test

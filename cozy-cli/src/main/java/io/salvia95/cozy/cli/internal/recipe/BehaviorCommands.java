@@ -28,13 +28,13 @@ import io.salvia95.cozy.cli.internal.behavior.FrameworkBehaviors;
  */
 public final class BehaviorCommands {
 
-	public static final String ATTACH_USAGE = "cozy attach <컴포넌트> --at <템플릿>:<줄> [--data 이름=값 …] [--on 이벤트:동작 …] [--text 이름] "
-			+ "[--show 이름] [--bind 속성:이름 …] [--model 상태] [--cloak] [--detach]";
+	public static final String ATTACH_USAGE = "cozy attach <component> --at <template>:<line> [--data <name>=<value> …] [--on <event>:<action> …] "
+			+ "[--text <name>] [--show <name>] [--bind <attribute>:<name> …] [--model <state>] [--cloak] [--detach]";
 
-	public static final String REMOVE_USAGE = "cozy remove behavior <모듈> <동작> [--state 이름 …] [--computed 이름 …] [--action 이름 …] "
-			+ "[--listen 모듈:이벤트 …]";
+	public static final String REMOVE_USAGE = "cozy remove behavior <module> <behavior> [--state <name> …] [--computed <name> …] "
+			+ "[--action <name> …] [--listen <module>:<event> …]";
 
-	public static final String RENAME_USAGE = "cozy rename behavior <모듈> <동작> <새 동작>";
+	public static final String RENAME_USAGE = "cozy rename behavior <module> <behavior> <new-behavior>";
 
 	private static final String TEMPLATES = "src/main/resources/templates/";
 

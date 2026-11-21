@@ -2,7 +2,7 @@
 
 앱의 구조를 보여 주고(`describe`), 컴파일 없이 빠르게 검사하고(`check`), 구조를 만든다(`add`, `link`, `enable`, 목록은 `recipes`). 앱의 에이전트 문서는 `sync agents`로 맞춘다. 결정은 [ADR-0032](../adr/0032-agent-cli.md)와 2단계 레시피의 [ADR-0033](../adr/0033-stage-two-recipes.md)에 있다. 구조는 명령이 만들고, 에이전트는 명령이 남긴 빈칸만 채운다.
 
-- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events|behaviors`, `channel set|show|add|release`, `update`, `upgrade`
+- **지금 쓸 수 있는 것**: `describe`, `check`, `recipes`, 1단계 레시피 `add module|crud|screen|fragment|behavior|event|listener|migration`, `link`, 2단계 레시피 `add dto|query|command|event-version|field`, `enable events|workbench`, `sync agents|behaviors`, `attach`, `remove behavior`, `rename behavior`, `migrate alpine|events|behaviors`, `channel set|show|add|release`, `upgrade`(`--check`, 별칭 `update`)
 - **실행**: 오프라인 번들을 설치한 PC에서는 `cozy`(Windows는 `cozy.cmd`)가 `describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `attach`, `remove`, `rename` 등을 `java -jar <설치 폴더>/lib/cli/cozy-cli.jar`로 넘긴다(M11). 저장소는 `COZY_REPOSITORY`가 없으면 사용자 저장소(Windows `%LOCALAPPDATA%\Cozy\repository`, Linux `~/.local/share/cozy/repository`)와 `<설치 폴더>/repository`이고, 이 순서로 찾는다. 네트워크를 쓰지 않는다. 앱의 `AGENTS.md`는 개요만 싣고, 작업 순서와 명령별 사용법은 `cozy-helper` 스킬(`.agents/skills/cozy-helper/`)에 있다(ADR-0034).
 - **레포에서 실행**: jar로 실행한다.
 
@@ -17,21 +17,25 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 
 ## 형식
 
-```text
-cozy <동작> [옵션]
+`cozy help`가 보이는 도움말과 같은 영어 형식이다. 옵션과 출력은 아래 절에 있다.
 
-  describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 화면 안의 동작, 공개 fragment, 남은 빈칸
-  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12, 화면 안의 동작 C13
-  recipes [--json]    구조를 만드는 명령 목록
-  add <레시피> …       구조 만들기 [--dry-run] [--json]
-  link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
-  sync agents [--force] | sync behaviors   에이전트 문서 맞추기, 동작 명세에서 모듈 JS 다시 만들기 [--dry-run] [--json]
-  set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
-  migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
-  migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
-  migrate behaviors [--purpose 컴포넌트=목적 …]   손으로 쓴 모듈 JS를 동작 명세로 옮기기 [--dry-run] [--json]
-  attach <컴포넌트> --at <템플릿>:<줄> …   템플릿의 요소 하나에 화면 안 동작을 붙이거나 떼기 [--dry-run] [--json]
-  remove behavior <모듈> <동작> […] | rename behavior <모듈> <동작> <새 동작>   동작 지우기, 이름 바꾸기 (붙인 곳도) [--dry-run] [--json]
+```text
+cozy <action> [options]
+
+  describe [--json]                  Show the app map: modules, dependencies, spi contracts, events, screens, behaviors, public fragments, open slots
+  check [--json]                     Run the fast checks: templates R1-R16, modules C8, slots C9, behavior specs C12, screen behaviors C13
+  recipes [--json]                   List the commands that create structure
+  add <recipe> …                     Create structure [--dry-run] [--json]
+  link <module> --uses <module>[,…]  Declare a module dependency [--dry-run] [--json]
+  sync agents [--force] | sync behaviors   Update the agent docs, regenerate module scripts from behavior specs [--dry-run] [--json]
+  set arg <template> --line … --fragment … --index … --from … --value …   Change one string argument of a fragment call [--dry-run] [--json]
+  migrate alpine                     Replace removed data-cozy-* attributes with cozy components [--dry-run] [--json]
+  migrate events                     Move events from {module}/spi/event/ into the events module [--dry-run] [--json]
+  migrate behaviors [--purpose <component>=<purpose> …]   Move hand-written module scripts into behavior specs [--dry-run] [--json]
+  attach <component> --at <template>:<line> …   Attach a component to one element of a template, or detach it [--dry-run] [--json]
+  remove behavior <module> <behavior> […] | rename behavior <module> <behavior> <new-behavior>   Remove or rename a behavior where it is attached too [--dry-run] [--json]
+  channel set|show|add|release …     Set the update channel, or build one (admin, release workflow)
+  upgrade --check [--to <version>] [--json] | upgrade [--to <version>]   Show newer releases, or install one
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -239,7 +243,7 @@ cozy <동작> [옵션]
 
 ## recipes
 
-구조를 만드는 명령의 목록이다. 1단계는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md), 2단계는 [ADR-0033](../adr/0033-stage-two-recipes.md)과 같다. 글 출력은 쓸 수 있는 레시피를 먼저, "준비 중"인 레시피를 뒤에 싣는다. 글 출력 머리에 스킬의 플레이북 위치를 적는다. 레시피마다 `references/<플레이북>/PLAYBOOK.md`가 있고, 그 `## Syntax`가 `usage`와 글자까지 같다(`AgentDocsTest`가 확인한다). `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`, `command`, `params`를 낸다.
+구조를 만드는 명령의 목록이다. 1단계는 [ADR-0032 부록](../adr/0032-agent-cli-recipes.md), 2단계는 [ADR-0033](../adr/0033-stage-two-recipes.md)과 같다. 글 출력은 영어이고 쓸 수 있는 레시피를 먼저, 준비 중인 레시피(`Not ready yet`)를 뒤에 싣는다. 글 출력 머리에 스킬의 플레이북 위치를 적는다. 레시피마다 `references/<플레이북>/PLAYBOOK.md`가 있고, 그 `## Syntax`가 `usage`와 글자까지 같다(`AgentDocsTest`가 확인한다). `--json`은 레시피마다 `name`, `stage`(1 또는 2), `usage`, `does`, `slots`, `available`, `command`, `params`를 낸다. `usage`(명령 형식), `does`(하는 일), `slots`(빈칸. 없으면 `none`으로 시작한다)는 영어이고, 워크벤치 화면의 말인 `title`, `group`, `params[].label`은 한국어다.
 
 - **`title`, `group`**: 사람에게 보일 제목(`CRUD 화면`)과 분류(`화면`)다. 워크벤치가 생성 항목 목록에 쓴다. 최상위 `groups`는 분류를 표시할 순서다(화면, 모듈, 비즈니스 로직, 이벤트, 데이터베이스, 설정). 글 출력에는 없다.
 - **`command`**: `cozy` 뒤에 오는 동작이다(`["add", "crud"]`, `["link"]`, `["enable", "events"]`).
@@ -487,7 +491,7 @@ cozy set arg memo/api/list --line 47 --fragment badge --index 2 --from neutral -
 
 | 인자 | 뜻 |
 | --- | --- |
-| `<템플릿>` | 앱 템플릿의 뷰 이름(`memo/api/list` → `src/main/resources/templates/memo/api/list.html`) |
+| `<template>` | 앱 템플릿의 뷰 이름(`memo/api/list` → `src/main/resources/templates/memo/api/list.html`) |
 | `--line` | 호출이 있는 요소가 시작하는 줄 (`cozy describe --json`의 `outline[].line`). 인자는 다음 줄에 있어도 된다 |
 | `--fragment` | 부르는 fragment 이름 (`badge`) |
 | `--index` | 몇 번째 인자인가 (1부터) |
@@ -527,7 +531,7 @@ cozy attach memoBodyCount --at memo/internal/fields:9 --detach
 
 템플릿의 요소 하나에 화면 안 동작(Alpine 컴포넌트)을 붙인다. 템플릿의 글자는 그대로 두고 그 요소의 여는 태그만 고친다. 앱 템플릿의 `x-*` 속성은 이 명령으로 쓴다.
 
-- **`--at <템플릿>:<줄>`**: 템플릿은 `templates/` 아래 경로이고 `.html`은 빼도 된다(`memo/internal/fields`, `templates/memo/internal/fields.html`). 줄은 요소가 시작하는 줄이다. 그 줄에서 시작하는 가장 바깥 요소가 하나여야 한다(버튼 안의 아이콘처럼 같은 줄의 안쪽 요소는 세지 않는다). `th:replace`와 `th:block` 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않으므로 거절한다.
+- **`--at <template>:<line>`**: 템플릿은 `templates/` 아래 경로이고 `.html`은 빼도 된다(`memo/internal/fields`, `templates/memo/internal/fields.html`). 줄은 요소가 시작하는 줄이다. 그 줄에서 시작하는 가장 바깥 요소가 하나여야 한다(버튼 안의 아이콘처럼 같은 줄의 안쪽 요소는 세지 않는다). `th:replace`와 `th:block` 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않으므로 거절한다.
 - **컴포넌트**: 이름이 `cozy`로 시작하면 프레임워크 컴포넌트이고 cozy-ui의 `cozy/behaviors.yml`([ui.md](ui.md)의 프레임워크 컴포넌트)에서 찾는다. 아니면 모듈의 동작 명세(`behaviors/{모듈}.yml`)에서 찾는다. 모듈 컴포넌트는 그 모듈의 템플릿(`templates/{모듈}/…`)에만 붙인다.
 - **붙이는 자리**: 요소에 `x-data`가 없고 감싸는 요소도 그 컴포넌트가 아니면, 그 요소가 컴포넌트의 자리가 되어 `x-data`를 받는다. 감싸는 요소가 그 컴포넌트면 안쪽 요소이고 이벤트와 값만 받는다. 이미 다른 컴포넌트를 붙인 요소에는 붙이지 않는다.
 
@@ -667,24 +671,25 @@ cozy check
 | `cozy channel set <주소> [--header <이름>]` | 채널 주소(`cozy-channel.json`)를 사용자 설정 파일에 둔다. 형식(UNC, 절대 경로, `file:`, `http:`, `https:`)과 이름만 본다 |
 | `cozy channel show [--json]` | 채널, 출처(`COZY_CHANNEL`이나 설정 파일), 머리 이름, 토큰이 있는지. 토큰은 보이지 않는다 |
 | `cozy channel add <채널 폴더> <릴리스 폴더> [--dry-run]` | (관리자) 받은 릴리스의 파일을 SHA-256으로 확인하고 `<채널 폴더>/{판}/`에 복사한 뒤 `index/cozy-channel.json`에 더한다 |
-| `cozy channel release <릴리스 폴더> <channel.yml>` | (릴리스 워크플로) 릴리스 하나의 `cozy-channel.json`을 만든다 |
+| `cozy channel release <릴리스 폴더> <channel.yml> [--previous <폴더>]` | (릴리스 워크플로) 그 릴리스와 게시한 이전 릴리스들의 `cozy-channel.json`을 만든다 |
 
 - 판단할 수 없으면(모르는 주소 형식, 읽을 수 없는 색인, SHA-256이 다른 파일, 같은 판의 다른 파일) 아무것도 바꾸지 않고 종료 코드 2로 끝낸다.
 
-## update
+## upgrade --check
 
-`cozy update [--json]`은 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. 지금 판은 번들의 cozy 명령이 알려 주는 설치 폴더(`COZY_HOME`)의 `COZY_VERSION`이다. 출력, `--json`의 키, 웹 서버의 인증과 인증서는 [channel.md](channel.md#cozy-update와-새-판-알림)에 있다.
+`cozy upgrade --check [--to <version>] [--json]`은 채널 색인을 읽어 지금 판과 새 판을 비교해 보인다. 아무것도 바꾸지 않는다. `--dry-run`도 같다. 지금 판은 번들의 cozy 명령이 알려 주는 설치 폴더(`COZY_HOME`)의 `COZY_VERSION`이다. 출력, `--json`의 키, 웹 서버의 인증과 인증서는 [channel.md](channel.md#cozy-upgrade---check와-새-판-알림)에 있다.
 
+- `cozy update`는 2.x 동안 이것의 별칭이다(같은 인자와 출력, 오류 출력에 바뀐 이름 한 줄). 3.0.0에서 없어진다.
 - 채널을 정하지 않았거나, 지금 판을 모르거나(설치 폴더 밖의 cozy-cli jar, 개발 판), 색인을 읽을 수 없으면 종료 코드 2로 끝낸다.
 - **새 판 알림**: 채널을 정했으면 앱에 쓰는 명령(`describe`, `check`, `recipes`, `add`, `link`, `enable`, `sync`, `set`, `migrate`) 뒤에 하루에 한 번 채널을 확인하고, 새 판이 있으면 오류 출력에 한 줄을 보인다. `--json` 출력 뒤에는 하지 않는다. 명령의 출력과 종료 코드는 바뀌지 않는다.
 
 ## upgrade
 
-`cozy upgrade [--to <판>]`은 채널에서 판을 받아 크기와 SHA-256을 확인하고, 이 명령이 끝난 뒤에 도는 설치 스크립트에 설치를 맡긴다. 설치 방법은 설치한 모양을 따른다(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`). 올릴 판, 받을 파일, 이전 판의 파일, 결과를 보이는 방법은 [channel.md](channel.md#cozy-upgrade)에 있다.
+`cozy upgrade [--to <version>]`은 채널에서 판을 받아 크기와 SHA-256을 확인하고, 이 명령이 끝난 뒤에 도는 설치 스크립트에 설치를 맡긴다. 설치 방법은 설치한 모양을 따른다(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`). 올릴 판, 받을 파일, 이전 판의 파일, 결과를 보이는 방법은 [channel.md](channel.md#cozy-upgrade)에 있다.
 
 - 올릴 판은 주 버전이 같은 가장 새 판이다. 호환이 깨지는 판은 `--to`로 적는다. 낮은 판으로는 가지 않는다.
 - 맡긴 설치의 결과는 다음 cozy-cli 명령이 처음에 오류 출력에 한 번 보인다(`[cozy] 판을 올렸습니다: 2.1.0 → 2.1.1.`). 명령의 출력과 종료 코드는 바뀌지 않는다.
-- 판단할 수 없으면(채널이나 지금 판을 모름, 크기나 SHA-256이 다른 파일, 맞는 파일이 없음, 설치하는 중) 아무것도 설치하지 않고 종료 코드 2로 끝낸다. `--json`과 `--dry-run`은 없다.
+- 판단할 수 없으면(채널이나 지금 판을 모름, 크기나 SHA-256이 다른 파일, 맞는 파일이 없음, 설치하는 중) 아무것도 설치하지 않고 종료 코드 2로 끝낸다. 사용법(`cozy upgrade [--check] [--to <version>] [--json]`)에 없는 인자와 `--check` 없는 `--json`도 사용법 전체를 보이고 종료 코드 2로 끝낸다.
 
 ## 의존
 

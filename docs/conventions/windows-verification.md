@@ -169,7 +169,7 @@ mvn -o -Pdist package
 & .\target\dist\image\voc-assistant\voc-assistant.exe
 ```
 
-- [ ] `cozy version`이 `1.0.0-SNAPSHOT`을 출력한다. `cozy help`가 동작 목록(install, new, version, help)을 한글로 보여 준다. `cozy nope`은 종료 코드 2로 끝난다.
+- [ ] `cozy version`이 `1.0.0-SNAPSHOT`을 출력한다. `cozy help`가 번들 명령(install, new, version, help)을 영어로 보인 뒤 cozy-cli의 앱 명령을 잇는다. `cozy nope`은 종료 코드 2로 끝난다.
 - [ ] `cozy new`가 `[cozy] VOC 도우미 (voc-assistant) 생성: persistence=true, events=true`를 출력한다(한글 appName이 깨지지 않는다).
 - [ ] 생성된 앱의 `home` 모듈이 `api\`, `spi\`, `internal\app\command`, `internal\app\query`, `internal\domain`, `internal\infra`로 나뉘고, 템플릿이 `templates\home\api\`와 `templates\home\internal\`에 있다(ADR-0029).
 - [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다. 테스트 10개가 통과한다.
@@ -196,7 +196,7 @@ cozy describe
 mvn -o verify
 ```
 
-- [ ] `cozy recipes`의 한글이 깨지지 않는다(`cozy help`도 `add`, `link` 줄을 보여 준다).
+- [ ] `cozy recipes`가 레시피 목록을 영어로 보여 준다(`cozy help`도 `add`, `link` 줄을 보여 준다). 한글 출력은 아래 `cozy add crud`의 메시지로 본다.
 - [ ] 첫 `cozy add crud`가 `만듦  src/main/java/...` 목록과 `[cozy] 적용했습니다`를 출력한다. `--label "할 일"`처럼 공백이 있는 값이 한 인자로 넘어간다(라벨이 "할"만 남지 않는다).
 - [ ] 같은 명령을 다시 실행하면 `[cozy] 바뀐 것 없음`이다.
 - [ ] `cozy link task --uses home`이 `바꿈  src/main/java/.../task/package-info.java    allowedDependencies += "home :: spi"`를 출력한다.
@@ -266,16 +266,16 @@ mvn -o -Pdist package
 
 ## 업데이트 채널 (ADR-0042)
 
-CI의 Windows 러너는 파일 채널의 `cozy update --json`(`verify-msi.ps1`)과, 판만 다른 MSI 두 개로 `cozy upgrade`(`verify-msi-upgrade.ps1`: 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄)를 확인한다. 사내 서버, 인증서, 프록시, 회사 PC 정책, 사람이 쓰는 창은 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
+CI의 Windows 러너는 파일 채널의 `cozy upgrade --check --json`(`verify-msi.ps1`)과, 판만 다른 MSI 두 개로 `cozy upgrade`(`verify-msi-upgrade.ps1`: 설치 스크립트의 결과, 설치 폴더의 판, 사용자 저장소로 옮긴 이전 판의 파일, 다음 명령의 결과 줄)를 확인한다. 사내 서버, 인증서, 프록시, 회사 PC 정책, 사람이 쓰는 창은 회사 PC에서 본다. 채널 만들기는 [channel.md](channel.md)를 따른다.
 
 ```powershell
 cozy channel set '\\fileserver\share\cozy\index\cozy-channel.json'
 cozy channel show
-cozy update
+cozy upgrade --check
 cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
 ```
 
-- [ ] 공유 폴더(UNC)와 연결한 드라이브(`Z:\cozy\index\cozy-channel.json`)의 채널을 `cozy update`가 읽는다. 공유 폴더에 연결하지 않았으면 "채널 색인 …이 없습니다"로 끝난다.
+- [ ] 공유 폴더(UNC)와 연결한 드라이브(`Z:\cozy\index\cozy-channel.json`)의 채널을 `cozy upgrade --check`가 읽는다. 공유 폴더에 연결하지 않았으면 "채널 색인 …이 없습니다"로 끝난다.
 - [ ] 사내 CA로 서명한 `https` 채널을 따로 설정하지 않고 읽는다(그 CA가 Windows 인증서 저장소에 있다). 인증서 오류면 메시지에 호스트가 보인다.
 - [ ] 프록시를 거쳐야 하는 PC에서 인터넷 옵션의 프록시로 채널을 읽는다.
 - [ ] GitLab 채널: `--header PRIVATE-TOKEN`과 `$env:COZY_CHANNEL_TOKEN`으로 읽고, 토큰 없이는 "요청을 거부했습니다(HTTP 401)"로 끝난다. 출력 어디에도 토큰이 보이지 않는다.
@@ -286,7 +286,7 @@ cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
 - [ ] 사용자 이름이 한글인 계정(`C:\Users\홍길동`)에서도 받기와 설치가 된다.
 - [ ] zip으로 설치한 폴더(`.\cozy.cmd install`)에서 `cozy upgrade`가 windows-x64 번들로 같은 폴더에 다시 설치한다.
 - [ ] 회사 PC 정책으로 `msiexec`이나 스크립트 실행이 막히면 다음 명령이 "설치하지 못했습니다"와 받은 파일의 위치를 보이고, 그 MSI를 손으로 설치할 수 있다.
-- [ ] 호환이 깨지는 판만 있는 채널이면 `cozy upgrade`가 앱에서 돌릴 명령을 보이고 멈추고, `cozy upgrade --to <판>`으로 올린다.
+- [ ] 호환이 깨지는 판만 있는 채널이면 `cozy upgrade`가 앱에서 돌릴 명령을 보이고 멈추고, `cozy upgrade --to <version>`으로 올린다.
 
 ## 기록
 

@@ -14,7 +14,7 @@ Declares that a module uses other modules' `spi` (Finder, DTO, event, public fra
 ## Syntax
 
 ```text
-cozy link <모듈> --uses <다른 모듈>[,…]
+cozy link <module> --uses <other-module>[,…]
 ```
 
 ## Creates

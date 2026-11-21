@@ -73,11 +73,11 @@ class UpgradeBundleTest {
 		assertThat(userRepository.resolve("org/example/shared")).doesNotExist();
 		assertThat(log).contains("이전 판에만 있던 파일 1개를 사용자 저장소로 옮겼습니다");
 
-		Result after = run(dest.resolve("bin/cozy"), "update");
+		Result after = run(dest.resolve("bin/cozy"), "upgrade", "--check");
 
 		assertThat(after.output()).contains("[cozy] 판을 올렸습니다: 2.1.0 → 2.1.1.", "지금 판:  2.1.1", "[cozy] 최신 판입니다.");
 		assertThat(this.temp.resolve("home/.local/share/cozy/upgrade/2.1.1")).doesNotExist();
-		assertThat(run(dest.resolve("bin/cozy"), "update").output()).doesNotContain("판을 올렸습니다");
+		assertThat(run(dest.resolve("bin/cozy"), "upgrade", "--check").output()).doesNotContain("판을 올렸습니다");
 	}
 
 	/** 번들 폴더: 진짜 cozy 스크립트, 이 빌드의 cozy-cli, 가짜 Maven 배포판과 저장소 */

@@ -92,7 +92,7 @@ class UpgradeCommandTest {
 
 	String upgrade(boolean windows, String... args) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		UpgradeCommands.upgrade(List.of(args), this.env, windows, NOW, this.client, this.launched::add, List.of(finishedPid()),
+		UpgradeCommands.upgrade(UpgradeCommands.Request.parse(List.of(args), false, false).to(), this.env, windows, NOW, this.client, this.launched::add, List.of(finishedPid()),
 				new PrintStream(out, true, StandardCharsets.UTF_8));
 		return out.toString(StandardCharsets.UTF_8);
 	}
@@ -262,7 +262,7 @@ class UpgradeCommandTest {
 			publishBundle("2.1.1", "고친 판");
 			Process cozy = new ProcessBuilder("sleep", "2").start();
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			UpgradeCommands.upgrade(List.of(), UpgradeCommandTest.this.env, false, NOW, UpgradeCommandTest.this.client,
+			UpgradeCommands.upgrade(null, UpgradeCommandTest.this.env, false, NOW, UpgradeCommandTest.this.client,
 					UpgradeCommandTest.this.launched::add, List.of(cozy.pid()), new PrintStream(out, true, StandardCharsets.UTF_8));
 			long started = System.nanoTime();
 
@@ -296,7 +296,7 @@ class UpgradeCommandTest {
 			String out = upgrade();
 
 			assertThat(out).contains("올릴 판:  2.2.0", "  2.2.0 (2026-12-01)  새 기능", "  2.1.1 (2026-12-01)  고친 판")
-				.contains("[cozy] 호환이 깨지는 판(3.0.0)도 있습니다. 앱에서 돌릴 명령은 cozy update로 봅니다.")
+				.contains("[cozy] 호환이 깨지는 판(3.0.0)도 있습니다. 앱에서 돌릴 명령은 cozy upgrade --check로 봅니다.")
 				.doesNotContain("새 주 버전");
 		}
 
@@ -305,7 +305,7 @@ class UpgradeCommandTest {
 			publishBundle("3.0.0", "새 주 버전", "cozy migrate events");
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-			assertThatThrownBy(() -> UpgradeCommands.upgrade(List.of(), UpgradeCommandTest.this.env, false, NOW,
+			assertThatThrownBy(() -> UpgradeCommands.upgrade(null, UpgradeCommandTest.this.env, false, NOW,
 					UpgradeCommandTest.this.client, UpgradeCommandTest.this.launched::add, List.of(),
 					new PrintStream(out, true, StandardCharsets.UTF_8)))
 				.isInstanceOf(CliException.class)
@@ -355,19 +355,29 @@ class UpgradeCommandTest {
 			assertThatThrownBy(() -> upgrade("--to", "2.5.0")).isInstanceOf(CliException.class)
 				.hasMessageContaining("채널에 판(2.5.0)이 없습니다");
 			assertThatThrownBy(() -> upgrade("2.5.0")).isInstanceOf(CliException.class)
-				.hasMessageContaining("cozy upgrade [--to <판>]로 씁니다");
+				.hasMessageContaining("cozy upgrade [--check] [--to <version>] [--json]로 씁니다");
 		}
 
 		@Test
-		void machineOutputAndDryRunAreNotOffered() {
+		void aDryRunOnlyChecksAndMachineOutputNeedsTheCheck() throws Exception {
+			publishBundle("2.1.1", "고친 판");
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-			int code = CozyCli.runWith(new String[] { "upgrade", "--dry-run" }, UpgradeCommandTest.this.temp,
+			int dryRun = CozyCli.runWith(new String[] { "upgrade", "--dry-run" }, UpgradeCommandTest.this.temp,
+					UpgradeCommandTest.this.env, new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true,
+							StandardCharsets.UTF_8));
+			int json = CozyCli.runWith(new String[] { "upgrade", "--json" }, UpgradeCommandTest.this.temp,
 					UpgradeCommandTest.this.env, new PrintStream(new ByteArrayOutputStream()), new PrintStream(err, true,
 							StandardCharsets.UTF_8));
 
-			assertThat(code).isEqualTo(CozyCli.UNUSABLE);
-			assertThat(err.toString(StandardCharsets.UTF_8)).contains("cozy upgrade에는 --dry-run이 없습니다");
+			assertThat(dryRun).isZero();
+			assertThat(out.toString(StandardCharsets.UTF_8)).contains("2.1.1").contains("cozy upgrade로 2.1.1까지 올립니다");
+			assertThat(UpgradeCommandTest.this.launched).isEmpty();
+			assertThat(work("2.1.1")).doesNotExist();
+			assertThat(record()).doesNotExist();
+			assertThat(json).isEqualTo(CozyCli.UNUSABLE);
+			assertThat(err.toString(StandardCharsets.UTF_8)).contains("cozy upgrade [--check] [--to <version>] [--json]로 씁니다");
 		}
 	}
 

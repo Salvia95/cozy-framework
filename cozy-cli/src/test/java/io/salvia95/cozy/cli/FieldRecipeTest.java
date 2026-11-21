@@ -471,7 +471,7 @@ class FieldRecipeTest {
 	void theRecipeIsListedAndDryRunWritesNothing() throws IOException {
 		memo();
 		assertThat(ok("recipes").out())
-			.contains("cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--default 값]");
+			.contains("cozy add field <module> --entity <Entity> --field <name>:<type>[!][:<label>] [--default <value>]");
 		Map<String, String> before = files();
 		Result dry = field("note:text:비고", "--dry-run", "--json");
 		assertThat(dry.out()).contains("\"recipe\": \"field\"").contains("\"applied\": false").contains("\"slots\": []");

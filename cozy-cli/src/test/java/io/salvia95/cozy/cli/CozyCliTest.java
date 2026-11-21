@@ -293,6 +293,32 @@ class CozyCliTest {
 						"enable events", "enable workbench", "query", "command", "event-version", "field");
 		}
 
+		@Test
+		void theHelpIsEnglishAndListsEveryAction() {
+			Result result = run("help");
+
+			assertThat(result.code()).isZero();
+			assertThat(result.out()).doesNotContainPattern("\\p{IsHangul}")
+				.contains("cozy upgrade --check [--to <version>] [--json]")
+				.contains("Exit codes: 0 ok, 1 violations found, 2 usage error or cannot decide");
+			for (String action : List.of("describe", "check", "recipes", "add", "link", "enable", "sync", "set", "migrate", "attach",
+					"remove", "rename", "channel", "upgrade")) {
+				assertThat(result.out()).as(action).containsPattern("(?m)^\\s+cozy " + action + "\\b");
+			}
+		}
+
+		/** 명령 형식과 하는 일, 빈칸은 영어다. 제목·분류·폼 칸 이름(title, group, params)은 워크벤치 화면의 말이다 */
+		@Test
+		void recipeFormsAndDescriptionsAreEnglish() {
+			assertThat(run("recipes").out()).doesNotContainPattern("\\p{IsHangul}");
+			for (Recipes.Recipe recipe : Recipes.ALL) {
+				assertThat(List.of(recipe.usage(), recipe.does(), recipe.slots())).as(recipe.name())
+					.noneMatch((text) -> text.codePoints().anyMatch((c) -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HANGUL));
+			}
+			assertThat(Recipes.OTHER_PLAYBOOKS.values()).noneMatch(
+					(text) -> text.codePoints().anyMatch((c) -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HANGUL));
+		}
+
 		/** 인자 구조(params)는 폼을 만드는 데 쓴다. 사용법(usage)과 어긋나면 안 된다 */
 		@Test
 		void everyRecipeDescribesItsArgumentsConsistentlyWithItsUsage() {
@@ -455,7 +481,7 @@ class CozyCliTest {
 		void helpIsTheDefault() {
 			Result result = run();
 			assertThat(result.code()).isZero();
-			assertThat(result.out()).contains("cozy describe [--json]").contains("종료 코드");
+			assertThat(result.out()).contains("cozy describe [--json]").contains("Exit codes");
 		}
 	}
 

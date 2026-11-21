@@ -13,7 +13,7 @@ Creates a record in `spi/dto` that other modules can receive.
 ## Syntax
 
 ```text
-cozy add dto <모듈> <Record> --field 이름:종류[:설명] …
+cozy add dto <module> <Record> --field <name>:<type>[:<description>] …
 ```
 
 - A kind maps to a Java type: `text`→`String`, `int`→`int`, `long`→`long`, `bool`→`boolean`, `date`→`LocalDate`, `instant`→`Instant`.

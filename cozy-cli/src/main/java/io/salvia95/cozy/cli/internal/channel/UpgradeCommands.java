@@ -29,7 +29,8 @@ import io.salvia95.cozy.cli.internal.channel.ChannelIndex.Release;
 import io.salvia95.cozy.cli.internal.channel.UpdateCommands.Plan;
 
 /**
- * {@code cozy upgrade [--to 판]}: 채널에서 판을 받아 크기와 SHA-256을 확인하고, cozy 명령이 끝난 뒤에 설치한다.
+ * {@code cozy upgrade [--to 판]}: 채널에서 판을 받아 크기와 SHA-256을 확인하고, cozy 명령이 끝난 뒤에 설치한다. {@code --check}(또는
+ * {@code --dry-run})이면 받지 않고 새 판만 보인다({@link UpdateCommands#check}).
  *
  * <ul>
  * <li>설치 방식은 설치한 모양을 따른다. MSI로 설치했으면 받은 MSI를 사용자별로 조용히 설치하고, zip 번들로 설치했으면 받은 번들의
@@ -42,6 +43,55 @@ import io.salvia95.cozy.cli.internal.channel.UpdateCommands.Plan;
  * </ul>
  */
 public final class UpgradeCommands {
+
+	/** 사용법. 거절할 때마다 이것을 보인다 */
+	public static final String USAGE = "cozy upgrade [--check] [--to <version>] [--json]";
+
+	/**
+	 * {@code cozy upgrade} 뒤의 인자.
+	 *
+	 * @param check 받지 않고 새 판만 보인다({@code --check}, {@code --dry-run})
+	 * @param to 적은 판. 없으면 {@code null}
+	 * @param json 기계가 읽는 출력({@code --check}와 함께)
+	 */
+	public record Request(boolean check, Version to, boolean json) {
+
+		/**
+		 * @param args {@code upgrade}(또는 별칭 {@code update}) 뒤의 인자. {@code --json}과 {@code --dry-run}은 cozy 명령이 먼저 읽는다
+		 */
+		public static Request parse(List<String> args, boolean dryRun, boolean json) {
+			boolean check = dryRun;
+			Version to = null;
+			for (int i = 0; i < args.size(); i++) {
+				String arg = args.get(i);
+				if (arg.equals("--check")) {
+					check = true;
+				}
+				else if (arg.equals("--to") && to == null && i + 1 < args.size()) {
+					try {
+						to = Version.parse(args.get(++i), "--to");
+					}
+					catch (CliException ex) {
+						throw refused(args);
+					}
+				}
+				else {
+					throw refused(args);
+				}
+			}
+			if (json && !check) {
+				List<String> all = new ArrayList<>(args);
+				all.add("--json");
+				throw refused(all);
+			}
+			return new Request(check, to, json);
+		}
+
+		private static CliException refused(List<String> args) {
+			return new CliException(USAGE + "로 씁니다(받은 인자: " + (args.isEmpty() ? "없음" : String.join(" ", args))
+					+ "). 새 판은 cozy upgrade --check로 봅니다.");
+		}
+	}
 
 	/** 설치를 맡긴 기록. 사용자 설정 파일 옆에 둔다. 다음 cozy 명령이 결과를 보이고 지운다 */
 	public static final String RECORD_FILE = "upgrade.properties";
@@ -95,13 +145,13 @@ public final class UpgradeCommands {
 	}
 
 	/**
+	 * @param to 적은 판({@code --to}). 없으면 주 버전이 같은 가장 새 판
 	 * @param now 지금 시각(설치 기록에 적는다)
 	 * @param launcher 설치 스크립트를 띄운다
 	 * @param waitFor 설치 스크립트가 끝나기를 기다릴 프로세스
 	 */
-	public static void upgrade(List<String> args, Map<String, String> env, boolean windows, Instant now, ChannelClient client,
+	public static void upgrade(Version to, Map<String, String> env, boolean windows, Instant now, ChannelClient client,
 			Launcher launcher, List<Long> waitFor, PrintStream out) {
-		Version to = to(args);
 		Path config = UserConfig.file(env, windows);
 		ChannelSettings settings = UpdateCommands.settings(env, config);
 		Installed installed = Installed.require(env);
@@ -182,19 +232,8 @@ public final class UpgradeCommands {
 		}
 		Plan plan = Plan.of(target.version(), index);
 		if (plan.breakingLatest() != null) {
-			out.println("[cozy] 호환이 깨지는 판(" + plan.breakingLatest() + ")도 있습니다. 앱에서 돌릴 명령은 cozy update로 봅니다.");
+			out.println("[cozy] 호환이 깨지는 판(" + plan.breakingLatest() + ")도 있습니다. 앱에서 돌릴 명령은 cozy upgrade --check로 봅니다.");
 		}
-	}
-
-	private static Version to(List<String> args) {
-		if (args.isEmpty()) {
-			return null;
-		}
-		if (args.size() == 2 && args.getFirst().equals("--to")) {
-			return Version.parse(args.get(1), "--to");
-		}
-		throw new CliException("cozy upgrade [--to <판>]로 씁니다(받은 인자: " + String.join(" ", args) + "). 올릴 수 있는 판은 cozy update로 "
-				+ "봅니다.");
 	}
 
 	/** 올릴 판. 올릴 것이 없으면 알리고 {@code null} */
@@ -211,7 +250,7 @@ public final class UpgradeCommands {
 			}
 			Release release = index.find(to);
 			if (release == null) {
-				throw new CliException("채널에 판(" + to + ")이 없습니다. 채널의 판은 cozy update로 봅니다.");
+				throw new CliException("채널에 판(" + to + ")이 없습니다. 채널의 판은 cozy upgrade --check로 봅니다.");
 			}
 			return release;
 		}

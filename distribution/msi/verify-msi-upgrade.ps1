@@ -94,8 +94,8 @@ $env:COZY_CHANNEL = $indexFile
 $cozy = Join-Path $dir 'bin\cozy.cmd'
 
 # 3. cozy upgrade. 설치는 cozy가 끝난 뒤 따로 도는 스크립트가 한다
-$update = (& $cozy update --json) -join "`n"
-Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upgrade": "' + $to + '"')) "cozy update가 올릴 판 ${to}을 알린다"
+$update = (& $cozy upgrade --check --json) -join "`n"
+Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upgrade": "' + $to + '"')) "cozy upgrade --check가 올릴 판 ${to}을 알린다"
 & $cozy upgrade
 Check ($LASTEXITCODE -eq 0) "cozy upgrade 종료 코드 0 (지금 $LASTEXITCODE)"
 $upgradeWork = Join-Path $env:LOCALAPPDATA "Cozy\upgrade\$to"
@@ -114,8 +114,8 @@ Check (Test-Path $userMarker) '이전 판에만 있던 표시 파일을 사용�
 Check (-not (Test-Path (Join-Path $upgradeWork 'previous-repository'))) '떠 둔 번들 저장소를 지웠다'
 $record = Join-Path $env:APPDATA 'Cozy\upgrade.properties'
 Check (Test-Path $record) '다음 cozy 명령 전에는 설치 기록이 남아 있다'
-$update = (& $cozy update --json) -join "`n"
-Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upToDate": true') -and $update.Contains('"current": "' + $to + '"')) "올린 뒤 cozy update는 최신 판 $to"
+$update = (& $cozy upgrade --check --json) -join "`n"
+Check ($LASTEXITCODE -eq 0 -and $update.Contains('"upToDate": true') -and $update.Contains('"current": "' + $to + '"')) "올린 뒤 cozy upgrade --check는 최신 판 $to"
 Check (-not (Test-Path $record)) '다음 cozy 명령이 결과를 보이고 설치 기록을 지웠다'
 Check (-not (Test-Path $upgradeWork)) '성공한 설치의 받은 파일을 지웠다'
 Remove-Item Env:COZY_CHANNEL

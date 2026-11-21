@@ -22,7 +22,7 @@
 | WiX Toolset (`wix` .NET 도구) | 7.0.1 | CI의 Windows 러너에서만. MSI 만들기. 바이너리는 OSMF EULA v1.1(레포 주인 동의 2026-11-13) (ADR-0039, 승인 2026-11-13) |
 | Eclipse Temurin JDK (번들) | 25.0.5+8 | Windows x64 오프라인 번들의 `jdk/`. 검증용 Linux x64. 배포판 이름과 SHA-256은 `distribution/offline-bundle/jdk.env` (ADR-0025 보완, 승인 2026-11-12) |
 | Maven | 3.10.1 (4.0.0은 RC) | 빌드 PC |
-| Spring Boot | 4.1.2 (4.2.0은 RC2) | parent |
+| Spring Boot | 4.2.0 | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
 | Thymeleaf | 3.1.5.RELEASE (thymeleaf-spring6) | Boot BOM |
 | Jackson | 3.1.7 (Jackson 2는 2.21.7) | Boot BOM |
@@ -32,16 +32,16 @@
 | SnakeYAML | 2.6 | Boot BOM. cozy-cli도 매니페스트·스펙을 읽는 데 쓴다 (ADR-0032, 승인 2026-11-07). cozy-workbench는 스펙에서 값의 자리를 찾는 데 쓴다 (ADR-0036) |
 | Hibernate Validator (spring-boot-starter-validation) | Boot BOM | Boot BOM. cozy-ui, `@Valid` 규약 (M3, 승인 2026-11-06) |
 | log4j-over-slf4j | 2.0.20 | Boot BOM. cozy-test, vnu의 log4j 1.x 대체 (ADR-0022) |
-| Spring Modulith (api, core, events-core) | 2.1.2 (core는 ArchUnit 1.4.2를 가져온다) | cozy-parent |
+| Spring Modulith (api, core, events-core) | 2.2.0 (core는 ArchUnit을 가져온다) | cozy-parent |
 | mybatis-spring-boot-starter | 4.1.0 | cozy-parent |
 | sqlite-jdbc | 3.54.1.0 | cozy-parent |
 | AttoParser | 2.0.10.RELEASE (Thymeleaf 기본은 2.0.7) | cozy-parent |
 | Nu Html Checker | 26.11.4 | cozy-parent |
-| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261117 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
+| Closure Compiler (`com.google.javascript:closure-compiler`) | v20261118 | cozy-parent. cozy-test가 모듈 JS의 문법을 읽는 데만 쓴다(C10). Apache-2.0, 전이 의존성 없는 jar 하나(약 15MB, 오프라인 번들에 들어간다) (ADR-0040, 승인 2026-11-13) |
 | maven-enforcer-plugin | 3.7.0 (Boot 기본 3.6.3) | cozy-parent |
-| maven-invoker-plugin | 3.10.1 (Boot 기본 3.9.1) | cozy-parent |
-| maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 기본 3.5.6) | cozy-parent |
-| maven-dependency-plugin | 3.11.0 (Boot 기본 3.10.0) | cozy-parent |
+| maven-invoker-plugin | 3.10.1 (Boot 4.2 기본) | Boot |
+| maven-surefire-plugin, maven-failsafe-plugin | 3.6.1 (Boot 4.2 기본) | Boot |
+| maven-dependency-plugin | 3.11.0 (Boot 4.2 기본) | Boot |
 | maven-archetype-plugin | 3.4.1 | cozy-parent |
 | exec-maven-plugin | 3.7.0 | cozy-parent |
 | license-maven-plugin | 2.9.0 | cozy-parent dist 프로필. 제3자 라이선스 목록 (ADR-0026, 승인 2026-11-06) |
@@ -81,3 +81,4 @@
 - 2026-11-19(M54): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0). 줄 비교는 cozy-cli 안의 짧은 코드(`LineDiff`)이고 라이브러리를 더하지 않았다.
 - 2026-11-19(M55): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0).
 - 2026-11-20(릴리스 2.3.0): 다시 확인했다. Closure Compiler v20261117(2026-11-18 Maven Central)으로 올렸다. Temurin의 새 GA jdk-25.0.5.1+2는 Linux·Alpine·macOS aarch64·s390x만 있고 Windows x64가 없어 번들 JDK는 25.0.5+8 그대로다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.1, 플러그인, GitHub Actions, WiX 7.0.1, Tabler 1.7.5, Tabler Icons 3.52.0, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). 더 새로운 것은 RC인 Boot 4.2.0-RC2·Modulith 2.2.0-RC1·Maven 4와 `next` 태그의 htmx 4.0.2뿐이라 올리지 않는다.
+- 2026-11-21(M56): 시작할 때 다시 확인했다. Spring Boot 4.2.0(2026-11-19)이 GA가 되어 Modulith 2.2.0(2026-11-19)과 함께 올렸다. Boot 4.2가 관리하는 플러그인(invoker 3.10.1, surefire·failsafe 3.6.1, dependency 3.11.0)이 덮어쓰던 판과 같아져 덮어쓰기를 지웠다(enforcer 3.7.0은 그대로). 이벤트 계약 테스트가 Modulith 2.2의 새 메서드(`markAbandoned`, `findAbandonedPublications`, `deleteAbandonedPublicationsBefore`, 포기한 발행 `ABANDONED`)를 잡아 SQLite 저장소에 구현했다([events.md](../conventions/events.md)). Closure Compiler v20261118로 올렸다. mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, Thymeleaf 3.1.7(Boot)은 그대로다. Temurin jdk-25.0.5.1+2는 Windows x64가 없어 번들 JDK는 25.0.5+8 그대로다.

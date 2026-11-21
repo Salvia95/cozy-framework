@@ -16,7 +16,7 @@ Attaches a component to one element of a template, or detaches it, after checkin
 ## Syntax
 
 ```text
-cozy attach <컴포넌트> --at <템플릿>:<줄> [--data 이름=값 …] [--on 이벤트:동작 …] [--text 이름] [--show 이름] [--bind 속성:이름 …] [--model 상태] [--cloak] [--detach]
+cozy attach <component> --at <template>:<line> [--data <name>=<value> …] [--on <event>:<action> …] [--text <name>] [--show <name>] [--bind <attribute>:<name> …] [--model <state>] [--cloak] [--detach]
 ```
 
 - `--at` takes the template path under `templates/` without `.html` and the line where the element starts, such as `memo/internal/fields:7`.

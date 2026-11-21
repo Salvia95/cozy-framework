@@ -20,7 +20,7 @@ Windows PC는 보통 번들 대신 같은 릴리스의 설치 파일 `cozy-{버�
 | `jdk/` | (Windows x64 번들만) Eclipse Temurin JDK 25. `lib/src.zip`만 뺐다. 라이선스는 `jdk/legal/`과 `jdk/NOTICE`, 소스 묶음은 같은 릴리스의 `OpenJDK25U-jdk-sources_*.tar.gz`(ADR-0025 보완) |
 | `repository/` | 번들 저장소. 프레임워크와 앱 빌드·검사·패키징에 필요한 모든 라이브러리와 플러그인. 설치하면 Maven이 읽기만 한다 |
 | `apache-maven-3.10.1-bin.zip` | Maven 배포판 |
-| `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`·`cozy migrate`, `cozy channel`·`cozy update`·`cozy upgrade`(개발 도구 업데이트), `cozy version`, `cozy help` |
+| `cozy.cmd`(+`cozy.ps1`), `cozy` | Cozy 명령. `cozy install`(오프라인 PC에 설치), `cozy new`(새 앱), `cozy add`·`cozy link`(앱에 구조 더하기), `cozy describe`·`cozy check`·`cozy recipes`, `cozy enable`·`cozy sync`·`cozy set`·`cozy migrate`, `cozy channel`·`cozy upgrade`(개발 도구 판 올리기), `cozy version`, `cozy help` |
 | `lib/cli/` | cozy-cli(`cozy-cli.jar`와 `lib/`의 cozy-rules, AttoParser, SnakeYAML). `add`, `link`, `describe`, `check`, `recipes`, `enable`, `sync`, `set`, `migrate`, `channel`, `update`, `upgrade`를 맡는다(ADR-0032, ADR-0042) |
 | `docs/` | 앱의 에이전트 문서 원본(`agents/`: AGENTS.md, cozy-helper 스킬), 규약 문서(`conventions/`), 결정 기록(`adr/`) |
 | `COZY_VERSION` | 프레임워크 버전 |
@@ -97,8 +97,8 @@ mvn -o -Pdist package
 - **IDE**: IntelliJ는 자기 설정의 JDK와 Maven을 쓴다. Project SDK와 Maven의 JRE를 `<설치 폴더>\jdk`로, Maven home을 `<설치 폴더>\apache-maven-3.10.1`으로 지정한다. 그 Maven의 `conf\settings.xml`을 읽어야 꼬리 저장소를 안다(User settings file을 바꾸지 않는다).
 - **`cozy add`, `cozy link`, `cozy describe`, `cozy check`, `cozy recipes`, `cozy enable`, `cozy sync`, `cozy set`**: 앱 폴더(또는 그 아래)에서 실행한다. 설치 폴더의 `lib/cli/cozy-cli.jar`를 JDK로 실행하고, 앱이 쓰는 판의 cozy-ui jar를 사용자 저장소에서 먼저, 없으면 설치 폴더의 `repository/`에서 찾는다(`COZY_REPOSITORY`로 바꿀 수 있다). 네트워크를 쓰지 않는다. 작업 순서와 명령별 사용법은 앱의 cozy-helper 스킬(`.agents/skills/cozy-helper/`)에, 형식은 `docs/conventions/cli.md`에 있다.
 - **`cozy channel`**: 개발 도구의 업데이트 채널(파일 서버, 웹 서버, GitLab, GitHub의 `cozy-channel.json`)을 정하고(`set`, `show`), 관리자가 받은 릴리스로 채널 폴더를 만든다(`add`). 어디서나 실행하고 네트워크를 쓰지 않는다. 형식은 `docs/conventions/channel.md`에 있다.
-- **`cozy update`**: 채널의 새 판, 요약, 호환이 깨지는 판, 앱에서 돌릴 명령을 보인다. 아무것도 바꾸지 않는다. 채널을 정했으면 다른 cozy 명령 뒤에 하루에 한 번 새 판을 확인해 한 줄로 알린다.
-- **`cozy upgrade [--to <판>]`**: 채널에서 새 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치한 모양대로(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`) 다시 설치한다. 이전 판에만 있던 저장소 파일은 사용자 저장소로 옮겨 올리기 전의 앱도 빌드된다. 결과는 다음 cozy 명령이 처음에 한 줄로 보인다. 호환이 깨지는 판은 `--to`로 적는다. MSI를 더블클릭해 올리면 이전 판의 파일을 옮기지 않는다.
+- **`cozy upgrade --check [--to <version>] [--json]`**: 채널의 새 판, 요약, 호환이 깨지는 판, 앱에서 돌릴 명령을 보인다. 아무것도 바꾸지 않는다(`--dry-run`도 같다). 채널을 정했으면 다른 cozy 명령 뒤에 하루에 한 번 새 판을 확인해 한 줄로 알린다. `cozy update`는 2.x 동안 이것의 별칭이다.
+- **`cozy upgrade [--to <version>]`**: 채널에서 새 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치한 모양대로(MSI는 `msiexec`, zip은 받은 번들의 `cozy install`) 다시 설치한다. 이전 판에만 있던 저장소 파일은 사용자 저장소로 옮겨 올리기 전의 앱도 빌드된다. 결과는 다음 cozy 명령이 처음에 한 줄로 보인다. 호환이 깨지는 판은 `--to`로 적는다. MSI를 더블클릭해 올리면 이전 판의 파일을 옮기지 않는다.
 - **PowerShell에서 `-D` 인수**: 따옴표로 감싼다(`"-Dpackage=com.example.voc"`). 감싸지 않으면 점에서 인수가 나뉜다.
 - **새 앱의 옵션**:
   - `appId`: 영문 소문자·하이픈. 기본값은 artifactId다.

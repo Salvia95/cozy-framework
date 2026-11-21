@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.2</version>
+    <version>4.2.0</version>
     <relativePath/>
   </parent>
 
@@ -31,19 +31,15 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!-- Boot BOM 밖의 라이브러리 (최신 GA) -->
-    <spring-modulith.version>2.1.2</spring-modulith.version>
+    <spring-modulith.version>2.2.0</spring-modulith.version>
     <mybatis-spring-boot.version>4.1.0</mybatis-spring-boot.version>
     <sqlite-jdbc.version>3.54.1.0</sqlite-jdbc.version>
     <nu-validator.version>26.11.4</nu-validator.version>
     <attoparser.version>2.0.10.RELEASE</attoparser.version>
-    <closure-compiler.version>v20261117</closure-compiler.version>
+    <closure-compiler.version>v20261118</closure-compiler.version>
 
     <!-- Boot가 관리하는 플러그인 중 더 새로운 GA가 있는 것은 덮어쓴다 -->
     <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
-    <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
-    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
-    <maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
-    <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
     <!-- Boot가 관리하지 않는 플러그인 -->
     <maven-archetype-plugin.version>3.4.1</maven-archetype-plugin.version>
     <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>

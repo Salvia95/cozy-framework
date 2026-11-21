@@ -393,6 +393,11 @@ public class WorkbenchEngine {
 		public String commandText() {
 			return "cozy " + String.join(" ", this.command);
 		}
+
+		/** 화면에 보일 미구현 항목. 레시피는 빈칸이 없으면 {@code none …}이라고 적는다 */
+		public String slotsText() {
+			return this.slots.startsWith("none") ? "없음" : this.slots;
+		}
 	}
 
 	/** {@code cozy recipes --json}. 쓸 수 있는 레시피만 */

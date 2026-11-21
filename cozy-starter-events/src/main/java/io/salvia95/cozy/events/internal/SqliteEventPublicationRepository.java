@@ -108,7 +108,7 @@ public class SqliteEventPublicationRepository implements EventPublicationReposit
 	@Override
 	@Transactional(readOnly = true)
 	public List<TargetEventPublication> findIncompletePublications() {
-		return query("WHERE completion_date IS NULL OR status != 'COMPLETED' ORDER BY publication_date ASC");
+		return query("WHERE completion_date IS NULL OR status NOT IN ('COMPLETED', 'ABANDONED') ORDER BY publication_date ASC");
 	}
 
 	@Override
@@ -131,7 +131,7 @@ public class SqliteEventPublicationRepository implements EventPublicationReposit
 	@Override
 	@Transactional(readOnly = true)
 	public List<TargetEventPublication> findCompletedPublications() {
-		return query("WHERE completion_date IS NOT NULL OR status = 'COMPLETED' ORDER BY publication_date ASC");
+		return query("WHERE (status IS NULL AND completion_date IS NOT NULL) OR status = 'COMPLETED' ORDER BY publication_date ASC");
 	}
 
 	@Override
@@ -148,7 +148,32 @@ public class SqliteEventPublicationRepository implements EventPublicationReposit
 
 	@Override
 	public void deleteCompletedPublications() {
-		this.jdbc.sql("DELETE FROM " + TABLE + " WHERE completion_date IS NOT NULL OR status = 'COMPLETED'").update();
+		this.jdbc.sql("DELETE FROM " + TABLE + " WHERE (status IS NULL AND completion_date IS NOT NULL) OR status = 'COMPLETED'").update();
+	}
+
+	/** 포기한 발행(다시 시도하지 않는다). 완료 날짜 자리에 포기한 때를 적는다. {@code expectedCurrentStatus}가 있으면 그 상태일 때만 바꾼다 */
+	@Override
+	public boolean markAbandoned(UUID identifier, Instant instant, @Nullable Status expectedCurrentStatus) {
+		String sql = "UPDATE " + TABLE + " SET status = 'ABANDONED', completion_date = ? WHERE id = ?";
+		if (expectedCurrentStatus == null) {
+			return this.jdbc.sql(sql).params(EventTimes.format(instant), identifier.toString()).update() > 0;
+		}
+		return this.jdbc.sql(sql + " AND status = ?")
+			.params(EventTimes.format(instant), identifier.toString(), expectedCurrentStatus.name())
+			.update() > 0;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<TargetEventPublication> findAbandonedPublications() {
+		return findByStatus(Status.ABANDONED);
+	}
+
+	@Override
+	public void deleteAbandonedPublicationsBefore(Instant instant) {
+		this.jdbc.sql("DELETE FROM " + TABLE + " WHERE completion_date < ? AND status = 'ABANDONED'")
+			.param(EventTimes.format(instant))
+			.update();
 	}
 
 	@Override

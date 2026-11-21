@@ -14,7 +14,7 @@ Creates a cross-module event record (`CozyEvent`) and its first serialization sa
 ## Syntax
 
 ```text
-cozy add event <모듈> <이벤트> --field 이름:종류 …
+cozy add event <module> <event> --field <name>:<type> …
 ```
 
 - The event name is PascalCase in past tense (`MemoCreated`, `ReportSent`).
