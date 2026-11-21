@@ -13,7 +13,7 @@ Publishes a fragment that other modules' screens can include, and registers it i
 ## Syntax
 
 ```text
-cozy add fragment <모듈> <이름> --param 이름:타입 … --purpose "용도"
+cozy add fragment <module> <name> --param <name>:<type> … --purpose "<purpose>"
 ```
 
 - The name is lowercase with hyphens (`recent-activity`), and the fragment itself is named in camelCase (`recentActivity`).

@@ -15,7 +15,7 @@ Adds one field to a CRUD set that `cozy add crud` created, across the table, the
 ## Syntax
 
 ```text
-cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--default 값]
+cozy add field <module> --entity <Entity> --field <name>:<type>[!][:<label>] [--default <value>]
 ```
 
 - The field format is the same as in [add-crud](../add-crud/PLAYBOOK.md), and the kinds are `text`, `longtext`, `int`, `long`, `bool`, and `date`.

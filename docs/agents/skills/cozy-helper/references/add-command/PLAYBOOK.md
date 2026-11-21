@@ -13,7 +13,7 @@ Adds a write method to a Facade and its implementation, and with `--sql` also a 
 ## Syntax
 
 ```text
-cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]
+cozy add command <module> <name> [--param <name>:<type> …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]
 ```
 
 - Without `--returns` the method returns `void`.

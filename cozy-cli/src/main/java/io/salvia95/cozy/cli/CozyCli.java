@@ -67,48 +67,60 @@ public final class CozyCli {
 	public static final int UNUSABLE = 2;
 
 	static final String USAGE = """
-			cozy 명령. 앱 폴더(또는 그 아래)에서 실행한다.
+			Cozy command. Run it in an app folder or below it.
 
-			  cozy describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 공개 fragment, 남은 빈칸
-			  cozy check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12·C13 (컴파일하지 않는다)
-			  cozy recipes [--json]    구조를 만드는 명령 목록 (add, link, enable)
-			  cozy add <레시피> ...     구조 만들기: module, crud, screen, fragment, behavior, event, listener, migration, dto, query, command, event-version
-			  cozy link <모듈> --uses <모듈>   모듈 의존 선언 (allowedDependencies)
-			  cozy enable events       pom에 cozy-starter-events 더하기
-			  cozy enable workbench    pom에 dev 전용 워크벤치(/cozy/dev/workbench) 더하기
-			  cozy sync agents [--force]   AGENTS.md와 cozy-helper 스킬을 이 cozy 명령의 것으로 맞추기
-			  cozy sync behaviors      동작 명세(behaviors/<모듈>.yml)에서 모듈의 JS(static/<모듈>/<모듈>.js)를 다시 만들기
-			  cozy attach <컴포넌트> --at <템플릿>:<줄> [--data 이름=값] [--on 이벤트:동작] [--text 이름] [--show 이름] [--bind 속성:이름]
-			              [--model 상태] [--cloak] [--detach]   템플릿의 요소 하나에 컴포넌트를 붙이거나 떼기 (이름을 확인한다)
-			  cozy remove behavior <모듈> <동작> [--state 이름 …]   동작이나 그 항목 지우기 (붙인 곳도 뗀다)
-			  cozy rename behavior <모듈> <동작> <새 동작>   동작의 이름 바꾸기 (붙인 곳도 바꾼다)
-			  cozy set arg <템플릿> --line <줄> --fragment <이름> --index <번째> --from <지금 값> --value <새 값>
-			                           fragment 호출의 문자열 인자 하나 바꾸기 (워크벤치의 속성 패널이 쓴다)
-			  cozy migrate alpine      앱 템플릿의 없앤 동작 속성(data-cozy-confirm 등)을 cozy 컴포넌트로 바꾸기 (2.0.0으로 올릴 때)
-			  cozy migrate events      옛 자리(<모듈>/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 (2.0.0으로 올릴 때)
-			  cozy migrate behaviors [--purpose 컴포넌트=목적 …]   손으로 쓴 모듈 JS를 동작 명세로 옮기기 (낱말로 적을 수 있는 것만)
-			  cozy channel set <주소> [--header <이름>]   업데이트 채널(cozy-channel.json의 주소) 정하기: 파일 서버, 웹 서버, GitLab, GitHub
-			  cozy channel show [--json]   정한 채널 보기 (환경 변수 COZY_CHANNEL이 설정 파일보다 앞선다)
-			  cozy channel add <채널 폴더> <릴리스 폴더>   (관리자) 받은 릴리스를 채널 폴더에 더하기
-			  cozy channel release <릴리스 폴더> <channel.yml>   (릴리스 워크플로) 릴리스 하나의 cozy-channel.json 만들기
-			  cozy upgrade --check [--to <version>] [--json]   채널의 새 판, 요약, 호환 깨짐, 앱에서 돌릴 명령 보기 (아무것도 바꾸지 않는다)
-			  cozy upgrade [--to <version>]   채널의 판을 받아 SHA-256을 확인하고, 이 명령이 끝나면 설치하기 (MSI나 zip, 설치한 모양대로)
-			                           주 버전이 같은 가장 새 판으로 올린다. 호환이 깨지는 판은 --to로 적는다. 낮은 판으로는 가지 않는다
+			App
+			  cozy describe [--json]                 Show the app map: modules, dependencies, events, screens, public fragments, open slots
+			  cozy check [--json]                    Run the fast checks without compiling: templates R1-R16, modules C8, slots C9, behaviors C12-C13
+			  cozy recipes [--json]                  List the commands that create structure (add, link, enable)
+			  cozy add <recipe> ...                  Create structure: module, crud, screen, fragment, behavior, event, listener, migration,
+			                                         dto, query, command, event-version, field
+			  cozy link <module> --uses <module>     Declare a module dependency (allowedDependencies)
+			  cozy enable events                     Add cozy-starter-events to the pom
+			  cozy enable workbench                  Add the dev-only workbench (/cozy/dev/workbench) to the pom
+			  cozy sync agents [--force]             Update AGENTS.md and the cozy-helper skill to this cozy release
+			  cozy set arg <template> --line <line> --fragment <name> --index <n> --from <value> --value <value>
+			                                         Change one string argument of a fragment call (the workbench uses it)
 
-			옵션
-			  --project <폴더>         앱 폴더 (기본: 현재 폴더에서 위로 찾는다)
-			  --repository <폴더>      cozy jar가 있는 Maven 저장소 (기본: COZY_REPOSITORY, 없으면 ~/.m2/repository)
-			                           COZY_REPOSITORY에는 경로 구분자(Windows ;, 그 밖 :)로 여러 저장소를 적고, 앞에서부터 찾는다
-			  --ui <jar나 폴더>        저장소에서 찾지 않고 이 cozy-ui 자원을 읽는다 (워크벤치가 쓴다)
-			  --json                   기계가 읽는 출력
-			  --dry-run                (add, link, enable, sync, set, migrate, attach, remove, rename, channel add) 바꿀 파일만 보이고 쓰지 않는다
-			  --force                  (sync agents) 앱에서 고친 AGENTS.md도 바꾼다
+			Screen behavior
+			  cozy add behavior <module> <behavior> ...   Declare a component in behaviors/<module>.yml and generate its script
+			  cozy attach <component> --at <template>:<line> [--data <name>=<value>] [--on <event>:<action>] [--text <name>]
+			              [--show <name>] [--bind <attribute>:<name>] [--model <state>] [--cloak] [--detach]
+			                                         Attach a component to one element, or detach it; names are checked
+			  cozy remove behavior <module> <behavior> [--state <name> ...]   Remove a behavior or some of its items, and detach it
+			  cozy rename behavior <module> <behavior> <new-behavior>         Rename a behavior where it is declared and attached
+			  cozy sync behaviors                    Regenerate static/<module>/<module>.js from behaviors/<module>.yml
+			  cozy migrate behaviors [--purpose <component>=<purpose> ...]    Move hand-written module scripts into behavior specs
 
-			채널을 정했으면 하루에 한 번 새 판을 확인하고, 있으면 명령 끝에 한 줄을 보인다 (--json 출력에는 보이지 않는다)
-			cozy upgrade로 맡긴 설치의 결과는 그다음 cozy 명령이 처음에 보인다
+			Upgrading apps
+			  cozy migrate alpine                    Replace removed data-cozy-* attributes with cozy components (2.0.0)
+			  cozy migrate events                    Move events from <module>/spi/event/ into the events module (2.0.0)
 
-			종료 코드: 0 이상 없음, 1 위반 있음, 2 사용법 오류이거나 판단할 수 없음
+			Development tool
+			  cozy channel set <address> [--header <name>]    Set the update channel: the path or URL of cozy-channel.json
+			  cozy channel show [--json]             Show the channel (COZY_CHANNEL comes before the config file)
+			  cozy channel add <channel-folder> <release-folder>   (admin) Add a downloaded release to a channel folder
+			  cozy channel release <release-folder> <channel.yml> [--previous <folder>]   (release workflow) Write cozy-channel.json
+			  cozy upgrade --check [--to <version>] [--json]   Show newer releases and the commands each one needs in apps; changes nothing
+			  cozy upgrade [--to <version>]          Download a release, verify its SHA-256, and install it after this command ends
+			                                         Without --to: the newest release of the same major version. Never a lower one
+
+			Options
+			  --project <folder>       App folder (default: search upward from the current folder)
+			  --repository <folder>    Maven repository with the cozy jars (default: COZY_REPOSITORY, else ~/.m2/repository)
+			                           COZY_REPOSITORY can list several, separated by ; on Windows and : elsewhere
+			  --ui <jar|folder>        Read cozy-ui resources from here instead of the repository (the workbench uses it)
+			  --json                   Machine-readable output
+			  --dry-run                Show the files that would change and write nothing (add, link, enable, sync, set, migrate,
+			                           attach, remove, rename, channel add). For upgrade, the same as --check
+			  --force                  (sync agents) Also replace an AGENTS.md that the app changed
+
+			With a channel set, app commands look for a new release once a day and print one line at the end (not with --json).
+			The result of an install started by cozy upgrade is printed at the start of the next cozy command.
+
+			Exit codes: 0 ok, 1 violations found, 2 usage error or cannot decide
 			""";
+
 
 	/** 사용법에 적지 않지만 받는 옛 동작 이름 ({@code update}: {@code upgrade --check}, 3.0.0에서 없앤다) */
 	static final Set<String> ALIASES = Set.of("update");

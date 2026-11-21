@@ -42,6 +42,37 @@ class BundleCommandsTest {
 		return actions;
 	}
 
+	/** 스크립트 머리의 도움말(맨 위의 # 줄들). 큰따옴표 안의 예시 값만 한글을 쓸 수 있다 */
+	static List<String> helpLines(Path script) throws IOException {
+		List<String> help = new ArrayList<>();
+		for (String line : Files.readAllLines(script, StandardCharsets.UTF_8)) {
+			String text = line.replace("\uFEFF", "");
+			if (text.startsWith("#!")) {
+				continue;
+			}
+			if (!text.startsWith("#")) {
+				break;
+			}
+			help.add(text);
+		}
+		return help;
+	}
+
+	@Test
+	void theBundleHelpIsEnglish() throws IOException {
+		for (String name : List.of("cozy", "cozy.ps1")) {
+			List<String> help = helpLines(BUNDLE.resolve(name));
+			assertThat(String.join("\n", help)).as(name)
+				.contains("Install the bundle on this PC")
+				.contains("cozy new")
+				.contains("cozy version")
+				.contains("cozy help");
+			assertThat(help).as(name).noneMatch((line) -> line.replaceAll("\"[^\"]*\"", "").matches(".*\\p{IsHangul}.*"));
+		}
+		assertThat(Files.readString(BUNDLE.resolve("cozy.ps1"), StandardCharsets.UTF_8)).as("cozy.ps1의 도움말이 cozy-cli의 도움말을 잇는다")
+			.contains("java -jar $jar help");
+	}
+
 	@Test
 	void theBashCommandPassesEveryCliActionToCozyCli() throws IOException {
 		String script = Files.readString(BUNDLE.resolve("cozy"), StandardCharsets.UTF_8);
@@ -291,6 +322,15 @@ class BundleCommandsTest {
 
 			assertThat(check.output()).contains("COZY_REPOSITORY=" + this.temp.resolve("home/.local/share/cozy/repository")
 					+ ":" + dest.resolve("repository"));
+		}
+
+		@Test
+		void helpShowsTheBundleCommandsAndThenTheCliHelp() throws Exception {
+			Result help = run(this.bundle.resolve("cozy"), "help");
+
+			assertThat(help.code()).as(help.output()).isZero();
+			assertThat(help.output()).contains("Install the bundle on this PC")
+				.contains("bundled-java -jar " + this.bundle.resolve("lib/cli/cozy-cli.jar") + " help");
 		}
 
 		/** cozy upgrade --check는 cozy-cli가 한다. 설치 폴더를 알려 주므로 cozy-cli가 그 COZY_VERSION으로 지금 판을 안다 */

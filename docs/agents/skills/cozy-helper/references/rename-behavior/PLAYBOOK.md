@@ -13,7 +13,7 @@ Renames a module component in the behavior spec, the script, and every `x-data` 
 ## Syntax
 
 ```text
-cozy rename behavior <모듈> <동작> <새 동작>
+cozy rename behavior <module> <behavior> <new-behavior>
 ```
 
 - Both names are lowercase with hyphens (`body-count`), and the component becomes the module name plus the new name in camelCase (`memoBodyLength`).

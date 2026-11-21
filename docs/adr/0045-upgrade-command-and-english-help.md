@@ -91,3 +91,12 @@ cozy channel release <릴리스 폴더> distribution/release/channel.yml --previ
 - `cozy channel release --previous <폴더>`: 이전 색인들의 릴리스를 판마다 하나씩 잇고 경로를 `../../download/v{판}/{파일}`로 바꾼다. 같은 판을 다르게 적은 색인, 없는 폴더는 실패로 닫는다. `cozy channel add`는 맨 앞 릴리스만 더하고 이전 릴리스는 알리기만 한다.
 - 릴리스 워크플로가 `cozy-channel.json`이 있는 게시 릴리스마다 색인을 받아 `--previous`로 준다(자산 목록에 있는데 받지 못하면 실패한다).
 - 문서: channel.md, cli.md, install-and-update.md, windows-verification.md, 번들 README, 업그레이드 플레이북, MSI 검증 스크립트.
+
+## M57 (2026-11-21, 사용자 결정 "help + recipes")
+
+- `cozy help`: 영어로 다시 썼다. 묶음(App, Screen behavior, Upgrading apps, Development tool)마다 명령 한 줄과 동사로 시작하는 설명이다. 자리표시자는 영어다(`<module>`, `<template>:<line>`, `<version>`).
+- 번들 스크립트(`cozy`, `cozy.ps1`): 머리의 도움말을 영어로 쓰고 번들 명령(`install`, `new`, `version`, `help`)만 적었다. `cozy help`는 그 뒤에 cozy-cli의 도움말을 잇는다(jar와 java가 있을 때). 큰따옴표 안의 예시 값(`-DappName="VOC 도우미"`)은 한글 그대로다.
+- `cozy recipes`: 명령 형식, 하는 일, 빈칸, 머리말을 영어로 썼다. `attach`, `remove behavior`, `rename behavior`, `cozy channel`의 형식도 같다. 이 형식을 옮겨 적은 플레이북의 Syntax와 문서(cli.md의 형식, workbench.md, events.md)를 맞췄다.
+- 워크벤치 코드 생성 화면은 레시피 설명을 영어로 보인다. 빈칸이 없는 레시피(`none …`)는 "미구현 항목: 없음"으로 보인다.
+- 테스트: 도움말과 `cozy recipes`에 한글이 없다(`\p{IsHangul}`), 도움말이 모든 동작을 담는다, 번들 도움말이 영어이고 cozy-cli의 도움말을 잇는다.
+- 그대로 둔 것: 오류·결과·"다음:" 안내 메시지의 한국어 자리표시자(`cozy add listener <모듈> --on …`). 메시지는 이번 범위 밖이다.

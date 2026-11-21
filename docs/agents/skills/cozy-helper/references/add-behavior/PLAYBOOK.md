@@ -18,7 +18,7 @@ Declares one Alpine.js component of a module in the module's behavior spec, or c
 ## Syntax
 
 ```text
-cozy add behavior <모듈> <동작> [--purpose 목적] [--state 이름:종류[=처음 값][@data-이름] …] [--computed 이름:식 …] [--action 이름:단계[; 단계] …] [--listen 동작:모듈:이벤트 …]
+cozy add behavior <module> <behavior> [--purpose <purpose>] [--state <name>:<type>[=<initial>][@data-<name>] …] [--computed <name>:<expression> …] [--action <name>:<step>[; <step>] …] [--listen <action>:<module>:<event> …]
 ```
 
 - The behavior name is lowercase with hyphens (`body-count`), and the component is the module name plus the name in camelCase (`memoBodyCount`).

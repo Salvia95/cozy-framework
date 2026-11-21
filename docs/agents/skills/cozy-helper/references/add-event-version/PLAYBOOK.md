@@ -13,10 +13,10 @@ Adds fields to an existing event, bumps its schema version, and writes the next 
 ## Syntax
 
 ```text
-cozy add event-version <모듈> <이벤트> --field 이름:종류 …
+cozy add event-version <module> <event> --field <name>:<type> …
 ```
 
-- `<모듈>` is the owner module; the command edits `events/spi/{module}/{Event}.java`.
+- `<module>` is the owner module; the command edits `events/spi/{module}/{Event}.java`.
 
 ## Creates
 

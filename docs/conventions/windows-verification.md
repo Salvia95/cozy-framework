@@ -286,7 +286,7 @@ cozy check            # 앱 폴더에서. 새 판이 있으면 끝에 한 줄
 - [ ] 사용자 이름이 한글인 계정(`C:\Users\홍길동`)에서도 받기와 설치가 된다.
 - [ ] zip으로 설치한 폴더(`.\cozy.cmd install`)에서 `cozy upgrade`가 windows-x64 번들로 같은 폴더에 다시 설치한다.
 - [ ] 회사 PC 정책으로 `msiexec`이나 스크립트 실행이 막히면 다음 명령이 "설치하지 못했습니다"와 받은 파일의 위치를 보이고, 그 MSI를 손으로 설치할 수 있다.
-- [ ] 호환이 깨지는 판만 있는 채널이면 `cozy upgrade`가 앱에서 돌릴 명령을 보이고 멈추고, `cozy upgrade --to <판>`으로 올린다.
+- [ ] 호환이 깨지는 판만 있는 채널이면 `cozy upgrade`가 앱에서 돌릴 명령을 보이고 멈추고, `cozy upgrade --to <version>`으로 올린다.
 
 ## 기록
 

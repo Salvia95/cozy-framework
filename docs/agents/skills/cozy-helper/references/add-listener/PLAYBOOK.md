@@ -9,7 +9,7 @@ Creates a listener that handles an event in the receiving module.
 ## Syntax
 
 ```text
-cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]
+cozy add listener <module> --on <sender-module>.<event> [--name <name>]
 ```
 
 - The command declares `"events :: spi"` in this module, and never a dependency on the sending module, so two modules can receive each other's events.

@@ -13,7 +13,7 @@ Creates one read-only screen with its controller, view record, template, spec, a
 ## Syntax
 
 ```text
-cozy add screen <모듈> <화면> --pattern overview|details --title 제목 [--field …] [--nav 라벨:아이콘]
+cozy add screen <module> <screen> --pattern overview|details --title <title> [--field …] [--nav <label>:<icon>]
 ```
 
 - `overview` shows `int` and `long` fields as stat cards and other fields as a summary card.

@@ -13,7 +13,7 @@ Creates list, create, detail, edit, and delete screens with storage and tests fo
 ## Syntax
 
 ```text
-cozy add crud <모듈> --entity <E> --label 라벨 --icon 아이콘 --field 이름:종류[!][:라벨] … [--publish created,updated,deleted]
+cozy add crud <module> --entity <Entity> --label <label> --icon <icon> --field <name>:<type>[!][:<label>] … [--publish created,updated,deleted]
 ```
 
 - A field is `name:kind[!][:label]`; kind is `text`, `longtext`, `int`, `long`, `bool`, `date`, or `instant`, `!` marks it required, and the label is the on-screen name (quote it when it has spaces: `--field "dueOn:date:마감 날짜"`).

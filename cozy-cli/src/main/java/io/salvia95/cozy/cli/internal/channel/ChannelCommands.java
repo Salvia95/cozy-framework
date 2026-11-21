@@ -39,8 +39,8 @@ public final class ChannelCommands {
 	/** 머리 이름을 정하지 않았을 때: {@code Authorization: Bearer <토큰>} */
 	public static final String DEFAULT_HEADER = "Authorization: Bearer";
 
-	static final String USAGE = "cozy channel set <주소> [--header <이름>] | show [--json] | add <채널 폴더> <릴리스 폴더> [--dry-run]"
-			+ " | release <릴리스 폴더> <channel.yml> [--previous <폴더>]";
+	static final String USAGE = "cozy channel set <address> [--header <name>] | show [--json] | add <channel-folder> <release-folder> "
+			+ "[--dry-run] | release <release-folder> <channel.yml> [--previous <folder>]";
 
 	/** 채널 폴더 안에서 색인을 두는 폴더. 판 폴더와 나란하다 */
 	public static final String INDEX_DIR = "index";

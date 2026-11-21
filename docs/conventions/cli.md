@@ -17,21 +17,25 @@ cd my-app && java -jar <레포>/cozy-cli/target/cozy-cli-1.1.0-SNAPSHOT.jar chec
 
 ## 형식
 
-```text
-cozy <동작> [옵션]
+`cozy help`가 보이는 도움말과 같은 영어 형식이다. 옵션과 출력은 아래 절에 있다.
 
-  describe [--json]   앱의 지도: 모듈, 의존, spi 계약, 이벤트, 화면, 화면 안의 동작, 공개 fragment, 남은 빈칸
-  check [--json]      빠른 검사: 템플릿 규칙 R1~R16, 모듈 구조 C8, 빈칸 C9, 동작 명세 C12, 화면 안의 동작 C13
-  recipes [--json]    구조를 만드는 명령 목록
-  add <레시피> …       구조 만들기 [--dry-run] [--json]
-  link <모듈> --uses <모듈>[,…]   모듈 의존 선언 [--dry-run] [--json]
-  sync agents [--force] | sync behaviors   에이전트 문서 맞추기, 동작 명세에서 모듈 JS 다시 만들기 [--dry-run] [--json]
-  set arg <템플릿> --line … --fragment … --index … --from … --value …   fragment 호출의 문자열 인자 하나 바꾸기 [--dry-run] [--json]
-  migrate alpine      앱 템플릿의 없앤 동작 속성을 cozy 컴포넌트로 바꾸기 [--dry-run] [--json]
-  migrate events      옛 자리({모듈}/spi/event/)의 이벤트를 이벤트 계약 모듈 events로 옮기기 [--dry-run] [--json]
-  migrate behaviors [--purpose 컴포넌트=목적 …]   손으로 쓴 모듈 JS를 동작 명세로 옮기기 [--dry-run] [--json]
-  attach <컴포넌트> --at <템플릿>:<줄> …   템플릿의 요소 하나에 화면 안 동작을 붙이거나 떼기 [--dry-run] [--json]
-  remove behavior <모듈> <동작> […] | rename behavior <모듈> <동작> <새 동작>   동작 지우기, 이름 바꾸기 (붙인 곳도) [--dry-run] [--json]
+```text
+cozy <action> [options]
+
+  describe [--json]                  Show the app map: modules, dependencies, spi contracts, events, screens, behaviors, public fragments, open slots
+  check [--json]                     Run the fast checks: templates R1-R16, modules C8, slots C9, behavior specs C12, screen behaviors C13
+  recipes [--json]                   List the commands that create structure
+  add <recipe> …                     Create structure [--dry-run] [--json]
+  link <module> --uses <module>[,…]  Declare a module dependency [--dry-run] [--json]
+  sync agents [--force] | sync behaviors   Update the agent docs, regenerate module scripts from behavior specs [--dry-run] [--json]
+  set arg <template> --line … --fragment … --index … --from … --value …   Change one string argument of a fragment call [--dry-run] [--json]
+  migrate alpine                     Replace removed data-cozy-* attributes with cozy components [--dry-run] [--json]
+  migrate events                     Move events from {module}/spi/event/ into the events module [--dry-run] [--json]
+  migrate behaviors [--purpose <component>=<purpose> …]   Move hand-written module scripts into behavior specs [--dry-run] [--json]
+  attach <component> --at <template>:<line> …   Attach a component to one element of a template, or detach it [--dry-run] [--json]
+  remove behavior <module> <behavior> […] | rename behavior <module> <behavior> <new-behavior>   Remove or rename a behavior where it is attached too [--dry-run] [--json]
+  channel set|show|add|release …     Set the update channel, or build one (admin, release workflow)
+  upgrade --check [--to <version>] [--json] | upgrade [--to <version>]   Show newer releases, or install one
 ```
 
 | 옵션 | 기본값 | 뜻 |
@@ -487,7 +491,7 @@ cozy set arg memo/api/list --line 47 --fragment badge --index 2 --from neutral -
 
 | 인자 | 뜻 |
 | --- | --- |
-| `<템플릿>` | 앱 템플릿의 뷰 이름(`memo/api/list` → `src/main/resources/templates/memo/api/list.html`) |
+| `<template>` | 앱 템플릿의 뷰 이름(`memo/api/list` → `src/main/resources/templates/memo/api/list.html`) |
 | `--line` | 호출이 있는 요소가 시작하는 줄 (`cozy describe --json`의 `outline[].line`). 인자는 다음 줄에 있어도 된다 |
 | `--fragment` | 부르는 fragment 이름 (`badge`) |
 | `--index` | 몇 번째 인자인가 (1부터) |
@@ -527,7 +531,7 @@ cozy attach memoBodyCount --at memo/internal/fields:9 --detach
 
 템플릿의 요소 하나에 화면 안 동작(Alpine 컴포넌트)을 붙인다. 템플릿의 글자는 그대로 두고 그 요소의 여는 태그만 고친다. 앱 템플릿의 `x-*` 속성은 이 명령으로 쓴다.
 
-- **`--at <템플릿>:<줄>`**: 템플릿은 `templates/` 아래 경로이고 `.html`은 빼도 된다(`memo/internal/fields`, `templates/memo/internal/fields.html`). 줄은 요소가 시작하는 줄이다. 그 줄에서 시작하는 가장 바깥 요소가 하나여야 한다(버튼 안의 아이콘처럼 같은 줄의 안쪽 요소는 세지 않는다). `th:replace`와 `th:block` 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않으므로 거절한다.
+- **`--at <template>:<line>`**: 템플릿은 `templates/` 아래 경로이고 `.html`은 빼도 된다(`memo/internal/fields`, `templates/memo/internal/fields.html`). 줄은 요소가 시작하는 줄이다. 그 줄에서 시작하는 가장 바깥 요소가 하나여야 한다(버튼 안의 아이콘처럼 같은 줄의 안쪽 요소는 세지 않는다). `th:replace`와 `th:block` 요소는 그려질 때 다른 것으로 바뀌어 속성이 남지 않으므로 거절한다.
 - **컴포넌트**: 이름이 `cozy`로 시작하면 프레임워크 컴포넌트이고 cozy-ui의 `cozy/behaviors.yml`([ui.md](ui.md)의 프레임워크 컴포넌트)에서 찾는다. 아니면 모듈의 동작 명세(`behaviors/{모듈}.yml`)에서 찾는다. 모듈 컴포넌트는 그 모듈의 템플릿(`templates/{모듈}/…`)에만 붙인다.
 - **붙이는 자리**: 요소에 `x-data`가 없고 감싸는 요소도 그 컴포넌트가 아니면, 그 요소가 컴포넌트의 자리가 되어 `x-data`를 받는다. 감싸는 요소가 그 컴포넌트면 안쪽 요소이고 이벤트와 값만 받는다. 이미 다른 컴포넌트를 붙인 요소에는 붙이지 않는다.
 

@@ -49,10 +49,10 @@ cozy upgrade --check --json          # {"current", "latest", "channel", "upToDat
 
 - 채널 색인을 읽어 비교만 한다. 아무것도 받거나 바꾸지 않는다. 어디서나 실행한다.
 - **같은 말**: `--dry-run`은 `--check`와 같다. `--json`은 `--check`(또는 `--dry-run`)와 함께 쓴다. 그 밖의 인자는 사용법 전체(`cozy upgrade [--check] [--to <version>] [--json]`)를 보이고 종료 코드 2로 멈춘다.
-- **`--to`**: 적은 판까지의 새 판만 보이고 그 판으로 올리는 명령(`cozy upgrade --to <판>`)을 보인다. 낮은 판이나 채널에 없는 판은 `cozy upgrade`처럼 거절한다.
+- **`--to`**: 적은 판까지의 새 판만 보이고 그 판으로 올리는 명령(`cozy upgrade --to <version>`)을 보인다. 낮은 판이나 채널에 없는 판은 `cozy upgrade`처럼 거절한다.
 - **`cozy update`**: 2.x 동안 `cozy upgrade --check`의 별칭이다. 같은 인자를 받고 같은 출력을 내며, 오류 출력에 `[cozy] cozy update는 cozy upgrade --check로 바뀌었습니다. 3.0.0에서 없어집니다.`를 보인다.
 - **지금 판**: 설치한 cozy 명령(설치 폴더의 `bin/cozy`, `bin\cozy.cmd`, 번들 폴더의 `cozy`)이 설치 폴더를 `COZY_HOME`으로 알려 주고, 그 폴더의 `COZY_VERSION`이 지금 판이다. 설치 폴더를 모르거나 개발 판(SNAPSHOT)이면 비교하지 않고 종료 코드 2로 끝낸다.
-- **올릴 판**(`upgrade`): 지금 판과 주 버전이 같은 가장 새 판. 주 버전이 바뀐 판(`breaking`)은 `cozy upgrade --to <판>`으로 적어야 올린다. `--json`의 `breaking`은 그런 판 가운데 최신 판이다.
+- **올릴 판**(`upgrade`): 지금 판과 주 버전이 같은 가장 새 판. 주 버전이 바뀐 판(`breaking`)은 `cozy upgrade --to <version>`으로 적어야 올린다. `--json`의 `breaking`은 그런 판 가운데 최신 판이다.
 - **채널이 더 낮으면**: 채널의 최신 판이 지금 판보다 낮으면 알리기만 한다. 낮은 판으로는 올리지 않는다.
 - **실패로 닫는 것**(종료 코드 2): 채널을 정하지 않음, 색인이 없음(파일이 없거나 HTTP 404), 거부(HTTP 401, 403), 연결하지 못함, 읽을 수 없는 색인(모르는 `schema`, 빠진 필드).
 - **웹 서버**:

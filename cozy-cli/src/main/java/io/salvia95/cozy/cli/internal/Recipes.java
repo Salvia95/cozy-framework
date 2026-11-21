@@ -299,43 +299,43 @@ public final class Recipes {
 			"upgrade");
 
 	public static final List<Recipe> ALL = List.of(
-			new Recipe("module", 1, "cozy add module <모듈> [--label 라벨]", "빈 모듈(package-info.java, allowedDependencies = {})",
-					"없음", true),
-			new Recipe("link", 1, "cozy link <모듈> --uses <다른 모듈>[,…]", "package-info.java의 allowedDependencies에 \"모듈 :: spi\" 추가",
-					"없음", true),
+			new Recipe("module", 1, "cozy add module <module> [--label <label>]", "An empty module (package-info.java, allowedDependencies = {})",
+					"none", true),
+			new Recipe("link", 1, "cozy link <module> --uses <other-module>[,…]", "Adds \"<module> :: spi\" to allowedDependencies in package-info.java",
+					"none", true),
 			new Recipe("crud", 1,
-					"cozy add crud <모듈> --entity <E> --label 라벨 --icon 아이콘 --field 이름:종류[!][:라벨] … [--publish created,updated,deleted]",
-					"목록·만들기·상세·수정·삭제 한 벌(spi, internal, api, SQL, 템플릿, 스펙, 테스트)", "없음", true),
+					"cozy add crud <module> --entity <Entity> --label <label> --icon <icon> --field <name>:<type>[!][:<label>] … [--publish created,updated,deleted]",
+					"List, create, details, edit and delete screens for one entity (spi, internal, api, SQL, templates, specs, tests)", "none", true),
 			new Recipe("screen", 1,
-					"cozy add screen <모듈> <화면> --pattern overview|details --title 제목 [--field …] [--nav 라벨:아이콘]",
-					"읽기 화면 하나(컨트롤러, 화면 DTO, 템플릿, 스펙, 내비게이션). 목록·폼은 crud가 만든다", "컨트롤러 view-model", true),
-			new Recipe("fragment", 1, "cozy add fragment <모듈> <이름> --param 이름:타입 … --purpose \"용도\"",
-					"다른 모듈에 공개하는 fragment와 매니페스트 항목", "템플릿 fragment-body", true),
+					"cozy add screen <module> <screen> --pattern overview|details --title <title> [--field …] [--nav <label>:<icon>]",
+					"One read-only screen (controller, view DTO, template, spec, navigation). Lists and forms come from crud", "controller view-model", true),
+			new Recipe("fragment", 1, "cozy add fragment <module> <name> --param <name>:<type> … --purpose \"<purpose>\"",
+					"A fragment that other modules can use, and its manifest entry", "template fragment-body", true),
 			new Recipe("behavior", 1,
-					"cozy add behavior <모듈> <동작> [--purpose 목적] [--state 이름:종류[=처음 값][@data-이름] …] [--computed 이름:식 …] [--action 이름:단계[; 단계] …] [--listen 동작:모듈:이벤트 …]",
-					"화면 안의 상태를 맡는 Alpine 컴포넌트 하나({모듈}{동작})를 동작 명세 behaviors/{모듈}.yml에 선언하거나 고치고, 그 명세에서 static/{모듈}/{모듈}.js를 만든다. 레이아웃이 그 파일을 싣는다",
-					"없음(JS는 명세에서 만든다)", true),
-			new Recipe("event", 1, "cozy add event <모듈> <이벤트> --field 이름:종류 …", "CozyEvent record와 직렬화 샘플 v1",
-					"없음(발행할 한 줄은 에이전트가 넣는다)", true),
-			new Recipe("listener", 1, "cozy add listener <모듈> --on <보내는 모듈>.<이벤트> [--name 이름]",
-					"이벤트 리스너. 자기 모듈의 {모듈}Facade를 받는다(없으면 빈 Facade와 구현을 함께 만든다). 필요하면 link 포함", "listener-body", true),
-			new Recipe("migration", 1, "cozy add migration <모듈> <설명>", "V{시각}__{모듈}_{설명}.sql", "migration-sql", true),
-			new Recipe("dto", 2, "cozy add dto <모듈> <Record> --field 이름:종류[:설명] …",
-					"spi/dto의 record 하나(모듈 사이 값). 종류는 crud와 같고 같은 모듈의 record·list:record도 쓴다", "없음", true),
-			new Recipe("enable events", 2, "cozy enable events", "pom에 cozy-starter-events 추가(cozy-starter-sqlite가 있어야 한다)", "없음",
+					"cozy add behavior <module> <behavior> [--purpose <purpose>] [--state <name>:<type>[=<initial>][@data-<name>] …] [--computed <name>:<expression> …] [--action <name>:<step>[; <step>] …] [--listen <action>:<module>:<event> …]",
+					"Declares or changes one Alpine component ({module}{Behavior}) for in-page state in behaviors/{module}.yml, and generates static/{module}/{module}.js from it. The layout loads that file",
+					"none (the script is generated from the spec)", true),
+			new Recipe("event", 1, "cozy add event <module> <event> --field <name>:<type> …", "A CozyEvent record and its serialized sample v1",
+					"none (the agent adds the line that publishes the event)", true),
+			new Recipe("listener", 1, "cozy add listener <module> --on <sender-module>.<event> [--name <name>]",
+					"An event listener that receives its module's {module}Facade (creates an empty Facade and implementation if missing). Adds the link when needed", "listener-body", true),
+			new Recipe("migration", 1, "cozy add migration <module> <description>", "V{timestamp}__{module}_{description}.sql", "migration-sql", true),
+			new Recipe("dto", 2, "cozy add dto <module> <Record> --field <name>:<type>[:<description>] …",
+					"One record in spi/dto for values passed between modules. Types are the crud types plus record and list:record of the same module", "none", true),
+			new Recipe("enable events", 2, "cozy enable events", "Adds cozy-starter-events to the pom (needs cozy-starter-sqlite)", "none",
 					true),
 			new Recipe("enable workbench", 2, "cozy enable workbench",
-					"pom에 dev 전용 cozy-workbench 추가(cozy-ui가 있어야 한다). dev 실행에서 /cozy/dev/workbench가 열린다", "없음", true),
+					"Adds the dev-only cozy-workbench to the pom (needs cozy-ui). A dev run serves /cozy/dev/workbench", "none", true),
 			new Recipe("query", 2,
-					"cozy add query <모듈> <이름> [--param 이름:종류 …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]",
-					"Finder 메서드와 구현, Mapper 메서드, 행 record, <select>. Finder가 없으면 만든다", "query-sql", true),
+					"cozy add query <module> <name> [--param <name>:<type> …] --returns long|int|bool|text|<Record>|list:<Record> [--in <Finder>]",
+					"A Finder method and implementation, a Mapper method, a row record and a <select>. Creates the Finder if missing", "query-sql", true),
 			new Recipe("command", 2,
-					"cozy add command <모듈> <이름> [--param 이름:종류 …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]",
-					"Facade 메서드와 구현. --sql이면 Mapper 메서드와 쓰기 SQL 문. Facade가 없으면 만든다", "command-body, (--sql이면) command-sql", true),
-			new Recipe("event-version", 2, "cozy add event-version <모듈> <이벤트> --field 이름:종류 …",
-					"이벤트 필드 추가(박싱 타입), schemaVersion 올림, 옛 of()는 새 필드를 null로 넘김, 샘플 v{n+1} 추가", "없음", true),
-			new Recipe("field", 2, "cozy add field <모듈> --entity <E> --field 이름:종류[!][:라벨] [--default 값]",
-					"crud 한 벌에 필드 하나: ALTER TABLE 마이그레이션, 도메인·DTO·폼, Facade와 Mapper, SQL, 입력 칸, 스펙 값, 부르는 곳의 인자", "없음",
+					"cozy add command <module> <name> [--param <name>:<type> …] [--returns long|int|bool|text] [--sql insert|update|delete] [--in <Facade>]",
+					"A Facade method and implementation. With --sql, also a Mapper method and the write statement. Creates the Facade if missing", "command-body, and command-sql with --sql", true),
+			new Recipe("event-version", 2, "cozy add event-version <module> <event> --field <name>:<type> …",
+					"Adds event fields (boxed types), raises schemaVersion, keeps the old of() passing null for the new fields, and adds sample v{n+1}", "none", true),
+			new Recipe("field", 2, "cozy add field <module> --entity <Entity> --field <name>:<type>[!][:<label>] [--default <value>]",
+					"Adds one field to a crud set: ALTER TABLE migration, domain, DTO and form, Facade and Mapper, SQL, input, spec values, and arguments at call sites", "none",
 					true));
 
 	public static Map<String, Object> model() {
@@ -371,11 +371,11 @@ public final class Recipes {
 
 	/** 쓸 수 있는 것을 먼저, 준비 중인 것을 뒤에 둔다. 쓸 수 있는 부분은 {@link #availableText()}와 같다 */
 	public static String text() {
-		StringBuilder out = new StringBuilder("구조는 아래 명령으로 바꾸고, 명령이 남긴 빈칸(cozy:slot)만 채운다.\n"
-				+ "명령마다 자세한 사용법: .agents/skills/cozy-helper/references/<add-crud 같은 이름>/PLAYBOOK.md\n\n");
+		StringBuilder out = new StringBuilder("Change structure with these commands, then fill only the slots they leave (cozy:slot).\n"
+				+ "Each command in detail: .agents/skills/cozy-helper/references/<name, such as add-crud>/PLAYBOOK.md\n\n");
 		out.append(availableText());
 		if (ALL.stream().anyMatch((r) -> !r.available())) {
-			out.append("\n준비 중 (실행하면 종료 코드 2)\n");
+			out.append("\nNot ready yet (exit code 2)\n");
 			ALL.stream().filter((r) -> !r.available()).forEach((r) -> append(out, r));
 		}
 		return out.toString();
@@ -389,7 +389,7 @@ public final class Recipes {
 	}
 
 	private static void append(StringBuilder out, Recipe r) {
-		out.append("  ").append(r.usage()).append(r.available() ? "" : "  (준비 중)").append('\n');
-		out.append("      ").append(r.does()).append(". 빈칸: ").append(r.slots()).append('\n');
+		out.append("  ").append(r.usage()).append(r.available() ? "" : "  (not ready)").append('\n');
+		out.append("      ").append(r.does()).append(". Slots: ").append(r.slots()).append('\n');
 	}
 }

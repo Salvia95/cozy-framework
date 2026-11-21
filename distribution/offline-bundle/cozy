@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
-# Cozy 명령 (오프라인 번들). 형식: cozy <동작> [인자...]
+# Cozy command (offline bundle). Usage: cozy <action> [args...]
 #
-#   ./cozy install [설치 폴더]     번들을 이 PC에 설치한다. 번들 폴더에서 실행한다 (기본: ~/cozy)
-#   cozy new [-D이름=값 ...]       새 앱을 현재 폴더 아래에 만든다. 물어보는 값에 답하거나 -D로 미리 준다
-#   cozy add <레시피> ...           앱 폴더에서 구조를 만든다 (module, crud, screen, fragment, event, listener, migration, dto, query, command, event-version)
-#   cozy link <모듈> --uses <모듈>  모듈 의존 선언. 그 밖에 cozy describe | check | recipes | enable events | sync agents | sync behaviors | set arg | migrate alpine | migrate events | migrate behaviors | attach | remove behavior | rename behavior | channel | update | upgrade (자세히: cozy recipes, AGENTS.md)
-#   cozy version                   프레임워크 버전
-#   cozy help                      이 도움말
+#   ./cozy install [folder]          Install the bundle on this PC. Run it in the bundle folder (default: ~/cozy)
+#   cozy new [-D<name>=<value> ...]  Create a new app under the current folder. Answer the prompts or pass -D values
+#   cozy version                     Print the framework version
+#   cozy help                        Print this help, then the app commands of cozy-cli
 #
-# 설치하면 <설치 폴더>/bin에 cozy와 mvn이 생긴다. PATH에 <설치 폴더>/bin을 더하면 어디서나 cozy와 번들의 Maven을 쓴다.
-# 번들에 JDK(jdk/)가 있으면 cozy와 그 mvn은 그 JDK로 돈다. 없으면 시스템의 JDK 25(JAVA_HOME, PATH)를 쓴다.
-# new의 옵션: groupId, artifactId, package, appId(기본 artifactId), appName(한글 가능), persistence(기본 true),
-# events(기본 false, persistence 필요).
+# Installing puts cozy and mvn in <folder>/bin. Add <folder>/bin to PATH to use cozy and the bundled Maven anywhere.
+# With a bundled JDK (jdk/), cozy and its mvn run on it. Otherwise they use the system JDK 25 (JAVA_HOME, PATH).
+# Options of new: groupId, artifactId, package, appId (default: artifactId), appName (may be Korean), persistence (default: true),
+# events (default: false, needs persistence).
 #   cozy new -DgroupId=com.example -DartifactId=voc-assistant -Dpackage=com.example.voc \
 #            -DappName="VOC 도우미" -Dpersistence=true -Devents=false -DinteractiveMode=false
 set -euo pipefail
@@ -29,8 +27,14 @@ if [ -x "$ROOT/jdk/bin/java" ]; then
   export PATH="$JAVA_HOME/bin:$PATH"
 fi
 
+# 머리의 # 줄들, 그리고 cozy-cli를 실행할 수 있으면 그 도움말(앱 명령)
 usage() {
-  sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "${BASH_SOURCE[0]}"
+  local jar="$ROOT/lib/cli/cozy-cli.jar"
+  if [ -f "$jar" ] && command -v java > /dev/null; then
+    echo
+    java -jar "$jar" help 2> /dev/null || true
+  fi
 }
 
 need_java() {
