@@ -165,19 +165,19 @@ class BundleLicensesTest {
 		var stdout = new ByteArrayOutputStream();
 
 		int status = BundleLicenses.run(List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out,
-				"--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
-				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5_8.tar.gz"), new PrintStream(stdout, true, StandardCharsets.UTF_8));
+				"--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5.1_2.tar.gz"), new PrintStream(stdout, true, StandardCharsets.UTF_8));
 
 		assertThat(status).isZero();
-		assertThat(Files.readString(out)).contains("Eclipse Temurin JDK in jdk/ (OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip")
+		assertThat(Files.readString(out)).contains("Eclipse Temurin JDK in jdk/ (OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip")
 			.contains("GPL-2.0-only WITH Classpath-exception-2.0")
 			.contains("jdk/legal/")
-			.contains("OpenJDK25U-jdk-sources_25.0.5_8.tar.gz");
+			.contains("OpenJDK25U-jdk-sources_25.0.5.1_2.tar.gz");
 
 		// 소스를 어디서 얻는지 없이 JDK만 적을 수 없다. 반대도 마찬가지다
 		Files.delete(out);
-		for (String only : List.of("--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
-				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5_8.tar.gz")) {
+		for (String only : List.of("--jdk-distribution=OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+				"--jdk-sources=OpenJDK25U-jdk-sources_25.0.5.1_2.tar.gz")) {
 			var errors = new ByteArrayOutputStream();
 			int failed = BundleLicenses.run(
 					List.of("--repository=" + repo, "--overrides=" + overrides, "--output=" + out, only),

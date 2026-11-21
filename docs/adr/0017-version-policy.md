@@ -18,9 +18,9 @@
 
 | 구성 | 버전 | 관리 |
 | --- | --- | --- |
-| JDK | 25.0.5 (Temurin) | 빌드 PC |
+| JDK | 25.0.5.1 (Temurin) | 빌드 PC |
 | WiX Toolset (`wix` .NET 도구) | 7.0.1 | CI의 Windows 러너에서만. MSI 만들기. 바이너리는 OSMF EULA v1.1(레포 주인 동의 2026-11-13) (ADR-0039, 승인 2026-11-13) |
-| Eclipse Temurin JDK (번들) | 25.0.5+8 | Windows x64 오프라인 번들의 `jdk/`. 검증용 Linux x64. 배포판 이름과 SHA-256은 `distribution/offline-bundle/jdk.env` (ADR-0025 보완, 승인 2026-11-12) |
+| Eclipse Temurin JDK (번들) | 25.0.5.1+2 | Windows x64 오프라인 번들의 `jdk/`. 검증용 Linux x64. 배포판 이름과 SHA-256은 `distribution/offline-bundle/jdk.env` (ADR-0025 보완, 승인 2026-11-12) |
 | Maven | 3.10.1 (4.0.0은 RC) | 빌드 PC |
 | Spring Boot | 4.2.0 | parent |
 | Spring Framework / Security | 7.0.10 / 7.1.2 | Boot BOM |
@@ -82,3 +82,4 @@
 - 2026-11-19(M55): 시작할 때 다시 확인했다. 바뀐 GA는 없다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0).
 - 2026-11-20(릴리스 2.3.0): 다시 확인했다. Closure Compiler v20261117(2026-11-18 Maven Central)으로 올렸다. Temurin의 새 GA jdk-25.0.5.1+2는 Linux·Alpine·macOS aarch64·s390x만 있고 Windows x64가 없어 번들 JDK는 25.0.5+8 그대로다. 나머지는 바뀌지 않았다(Boot 4.1.2, Modulith 2.1.2, mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, AttoParser 2.0.10, vnu 26.11.4, Maven 3.10.1, 플러그인, GitHub Actions, WiX 7.0.1, Tabler 1.7.5, Tabler Icons 3.52.0, htmx 2.0.11, Alpine.js CSP 3.17.5, Pretendard 1.3.9). 더 새로운 것은 RC인 Boot 4.2.0-RC2·Modulith 2.2.0-RC1·Maven 4와 `next` 태그의 htmx 4.0.2뿐이라 올리지 않는다.
 - 2026-11-21(M56): 시작할 때 다시 확인했다. Spring Boot 4.2.0(2026-11-19)이 GA가 되어 Modulith 2.2.0(2026-11-19)과 함께 올렸다. Boot 4.2가 관리하는 플러그인(invoker 3.10.1, surefire·failsafe 3.6.1, dependency 3.11.0)이 덮어쓰던 판과 같아져 덮어쓰기를 지웠다(enforcer 3.7.0은 그대로). 이벤트 계약 테스트가 Modulith 2.2의 새 메서드(`markAbandoned`, `findAbandonedPublications`, `deleteAbandonedPublicationsBefore`, 포기한 발행 `ABANDONED`)를 잡아 SQLite 저장소에 구현했다([events.md](../conventions/events.md)). Closure Compiler v20261118로 올렸다. mybatis-spring-boot-starter 4.1.0, sqlite-jdbc 3.54.1.0, Thymeleaf 3.1.7(Boot)은 그대로다. Temurin jdk-25.0.5.1+2는 Windows x64가 없어 번들 JDK는 25.0.5+8 그대로다.
+- 2026-11-21(릴리스 2.4.0): 다시 확인했다. Temurin jdk-25.0.5.1+2에 Windows x64가 나와(2026-11-20) 번들 JDK와 빌드 PC의 JDK를 올렸다. 배포판 세 개(Windows x64, Linux x64, 소스)의 SHA-256은 릴리스 자산의 `.sha256.txt`와 같고, Windows x64와 Linux x64는 Adoptium API의 checksum과도 같다(API는 소스 묶음의 checksum을 주지 않는다). 나머지는 M56에서 확인한 그대로다(Boot 4.2.0, Modulith 2.2.0, Closure Compiler v20261118).

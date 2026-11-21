@@ -1,7 +1,7 @@
 # 다음 릴리스의 채널 색인(cozy-channel.json) 내용. 릴리스 절차의 "버전 바꾸기"에서 함께 고친다.
 # 릴리스 워크플로가 cozy channel release로 읽는다. version이 태그의 판과 다르면 check-version.sh가 실패한다.
 # breaking(앱을 올릴 때 손이 가는 판)은 적지 않는다. 주 버전이 바뀐 판(x.0.0)이 breaking이다.
-version: 2.3.0
-summary: "워크벤치에서 화면 안의 동작을 보고, 고치고, 요소에 붙이고, 바뀐 줄을 확인하고, 검사의 C12·C13을 고친다. dev 실행은 템플릿과 static/을 소스에서 읽어 새로고침만으로 보인다"
+version: 2.4.0
+summary: "판 올리기는 cozy upgrade 하나다(새 판 보기는 cozy upgrade --check, cozy update는 2.x 동안 별칭). cozy help와 cozy recipes의 명령 설명은 영어다. Spring Boot 4.2, Modulith 2.2, 번들 JDK 25.0.5.1"
 # 앱 폴더에서 돌릴 명령. 없으면 []
 appSteps: ["cozy sync agents"]

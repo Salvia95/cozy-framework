@@ -127,4 +127,4 @@
 
 | 항목 | 이유 | 라이선스 | 폐쇄망 반입 |
 | --- | --- | --- | --- |
-| Eclipse Temurin JDK 25.0.5+8 (Windows x64, 검증용 Linux x64) | 오프라인 PC에 JDK를 따로 반입·설치하지 않게 한다 | GPL-2.0 with Classpath Exception(구성 요소별 라이선스는 `jdk/legal/`). 소스 묶음을 같은 릴리스에 올린다 | Windows x64 번들 안에 들어 있다. 따로 반입할 것이 없다 |
+| Eclipse Temurin JDK 25.0.5.1+2 (Windows x64, 검증용 Linux x64) | 오프라인 PC에 JDK를 따로 반입·설치하지 않게 한다 | GPL-2.0 with Classpath Exception(구성 요소별 라이선스는 `jdk/legal/`). 소스 묶음을 같은 릴리스에 올린다 | Windows x64 번들 안에 들어 있다. 따로 반입할 것이 없다 |
