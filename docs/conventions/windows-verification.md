@@ -169,7 +169,7 @@ mvn -o -Pdist package
 & .\target\dist\image\voc-assistant\voc-assistant.exe
 ```
 
-- [ ] `cozy version`이 `1.0.0-SNAPSHOT`을 출력한다. `cozy help`가 동작 목록(install, new, version, help)을 한글로 보여 준다. `cozy nope`은 종료 코드 2로 끝난다.
+- [ ] `cozy version`이 `1.0.0-SNAPSHOT`을 출력한다. `cozy help`가 번들 명령(install, new, version, help)을 영어로 보인 뒤 cozy-cli의 앱 명령을 잇는다. `cozy nope`은 종료 코드 2로 끝난다.
 - [ ] `cozy new`가 `[cozy] VOC 도우미 (voc-assistant) 생성: persistence=true, events=true`를 출력한다(한글 appName이 깨지지 않는다).
 - [ ] 생성된 앱의 `home` 모듈이 `api\`, `spi\`, `internal\app\command`, `internal\app\query`, `internal\domain`, `internal\infra`로 나뉘고, 템플릿이 `templates\home\api\`와 `templates\home\internal\`에 있다(ADR-0029).
 - [ ] `mvn -o verify`가 `BUILD SUCCESS`로 끝난다. 테스트 10개가 통과한다.
@@ -196,7 +196,7 @@ cozy describe
 mvn -o verify
 ```
 
-- [ ] `cozy recipes`의 한글이 깨지지 않는다(`cozy help`도 `add`, `link` 줄을 보여 준다).
+- [ ] `cozy recipes`가 레시피 목록을 영어로 보여 준다(`cozy help`도 `add`, `link` 줄을 보여 준다). 한글 출력은 아래 `cozy add crud`의 메시지로 본다.
 - [ ] 첫 `cozy add crud`가 `만듦  src/main/java/...` 목록과 `[cozy] 적용했습니다`를 출력한다. `--label "할 일"`처럼 공백이 있는 값이 한 인자로 넘어간다(라벨이 "할"만 남지 않는다).
 - [ ] 같은 명령을 다시 실행하면 `[cozy] 바뀐 것 없음`이다.
 - [ ] `cozy link task --uses home`이 `바꿈  src/main/java/.../task/package-info.java    allowedDependencies += "home :: spi"`를 출력한다.
